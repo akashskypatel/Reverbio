@@ -33,7 +33,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:musify/API/musify.dart';
 import 'package:musify/extensions/l10n.dart';
 import 'package:musify/localization/app_localizations.dart';
-import 'package:musify/services/audio_service.dart';
+import 'package:musify/services/audio_service_mk.dart';
 import 'package:musify/services/data_manager.dart';
 import 'package:musify/services/logger_service.dart';
 import 'package:musify/services/playlist_sharing.dart';
@@ -200,7 +200,7 @@ class _MusifyState extends State<Musify> {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();  
   await initialisation();
 
   runApp(const Musify());

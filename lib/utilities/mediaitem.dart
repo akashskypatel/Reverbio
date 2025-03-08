@@ -49,3 +49,37 @@ MediaItem mapToMediaItem(Map song) => MediaItem(
     'artWorkPath': song['highResImage'].toString(),
   },
 );
+
+// Add this helper method to convert Media to MediaItem
+Map<String, dynamic> songToMediaExtras(Map song) => {
+  'id': song['id'].toString(),
+  'album': '',
+  'artist': song['artist'].toString().trim(),
+  'title': song['title'].toString(),
+  'artUri':
+      song['isOffline'] ?? false
+          ? Uri.file(song['highResImage'].toString())
+          : Uri.parse(song['highResImage'].toString()),
+  'extras': {
+    'lowResImage': song['lowResImage'],
+    'ytid': song['ytid'],
+    'isLive': song['isLive'],
+    'isOffline': song['isOffline'],
+    'artWorkPath': song['highResImage'].toString(),
+  },
+};
+
+MediaItem extrasToMediaItem(Map<String, dynamic> extras) => MediaItem(
+  id: extras['id'],
+  album: extras['album'],
+  artist: extras['artist'],
+  title: extras['title'],
+  artUri: extras['artUri'],
+  extras: {
+    'lowResImage': extras['extras']['lowResImage'],
+    'ytid': extras['extras']['ytid'],
+    'isLive': extras['extras']['isLive'],
+    'isOffline': extras['extras']['isOffline'],
+    'artWorkPath': extras['extras']['artWorkPath'],
+  },
+);
