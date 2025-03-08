@@ -27,6 +27,13 @@
             "type": "dart",
             "flutterMode": "debug",
             "deviceId": "windows",
+        },
+        {
+            "name": "Flutter (Anndroid)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "deviceId": "android",
         }
     ]
 }
