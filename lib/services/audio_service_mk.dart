@@ -34,13 +34,6 @@ import 'package:musify/services/settings_manager.dart';
 import 'package:musify/utilities/mediaitem.dart';
 import 'package:rxdart/rxdart.dart';
 
-enum PlayerStatus {
-  playing,
-  paused,
-  stopped,
-  loading,
-}
-
 class AudioPlayerService {
   AudioPlayerService() {
     MediaKit.ensureInitialized();
@@ -49,18 +42,29 @@ class AudioPlayerService {
   static final Player _player = Player();
   static bool _isShuffleEnabled = false;
   final _stateController = StreamController<AudioProcessingState>.broadcast();
+  final _indexController = StreamController<int>.broadcast();
   AudioProcessingState _state = AudioProcessingState.idle;
 
   static Player get audioPlayer => _player;
 
   AudioProcessingState get state => _state;
-  Stream<AudioProcessingState> get stateStream => _stateController.stream;
   Player get player => _player;
   bool get shuffleModeEnabled => _isShuffleEnabled;
-
+  bool get playing => _player.state.playing;
   bool get hasNext =>
       _player.state.playlist.index < _player.state.playlist.medias.length - 1;
   bool get hasPrevious => _player.state.playlist.index > 0;
+  int get currentIndex => _player.state.playlist.index;
+  Duration get position => _player.state.position;
+  Duration get bufferedPosition => _player.state.buffer;
+  double get speed => _player.state.rate;
+  Stream<AudioProcessingState> get stateStream => _stateController.stream;
+  Stream<bool> get playbackEventStream => _player.stream.playing;
+  Stream<Duration> get durationStream => _player.stream.duration;
+  Stream<Duration> get positionStream => _player.stream.position;
+  Stream<Duration> get bufferedPositionStream => _player.stream.buffer;
+  Stream<int> get currentIndexStream => _indexController.stream;
+  Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
 
   void _initialize() {
     _player.stream.buffering.listen((isBuffering) {
@@ -95,6 +99,9 @@ class AudioPlayerService {
         _updateState(AudioProcessingState.error);
       }
     });
+    _player.stream.playlist.listen((playlist) {
+      _indexController.add(playlist.index);
+    });
   }
 
   void _updateState(AudioProcessingState newState) {
@@ -113,7 +120,8 @@ class AudioPlayerService {
   }
 
   Future<void> stop() async {
-    return _player.stop();
+    await player.seek(Duration.zero);
+    return _player.pause();
   }
 
   Future<void> dispose() async {
@@ -141,14 +149,14 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
 
   late StreamSubscription<bool?> _playbackEventSubscription;
   late StreamSubscription<Duration?> _durationSubscription;
-  late StreamSubscription<Playlist?> _currentIndexSubscription;
+  late StreamSubscription<int?> _currentIndexSubscription;
   late StreamSubscription<Playlist?> _sequenceStateSubscription;
 
   Stream<PositionData> get positionDataStream =>
       Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
-        audioPlayer.player.stream.position,
-        audioPlayer.player.stream.buffer,
-        audioPlayer.player.stream.duration,
+        audioPlayer.positionStream,
+        audioPlayer.bufferedPositionStream,
+        audioPlayer.durationStream,
         (position, bufferedPosition, duration) =>
             PositionData(position, bufferedPosition, duration ?? Duration.zero),
       );
@@ -159,16 +167,16 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
           audioPlayer.state == AudioProcessingState.completed &&
           !sleepTimerExpired) {
         skipToNext();
-      }
-      _updatePlaybackState();
+      }      
     } catch (e, stackTrace) {
       logger.log('Error handling playback event', e, stackTrace);
     }
+    _updatePlaybackState();
   }
 
   void _handleDurationChange(Duration? duration) {
     try {
-      final index = audioPlayer.player.state.playlist.index;
+      final index = audioPlayer.currentIndex;
       if (queue.value.isNotEmpty) {
         final newQueue = List<MediaItem>.from(queue.value);
         final oldMediaItem = newQueue[index];
@@ -180,11 +188,11 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
     } catch (e, stackTrace) {
       logger.log('Error handling duration change', e, stackTrace);
     }
+    _updatePlaybackState();
   }
 
-  void _handleCurrentSongIndexChanged(Playlist? playlist) {
+  void _handleCurrentSongIndexChanged(int? index) {
     try {
-      final index = playlist?.index;
       if (index != null && queue.value.isNotEmpty) {
         final playlist = queue.value;
         mediaItem.add(playlist[index]);
@@ -192,6 +200,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
     } catch (e, stackTrace) {
       logger.log('Error handling current song index change', e, stackTrace);
     }
+    _updatePlaybackState();
   }
 
   void _handleSequenceStateChange(Playlist? playlist) {
@@ -208,19 +217,20 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
     } catch (e, stackTrace) {
       logger.log('Error handling sequence state change', e, stackTrace);
     }
+    _updatePlaybackState();
   }
 
   void _setupEventSubscriptions() {
-    _playbackEventSubscription = audioPlayer.player.stream.playing.listen(
+    _playbackEventSubscription = audioPlayer.playbackEventStream.listen(
       _handlePlaybackEvent,
     );
-    _durationSubscription = audioPlayer.player.stream.duration.listen(
+    _durationSubscription = audioPlayer.durationStream.listen(
       _handleDurationChange,
     );
-    _currentIndexSubscription = audioPlayer.player.stream.playlist.listen(
+    _currentIndexSubscription = audioPlayer.currentIndexStream.listen(
       _handleCurrentSongIndexChanged,
     );
-    _sequenceStateSubscription = audioPlayer.player.stream.playlist.listen(
+    _sequenceStateSubscription = audioPlayer.sequenceStateStream.listen(
       _handleSequenceStateChange,
     );
   }
@@ -234,10 +244,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
             MediaControl.skipToPrevious
           else
             MediaControl.rewind,
-          if (audioPlayer.player.state.playing)
-            MediaControl.pause
-          else
-            MediaControl.play,
+          if (audioPlayer.playing) MediaControl.pause else MediaControl.play,
           if (hasPreviousOrNext)
             MediaControl.skipToNext
           else
@@ -256,11 +263,11 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
             audioPlayer.shuffleModeEnabled
                 ? AudioServiceShuffleMode.all
                 : AudioServiceShuffleMode.none,
-        playing: audioPlayer.player.state.playing,
-        updatePosition: audioPlayer.player.state.position,
-        bufferedPosition: audioPlayer.player.state.buffer,
-        speed: audioPlayer.player.state.rate,
-        queueIndex: audioPlayer.player.state.playlist.index,
+        playing: audioPlayer.playing,
+        updatePosition: audioPlayer.position,
+        bufferedPosition: audioPlayer.bufferedPosition,
+        speed: audioPlayer.speed,
+        queueIndex: audioPlayer.currentIndex,
       ),
     );
   }
@@ -331,11 +338,11 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
 
   @override
   Future<void> fastForward() =>
-      seek(Duration(seconds: audioPlayer.player.state.position.inSeconds + 15));
+      seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
 
   @override
   Future<void> rewind() =>
-      seek(Duration(seconds: audioPlayer.player.state.position.inSeconds - 15));
+      seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
 
   Future<void> playSong(Map song) async {
     try {

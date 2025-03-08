@@ -107,6 +107,41 @@ class MiniPlayer extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (audioHandler.hasPrevious)
+                  IconButton(
+                    onPressed: () => audioHandler.skipToPrevious(),
+                    icon: Icon(
+                      FluentIcons.previous_24_filled,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 25,
+                    ),
+                  ),
+                if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                StreamBuilder<PlaybackState>(
+                  stream: audioHandler.playbackState,
+                  builder: (context, snapshot) {
+                    final isPlaying = snapshot.data?.playing ?? false;
+                    if (isPlaying || audioHandler.audioPlayer.position > Duration.zero)
+                      return IconButton(
+                        onPressed: () => audioHandler.stop(),
+                        icon: Icon(
+                          FluentIcons.stop_24_filled,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 35,
+                        ),
+                      );
+                    else
+                      return IconButton(
+                        onPressed: null,
+                        icon: Icon(
+                          FluentIcons.stop_24_filled,
+                          color: Theme.of(context).colorScheme.secondaryContainer,
+                          size: 35,
+                        ),
+                      );
+                  },
+                ),
+                const SizedBox(width: 10),
                 StreamBuilder<PlaybackState>(
                   stream: audioHandler.playbackState,
                   builder: (context, snapshot) {
@@ -116,11 +151,11 @@ class MiniPlayer extends StatelessWidget {
                       processingState,
                       isPlaying,
                     );
-                    return GestureDetector(
-                      onTap: iconDataAndAction.onPressed,
-                      child: Icon(
+                    return IconButton(
+                      onPressed: iconDataAndAction.onPressed,
+                      icon: Icon(
                         iconDataAndAction.iconData,
-                        color: colorScheme.primary,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 35,
                       ),
                     );
@@ -128,11 +163,11 @@ class MiniPlayer extends StatelessWidget {
                 ),
                 if (audioHandler.hasNext) const SizedBox(width: 10),
                 if (audioHandler.hasNext)
-                  GestureDetector(
-                    onTap: () => audioHandler.skipToNext(),
-                    child: Icon(
+                  IconButton(
+                    onPressed: () => audioHandler.skipToNext(),
+                    icon: Icon(
                       FluentIcons.next_24_filled,
-                      color: colorScheme.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 25,
                     ),
                   ),
