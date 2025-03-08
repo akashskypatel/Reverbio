@@ -1,4 +1,4 @@
-package com.ruchan.musify_fork
+package com.akashskypatel.musify
 
 import io.flutter.embedding.android.FlutterActivity
 
