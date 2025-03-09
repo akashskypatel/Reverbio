@@ -19,14 +19,20 @@
  *     please visit: https://github.com/gokadzev/Musify
  */
 
+import 'dart:math';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:musify/main.dart';
+import 'package:musify/models/position_data.dart';
 import 'package:musify/screens/now_playing_page.dart';
+import 'package:musify/utilities/formatter.dart';
 import 'package:musify/widgets/marque.dart';
 import 'package:musify/widgets/playback_icon_button.dart';
 import 'package:musify/widgets/song_artwork.dart';
+
+const double playerHeight = 117;
 
 class MiniPlayer extends StatelessWidget {
   MiniPlayer({super.key, required this.metadata});
@@ -98,32 +104,37 @@ class MiniPlayer extends StatelessWidget {
           ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18),
-        height: 75,
+        height: playerHeight,
         decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
-        child: Row(
-          children: <Widget>[
-            _buildArtwork(),
-            _buildMetadata(colorScheme.primary, colorScheme.secondary),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const PositionSlider(),
             Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildPreviousButton(context),
-                if (audioHandler.hasPrevious) const SizedBox(width: 10),
-                StreamBuilder<Duration>(
-                  stream: audioHandler.audioPlayer.positionStream,
-                  builder: (context, snapshot) {
-                    return _buildStopButton(context);
-                  },
+              children: <Widget>[
+                _buildArtwork(),
+                _buildMetadata(colorScheme.primary, colorScheme.secondary),
+                Row(
+                  children: [
+                    _buildPreviousButton(context),
+                    if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                    StreamBuilder<Duration>(
+                      stream: audioHandler.audioPlayer.positionStream,
+                      builder: (context, snapshot) {
+                        return _buildStopButton(context);
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    StreamBuilder<PlaybackState>(
+                      stream: audioHandler.playbackState,
+                      builder: (context, snapshot) {
+                        return _buildPlayPauseButton(context);
+                      },
+                    ),
+                    if (audioHandler.hasNext) const SizedBox(width: 10),
+                    _buildNextButton(context),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                StreamBuilder<PlaybackState>(
-                  stream: audioHandler.playbackState,
-                  builder: (context, snapshot) {
-                    return _buildPlayPauseButton(context);
-                  },
-                ),
-                if (audioHandler.hasNext) const SizedBox(width: 10),
-                _buildNextButton(context),
               ],
             ),
           ],
@@ -240,6 +251,89 @@ class MiniPlayer extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class PositionSlider extends StatelessWidget {
+  const PositionSlider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: StreamBuilder<PositionData>(
+        stream: audioHandler.positionDataStream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.data == null) {
+            return const SizedBox.shrink();
+          }
+          final positionData = snapshot.data!;
+          final primaryColor = Theme.of(context).colorScheme.primary;
+          return _buildSlider(context, primaryColor, positionData);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSlider(
+    BuildContext context,
+    Color fontColor,
+    PositionData positionData,
+  ) {
+    return Row(
+      children: [
+        _buildPositionText(context, fontColor, positionData),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Slider(
+                value: positionData.position.inSeconds.toDouble(),
+                max: max(
+                  positionData.position.inSeconds.toDouble(),
+                  positionData.duration.inSeconds.toDouble(),
+                ),
+                onChanged: (value) {
+                  audioHandler.seek(Duration(seconds: value.toInt()));
+                },
+              ),
+            ],
+          ),
+        ),
+        _buildDurationText(context, fontColor, positionData),
+      ],
+    );
+  }
+
+  Widget _buildPositionText(
+    BuildContext context,
+    Color fontColor,
+    PositionData positionData,
+  ) {
+    final positionText = formatDuration(positionData.position.inSeconds);
+    final textStyle = TextStyle(fontSize: 12, color: fontColor);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: Row(
+        children: [Text(positionText, style: textStyle)],
+      ),
+    );
+  }
+
+  Widget _buildDurationText(
+    BuildContext context,
+    Color fontColor,
+    PositionData positionData,
+  ) {
+    final durationText = formatDuration(positionData.duration.inSeconds);
+    final textStyle = TextStyle(fontSize: 12, color: fontColor);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [Text(durationText, style: textStyle)],
       ),
     );
   }

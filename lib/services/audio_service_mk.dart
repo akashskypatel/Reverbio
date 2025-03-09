@@ -176,6 +176,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
 
   Timer? _sleepTimer;
   bool sleepTimerExpired = false;
+  late bool wasPlayingBeforeCall = false;
 
   late StreamSubscription<bool?> _playbackEventSubscription;
   late StreamSubscription<AudioProcessingState?> _stateChangeSubscription;
@@ -316,6 +317,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
       await session.configure(const AudioSessionConfiguration.music());
       session.interruptionEventStream.listen((event) async {
         if (event.begin) {
+          wasPlayingBeforeCall = audioPlayer.playing;
           switch (event.type) {
             case AudioInterruptionType.duck:
               await audioPlayer.setVolume(0.5);
@@ -331,7 +333,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
               await audioPlayer.setVolume(1);
               break;
             case AudioInterruptionType.pause:
-              await audioPlayer.play();
+              if (wasPlayingBeforeCall) await audioPlayer.play();
               break;
             case AudioInterruptionType.unknown:
               break;
