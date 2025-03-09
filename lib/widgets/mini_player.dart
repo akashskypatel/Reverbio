@@ -107,76 +107,93 @@ class MiniPlayer extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (audioHandler.hasPrevious)
-                  IconButton(
-                    onPressed: () => audioHandler.skipToPrevious(),
-                    icon: Icon(
-                      FluentIcons.previous_24_filled,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 25,
-                    ),
-                  ),
+                _buildPreviousButton(context),
                 if (audioHandler.hasPrevious) const SizedBox(width: 10),
-                StreamBuilder<PlaybackState>(
-                  stream: audioHandler.playbackState,
+                StreamBuilder<Duration>(
+                  stream: audioHandler.audioPlayer.positionStream,
                   builder: (context, snapshot) {
-                    final isPlaying = snapshot.data?.playing ?? false;
-                    if (isPlaying || audioHandler.audioPlayer.position > Duration.zero)
-                      return IconButton(
-                        onPressed: () => audioHandler.stop(),
-                        icon: Icon(
-                          FluentIcons.stop_24_filled,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 35,
-                        ),
-                      );
-                    else
-                      return IconButton(
-                        onPressed: null,
-                        icon: Icon(
-                          FluentIcons.stop_24_filled,
-                          color: Theme.of(context).colorScheme.secondaryContainer,
-                          size: 35,
-                        ),
-                      );
+                    return _buildStopButton(context);
                   },
                 ),
                 const SizedBox(width: 10),
                 StreamBuilder<PlaybackState>(
                   stream: audioHandler.playbackState,
                   builder: (context, snapshot) {
-                    final processingState = snapshot.data?.processingState;
-                    final isPlaying = snapshot.data?.playing ?? false;
-                    final iconDataAndAction = getIconFromState(
-                      processingState,
-                      isPlaying,
-                    );
-                    return IconButton(
-                      onPressed: iconDataAndAction.onPressed,
-                      icon: Icon(
-                        iconDataAndAction.iconData,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 35,
-                      ),
-                    );
+                    return _buildPlayPauseButton(context);
                   },
                 ),
                 if (audioHandler.hasNext) const SizedBox(width: 10),
-                if (audioHandler.hasNext)
-                  IconButton(
-                    onPressed: () => audioHandler.skipToNext(),
-                    icon: Icon(
-                      FluentIcons.next_24_filled,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 25,
-                    ),
-                  ),
+                _buildNextButton(context),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildPlayPauseButton(BuildContext context) {
+    final processingState = audioHandler.audioPlayer.state;
+    final isPlaying = audioHandler.audioPlayer.playing;
+    final iconDataAndAction = getIconFromState(processingState, isPlaying);
+    return IconButton(
+      onPressed: iconDataAndAction.onPressed,
+      icon: Icon(
+        iconDataAndAction.iconData,
+        color: Theme.of(context).colorScheme.primary,
+        size: 35,
+      ),
+    );
+  }
+
+  Widget _buildStopButton(BuildContext context) {
+    final isPlaying = audioHandler.audioPlayer.playing;
+    if (isPlaying || audioHandler.audioPlayer.position.inSeconds > 0)
+      return IconButton(
+        onPressed: () => audioHandler.stop(),
+        icon: Icon(
+          FluentIcons.stop_24_filled,
+          color: Theme.of(context).colorScheme.primary,
+          size: 35,
+        ),
+      );
+    else
+      return IconButton(
+        onPressed: null,
+        icon: Icon(
+          FluentIcons.stop_24_filled,
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          size: 35,
+        ),
+      );
+  }
+
+  Widget _buildNextButton(BuildContext context) {
+    if (audioHandler.hasNext)
+      return IconButton(
+        onPressed: () => audioHandler.skipToNext(),
+        icon: Icon(
+          FluentIcons.next_24_filled,
+          color: Theme.of(context).colorScheme.primary,
+          size: 25,
+        ),
+      );
+    else
+      return const SizedBox.shrink();
+  }
+
+  Widget _buildPreviousButton(BuildContext context) {
+    if (audioHandler.hasPrevious)
+      return IconButton(
+        onPressed: () => audioHandler.skipToPrevious(),
+        icon: Icon(
+          FluentIcons.previous_24_filled,
+          color: Theme.of(context).colorScheme.primary,
+          size: 25,
+        ),
+      );
+    else
+      return const SizedBox.shrink();
   }
 
   Widget _buildArtwork() {

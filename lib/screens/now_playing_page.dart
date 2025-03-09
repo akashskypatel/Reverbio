@@ -18,6 +18,7 @@
  *     For more information about Musify, including how to contribute,
  *     please visit: https://github.com/gokadzev/Musify
  */
+import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -421,10 +422,10 @@ class PositionSlider extends StatelessWidget {
             children: [
               Slider(
                 value: positionData.position.inSeconds.toDouble(),
+                max: max(positionData.position.inSeconds.toDouble(),positionData.duration.inSeconds.toDouble()),
                 onChanged: (value) {
                   audioHandler.seek(Duration(seconds: value.toInt()));
                 },
-                max: positionData.duration.inSeconds.toDouble(),
               ),
               _buildPositionRow(context, primaryColor, positionData),
             ],

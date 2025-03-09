@@ -67,36 +67,48 @@ class AudioPlayerService {
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
 
   void _initialize() {
-    _player.stream.buffering.listen((isBuffering) {
-      if (!_player.state.playing && isBuffering) {
+    _player.stream.buffer.listen((buffer) {
+      if ((_player.state.buffer.inSeconds < (_player.state.rate * 60)) ||
+          _player.state.buffering) {
         _updateState(AudioProcessingState.buffering);
+      } else if (_player.state.buffer.inSeconds >= (_player.state.rate * 60)) {
+        _updateState(AudioProcessingState.ready);
       }
+      logger.log(
+        'Buffer position:${_player.state.buffer.inSeconds} \n Status:$_state',
+        null,
+        null,
+      );
     });
-
     _player.stream.completed.listen((isCompleted) {
-      if (isCompleted) {
+      if (isCompleted && _state != AudioProcessingState.error) {
         _updateState(AudioProcessingState.completed);
-      }
-    });
-    _player.stream.buffer.listen((buffer) {
-      if (_player.state.buffering && buffer == Duration.zero) {
-        _updateState(AudioProcessingState.idle);
-      }
-    });
-    _player.stream.buffer.listen((buffer) {
-      if (_player.state.buffering && buffer > Duration.zero) {
-        _updateState(AudioProcessingState.loading);
+        logger.log(
+          'Buffer Completed:${_player.state.buffer.inSeconds} \n Status:$_state',
+          null,
+          null,
+        );
       }
     });
     _player.stream.playing.listen((playing) {
-      if (playing) {
+      if (playing && _state != AudioProcessingState.error) {
         _updateState(AudioProcessingState.ready);
+        logger.log(
+          'Playing:${_player.state.buffer.inSeconds} \n Status:$_state',
+          null,
+          null,
+        );
       }
     });
     _player.stream.error.listen((error) {
       if (error != '') {
         logger.log('Player Stream Error', error, StackTrace.current);
         _updateState(AudioProcessingState.error);
+        logger.log(
+          'Error:${_player.state.buffer.inSeconds} \n Status:$_state',
+          null,
+          null,
+        );
       }
     });
     _player.stream.playlist.listen((playlist) {
@@ -125,12 +137,30 @@ class AudioPlayerService {
   }
 
   Future<void> dispose() async {
+    await _stateController.close();
     return _player.dispose();
   }
 
   Future<void> setShuffleMode(bool shuffle) async {
     _isShuffleEnabled = shuffle;
     return _player.setShuffle(shuffle);
+  }
+
+  Future<void> open(Media media) async {
+    _updateState(AudioProcessingState.loading);
+    return _player.open(media);
+  }
+
+  Future<void> setVolume(double volume) async {
+    return _player.setVolume(volume);
+  }
+
+  Future<void> seek(Duration duration) async {
+    return _player.seek(duration);
+  }
+
+  Future<void> setPlaylistMode(PlaylistMode mode) async {
+    return _player.setPlaylistMode(mode);
   }
 }
 
@@ -148,6 +178,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
   bool sleepTimerExpired = false;
 
   late StreamSubscription<bool?> _playbackEventSubscription;
+  late StreamSubscription<AudioProcessingState?> _stateChangeSubscription;
   late StreamSubscription<Duration?> _durationSubscription;
   late StreamSubscription<int?> _currentIndexSubscription;
   late StreamSubscription<Playlist?> _sequenceStateSubscription;
@@ -167,10 +198,14 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
           audioPlayer.state == AudioProcessingState.completed &&
           !sleepTimerExpired) {
         skipToNext();
-      }      
+      }
     } catch (e, stackTrace) {
       logger.log('Error handling playback event', e, stackTrace);
     }
+    _updatePlaybackState();
+  }
+
+  void _handleStateChangeSubscription(AudioProcessingState state) {
     _updatePlaybackState();
   }
 
@@ -223,6 +258,9 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
   void _setupEventSubscriptions() {
     _playbackEventSubscription = audioPlayer.playbackEventStream.listen(
       _handlePlaybackEvent,
+    );
+    _stateChangeSubscription = audioPlayer.stateStream.listen(
+      _handleStateChangeSubscription,
     );
     _durationSubscription = audioPlayer.durationStream.listen(
       _handleDurationChange,
@@ -280,7 +318,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
         if (event.begin) {
           switch (event.type) {
             case AudioInterruptionType.duck:
-              await audioPlayer.player.setVolume(0.5);
+              await audioPlayer.setVolume(0.5);
               break;
             case AudioInterruptionType.pause:
             case AudioInterruptionType.unknown:
@@ -290,7 +328,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
         } else {
           switch (event.type) {
             case AudioInterruptionType.duck:
-              await audioPlayer.player.setVolume(1);
+              await audioPlayer.setVolume(1);
               break;
             case AudioInterruptionType.pause:
               await audioPlayer.play();
@@ -310,10 +348,10 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
     await audioPlayer.stop().then((_) => audioPlayer.dispose());
 
     await _playbackEventSubscription.cancel();
+    await _stateChangeSubscription.cancel();
     await _durationSubscription.cancel();
     await _currentIndexSubscription.cancel();
     await _sequenceStateSubscription.cancel();
-
     await super.onTaskRemoved();
   }
 
@@ -334,7 +372,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
   @override
   Future<void> stop() => audioPlayer.stop();
   @override
-  Future<void> seek(Duration position) => audioPlayer.player.seek(position);
+  Future<void> seek(Duration position) => audioPlayer.seek(position);
 
   @override
   Future<void> fastForward() =>
@@ -358,7 +396,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
 
       final audioSource = await buildAudioSource(song, songUrl, isOffline);
 
-      await audioPlayer.player.open(audioSource);
+      await audioPlayer.open(audioSource);
       await audioPlayer.play();
 
       final cacheKey = 'song_${song['ytid']}_${audioQualitySetting.value}_url';
@@ -456,7 +494,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
   }
 
   Future<void> playAgain() async {
-    await audioPlayer.player.seek(Duration.zero);
+    await audioPlayer.seek(Duration.zero);
   }
 
   @override
@@ -480,7 +518,7 @@ class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
         newMode = PlaylistMode.none;
     }
     // we use this only when we want to loop single song
-    await audioPlayer.player.setPlaylistMode(newMode);
+    await audioPlayer.setPlaylistMode(newMode);
   }
 
   Future<void> setSleepTimer(Duration duration) async {

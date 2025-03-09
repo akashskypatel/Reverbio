@@ -29,7 +29,7 @@
             "deviceId": "windows",
         },
         {
-            "name": "Flutter (Anndroid)",
+            "name": "Flutter (Android)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
