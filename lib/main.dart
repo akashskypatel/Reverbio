@@ -16,7 +16,7 @@
  *
  *
  *     For more information about Reverbio, including how to contribute,
- *     please visit: https://github.com/gokadzev/Reverbio
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 import 'dart:async';
@@ -219,7 +219,7 @@ Future<void> initialisation() async {
     audioHandler = await AudioService.init(
       builder: ReverbioAudioHandler.new,
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.gokadzev.reverbio',
+        androidNotificationChannelId: 'com.akashskypatel.reverbio',
         androidNotificationChannelName: 'Reverbio',
         androidNotificationIcon: 'drawable/ic_launcher_foreground',
         androidShowNotificationBadge: true,

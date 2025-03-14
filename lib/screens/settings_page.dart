@@ -16,7 +16,7 @@
  *
  *
  *     For more information about Reverbio, including how to contribute,
- *     please visit: https://github.com/gokadzev/Reverbio
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -293,7 +293,7 @@ class SettingsPage extends StatelessWidget {
           iconColor: Colors.white,
           textColor: Colors.white,
           borderRadius: commonCustomBarRadius,
-          onTap: () => launchURL(Uri.parse('https://ko-fi.com/gokadzev')),
+          onTap: () => launchURL(Uri.parse('https://ko-fi.com/akashskypatel')),
         ),
       ],
     );

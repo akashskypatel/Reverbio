@@ -16,7 +16,7 @@
  *
  *
  *     For more information about Reverbio, including how to contribute,
- *     please visit: https://github.com/gokadzev/Reverbio
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 List albumsDB = [

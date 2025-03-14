@@ -3,7 +3,7 @@ description: Report an issue in Reverbio
 title: '[Bug] <title>'
 labels: "type: bug"
 assignees:
-  - gokadzev
+  - akashskypatel
 
 body:
   - type: checkboxes
@@ -14,11 +14,11 @@ body:
       options:
         - label: I have searched the existing issues and confirmed that this is a new issue, not a duplicate or related to another open issue.
           required: true
-        - label: I read the [FAQ section](https://github.com/gokadzev/Reverbio/discussions/340) and there's nothing mentioned about this issue.
+        - label: I read the [FAQ section](https://github.com/akashskypatel/Reverbio/discussions/340) and there's nothing mentioned about this issue.
           required: true
         - label: I have written a short but informative title.
           required: true
-        - label: I have updated the app to the latest version. You can find the latest version [here](https://github.com/gokadzev/Reverbio/releases).
+        - label: I have updated the app to the latest version. You can find the latest version [here](https://github.com/akashskypatel/Reverbio/releases).
           required: true
         - label: I will fill out all the sections in this issue report.
           required: true

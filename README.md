@@ -1,23 +1,16 @@
 <div align="center">
-<img src="https://github.com/gokadzev/Reverbio/raw/master/repository_files/Reverbio-banner.png" width="100%">
 
 # Reverbio
 
 Unlock the full potential of music: Stream effortlessly with one app!
 
-[![Stars](https://img.shields.io/github/stars/gokadzev/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/gokadzev/Reverbio/stargazers)
-[![Forks](https://img.shields.io/github/forks/gokadzev/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/gokadzev/Reverbio/fork)
-[![Downloads](https://img.shields.io/github/downloads/gokadzev/Reverbio/total?style=flat-square&color=D3BEAB)](https://github.com/gokadzev/Reverbio/releases)
-[![GitHub release](https://img.shields.io/github/v/release/gokadzev/Reverbio?color=D3BEAB)](https://github.com/gokadzev/Reverbio/releases)
-[![License](https://img.shields.io/github/license/gokadzev/Reverbio?color=D3BEAB)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/stargazers)
+[![Forks](https://img.shields.io/github/forks/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/fork)
+[![Downloads](https://img.shields.io/github/downloads/akashskypatel/Reverbio/total?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/releases)
+[![GitHub release](https://img.shields.io/github/v/release/akashskypatel/Reverbio?color=D3BEAB)](https://github.com/akashskypatel/Reverbio/releases)
+[![License](https://img.shields.io/github/license/akashskypatel/Reverbio?color=D3BEAB)](LICENSE)
 
 ---
-
-<a href="https://ko-fi.com/gokadzev" target="_blank" title="ko-fi">
-  <img src="https://github.com/user-attachments/assets/1c204507-d124-4b34-878b-96c39c9bb3f8"  alt="ko-fi badge" style="width: 150px;">
-</a>
-
-
 
 ---
 
@@ -37,6 +30,7 @@ No subscriptions <br/>
 Inbuilt updater <br/>
 14 supported languages <br/>
 Material UI & accent colors & dynamic colors (Android 12+) <br/>
+Android and Window Support <br/>
 
 </center>
 
@@ -45,17 +39,12 @@ Material UI & accent colors & dynamic colors (Android 12+) <br/>
 
 ## Screenshots
 
-| ![Screenshot 1](https://raw.githubusercontent.com/gokadzev/Reverbio/master/fastlane/metadata/android/en-US/images/phoneScreenshots/01.jpg) | ![Screenshot 2](https://raw.githubusercontent.com/gokadzev/Reverbio/master/fastlane/metadata/android/en-US/images/phoneScreenshots/02.jpg) | ![Screenshot 3](https://raw.githubusercontent.com/gokadzev/Reverbio/master/fastlane/metadata/android/en-US/images/phoneScreenshots/03.jpg) | ![Screenshot 4](https://raw.githubusercontent.com/gokadzev/Reverbio/master/fastlane/metadata/android/en-US/images/phoneScreenshots/04.jpg) |
-|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-
-
 ---
 
 ## Download
 
 
-[<img src="https://github.com/gokadzev/Reverbio/raw/master/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/gokadzev/Reverbio/releases/latest)
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on Fdroid" height="80">](https://f-droid.org/packages/com.gokadzev.reverbio.fdroid)
+[<img src="https://github.com/akashskypatel/Reverbio/raw/master/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/akashskypatel/Reverbio/releases/latest)
 
 ---
 
@@ -63,7 +52,7 @@ Material UI & accent colors & dynamic colors (Android 12+) <br/>
 
 
 ```
-Copyright © 2025 Valeri Gokadze
+Copyright © 2025 Akash Patel
 
 Reverbio is a free software licensed under GPL v3.0
 It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
@@ -87,19 +76,19 @@ how to obtain the original software, should clearly STATE ALL CHANGES made and s
 Use of this software under any "non-free" license is NOT permitted.
 ```
 
-See the [GNU General Public License](https://github.com/gokadzev/Reverbio/blob/master/LICENSE) for more details.
+See the [GNU General Public License](https://github.com/akashskypatel/Reverbio/blob/master/LICENSE) for more details.
 
 ---
 
 ## Contribute
 
-Contributions are always welcome. Please read our [contributing guidelines](https://github.com/gokadzev/Reverbio/blob/master/CONTRIBUTING.md) before contributing.
+Contributions are always welcome. Please read our [contributing guidelines](https://github.com/akashskypatel/Reverbio/blob/master/CONTRIBUTING.md) before contributing.
 
 ---
 
 ## F.A.Q
 
-You can see frequently asked questions and their answers [here](https://github.com/gokadzev/Reverbio/discussions/340).
+You can see frequently asked questions and their answers [here](https://github.com/akashskypatel/Reverbio/discussions/340).
 
 ---
 

@@ -16,7 +16,7 @@
  *
  *
  *     For more information about Reverbio, including how to contribute,
- *     please visit: https://github.com/gokadzev/Reverbio
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 import 'dart:convert';
@@ -33,9 +33,9 @@ import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/widgets/auto_format_text.dart';
 
 const String checkUrl =
-    'https://raw.githubusercontent.com/gokadzev/Reverbio/update/check.json';
+    'https://raw.githubusercontent.com/akashskypatel/Reverbio/update/check.json';
 const String releasesUrl =
-    'https://api.github.com/repos/gokadzev/Reverbio/releases/latest';
+    'https://api.github.com/repos/akashskypatel/Reverbio/releases/latest';
 const String downloadUrlKey = 'url';
 const String downloadUrlArm64Key = 'arm64url';
 const String downloadFilename = 'Reverbio.apk';

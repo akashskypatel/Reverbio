@@ -1016,7 +1016,7 @@ packages:
       path: "."
       ref: "5f01ddb776dc2f64da7f734373f4f7bcdced64af"
       resolved-ref: "5f01ddb776dc2f64da7f734373f4f7bcdced64af"
-      url: "https://github.com/gokadzev/yt_explode_dart.git"
+      url: "https://github.com/akashskypatel/yt_explode_dart.git"
     source: git
     version: "2.3.9"
 sdks:

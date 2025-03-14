@@ -40,7 +40,7 @@ jobs:
     - run: flutter build apk --debug --flavor github
     - uses: svenstaro/upload-release-action@v2
       with:
-        repo_name: gokadzev/Reverbio
+        repo_name: akashskypatel/Reverbio
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: build/app/outputs/flutter-apk/app-github-debug.apk
         asset_name: Reverbio-debug.apk

@@ -53,7 +53,7 @@ jobs:
       # Release universal Fdroid pre-release apk.
       - uses: svenstaro/upload-release-action@v2
         with:
-          repo_name: gokadzev/Reverbio
+          repo_name: akashskypatel/Reverbio
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/app/outputs/flutter-apk/app-fdroid-release.apk
           asset_name: Reverbio_fdroid.apk

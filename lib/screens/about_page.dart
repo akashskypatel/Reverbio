@@ -16,7 +16,7 @@
  *
  *
  *     For more information about Reverbio, including how to contribute,
- *     please visit: https://github.com/gokadzev/Reverbio
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -78,14 +78,14 @@ class AboutPage extends StatelessWidget {
                       icon: const Icon(FluentIcons.code_24_filled),
                       tooltip: 'Github',
                       onPressed: () {
-                        launchURL(Uri.parse('https://github.com/gokadzev'));
+                        launchURL(Uri.parse('https://github.com/akashskypatel'));
                       },
                     ),
                     IconButton(
                       icon: const Icon(FluentIcons.globe_24_filled),
                       tooltip: 'Website',
                       onPressed: () {
-                        launchURL(Uri.parse('https://gokadzev.github.io'));
+                        launchURL(Uri.parse('https://akashskypatel.github.io'));
                       },
                     ),
                   ],
