@@ -28,6 +28,7 @@ import 'package:flutter/widgets.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/DB/albums.db.dart';
 import 'package:reverbio/DB/playlists.db.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -37,7 +38,6 @@ import 'package:reverbio/services/lyrics_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final _yt = YoutubeExplode();
