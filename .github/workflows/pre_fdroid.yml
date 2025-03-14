@@ -53,13 +53,13 @@ jobs:
       # Release universal Fdroid pre-release apk.
       - uses: svenstaro/upload-release-action@v2
         with:
-          repo_name: gokadzev/Musify
+          repo_name: akashskypatel/Reverbio
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/app/outputs/flutter-apk/app-fdroid-release.apk
-          asset_name: Musify_fdroid.apk
+          asset_name: Reverbio_fdroid.apk
           tag: ${{ github.ref }}
           prerelease: true
           overwrite: true
-          body: "**New Musify Fdroid Pre-Release!** \n
+          body: "**New Reverbio Fdroid Pre-Release!** \n
           with pre-release / [BETA] builds you have access to the latest build of the app before it is released as stable-release version. Only use pre-release if you test the app, provide feedback, and help us improve its performance. Please note that pre-release versions of the app may be pretty unstable. You may experience crashes, bugs, or other issues while using the app. This is because pre-release version is still in development.
           "

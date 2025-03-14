@@ -1,12 +1,12 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,8 +15,8 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 import 'dart:io';
@@ -24,8 +24,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:musify/extensions/l10n.dart';
-import 'package:musify/main.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
 
 void addOrUpdateData(String category, String key, dynamic value) async {
   final _box = await _openBox(category);

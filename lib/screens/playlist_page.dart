@@ -1,12 +1,12 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,8 +15,8 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 import 'dart:math';
@@ -24,18 +24,18 @@ import 'dart:math';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:musify/API/musify.dart';
-import 'package:musify/extensions/l10n.dart';
-import 'package:musify/main.dart';
-import 'package:musify/services/data_manager.dart';
-import 'package:musify/services/playlist_sharing.dart';
-import 'package:musify/utilities/common_variables.dart';
-import 'package:musify/utilities/flutter_toast.dart';
-import 'package:musify/utilities/utils.dart';
-import 'package:musify/widgets/playlist_cube.dart';
-import 'package:musify/widgets/playlist_header.dart';
-import 'package:musify/widgets/song_bar.dart';
-import 'package:musify/widgets/spinner.dart';
+import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/playlist_sharing.dart';
+import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/playlist_cube.dart';
+import 'package:reverbio/widgets/playlist_header.dart';
+import 'package:reverbio/widgets/song_bar.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class PlaylistPage extends StatefulWidget {
   const PlaylistPage({
@@ -140,7 +140,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                     _playlist,
                   );
 
-                  final url = 'musify://playlist/custom/$encodedPlaylist';
+                  final url = 'Reverbio://playlist/custom/$encodedPlaylist';
                   await Clipboard.setData(ClipboardData(text: url));
                 },
               ),

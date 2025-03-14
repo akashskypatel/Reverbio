@@ -1,12 +1,12 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,30 +15,33 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:flutter/widgets.dart';
+import 'package:fuzzy/fuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
-import 'package:musify/DB/albums.db.dart';
-import 'package:musify/DB/playlists.db.dart';
-import 'package:musify/extensions/l10n.dart';
-import 'package:musify/main.dart';
-import 'package:musify/services/data_manager.dart';
-import 'package:musify/services/lyrics_manager.dart';
-import 'package:musify/services/settings_manager.dart';
-import 'package:musify/utilities/flutter_toast.dart';
-import 'package:musify/utilities/formatter.dart';
+import 'package:reverbio/DB/albums.db.dart';
+import 'package:reverbio/DB/playlists.db.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/lyrics_manager.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/formatter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final _yt = YoutubeExplode();
+late final DiscogsApiClient _dc;
 
 List globalSongs = [];
 
@@ -872,4 +875,51 @@ Future<void> updateRecentlyPlayed(dynamic songId) async {
   userRecentlyPlayed.insert(0, newSongDetails);
   currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
   addOrUpdateData('user', 'recentlyPlayedSongs', userRecentlyPlayed);
+}
+
+Future<dynamic> getArtistInfo(String name) async {
+  _dc = await DiscogsApiClient.create();
+  var res = await _dc.search.search(
+    query: name,
+    type: 'artist',
+  );
+  final _pages = res['pagination']['pages'];
+  var _results = [];
+
+  if (res['results'].length > 0) _results.addAll(res['results']);
+  print('pages:$_pages page:${res['pagination']['page']}');
+
+  for (var i = 2; i <= _pages; i++) {
+    res = await _dc.search.search(
+      query: name,
+      type: 'artist',
+      page: i,
+    );
+    if (res['results'].length > 0) _results.addAll(res['results']);
+    print('pages:$_pages page:$i');
+  }
+  print('results:${_results.length}');
+  if (_results.isNotEmpty) {
+    final names =
+        _results
+            .where((e) => e['type'] == 'artist')
+            .map((e) => {'id': e['id'], 'title': e['title']})
+            .toList();
+    final WeightedKey keys = WeightedKey(
+      name: 'title',
+      getter: (e) => e['title'],
+      weight: 1,
+    );
+    final fuzzy = Fuzzy(
+      names,
+      options: FuzzyOptions(threshold: 1, keys: [keys]),
+    );
+    final result = fuzzy.search(name);
+
+    if (result.where((e) => e.score == 0.0).isNotEmpty) {
+      return _results.firstWhere(
+        (e) => e['id'] == result.firstWhere((e) => e.score == 0.0).item['id'],
+      );
+    }
+  }
 }

@@ -39,5 +39,5 @@ jobs:
       # Upload universal generated apk to the artifacts.
       - uses: actions/upload-artifact@v3
         with:
-          name: Musify-debug.apk
+          name: Reverbio-debug.apk
           path: build/app/outputs/flutter-apk/app-github-debug.apk

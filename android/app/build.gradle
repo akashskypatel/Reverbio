@@ -30,7 +30,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.gokadzev.musify"
+    namespace = "com.akashskypatel.reverbio"
     compileSdk 35
 
     compileOptions {
@@ -52,35 +52,41 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.gokadzev.musify"
+        applicationId "com.akashskypatel.reverbio"
         minSdk 24
         targetSdk 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
-    flavorDimensions "flavor"
+    // flavorDimensions "flavor"
 
-    productFlavors {
-        github {
-            dimension "flavor"
-            applicationIdSuffix ""
-        }
-        fdroid {
-            dimension "flavor"
-            applicationIdSuffix ".fdroid"
-        }
-    }
+    // productFlavors {
+    //     github {
+    //         dimension "flavor"
+    //         applicationIdSuffix ""
+    //     }
+    //     fdroid {
+    //         dimension "flavor"
+    //         applicationIdSuffix ".fdroid"
+    //     }
+    // }
 
     signingConfigs {
         release {
-            //From decoded key
-            storeFile = file('key.jks')
+            // For testing 
+            // storeFile file("key.jks")
 
-            //From key.properties
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storePassword keystoreProperties['storePassword']
+            // //From key.properties
+            // keyAlias keystoreProperties['keyAlias']
+            // keyPassword keystoreProperties['keyPassword']
+            // storePassword keystoreProperties['storePassword']
+
+            //github push
+            storeFile file("${rootProject.projectDir}/app/key.jks")
+            storePassword System.getenv("STORE_PASSWORD") ?: ""
+            keyAlias System.getenv("KEY_ALIAS") ?: ""
+            keyPassword System.getenv("KEY_PASSWORD") ?: ""
         }
     }
 
@@ -99,6 +105,7 @@ android {
         release {
             signingConfig signingConfigs.release
             shrinkResources false
+            minifyEnabled false
         }
         debug {
             applicationIdSuffix '.debug'
