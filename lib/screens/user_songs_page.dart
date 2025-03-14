@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -21,14 +21,14 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:Reverbio/API/Reverbio.dart';
-import 'package:Reverbio/extensions/l10n.dart';
-import 'package:Reverbio/main.dart';
-import 'package:Reverbio/services/settings_manager.dart';
-import 'package:Reverbio/utilities/utils.dart';
-import 'package:Reverbio/widgets/playlist_cube.dart';
-import 'package:Reverbio/widgets/playlist_header.dart';
-import 'package:Reverbio/widgets/song_bar.dart';
+import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/playlist_cube.dart';
+import 'package:reverbio/widgets/playlist_header.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 
 class UserSongsPage extends StatefulWidget {
   const UserSongsPage({super.key, required this.page});

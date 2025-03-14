@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -21,16 +21,16 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:Reverbio/API/Reverbio.dart';
-import 'package:Reverbio/extensions/l10n.dart';
-import 'package:Reverbio/services/router_service.dart';
-import 'package:Reverbio/utilities/common_variables.dart';
-import 'package:Reverbio/utilities/flutter_toast.dart';
-import 'package:Reverbio/utilities/utils.dart';
-import 'package:Reverbio/widgets/confirmation_dialog.dart';
-import 'package:Reverbio/widgets/playlist_bar.dart';
-import 'package:Reverbio/widgets/section_header.dart';
-import 'package:Reverbio/widgets/section_title.dart';
+import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/playlist_bar.dart';
+import 'package:reverbio/widgets/section_header.dart';
+import 'package:reverbio/widgets/section_title.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});

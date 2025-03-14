@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -24,18 +24,18 @@ import 'dart:math';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:Reverbio/API/Reverbio.dart';
-import 'package:Reverbio/extensions/l10n.dart';
-import 'package:Reverbio/main.dart';
-import 'package:Reverbio/services/data_manager.dart';
-import 'package:Reverbio/services/playlist_sharing.dart';
-import 'package:Reverbio/utilities/common_variables.dart';
-import 'package:Reverbio/utilities/flutter_toast.dart';
-import 'package:Reverbio/utilities/utils.dart';
-import 'package:Reverbio/widgets/playlist_cube.dart';
-import 'package:Reverbio/widgets/playlist_header.dart';
-import 'package:Reverbio/widgets/song_bar.dart';
-import 'package:Reverbio/widgets/spinner.dart';
+import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/playlist_sharing.dart';
+import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/playlist_cube.dart';
+import 'package:reverbio/widgets/playlist_header.dart';
+import 'package:reverbio/widgets/song_bar.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class PlaylistPage extends StatefulWidget {
   const PlaylistPage({

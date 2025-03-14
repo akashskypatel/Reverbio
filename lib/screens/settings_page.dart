@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -21,25 +21,25 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:Reverbio/API/Reverbio.dart';
-import 'package:Reverbio/extensions/l10n.dart';
-import 'package:Reverbio/main.dart';
-import 'package:Reverbio/screens/search_page.dart';
-import 'package:Reverbio/services/data_manager.dart';
-import 'package:Reverbio/services/router_service.dart';
-import 'package:Reverbio/services/settings_manager.dart';
-import 'package:Reverbio/services/update_manager.dart';
-import 'package:Reverbio/style/app_colors.dart';
-import 'package:Reverbio/style/app_themes.dart';
-import 'package:Reverbio/utilities/common_variables.dart';
-import 'package:Reverbio/utilities/flutter_bottom_sheet.dart';
-import 'package:Reverbio/utilities/flutter_toast.dart';
-import 'package:Reverbio/utilities/url_launcher.dart';
-import 'package:Reverbio/utilities/utils.dart';
-import 'package:Reverbio/widgets/bottom_sheet_bar.dart';
-import 'package:Reverbio/widgets/confirmation_dialog.dart';
-import 'package:Reverbio/widgets/custom_bar.dart';
-import 'package:Reverbio/widgets/section_header.dart';
+import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/screens/search_page.dart';
+import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/update_manager.dart';
+import 'package:reverbio/style/app_colors.dart';
+import 'package:reverbio/style/app_themes.dart';
+import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/url_launcher.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/bottom_sheet_bar.dart';
+import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/custom_bar.dart';
+import 'package:reverbio/widgets/section_header.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

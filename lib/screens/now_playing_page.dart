@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -24,22 +24,22 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
-import 'package:Reverbio/API/Reverbio.dart';
-import 'package:Reverbio/extensions/l10n.dart';
-import 'package:Reverbio/main.dart';
-import 'package:Reverbio/models/position_data.dart';
-import 'package:Reverbio/services/settings_manager.dart';
-import 'package:Reverbio/utilities/common_variables.dart';
-import 'package:Reverbio/utilities/flutter_bottom_sheet.dart';
-import 'package:Reverbio/utilities/flutter_toast.dart';
-import 'package:Reverbio/utilities/formatter.dart';
-import 'package:Reverbio/utilities/mediaitem.dart';
-import 'package:Reverbio/utilities/utils.dart';
-import 'package:Reverbio/widgets/marque.dart';
-import 'package:Reverbio/widgets/playback_icon_button.dart';
-import 'package:Reverbio/widgets/song_artwork.dart';
-import 'package:Reverbio/widgets/song_bar.dart';
-import 'package:Reverbio/widgets/spinner.dart';
+import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/models/position_data.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/mediaitem.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/marque.dart';
+import 'package:reverbio/widgets/playback_icon_button.dart';
+import 'package:reverbio/widgets/song_artwork.dart';
+import 'package:reverbio/widgets/song_bar.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 final _lyricsController = FlipCardController();
 

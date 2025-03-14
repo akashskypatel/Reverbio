@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -23,10 +23,10 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:Reverbio/extensions/l10n.dart';
-import 'package:Reverbio/main.dart';
-import 'package:Reverbio/services/settings_manager.dart';
-import 'package:Reverbio/widgets/mini_player.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/widgets/mini_player.dart';
 
 class BottomNavigationPage extends StatefulWidget {
   const BottomNavigationPage({super.key, required this.child});

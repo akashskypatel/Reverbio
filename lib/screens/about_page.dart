@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Valeri Gokadze
+ *     Copyright (C) 2025 Akashy Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:Reverbio/API/version.dart';
-import 'package:Reverbio/extensions/l10n.dart';
-import 'package:Reverbio/utilities/common_variables.dart';
-import 'package:Reverbio/utilities/url_launcher.dart';
+import 'package:reverbio/API/version.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/url_launcher.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -68,7 +68,7 @@ class AboutPage extends StatelessWidget {
                   ),
                 ),
                 title: const Text(
-                  'Valeri Gokadze',
+                  'Akashy Patel',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text('WEB & APP Developer'),
