@@ -1,8 +1,8 @@
-name: musify
+name: reverbio
 description: Music Streaming app made in Flutter!
-homepage: https://github.com/gokadzev/Musify
-repository: https://github.com/gokadzev/Musify
-issue_tracker: https://github.com/gokadzev/Musify/issues
+homepage: https://github.com/gokadzev/Reverbio
+repository: https://github.com/gokadzev/Reverbio
+issue_tracker: https://github.com/gokadzev/Reverbio/issues
 
 publish_to: 'none'
 version: 9.2.2+119 # run update.sh after changing the version
@@ -16,6 +16,8 @@ dependencies:
   audio_service: ^0.18.17
   audio_session: ^0.1.25
   cached_network_image: ^3.4.1
+  discogs_api_client: ^0.1.1
+  musicbrainz_api_client: ^0.1.1
   dynamic_color: ^1.7.0
   file_picker: ^9.0.2
   fluentui_system_icons: ^1.1.273
@@ -58,6 +60,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/licenses/
+    - .env
 
   fonts:
     - family: paytoneOne

@@ -1,12 +1,12 @@
 /*
  *     Copyright (C) 2025 Valeri Gokadze
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,31 +15,31 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/gokadzev/Reverbio
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:musify/API/musify.dart';
-import 'package:musify/extensions/l10n.dart';
-import 'package:musify/main.dart';
-import 'package:musify/screens/search_page.dart';
-import 'package:musify/services/data_manager.dart';
-import 'package:musify/services/router_service.dart';
-import 'package:musify/services/settings_manager.dart';
-import 'package:musify/services/update_manager.dart';
-import 'package:musify/style/app_colors.dart';
-import 'package:musify/style/app_themes.dart';
-import 'package:musify/utilities/common_variables.dart';
-import 'package:musify/utilities/flutter_bottom_sheet.dart';
-import 'package:musify/utilities/flutter_toast.dart';
-import 'package:musify/utilities/url_launcher.dart';
-import 'package:musify/utilities/utils.dart';
-import 'package:musify/widgets/bottom_sheet_bar.dart';
-import 'package:musify/widgets/confirmation_dialog.dart';
-import 'package:musify/widgets/custom_bar.dart';
-import 'package:musify/widgets/section_header.dart';
+import 'package:Reverbio/API/Reverbio.dart';
+import 'package:Reverbio/extensions/l10n.dart';
+import 'package:Reverbio/main.dart';
+import 'package:Reverbio/screens/search_page.dart';
+import 'package:Reverbio/services/data_manager.dart';
+import 'package:Reverbio/services/router_service.dart';
+import 'package:Reverbio/services/settings_manager.dart';
+import 'package:Reverbio/services/update_manager.dart';
+import 'package:Reverbio/style/app_colors.dart';
+import 'package:Reverbio/style/app_themes.dart';
+import 'package:Reverbio/utilities/common_variables.dart';
+import 'package:Reverbio/utilities/flutter_bottom_sheet.dart';
+import 'package:Reverbio/utilities/flutter_toast.dart';
+import 'package:Reverbio/utilities/url_launcher.dart';
+import 'package:Reverbio/utilities/utils.dart';
+import 'package:Reverbio/widgets/bottom_sheet_bar.dart';
+import 'package:Reverbio/widgets/confirmation_dialog.dart';
+import 'package:Reverbio/widgets/custom_bar.dart';
+import 'package:Reverbio/widgets/section_header.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -347,7 +347,7 @@ class SettingsPage extends StatelessWidget {
                 // ignore: deprecated_member_use
                 color.value,
               );
-              Musify.updateAppState(
+              Reverbio.updateAppState(
                 context,
                 newAccentColor: color,
                 useSystemColor: false,
@@ -402,7 +402,7 @@ class SettingsPage extends StatelessWidget {
             mode.name,
             () {
               addOrUpdateData('settings', 'themeMode', mode.name);
-              Musify.updateAppState(context, newThemeMode: mode);
+              Reverbio.updateAppState(context, newThemeMode: mode);
               Navigator.pop(context);
             },
             themeMode == mode ? activatedColor : inactivatedColor,
@@ -500,7 +500,7 @@ class SettingsPage extends StatelessWidget {
             language,
             () {
               addOrUpdateData('settings', 'language', newLocaleFullCode);
-              Musify.updateAppState(context, newLocale: newLocale);
+              Reverbio.updateAppState(context, newLocale: newLocale);
               showToast(context, context.l10n!.languageMsg);
               Navigator.pop(context);
             },
@@ -555,7 +555,7 @@ class SettingsPage extends StatelessWidget {
   void _toggleSystemColor(BuildContext context, bool value) {
     addOrUpdateData('settings', 'useSystemColor', value);
     useSystemColor.value = value;
-    Musify.updateAppState(
+    Reverbio.updateAppState(
       context,
       newAccentColor: primaryColorSetting,
       useSystemColor: value,
@@ -566,7 +566,7 @@ class SettingsPage extends StatelessWidget {
   void _togglePureBlack(BuildContext context, bool value) {
     addOrUpdateData('settings', 'usePureBlackColor', value);
     usePureBlackColor.value = value;
-    Musify.updateAppState(context);
+    Reverbio.updateAppState(context);
     showToast(context, context.l10n!.settingChangedMsg);
   }
 
@@ -577,7 +577,7 @@ class SettingsPage extends StatelessWidget {
         value
             ? const PredictiveBackPageTransitionsBuilder()
             : const CupertinoPageTransitionsBuilder();
-    Musify.updateAppState(context);
+    Reverbio.updateAppState(context);
     showToast(context, context.l10n!.settingChangedMsg);
   }
 

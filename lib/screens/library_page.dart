@@ -1,12 +1,12 @@
 /*
  *     Copyright (C) 2025 Valeri Gokadze
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,22 +15,22 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/gokadzev/Reverbio
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:musify/API/musify.dart';
-import 'package:musify/extensions/l10n.dart';
-import 'package:musify/services/router_service.dart';
-import 'package:musify/utilities/common_variables.dart';
-import 'package:musify/utilities/flutter_toast.dart';
-import 'package:musify/utilities/utils.dart';
-import 'package:musify/widgets/confirmation_dialog.dart';
-import 'package:musify/widgets/playlist_bar.dart';
-import 'package:musify/widgets/section_header.dart';
-import 'package:musify/widgets/section_title.dart';
+import 'package:Reverbio/API/Reverbio.dart';
+import 'package:Reverbio/extensions/l10n.dart';
+import 'package:Reverbio/services/router_service.dart';
+import 'package:Reverbio/utilities/common_variables.dart';
+import 'package:Reverbio/utilities/flutter_toast.dart';
+import 'package:Reverbio/utilities/utils.dart';
+import 'package:Reverbio/widgets/confirmation_dialog.dart';
+import 'package:Reverbio/widgets/playlist_bar.dart';
+import 'package:Reverbio/widgets/section_header.dart';
+import 'package:Reverbio/widgets/section_title.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});

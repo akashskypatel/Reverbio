@@ -1,12 +1,12 @@
 /*
  *     Copyright (C) 2025 Valeri Gokadze
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,8 +15,8 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/gokadzev/Reverbio
  */
 
 import 'dart:async';
@@ -26,12 +26,12 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:musify/API/musify.dart';
-import 'package:musify/main.dart';
-import 'package:musify/models/position_data.dart';
-import 'package:musify/services/data_manager.dart';
-import 'package:musify/services/settings_manager.dart';
-import 'package:musify/utilities/mediaitem.dart';
+import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/main.dart';
+import 'package:reverbio/models/position_data.dart';
+import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:rxdart/rxdart.dart';
 
 class AudioPlayerService {
@@ -164,8 +164,8 @@ class AudioPlayerService {
   }
 }
 
-class MusifyAudioHandler extends BaseAudioHandler with ChangeNotifier {
-  MusifyAudioHandler() {
+class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
+  ReverbioAudioHandler() {
     _setupEventSubscriptions();
     _updatePlaybackState();
 

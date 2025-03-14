@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Musify",
+            "name": "Reverbio",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "Musify (profile mode)",
+            "name": "Reverbio (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "Musify (release mode)",
+            "name": "Reverbio (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

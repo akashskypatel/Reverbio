@@ -1,12 +1,12 @@
 /*
  *     Copyright (C) 2025 Valeri Gokadze
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,8 +15,8 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/gokadzev/Reverbio
  */
 import 'dart:math';
 
@@ -24,22 +24,22 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
-import 'package:musify/API/musify.dart';
-import 'package:musify/extensions/l10n.dart';
-import 'package:musify/main.dart';
-import 'package:musify/models/position_data.dart';
-import 'package:musify/services/settings_manager.dart';
-import 'package:musify/utilities/common_variables.dart';
-import 'package:musify/utilities/flutter_bottom_sheet.dart';
-import 'package:musify/utilities/flutter_toast.dart';
-import 'package:musify/utilities/formatter.dart';
-import 'package:musify/utilities/mediaitem.dart';
-import 'package:musify/utilities/utils.dart';
-import 'package:musify/widgets/marque.dart';
-import 'package:musify/widgets/playback_icon_button.dart';
-import 'package:musify/widgets/song_artwork.dart';
-import 'package:musify/widgets/song_bar.dart';
-import 'package:musify/widgets/spinner.dart';
+import 'package:Reverbio/API/Reverbio.dart';
+import 'package:Reverbio/extensions/l10n.dart';
+import 'package:Reverbio/main.dart';
+import 'package:Reverbio/models/position_data.dart';
+import 'package:Reverbio/services/settings_manager.dart';
+import 'package:Reverbio/utilities/common_variables.dart';
+import 'package:Reverbio/utilities/flutter_bottom_sheet.dart';
+import 'package:Reverbio/utilities/flutter_toast.dart';
+import 'package:Reverbio/utilities/formatter.dart';
+import 'package:Reverbio/utilities/mediaitem.dart';
+import 'package:Reverbio/utilities/utils.dart';
+import 'package:Reverbio/widgets/marque.dart';
+import 'package:Reverbio/widgets/playback_icon_button.dart';
+import 'package:Reverbio/widgets/song_artwork.dart';
+import 'package:Reverbio/widgets/song_bar.dart';
+import 'package:Reverbio/widgets/spinner.dart';
 
 final _lyricsController = FlipCardController();
 
@@ -422,7 +422,10 @@ class PositionSlider extends StatelessWidget {
             children: [
               Slider(
                 value: positionData.position.inSeconds.toDouble(),
-                max: max(positionData.position.inSeconds.toDouble(),positionData.duration.inSeconds.toDouble()),
+                max: max(
+                  positionData.position.inSeconds.toDouble(),
+                  positionData.duration.inSeconds.toDouble(),
+                ),
                 onChanged: (value) {
                   audioHandler.seek(Duration(seconds: value.toInt()));
                 },

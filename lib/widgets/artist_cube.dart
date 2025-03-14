@@ -26,20 +26,20 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/widgets/no_artwork_cube.dart';
 
-class PlaylistCube extends StatelessWidget {
-  PlaylistCube(
-    this.playlist, {
+class ArtistCube extends StatelessWidget {
+  ArtistCube(
+    this.artist, {
     super.key,
-    this.playlistData,
+    this.artistData,
     this.cubeIcon = FluentIcons.music_note_1_24_regular,
     this.size = 220,
     this.borderRadius = 13,
-  }) : playlistLikeStatus = ValueNotifier<bool>(
-         isPlaylistAlreadyLiked(playlist['ytid']),
+  }) : artistLikeStatus = ValueNotifier<bool>(
+         isPlaylistAlreadyLiked(artist['ytid']),
        );
 
-  final Map? playlistData;
-  final Map playlist;
+  final Map? artistData;
+  final Map artist;
   final IconData cubeIcon;
   final double size;
   final double borderRadius;
@@ -48,7 +48,7 @@ class PlaylistCube extends StatelessWidget {
   static const double typeLabelOffset = 10;
   static const double iconSize = 30;
 
-  final ValueNotifier<bool> playlistLikeStatus;
+  final ValueNotifier<bool> artistLikeStatus;
 
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
@@ -64,7 +64,7 @@ class PlaylistCube extends StatelessWidget {
       child: Stack(
         children: [
           _buildImage(context),
-          if (borderRadius == 13 && playlist['image'] != null)
+          if (borderRadius == 13 && artist['image'] != null)
             Positioned(
               top: typeLabelOffset,
               right: typeLabelOffset,
@@ -76,10 +76,10 @@ class PlaylistCube extends StatelessWidget {
   }
 
   Widget _buildImage(BuildContext context) {
-    return playlist['image'] != null
+    return artist['image'] != null
         ? CachedNetworkImage(
-          key: Key(playlist['image'].toString()),
-          imageUrl: playlist['image'].toString(),
+          key: Key(artist['image'].toString()),
+          imageUrl: artist['image'].toString(),
           height: size,
           width: size,
           fit: BoxFit.cover,
@@ -88,14 +88,14 @@ class PlaylistCube extends StatelessWidget {
                 icon: cubeIcon,
                 iconSize: iconSize,
                 size: size,
-                title: playlist['title'],
+                title: artist['title'],
               ),
         )
         : NullArtworkWidget(
           icon: cubeIcon,
           iconSize: iconSize,
           size: size,
-          title: playlist['title'],
+          title: artist['title'],
         );
   }
 
@@ -108,7 +108,7 @@ class PlaylistCube extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       child: Text(
-        playlist['isAlbum'] != null && playlist['isAlbum'] == true
+        artist['isAlbum'] != null && artist['isAlbum'] == true
             ? context.l10n!.album
             : context.l10n!.playlist,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(

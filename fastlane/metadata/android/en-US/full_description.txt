@@ -1,4 +1,4 @@
-<i>Musify</i> is an app for streaming music. Its features include:
+<i>Reverbio</i> is an app for streaming music. Its features include:
 
 * Online song search with suggestions
 * Offline listening support

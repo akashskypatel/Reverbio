@@ -1,12 +1,12 @@
 /*
  *     Copyright (C) 2025 Valeri Gokadze
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,15 +15,15 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/gokadzev/Reverbio
  */
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:musify/services/settings_manager.dart';
-import 'package:musify/style/dynamic_color_temp_fix.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/style/dynamic_color_temp_fix.dart';
 
 ThemeMode themeMode = getThemeMode(themeModeSetting);
 Brightness brightness = getBrightnessFromThemeMode(themeMode);

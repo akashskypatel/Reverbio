@@ -1,4 +1,4 @@
-package com.akashskypatel.musify
+package com.akashskypatel.reverbio
 
 import io.flutter.embedding.android.FlutterActivity
 

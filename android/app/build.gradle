@@ -30,7 +30,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.akashskypatel.musify"
+    namespace = "com.akashskypatel.reverbio"
     compileSdk 35
 
     compileOptions {
@@ -52,7 +52,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.akashskypatel.musify"
+        applicationId "com.akashskypatel.reverbio"
         minSdk 24
         targetSdk 35
         versionCode flutterVersionCode.toInteger()

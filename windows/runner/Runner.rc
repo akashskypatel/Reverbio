@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.gokadzev" "\0"
-            VALUE "FileDescription", "musify" "\0"
+            VALUE "FileDescription", "reverbio" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "musify" "\0"
+            VALUE "InternalName", "reverbio" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.gokadzev. All rights reserved." "\0"
-            VALUE "OriginalFilename", "musify.exe" "\0"
-            VALUE "ProductName", "musify" "\0"
+            VALUE "OriginalFilename", "reverbio.exe" "\0"
+            VALUE "ProductName", "reverbio" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

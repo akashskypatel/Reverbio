@@ -13,7 +13,7 @@ body:
       options:
         - label: I have searched the existing issues and confirmed that this feature is not already requested.
           required: true
-        - label: I read the [FAQ section](https://github.com/gokadzev/Musify/discussions/340) and there's nothing mentioned about this feature.
+        - label: I read the [FAQ section](https://github.com/gokadzev/Reverbio/discussions/340) and there's nothing mentioned about this feature.
           required: true
 
   - type: dropdown

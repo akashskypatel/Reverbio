@@ -26,7 +26,7 @@
     </queries>
 
     <application
-        android:label="Musify"
+        android:label="Reverbio"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
@@ -68,7 +68,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="musify"
+                    android:scheme="reverbio"
                     android:host="playlist"
                     android:pathPattern="/custom/.*" />
             </intent-filter>

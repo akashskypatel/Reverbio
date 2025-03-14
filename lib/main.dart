@@ -1,12 +1,12 @@
 /*
  *     Copyright (C) 2025 Valeri Gokadze
  *
- *     Musify is free software: you can redistribute it and/or modify
+ *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
  *
- *     Musify is distributed in the hope that it will be useful,
+ *     Reverbio is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
@@ -15,8 +15,8 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
- *     For more information about Musify, including how to contribute,
- *     please visit: https://github.com/gokadzev/Musify
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/gokadzev/Reverbio
  */
 
 import 'dart:async';
@@ -30,21 +30,21 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:musify/API/musify.dart';
-import 'package:musify/extensions/l10n.dart';
-import 'package:musify/localization/app_localizations.dart';
-import 'package:musify/services/audio_service_mk.dart';
-import 'package:musify/services/data_manager.dart';
-import 'package:musify/services/logger_service.dart';
-import 'package:musify/services/playlist_sharing.dart';
-import 'package:musify/services/router_service.dart';
-import 'package:musify/services/settings_manager.dart';
-import 'package:musify/services/update_manager.dart';
-import 'package:musify/style/app_themes.dart';
-import 'package:musify/utilities/flutter_toast.dart';
+import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/localization/app_localizations.dart';
+import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/logger_service.dart';
+import 'package:reverbio/services/playlist_sharing.dart';
+import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/update_manager.dart';
+import 'package:reverbio/style/app_themes.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-late MusifyAudioHandler audioHandler;
+late ReverbioAudioHandler audioHandler;
 
 final logger = Logger();
 final appLinks = AppLinks();
@@ -80,8 +80,8 @@ final List<Locale> appSupportedLocales =
       return Locale(languageCode);
     }).toList();
 
-class Musify extends StatefulWidget {
-  const Musify({super.key});
+class Reverbio extends StatefulWidget {
+  const Reverbio({super.key});
 
   static Future<void> updateAppState(
     BuildContext context, {
@@ -90,7 +90,7 @@ class Musify extends StatefulWidget {
     Color? newAccentColor,
     bool? useSystemColor,
   }) async {
-    context.findAncestorStateOfType<_MusifyState>()!.changeSettings(
+    context.findAncestorStateOfType<_ReverbioState>()!.changeSettings(
       newThemeMode: newThemeMode,
       newLocale: newLocale,
       newAccentColor: newAccentColor,
@@ -99,10 +99,10 @@ class Musify extends StatefulWidget {
   }
 
   @override
-  _MusifyState createState() => _MusifyState();
+  _ReverbioState createState() => _ReverbioState();
 }
 
-class _MusifyState extends State<Musify> {
+class _ReverbioState extends State<Reverbio> {
   void changeSettings({
     ThemeMode? newThemeMode,
     Locale? newLocale,
@@ -200,10 +200,10 @@ class _MusifyState extends State<Musify> {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();  
+  WidgetsFlutterBinding.ensureInitialized();
   await initialisation();
 
-  runApp(const Musify());
+  runApp(const Reverbio());
 }
 
 Future<void> initialisation() async {
@@ -217,10 +217,10 @@ Future<void> initialisation() async {
     }
 
     audioHandler = await AudioService.init(
-      builder: MusifyAudioHandler.new,
+      builder: ReverbioAudioHandler.new,
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.gokadzev.musify',
-        androidNotificationChannelName: 'Musify',
+        androidNotificationChannelId: 'com.gokadzev.reverbio',
+        androidNotificationChannelName: 'Reverbio',
         androidNotificationIcon: 'drawable/ic_launcher_foreground',
         androidShowNotificationBadge: true,
       ),
@@ -258,7 +258,7 @@ Future<void> initialisation() async {
 }
 
 void handleIncomingLink(Uri? uri) async {
-  if (uri != null && uri.scheme == 'musify' && uri.host == 'playlist') {
+  if (uri != null && uri.scheme == 'reverbio' && uri.host == 'playlist') {
     try {
       if (uri.pathSegments[0] == 'custom') {
         final encodedPlaylist = uri.pathSegments[1];
