@@ -21,7 +21,10 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -40,6 +43,32 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
+  @override
+  void dispose() {
+    currentLikedPlaylistsLength.removeListener(_listener);
+    currentLikedSongsLength.removeListener(_listener);
+    currentOfflineSongsLength.removeListener(_listener);
+    currentRecentlyPlayedLength.removeListener(_listener);
+    currentLikedAlbumsLength.removeListener(_listener);
+    currentLikedArtistsLength.removeListener(_listener);
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    currentLikedPlaylistsLength.addListener(_listener);
+    currentLikedSongsLength.addListener(_listener);
+    currentOfflineSongsLength.addListener(_listener);
+    currentRecentlyPlayedLength.addListener(_listener);
+    currentLikedAlbumsLength.addListener(_listener);
+    currentLikedArtistsLength.addListener(_listener);
+  }
+
+  void _listener() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
@@ -72,7 +101,7 @@ class _LibraryPageState extends State<LibraryPage> {
         SectionHeader(
           title: context.l10n!.customPlaylists,
           actionButton: IconButton(
-            padding: const EdgeInsets.only(right: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             onPressed: _showAddPlaylistDialog,
             icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
           ),
@@ -82,7 +111,7 @@ class _LibraryPageState extends State<LibraryPage> {
           context.l10n!.recentlyPlayed,
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/recents'),
-          cubeIcon: FluentIcons.history_24_filled,
+          cardIcon: FluentIcons.history_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           showBuildActions: false,
         ),
@@ -90,14 +119,25 @@ class _LibraryPageState extends State<LibraryPage> {
           context.l10n!.likedSongs,
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/liked'),
-          cubeIcon: FluentIcons.music_note_2_24_regular,
+          cardIcon: FluentIcons.music_note_2_24_regular,
+          showBuildActions: false,
+        ),
+        PlaylistBar(
+          context.l10n!.artist,
+          onPressed:
+              () => NavigationManager.router.go('/library/userSongs/artists'),
+          cardIcon: FluentIcons.mic_sparkle_24_filled,
+          borderRadius:
+              isUserPlaylistsEmpty
+                  ? commonCustomBarRadiusLast
+                  : BorderRadius.zero,
           showBuildActions: false,
         ),
         PlaylistBar(
           context.l10n!.offlineSongs,
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/offline'),
-          cubeIcon: FluentIcons.cellular_off_24_filled,
+          cardIcon: FluentIcons.cellular_off_24_filled,
           borderRadius:
               isUserPlaylistsEmpty
                   ? commonCustomBarRadiusLast

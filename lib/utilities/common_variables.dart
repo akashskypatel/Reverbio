@@ -21,7 +21,7 @@
 
 import 'package:flutter/material.dart';
 
-const recommendedCubesNumber = 8;
+const recommendedCardsNumber = 8;
 
 const commonSingleChildScrollViewPadding = EdgeInsets.symmetric(horizontal: 10);
 const commonBarPadding = EdgeInsets.symmetric(horizontal: 8);

@@ -23,16 +23,17 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:audio_session/audio_session.dart';
-import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:rxdart/rxdart.dart';
+
+enum AudioPlayerState { uninitialized, initialized, playing, paused, stopped }
 
 class AudioPlayerService {
   AudioPlayerService() {
@@ -41,14 +42,17 @@ class AudioPlayerService {
   }
   static final Player _player = Player();
   static bool _isShuffleEnabled = false;
-  final _stateController = StreamController<AudioProcessingState>.broadcast();
-  final _indexController = StreamController<int>.broadcast();
-  AudioProcessingState _state = AudioProcessingState.idle;
+  static final _processingStateController =
+      StreamController<AudioProcessingState>.broadcast();
+  static final _indexController = StreamController<int>.broadcast();
+  static AudioProcessingState _processingState = AudioProcessingState.idle;
+  static AudioPlayerState _playerState = AudioPlayerState.uninitialized;
+  static final _playerStateController =
+      StreamController<AudioPlayerState>.broadcast();
 
-  static Player get audioPlayer => _player;
-
-  AudioProcessingState get state => _state;
-  Player get player => _player;
+  static AudioPlayerState get playerState => _playerState;
+  AudioProcessingState get state => _processingState;
+  static Player get player => _player;
   bool get shuffleModeEnabled => _isShuffleEnabled;
   bool get playing => _player.state.playing;
   bool get hasNext =>
@@ -58,7 +62,10 @@ class AudioPlayerService {
   Duration get position => _player.state.position;
   Duration get bufferedPosition => _player.state.buffer;
   double get speed => _player.state.rate;
-  Stream<AudioProcessingState> get stateStream => _stateController.stream;
+  Stream<AudioPlayerState> get playerStateStream =>
+      _playerStateController.stream;
+  Stream<AudioProcessingState> get processingStateStream =>
+      _processingStateController.stream;
   Stream<bool> get playbackEventStream => _player.stream.playing;
   Stream<Duration> get durationStream => _player.stream.duration;
   Stream<Duration> get positionStream => _player.stream.position;
@@ -67,34 +74,35 @@ class AudioPlayerService {
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
 
   void _initialize() {
+    _playerState = AudioPlayerState.initialized;
     _player.stream.buffer.listen((buffer) {
       if ((_player.state.buffer.inSeconds < (_player.state.rate * 60)) ||
           _player.state.buffering) {
-        _updateState(AudioProcessingState.buffering);
+        _updateProcessingState(AudioProcessingState.buffering);
       } else if (_player.state.buffer.inSeconds >= (_player.state.rate * 60)) {
-        _updateState(AudioProcessingState.ready);
+        _updateProcessingState(AudioProcessingState.ready);
       }
       logger.log(
-        'Buffer position:${_player.state.buffer.inSeconds} \n Status:$_state',
+        'Buffer position:${_player.state.buffer.inSeconds} \n Status:$_processingState',
         null,
         null,
       );
     });
     _player.stream.completed.listen((isCompleted) {
-      if (isCompleted && _state != AudioProcessingState.error) {
-        _updateState(AudioProcessingState.completed);
+      if (isCompleted && _processingState != AudioProcessingState.error) {
+        _updateProcessingState(AudioProcessingState.completed);
         logger.log(
-          'Buffer Completed:${_player.state.buffer.inSeconds} \n Status:$_state',
+          'Buffer Completed:${_player.state.buffer.inSeconds} \n Status:$_processingState',
           null,
           null,
         );
       }
     });
     _player.stream.playing.listen((playing) {
-      if (playing && _state != AudioProcessingState.error) {
-        _updateState(AudioProcessingState.ready);
+      if (playing && _processingState != AudioProcessingState.error) {
+        _updateProcessingState(AudioProcessingState.ready);
         logger.log(
-          'Playing:${_player.state.buffer.inSeconds} \n Status:$_state',
+          'Playing:${_player.state.buffer.inSeconds} \n Status:$_processingState',
           null,
           null,
         );
@@ -103,9 +111,9 @@ class AudioPlayerService {
     _player.stream.error.listen((error) {
       if (error != '') {
         logger.log('Player Stream Error', error, StackTrace.current);
-        _updateState(AudioProcessingState.error);
+        _updateProcessingState(AudioProcessingState.error);
         logger.log(
-          'Error:${_player.state.buffer.inSeconds} \n Status:$_state',
+          'Error:${_player.state.buffer.inSeconds} \n Status:$_processingState',
           null,
           null,
         );
@@ -116,28 +124,44 @@ class AudioPlayerService {
     });
   }
 
-  void _updateState(AudioProcessingState newState) {
-    if (_state != newState) {
-      _state = newState;
-      _stateController.add(newState);
+  void _updateProcessingState(AudioProcessingState newState) {
+    if (_processingState != newState) {
+      _processingState = newState;
+      _processingStateController.add(newState);
+    }
+  }
+
+  void _updatePlayerState(AudioPlayerState newState) {
+    if (_playerState != newState) {
+      _playerState = newState;
+      _playerStateController.add(newState);
     }
   }
 
   Future<void> play() async {
+    _updatePlayerState(AudioPlayerState.playing);
     return _player.play();
   }
 
   Future<void> pause() async {
+    _updatePlayerState(AudioPlayerState.paused);
     return _player.pause();
   }
 
   Future<void> stop() async {
+    _updatePlayerState(AudioPlayerState.stopped);
+    await player.stop();
+    return _player.stop();
+  }
+
+  Future<void> seekToStart() async {
     await player.seek(Duration.zero);
     return _player.pause();
   }
 
   Future<void> dispose() async {
-    await _stateController.close();
+    _updatePlayerState(AudioPlayerState.uninitialized);
+    await _processingStateController.close();
     return _player.dispose();
   }
 
@@ -147,7 +171,7 @@ class AudioPlayerService {
   }
 
   Future<void> open(Media media) async {
-    _updateState(AudioProcessingState.loading);
+    _updateProcessingState(AudioProcessingState.loading);
     return _player.open(media);
   }
 
@@ -164,7 +188,7 @@ class AudioPlayerService {
   }
 }
 
-class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
+class ReverbioAudioHandler extends BaseAudioHandler {
   ReverbioAudioHandler() {
     _setupEventSubscriptions();
     _updatePlaybackState();
@@ -260,7 +284,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
     _playbackEventSubscription = audioPlayer.playbackEventStream.listen(
       _handlePlaybackEvent,
     );
-    _stateChangeSubscription = audioPlayer.stateStream.listen(
+    _stateChangeSubscription = audioPlayer.processingStateStream.listen(
       _handleStateChangeSubscription,
     );
     _durationSubscription = audioPlayer.durationStream.listen(
@@ -312,7 +336,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
   }
 
   Future<void> _initialize() async {
-    final session = await AudioSession.instance;
+    /* final session = await AudioSession.instance;
     try {
       await session.configure(const AudioSessionConfiguration.music());
       session.interruptionEventStream.listen((event) async {
@@ -342,7 +366,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
       });
     } catch (e, stackTrace) {
       logger.log('Error initializing audio session', e, stackTrace);
-    }
+    } */
   }
 
   @override
@@ -373,8 +397,11 @@ class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
   Future<void> pause() => audioPlayer.pause();
   @override
   Future<void> stop() => audioPlayer.stop();
+
   @override
   Future<void> seek(Duration position) => audioPlayer.seek(position);
+
+  Future<void> seekToStart() => audioPlayer.seekToStart();
 
   @override
   Future<void> fastForward() =>
@@ -384,8 +411,13 @@ class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
   Future<void> rewind() =>
       seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
 
-  Future<void> playSong(Map song) async {
+  Future<dynamic> playSong(Map song) async {
     try {
+      if (song['ytid'] == null)
+        song = await findSong(song['title'], song['artist']);
+
+      if (song.isEmpty) return song;
+
       final isOffline = song['isOffline'] ?? false;
 
       final preliminaryTag = mapToMediaItem(song);
@@ -404,8 +436,10 @@ class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
       final cacheKey = 'song_${song['ytid']}_${audioQualitySetting.value}_url';
       if (!isOffline) addOrUpdateData('cache', cacheKey, songUrl);
       if (playNextSongAutomatically.value) getSimilarSong(song['ytid']);
+      return song;
     } catch (e, stackTrace) {
       logger.log('Error playing song', e, stackTrace);
+      return song;
     }
   }
 
@@ -445,7 +479,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with ChangeNotifier {
     return spbAudioSource ?? audioSource;
   }
 
-  //TODO: to implement spnsor clipping
+  //TODO: to implement sponsor clipping
   Future<Media?> checkIfSponsorBlockIsAvailable(
     Media media,
     String songId,

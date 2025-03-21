@@ -196,11 +196,10 @@ packages:
   discogs_api_client:
     dependency: "direct main"
     description:
-      name: discogs_api_client
-      sha256: f1e2a4d2711e96f91d058404dcb5aec35ceb24cf07e62b6b1a1da4ae048959dd
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.4"
+      path: "../discogs_api_client"
+      relative: true
+    source: path
+    version: "0.1.6"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -334,7 +333,7 @@ packages:
     source: hosted
     version: "2.4.4"
   fuzzy:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: fuzzy
       sha256: af5fbd36f2f8de0663a5b562ef5ca209aea957e81a2f0e97f97475cfbed044ec
@@ -592,11 +591,10 @@ packages:
   musicbrainz_api_client:
     dependency: "direct main"
     description:
-      name: musicbrainz_api_client
-      sha256: df3108838a8efb8ed118b7abc884bdcd8b82fb0afcbeafba8ef079d3fecf7e1c
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.1"
+      path: "../musicbrainz_api_client"
+      relative: true
+    source: path
+    version: "0.1.6"
   octo_image:
     dependency: transitive
     description:

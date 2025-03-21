@@ -95,6 +95,8 @@
   "setTimer": "設置計時器",
   "settingChangedMsg": "設置更新成功",
   "settings": "設置",
+  "single": "Single",
+  "singles": "Singles",
   "songAdded": "歌曲已添加",
   "songAddedToOffline": "Song is now available offline",
   "songAlreadyInPlaylist": "歌曲已在播放列表中",

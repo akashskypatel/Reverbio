@@ -95,6 +95,8 @@
   "setTimer": "Set timer",
   "settingChangedMsg": "Параметр изменён",
   "settings": "Настройки",
+  "single": "Single",
+  "singles": "Singles",
   "songAdded": "Трек успешно добавлен!",
   "songAddedToOffline": "Song is now available offline",
   "songAlreadyInPlaylist": "Song is already in the playlist",

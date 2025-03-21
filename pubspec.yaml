@@ -16,8 +16,10 @@ dependencies:
   audio_service: ^0.18.17
   audio_session: ^0.1.25
   cached_network_image: ^3.4.1
-  discogs_api_client: ^0.1.1
-  musicbrainz_api_client: ^0.1.1
+  discogs_api_client:
+    path: ../discogs_api_client
+  musicbrainz_api_client:
+    path: ../musicbrainz_api_client
   dynamic_color: ^1.7.0
   file_picker: ^9.0.2
   fluentui_system_icons: ^1.1.273
@@ -40,6 +42,7 @@ dependencies:
   rxdart: ^0.28.0
   url_launcher: ^6.3.1
   youtube_explode_dart: ^2.3.10
+  fuzzy: ^0.5.1
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.3
@@ -63,6 +66,11 @@ flutter:
     - family: paytoneOne
       fonts:
         - asset: fonts/paytone/PaytoneOne-Regular.ttf
+    - family: montserrat
+      fonts:
+        - asset: fonts/montserrat/Montserrat-VariableFont_wght.ttf
+        - asset: fonts/montserrat/Montserrat-Italic-VariableFont_wght.ttf
+          style: italic
 
 flutter_native_splash:
   color: '#f9fafd'

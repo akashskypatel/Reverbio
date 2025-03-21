@@ -30,6 +30,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/localization/app_localizations.dart';
@@ -51,6 +55,7 @@ final appLinks = AppLinks();
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
+Map<String, dynamic> userGeolocation = {};
 
 const appLanguages = <String, String>{
   'English': 'en',
@@ -131,7 +136,7 @@ class _ReverbioState extends State<Reverbio> {
   @override
   void initState() {
     super.initState();
-
+    getUserGeolocation();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -197,6 +202,16 @@ class _ReverbioState extends State<Reverbio> {
       },
     );
   }
+
+  void getUserGeolocation() {
+    getIPGeolocation().then((data) {
+      if (mounted) {
+        setState(() {
+          userGeolocation = data;
+        });
+      }
+    });
+  }
 }
 
 void main() async {
@@ -208,13 +223,20 @@ void main() async {
 
 Future<void> initialisation() async {
   try {
-    await Hive.initFlutter();
+    await Hive.initFlutter('reverbio');
 
     final boxNames = ['settings', 'user', 'userNoBackup', 'cache'];
 
     for (final boxName in boxNames) {
       await Hive.openBox(boxName);
     }
+
+    currentLikedPlaylistsLength = ValueNotifier<int>(userLikedPlaylists.length);
+    currentLikedSongsLength = ValueNotifier<int>(userLikedSongsList.length);
+    currentOfflineSongsLength = ValueNotifier<int>(userOfflineSongs.length);
+    currentRecentlyPlayedLength = ValueNotifier<int>(userRecentlyPlayed.length);
+    currentLikedAlbumsLength = ValueNotifier<int>(userLikedAlbumsList.length);
+    currentLikedArtistsLength = ValueNotifier<int>(userLikedArtistsList.length);
 
     audioHandler = await AudioService.init(
       builder: ReverbioAudioHandler.new,

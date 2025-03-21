@@ -22,11 +22,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/utilities/common_variables.dart';
-import 'package:reverbio/widgets/no_artwork_cube.dart';
+import 'package:reverbio/widgets/base_card.dart';
 
 class PlaylistBar extends StatelessWidget {
   PlaylistBar(
@@ -37,7 +37,7 @@ class PlaylistBar extends StatelessWidget {
     this.playlistData,
     this.onPressed,
     this.onDelete,
-    this.cubeIcon = FluentIcons.music_note_1_24_regular,
+    this.cardIcon = FluentIcons.music_note_1_24_regular,
     this.showBuildActions = true,
     this.isAlbum = false,
     this.borderRadius = BorderRadius.zero,
@@ -51,7 +51,7 @@ class PlaylistBar extends StatelessWidget {
   final String? playlistArtwork;
   final VoidCallback? onPressed;
   final VoidCallback? onDelete;
-  final IconData cubeIcon;
+  final IconData cardIcon;
   final bool? isAlbum;
   final bool showBuildActions;
   final BorderRadius borderRadius;
@@ -81,7 +81,6 @@ class PlaylistBar extends StatelessWidget {
                 MaterialPageRoute(
                   builder:
                       (context) => PlaylistPage(
-                        playlistId: playlistId,
                         playlistData: updatedPlaylist ?? playlistData,
                       ),
                 ),
@@ -144,17 +143,13 @@ class PlaylistBar extends StatelessWidget {
                 ),
               ),
           errorWidget:
-              (context, url, error) => NullArtworkWidget(
-                icon: cubeIcon,
+              (context, url, error) => BaseCard(
+                icon: cardIcon,
                 iconSize: iconSize,
                 size: artworkSize,
               ),
         )
-        : NullArtworkWidget(
-          icon: cubeIcon,
-          iconSize: iconSize,
-          size: artworkSize,
-        );
+        : BaseCard(icon: cardIcon, iconSize: iconSize, size: artworkSize);
   }
 
   Widget _buildActionButtons(BuildContext context, Color primaryColor) {
@@ -168,8 +163,10 @@ class PlaylistBar extends StatelessWidget {
             if (playlistId != null) {
               final newValue = !playlistLikeStatus.value;
               playlistLikeStatus.value = newValue;
-              updatePlaylistLikeStatus(playlistId!, newValue);
-              currentLikedPlaylistsLength.value += newValue ? 1 : -1;
+              updatePlaylistLikeStatus({
+                'ytid': playlistId,
+                'title': playlistTitle,
+              }, newValue);
             }
             break;
           case 'remove':

@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 
@@ -39,6 +40,26 @@ class BottomNavigationPage extends StatefulWidget {
 
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
+  bool showMiniPlayer = false;
+  @override
+  void initState() {
+    super.initState();
+    audioHandler.audioPlayer.playerStateStream.listen((state) {
+      setState(() {
+        switch (state) {
+          case AudioPlayerState.playing:
+          case AudioPlayerState.paused:
+            showMiniPlayer = true;
+            break;
+          case AudioPlayerState.stopped:
+          case AudioPlayerState.uninitialized:
+          case AudioPlayerState.initialized:
+            showMiniPlayer = false;
+            break;
+        }
+      });
+    });
+  }
 
   List<NavigationDestination> _getNavigationDestinations(BuildContext context) {
     return !offlineMode.value
@@ -87,7 +108,6 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isLargeScreen = _isLargeScreen(context);
-
         return Scaffold(
           body: Row(
             children: [
@@ -119,16 +139,21 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                 child: Column(
                   children: [
                     Expanded(child: widget.child),
-                    StreamBuilder<MediaItem?>(
-                      stream: audioHandler.mediaItem,
-                      builder: (context, snapshot) {
-                        final metadata = snapshot.data;
-                        if (metadata == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return MiniPlayer(metadata: metadata);
-                      },
-                    ),
+                    if (showMiniPlayer)
+                      StreamBuilder<MediaItem?>(
+                        stream: audioHandler.mediaItem,
+                        builder: (context, snapshot) {
+                          final metadata = snapshot.data;
+                          if (metadata == null) {
+                            return const SizedBox.shrink();
+                          } else {
+                            return MiniPlayer(
+                              metadata: metadata,
+                              closeButton: _buildMiniPlayerCloseButton(context),
+                            );
+                          }
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -157,6 +182,23 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                   : null,
         );
       },
+    );
+  }
+
+  Widget _buildMiniPlayerCloseButton(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        audioHandler.stop();
+        setState(() {
+          showMiniPlayer = false;
+        });
+      },
+      icon: Icon(
+        FluentIcons.dismiss_24_filled,
+        color: Theme.of(context).colorScheme.primary,
+        size: 30,
+      ),
+      disabledColor: Theme.of(context).colorScheme.secondaryContainer,
     );
   }
 }

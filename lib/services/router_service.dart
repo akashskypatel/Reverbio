@@ -26,6 +26,7 @@ import 'package:reverbio/screens/about_page.dart';
 import 'package:reverbio/screens/bottom_navigation_page.dart';
 import 'package:reverbio/screens/home_page.dart';
 import 'package:reverbio/screens/library_page.dart';
+import 'package:reverbio/screens/liked_artists_page.dart';
 import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/screens/settings_page.dart';
 import 'package:reverbio/screens/user_songs_page.dart';
@@ -131,10 +132,20 @@ class NavigationManager {
             routes: [
               GoRoute(
                 path: 'userSongs/:page',
-                builder:
-                    (context, state) => UserSongsPage(
-                      page: state.pathParameters['page'] ?? 'liked',
-                    ),
+                builder: (context, state) {
+                  switch (state.pathParameters['page']) {
+                    case 'recents':
+                    case 'liked':
+                    case 'artists':
+                      return const LikedArtistsPage();
+                    case 'offline':
+                      return UserSongsPage(
+                        page: state.pathParameters['page'] ?? '',
+                      );
+                    default:
+                      return const HomePage();
+                  }
+                },
               ),
             ],
           ),

@@ -61,12 +61,17 @@ Map<String, dynamic> returnSongLayout(int index, Video song) => {
   'title': formatSongTitle(
     song.title.split('-')[song.title.split('-').length - 1],
   ),
+  'source': 'youtube',
   'artist': song.title.split('-')[0],
   'image': song.thumbnails.standardResUrl,
   'lowResImage': song.thumbnails.lowResUrl,
   'highResImage': song.thumbnails.maxResUrl,
   'duration': song.duration?.inSeconds,
   'isLive': song.isLive,
+  'primary-type': 'song',
+  'channelName': song.author,
+  'channelId': song.channelId.value,
+  'views': song.engagement.viewCount,
 };
 
 String formatDuration(int audioDurationInSeconds) {

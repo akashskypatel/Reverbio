@@ -24,15 +24,17 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
-import 'package:reverbio/widgets/no_artwork_cube.dart';
+import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
-class SongBar extends StatelessWidget {
+class SongBar extends StatefulWidget {
   SongBar(
     this.song,
     this.clearPlaylist, {
@@ -52,10 +54,24 @@ class SongBar extends StatelessWidget {
   final bool showMusicDuration;
   final BorderRadius borderRadius;
 
+  @override
+  _SongBarState createState() => _SongBarState();
+}
+
+class _SongBarState extends State<SongBar> {
+  dynamic loadedSong = false;
+  bool isLoading = false;
+  bool isError = false;
+
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
     false: FluentIcons.heart_24_regular,
   };
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,24 +79,10 @@ class SongBar extends StatelessWidget {
     return Padding(
       padding: commonBarPadding,
       child: GestureDetector(
-        onTap:
-            onPlay ??
-            () {
-              audioHandler.playSong(song);
-              if (activePlaylist.isNotEmpty && clearPlaylist) {
-                activePlaylist = {
-                  'ytid': '',
-                  'title': 'No Playlist',
-                  'image': '',
-                  'source': 'user-created',
-                  'list': [],
-                };
-                activeSongId = 0;
-              }
-            },
+        onTap: widget.onPlay ?? _playSong,
         child: Card(
-          color: backgroundColor,
-          shape: RoundedRectangleBorder(borderRadius: borderRadius),
+          color: widget.backgroundColor,
+          shape: RoundedRectangleBorder(borderRadius: widget.borderRadius),
           margin: const EdgeInsets.only(bottom: 3),
           child: Padding(
             padding: commonBarContentPadding,
@@ -93,7 +95,7 @@ class SongBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        song['title'],
+                        widget.song['title'],
                         overflow: TextOverflow.ellipsis,
                         style: commonBarTitleStyle.copyWith(
                           color: primaryColor,
@@ -101,7 +103,7 @@ class SongBar extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        song['artist'].toString(),
+                        widget.song['artist'].toString(),
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontWeight: FontWeight.w400,
@@ -112,6 +114,22 @@ class SongBar extends StatelessWidget {
                     ],
                   ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child:
+                      isLoading
+                          ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Spinner(),
+                          )
+                          : isError
+                          ? Icon(
+                            FluentIcons.error_circle_24_filled,
+                            color: Theme.of(context).colorScheme.primary,
+                          )
+                          : const SizedBox.shrink(),
+                ),
                 _buildActionButtons(context, primaryColor),
               ],
             ),
@@ -121,13 +139,38 @@ class SongBar extends StatelessWidget {
     );
   }
 
+  void _playSong() async {
+    setState(() {
+      isLoading = true;
+    });
+    final loaded = await audioHandler.playSong(widget.song);
+
+    if (activePlaylist.isNotEmpty && widget.clearPlaylist) {
+      activePlaylist = {
+        'ytid': '',
+        'title': 'No Playlist',
+        'image': '',
+        'source': 'user-created',
+        'list': [],
+      };
+      activeSongId = 0;
+    }
+
+    setState(() {
+      loadedSong = loaded;
+      isLoading = false;
+      isError = loaded['source'] == null;
+    });
+  }
+
   Widget _buildAlbumArt(Color primaryColor) {
     const size = 55.0;
 
-    final bool isOffline = song['isOffline'] ?? false;
-    final String? artworkPath = song['artworkPath'];
-    final lowResImageUrl = song['lowResImage'].toString();
-    final isDurationAvailable = showMusicDuration && song['duration'] != null;
+    final bool isOffline = widget.song['isOffline'] ?? false;
+    final String? artworkPath = widget.song['artworkPath'];
+    final lowResImageUrl = widget.song['lowResImage'].toString();
+    final isDurationAvailable =
+        widget.showMusicDuration && widget.song['duration'] != null;
 
     if (isOffline && artworkPath != null) {
       return _buildOfflineArtwork(artworkPath, size);
@@ -161,43 +204,50 @@ class SongBar extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: <Widget>[
-        CachedNetworkImage(
-          key: Key(song['ytid'].toString()),
-          width: size,
-          height: size,
-          imageUrl: lowResImageUrl,
-          imageBuilder:
-              (context, imageProvider) => SizedBox(
-                width: size,
-                height: size,
-                child: ClipRRect(
-                  borderRadius: commonBarRadius,
-                  child: Image(
-                    color:
-                        isDurationAvailable
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : null,
-                    colorBlendMode:
-                        isDurationAvailable ? BlendMode.multiply : null,
-                    opacity:
-                        isDurationAvailable
-                            ? const AlwaysStoppedAnimation(0.45)
-                            : null,
-                    image: imageProvider,
-                    centerSlice: const Rect.fromLTRB(1, 1, 1, 1),
+        if (lowResImageUrl.isEmpty)
+          Icon(
+            FluentIcons.music_note_1_24_filled,
+            color: Theme.of(context).colorScheme.primary,
+          )
+        else
+          CachedNetworkImage(
+            key: Key(widget.song['ytid'].toString()),
+            width: size,
+            height: size,
+            imageUrl: lowResImageUrl,
+            imageBuilder:
+                (context, imageProvider) => SizedBox(
+                  width: size,
+                  height: size,
+                  child: ClipRRect(
+                    borderRadius: commonBarRadius,
+                    child: Image(
+                      color:
+                          isDurationAvailable
+                              ? Theme.of(context).colorScheme.primaryContainer
+                              : null,
+                      colorBlendMode:
+                          isDurationAvailable ? BlendMode.multiply : null,
+                      opacity:
+                          isDurationAvailable
+                              ? const AlwaysStoppedAnimation(0.45)
+                              : null,
+                      image: imageProvider,
+                      centerSlice: const Rect.fromLTRB(1, 1, 1, 1),
+                    ),
                   ),
                 ),
-              ),
-          errorWidget:
-              (context, url, error) => const NullArtworkWidget(iconSize: 30),
-        ),
+            errorWidget:
+                (context, url, error) =>
+                    BaseCard(iconSize: 30, paddingValue: 0, size: size),
+          ),
         if (isDurationAvailable)
           SizedBox(
             width: size - 10,
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                '(${formatDuration(song['duration'])})',
+                '(${formatDuration(widget.song['duration'])})',
                 style: TextStyle(
                   color: primaryColor,
                   fontWeight: FontWeight.bold,
@@ -211,10 +261,10 @@ class SongBar extends StatelessWidget {
 
   Widget _buildActionButtons(BuildContext context, Color primaryColor) {
     final songLikeStatus = ValueNotifier<bool>(
-      isSongAlreadyLiked(song['ytid']),
+      isSongAlreadyLiked(widget.song['ytid']),
     );
     final songOfflineStatus = ValueNotifier<bool>(
-      isSongAlreadyOffline(song['ytid']),
+      isSongAlreadyOffline(widget.song['ytid']),
     );
 
     return PopupMenuButton<String>(
@@ -225,7 +275,7 @@ class SongBar extends StatelessWidget {
         switch (value) {
           case 'like':
             songLikeStatus.value = !songLikeStatus.value;
-            updateSongLikeStatus(song['ytid'], songLikeStatus.value);
+            updateSongLikeStatus(widget.song['ytid'], songLikeStatus.value);
             final likedSongsLength = currentLikedSongsLength.value;
             currentLikedSongsLength.value =
                 songLikeStatus.value
@@ -233,17 +283,17 @@ class SongBar extends StatelessWidget {
                     : likedSongsLength - 1;
             break;
           case 'remove':
-            if (onRemove != null) onRemove!();
+            if (widget.onRemove != null) widget.onRemove!();
             break;
           case 'add_to_playlist':
-            showAddToPlaylistDialog(context, song);
+            showAddToPlaylistDialog(context, widget.song);
             break;
           case 'offline':
             if (songOfflineStatus.value) {
-              removeSongFromOffline(song['ytid']);
+              removeSongFromOffline(widget.song['ytid']);
               showToast(context, context.l10n!.songRemovedFromOffline);
             } else {
-              makeSongOffline(song);
+              makeSongOffline(widget.song);
               showToast(context, context.l10n!.songAddedToOffline);
             }
             songOfflineStatus.value = !songOfflineStatus.value;
@@ -271,7 +321,7 @@ class SongBar extends StatelessWidget {
               },
             ),
           ),
-          if (onRemove != null)
+          if (widget.onRemove != null)
             PopupMenuItem<String>(
               value: 'remove',
               child: Row(
