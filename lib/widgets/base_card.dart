@@ -50,7 +50,7 @@ class BaseCard extends StatefulWidget {
   final bool showLike;
   final CachedNetworkImage? image;
   final Map<dynamic, dynamic>? inputData;
-  late ValueNotifier<bool> hideNotifier = ValueNotifier(true);
+  final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
   final VoidCallback? onPressed;
   final double paddingValue;
   static const double typeLabelOffset = 10;

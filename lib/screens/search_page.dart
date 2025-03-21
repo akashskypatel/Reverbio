@@ -23,7 +23,8 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:reverbio/API/entities/artist.dart';
-import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
@@ -36,8 +37,6 @@ import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
 import 'package:reverbio/widgets/section_title.dart';
 import 'package:reverbio/widgets/song_bar.dart';
-import 'package:reverbio/API/entities/playlist.dart';
-import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SearchPage extends StatefulWidget {
