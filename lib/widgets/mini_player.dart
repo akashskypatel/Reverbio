@@ -32,12 +32,12 @@ import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
 import 'package:reverbio/widgets/song_artwork.dart';
 
-const double playerHeight = 117;
+const double playerHeight = 120;
 
 class MiniPlayer extends StatelessWidget {
-  MiniPlayer({super.key, required this.metadata});
+  MiniPlayer({super.key, required this.metadata, required this.closeButton});
   final MediaItem metadata;
-
+  final Widget closeButton;
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -104,14 +104,13 @@ class MiniPlayer extends StatelessWidget {
           ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18),
-        height: playerHeight,
         decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const PositionSlider(),
+            PositionSlider(closeButton: closeButton),
             Row(
-              children: <Widget>[
+              children: [
                 _buildArtwork(),
                 _buildMetadata(colorScheme.primary, colorScheme.secondary),
                 Row(
@@ -159,24 +158,15 @@ class MiniPlayer extends StatelessWidget {
 
   Widget _buildStopButton(BuildContext context) {
     final isPlaying = audioHandler.audioPlayer.playing;
-    if (isPlaying || audioHandler.audioPlayer.position.inSeconds > 0)
-      return IconButton(
-        onPressed: () => audioHandler.stop(),
-        icon: Icon(
-          FluentIcons.stop_24_filled,
-          color: Theme.of(context).colorScheme.primary,
-          size: 35,
-        ),
-      );
-    else
-      return IconButton(
-        onPressed: null,
-        icon: Icon(
-          FluentIcons.stop_24_filled,
-          color: Theme.of(context).colorScheme.secondaryContainer,
-          size: 35,
-        ),
-      );
+    return IconButton(
+      onPressed:
+          isPlaying || audioHandler.audioPlayer.position.inSeconds > 0
+              ? () => audioHandler.seekToStart()
+              : null,
+      icon: const Icon(FluentIcons.stop_24_filled, size: 35),
+      color: Theme.of(context).colorScheme.primary,
+      disabledColor: Theme.of(context).colorScheme.secondaryContainer,
+    );
   }
 
   Widget _buildNextButton(BuildContext context) {
@@ -257,8 +247,8 @@ class MiniPlayer extends StatelessWidget {
 }
 
 class PositionSlider extends StatelessWidget {
-  const PositionSlider({super.key});
-
+  const PositionSlider({super.key, required this.closeButton});
+  final Widget closeButton;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -303,6 +293,7 @@ class PositionSlider extends StatelessWidget {
           ),
         ),
         _buildDurationText(context, fontColor, positionData),
+        closeButton,
       ],
     );
   }

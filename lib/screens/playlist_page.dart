@@ -24,7 +24,8 @@ import 'dart:math';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
@@ -32,7 +33,7 @@ import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
-import 'package:reverbio/widgets/playlist_cube.dart';
+import 'package:reverbio/widgets/playlist_card.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -40,15 +41,13 @@ import 'package:reverbio/widgets/spinner.dart';
 class PlaylistPage extends StatefulWidget {
   const PlaylistPage({
     super.key,
-    this.playlistId,
     this.playlistData,
-    this.cubeIcon = FluentIcons.music_note_1_24_regular,
+    this.cardIcon = FluentIcons.music_note_1_24_regular,
     this.isArtist = false,
   });
 
-  final String? playlistId;
   final dynamic playlistData;
-  final IconData cubeIcon;
+  final IconData cardIcon;
   final bool isArtist;
 
   @override
@@ -65,7 +64,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   var _currentPage = 0;
   var _currentLastLoadedId = 0;
   late final playlistLikeStatus = ValueNotifier<bool>(
-    isPlaylistAlreadyLiked(widget.playlistId),
+    isPlaylistAlreadyLiked(widget.playlistData['ytid']),
   );
 
   @override
@@ -75,10 +74,13 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   Future<void> _initializePlaylist() async {
+    if (widget.playlistData?['artist-details'] != null) {
+      await getTrackList(widget.playlistData);
+    }
     _playlist =
-        (widget.playlistId != null)
+        (widget.playlistData['ytid'] != null)
             ? await getPlaylistInfoForWidget(
-              widget.playlistId,
+              widget.playlistData['ytid'],
               isArtist: widget.isArtist,
             )
             : widget.playlistData;
@@ -120,38 +122,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed:
-              () => Navigator.pop(context, widget.playlistData == _playlist),
-        ),
-        actions: [
-          if (widget.playlistId != null) ...[_buildLikeButton()],
-          const SizedBox(width: 10),
-          if (_playlist != null) ...[
-            _buildSyncButton(),
-            const SizedBox(width: 10),
-            if (_playlist['source'] == 'user-created')
-              IconButton(
-                icon: const Icon(FluentIcons.share_24_regular),
-                onPressed: () async {
-                  final encodedPlaylist = PlaylistSharingService.encodePlaylist(
-                    _playlist,
-                  );
-
-                  final url = 'Reverbio://playlist/custom/$encodedPlaylist';
-                  await Clipboard.setData(ClipboardData(text: url));
-                },
-              ),
-            const SizedBox(width: 10),
-          ],
-          if (_playlist != null && _playlist['source'] == 'user-created') ...[
-            _buildEditButton(),
-            const SizedBox(width: 10),
-          ],
-        ],
-      ),
+      appBar: _buildNavigationBar(),
       body:
           _playlist != null
               ? CustomScrollView(
@@ -159,7 +130,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.all(20),
-                      child: buildPlaylistHeader(),
+                      child: _buildPlaylistHeader(),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -168,7 +139,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                         vertical: 10,
                         horizontal: 20,
                       ),
-                      child: buildSongActionsRow(),
+                      child: _buildSongActionsRow(),
                     ),
                   ),
                   SliverPadding(
@@ -196,17 +167,52 @@ class _PlaylistPageState extends State<PlaylistPage> {
     );
   }
 
-  Widget _buildPlaylistImage() {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isLandscape = screenWidth > MediaQuery.sizeOf(context).height;
-    return PlaylistCube(
-      _playlist,
-      size: isLandscape ? 300 : screenWidth / 2.5,
-      cubeIcon: widget.cubeIcon,
+  PreferredSizeWidget _buildNavigationBar() {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed:
+            () => Navigator.pop(context, widget.playlistData == _playlist),
+      ),
+      actions: [
+        if (widget.playlistData['ytid'] != null) ...[_buildLikeButton()],
+        const SizedBox(width: 10),
+        if (_playlist != null) ...[
+          _buildSyncButton(),
+          const SizedBox(width: 10),
+          if (_playlist['source'] == 'user-created')
+            IconButton(
+              icon: const Icon(FluentIcons.share_24_regular),
+              onPressed: () async {
+                final encodedPlaylist = PlaylistSharingService.encodePlaylist(
+                  _playlist,
+                );
+
+                final url = 'Reverbio://playlist/custom/$encodedPlaylist';
+                await Clipboard.setData(ClipboardData(text: url));
+              },
+            ),
+          const SizedBox(width: 10),
+        ],
+        if (_playlist != null && _playlist['source'] == 'user-created') ...[
+          _buildEditButton(),
+          const SizedBox(width: 10),
+        ],
+      ],
     );
   }
 
-  Widget buildPlaylistHeader() {
+  Widget _buildPlaylistImage() {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isLandscape = screenWidth > MediaQuery.sizeOf(context).height;
+    return PlaylistCard(
+      _playlist,
+      size: isLandscape ? 300 : screenWidth / 2.5,
+      cardIcon: widget.cardIcon,
+    );
+  }
+
+  Widget _buildPlaylistHeader() {
     final _songsLength = _playlist['list'].length;
 
     return PlaylistHeader(
@@ -234,10 +240,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
               _playlist['ytid'],
               playlistLikeStatus.value,
             );
-            currentLikedPlaylistsLength.value =
-                value
-                    ? currentLikedPlaylistsLength.value + 1
-                    : currentLikedPlaylistsLength.value - 1;
           },
         );
       },
@@ -348,7 +350,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
         _loadMore();
       });
     } else {
-      final updatedPlaylist = await getPlaylistInfoForWidget(widget.playlistId);
+      final updatedPlaylist = await getPlaylistInfoForWidget(
+        widget.playlistData['ytid'],
+      );
       if (updatedPlaylist != null) {
         setState(() {
           _songsList = updatedPlaylist['list'];
@@ -444,7 +448,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     );
   }
 
-  Widget buildSongActionsRow() {
+  Widget _buildSongActionsRow() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [

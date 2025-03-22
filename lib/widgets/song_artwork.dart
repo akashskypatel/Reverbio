@@ -24,7 +24,7 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:reverbio/widgets/no_artwork_cube.dart';
+import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongArtworkWidget extends StatelessWidget {
@@ -65,8 +65,7 @@ class SongArtworkWidget extends StatelessWidget {
               ),
           placeholder: (context, url) => const Spinner(),
           errorWidget:
-              (context, url, error) =>
-                  NullArtworkWidget(iconSize: errorWidgetIconSize),
+              (context, url, error) => BaseCard(iconSize: errorWidgetIconSize),
         );
   }
 }

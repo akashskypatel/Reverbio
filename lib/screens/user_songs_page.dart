@@ -21,12 +21,13 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
-import 'package:reverbio/widgets/playlist_cube.dart';
+import 'package:reverbio/widgets/playlist_card.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 
@@ -134,10 +135,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
   }
 
   Widget _buildPlaylistImage(String title, IconData icon) {
-    return PlaylistCube(
+    return PlaylistCard(
       {'title': title},
       size: MediaQuery.sizeOf(context).width / 2.5,
-      cubeIcon: icon,
+      cardIcon: icon,
     );
   }
 

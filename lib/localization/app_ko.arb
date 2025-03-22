@@ -95,6 +95,8 @@
   "setTimer": "타이머 설정",
   "settingChangedMsg": "설정이 업데이트되었음",
   "settings": "설정",
+  "single": "Single",
+  "singles": "Singles",
   "songAdded": "노래가 추가되었음",
   "songAddedToOffline": "Song is now available offline",
   "songAlreadyInPlaylist": "노래가 이미 재생목록에 있음",

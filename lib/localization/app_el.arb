@@ -95,6 +95,8 @@
   "setTimer": "Set timer",
   "settingChangedMsg": "Η ρύθμιση άλλαξε",
   "settings": "Ρυθμίσεις",
+  "single": "Single",
+  "singles": "Singles",
   "songAdded": "Το τραγούδι προστέθηκε με επιτυχία!",
   "songAddedToOffline": "Song is now available offline",
   "songAlreadyInPlaylist": "Song is already in the playlist",

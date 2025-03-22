@@ -62,7 +62,7 @@ class AboutPage extends StatelessWidget {
                     image: DecorationImage(
                       fit: BoxFit.fill,
                       image: NetworkImage(
-                        'https://avatars.githubusercontent.com/u/79704324?v=4',
+                        'https://avatars.githubusercontent.com/u/8129618?s=96&v=4',
                       ),
                     ),
                   ),
@@ -71,21 +71,23 @@ class AboutPage extends StatelessWidget {
                   'Akashy Patel',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('WEB & APP Developer'),
+                subtitle: const Text('Software & Game Developer'),
                 trailing: Wrap(
                   children: <Widget>[
                     IconButton(
                       icon: const Icon(FluentIcons.code_24_filled),
                       tooltip: 'Github',
                       onPressed: () {
-                        launchURL(Uri.parse('https://github.com/akashskypatel'));
+                        launchURL(
+                          Uri.parse('https://github.com/akashskypatel'),
+                        );
                       },
                     ),
                     IconButton(
                       icon: const Icon(FluentIcons.globe_24_filled),
                       tooltip: 'Website',
                       onPressed: () {
-                        launchURL(Uri.parse('https://akashskypatel.github.io'));
+                        launchURL(Uri.parse('https://fryingpan.games/'));
                       },
                     ),
                   ],

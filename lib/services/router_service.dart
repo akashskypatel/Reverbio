@@ -26,6 +26,7 @@ import 'package:reverbio/screens/about_page.dart';
 import 'package:reverbio/screens/bottom_navigation_page.dart';
 import 'package:reverbio/screens/home_page.dart';
 import 'package:reverbio/screens/library_page.dart';
+import 'package:reverbio/screens/liked_artists_page.dart';
 import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/screens/settings_page.dart';
 import 'package:reverbio/screens/user_songs_page.dart';
@@ -103,7 +104,9 @@ class NavigationManager {
             routes: [
               GoRoute(
                 path: 'library',
-                builder: (context, state) => const LibraryPage(),
+                builder:
+                    (context, state) =>
+                        LibraryPage(key: ValueKey(DateTime.now())),
               ),
             ],
           ),
@@ -126,15 +129,28 @@ class NavigationManager {
           GoRoute(
             path: libraryPath,
             pageBuilder: (context, GoRouterState state) {
-              return getPage(child: const LibraryPage(), state: state);
+              return getPage(
+                child: LibraryPage(key: ValueKey(DateTime.now())),
+                state: state,
+              );
             },
             routes: [
               GoRoute(
                 path: 'userSongs/:page',
-                builder:
-                    (context, state) => UserSongsPage(
-                      page: state.pathParameters['page'] ?? 'liked',
-                    ),
+                builder: (context, state) {
+                  switch (state.pathParameters['page']) {
+                    case 'recents':
+                    case 'liked':
+                    case 'artists':
+                      return LikedArtistsPage(key: ValueKey(DateTime.now()));
+                    case 'offline':
+                      return UserSongsPage(
+                        page: state.pathParameters['page'] ?? '',
+                      );
+                    default:
+                      return const HomePage();
+                  }
+                },
               ),
             ],
           ),
