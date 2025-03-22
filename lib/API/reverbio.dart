@@ -30,7 +30,7 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final yt = YoutubeExplode();
-late final DiscogsApiClient dc = DiscogsApiClient();
+final DiscogsApiClient dc = DiscogsApiClient();
 final mb = MusicBrainzApiClient();
 
 List<YoutubeApiClient> userChosenClients = [
@@ -157,7 +157,7 @@ AudioStreamInfo selectAudioQuality(List<AudioStreamInfo> availableSources) {
 
 Future<Map<String, dynamic>> getIPGeolocation() async {
   try {
-    Uri uri = Uri.http('ip-api.com', 'json');
+    final uri = Uri.http('ip-api.com', 'json');
     final response = await http.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {

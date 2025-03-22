@@ -159,7 +159,7 @@ Future<bool> getTrackList(dynamic album) async {
     album['list'] = [];
 
     var i = 0;
-    effectiveReleases.forEach((release) {
+    for (final release in effectiveReleases) {
       release['media'].forEach((media) {
         media['tracks'].forEach((track) {
           if (tracklist.add(track['title'])) {
@@ -179,7 +179,7 @@ Future<bool> getTrackList(dynamic album) async {
           }
         });
       });
-    });
+    }
 
     return true;
   } catch (e, stackTrace) {
