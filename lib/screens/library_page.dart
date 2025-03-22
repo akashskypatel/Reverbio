@@ -22,7 +22,6 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/album.dart';
-import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -50,7 +49,6 @@ class _LibraryPageState extends State<LibraryPage> {
     currentOfflineSongsLength.removeListener(_listener);
     currentRecentlyPlayedLength.removeListener(_listener);
     currentLikedAlbumsLength.removeListener(_listener);
-    currentLikedArtistsLength.removeListener(_listener);
     super.dispose();
   }
 
@@ -62,7 +60,6 @@ class _LibraryPageState extends State<LibraryPage> {
     currentOfflineSongsLength.addListener(_listener);
     currentRecentlyPlayedLength.addListener(_listener);
     currentLikedAlbumsLength.addListener(_listener);
-    currentLikedArtistsLength.addListener(_listener);
   }
 
   void _listener() {

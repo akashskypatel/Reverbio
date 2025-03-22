@@ -104,7 +104,9 @@ class NavigationManager {
             routes: [
               GoRoute(
                 path: 'library',
-                builder: (context, state) => const LibraryPage(),
+                builder:
+                    (context, state) =>
+                        LibraryPage(key: ValueKey(DateTime.now())),
               ),
             ],
           ),
@@ -127,7 +129,10 @@ class NavigationManager {
           GoRoute(
             path: libraryPath,
             pageBuilder: (context, GoRouterState state) {
-              return getPage(child: const LibraryPage(), state: state);
+              return getPage(
+                child: LibraryPage(key: ValueKey(DateTime.now())),
+                state: state,
+              );
             },
             routes: [
               GoRoute(
@@ -137,7 +142,7 @@ class NavigationManager {
                     case 'recents':
                     case 'liked':
                     case 'artists':
-                      return const LikedArtistsPage();
+                      return LikedArtistsPage(key: ValueKey(DateTime.now()));
                     case 'offline':
                       return UserSongsPage(
                         page: state.pathParameters['page'] ?? '',

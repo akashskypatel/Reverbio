@@ -41,11 +41,13 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> {
       }
       setState(() {});
     });
+    currentLikedArtistsLength.addListener(_listener);
   }
 
   @override
   void dispose() {
     artistsFuture.ignore();
+    currentLikedArtistsLength.removeListener(_listener);
     super.dispose();
   }
 
@@ -64,6 +66,10 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> {
         ),
       ),
     );
+  }
+
+  void _listener() {
+    setState(() {});
   }
 
   Widget _buildArtistsGrid(BuildContext context) {
