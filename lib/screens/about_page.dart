@@ -44,7 +44,13 @@ class _AboutPageState extends State<AboutPage> with RouteAware {
       widget.navigatorObserver.subscribe(this, route as PageRoute);
     }
   }
-  
+
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

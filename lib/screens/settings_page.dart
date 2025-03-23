@@ -63,6 +63,12 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
   }
 
   @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final activatedColor = Theme.of(context).colorScheme.secondaryContainer;
