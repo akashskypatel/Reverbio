@@ -34,10 +34,35 @@ import 'package:reverbio/widgets/song_artwork.dart';
 
 const double playerHeight = 120;
 
-class MiniPlayer extends StatelessWidget {
-  MiniPlayer({super.key, required this.metadata, required this.closeButton});
+
+
+class MiniPlayer extends StatefulWidget {
+  MiniPlayer({super.key, required this.metadata, required this.closeButton, required this.navigatorObserver});
   final MediaItem metadata;
   final Widget closeButton;
+  final RouteObserver<PageRoute> navigatorObserver;
+
+  @override
+  _MiniPlayerState createState() => _MiniPlayerState();
+}
+
+class _MiniPlayerState extends State<MiniPlayer> with RouteAware {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+  
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -48,8 +73,9 @@ class MiniPlayer extends StatelessWidget {
           Navigator.push(
             context,
             PageRouteBuilder(
+              settings: const RouteSettings(name: 'nowPlaying?'),
               pageBuilder: (context, animation, secondaryAnimation) {
-                return const NowPlayingPage();
+                return NowPlayingPage(navigatorObserver: widget.navigatorObserver);
               },
               transitionsBuilder: (
                 context,
@@ -78,8 +104,9 @@ class MiniPlayer extends StatelessWidget {
           () => Navigator.push(
             context,
             PageRouteBuilder(
+              settings: const RouteSettings(name: 'nowPlaying?'),
               pageBuilder: (context, animation, secondaryAnimation) {
-                return const NowPlayingPage();
+                return NowPlayingPage(navigatorObserver: widget.navigatorObserver);
               },
               transitionsBuilder: (
                 context,
@@ -108,7 +135,7 @@ class MiniPlayer extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            PositionSlider(closeButton: closeButton),
+            PositionSlider(closeButton: widget.closeButton),
             Row(
               children: [
                 _buildArtwork(),
@@ -201,7 +228,7 @@ class MiniPlayer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 7, bottom: 7, right: 15),
       child: SongArtworkWidget(
-        metadata: metadata,
+        metadata: widget.metadata,
         size: 55,
         errorWidgetIconSize: 30,
       ),
@@ -221,16 +248,16 @@ class MiniPlayer extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  metadata.title,
+                  widget.metadata.title,
                   style: TextStyle(
                     color: titleColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (metadata.artist != null)
+                if (widget.metadata.artist != null)
                   Text(
-                    metadata.artist!,
+                    widget.metadata.artist!,
                     style: TextStyle(
                       color: artistColor,
                       fontSize: 14,

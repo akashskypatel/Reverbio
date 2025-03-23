@@ -21,6 +21,7 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -35,13 +36,14 @@ import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/section_title.dart';
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key});
+  const LibraryPage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _LibraryPageState createState() => _LibraryPageState();
 }
 
-class _LibraryPageState extends State<LibraryPage> {
+class _LibraryPageState extends State<LibraryPage> with RouteAware {
   @override
   void dispose() {
     currentLikedPlaylistsLength.removeListener(_listener);
@@ -49,6 +51,7 @@ class _LibraryPageState extends State<LibraryPage> {
     currentOfflineSongsLength.removeListener(_listener);
     currentRecentlyPlayedLength.removeListener(_listener);
     currentLikedAlbumsLength.removeListener(_listener);
+    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -60,6 +63,17 @@ class _LibraryPageState extends State<LibraryPage> {
     currentOfflineSongsLength.addListener(_listener);
     currentRecentlyPlayedLength.addListener(_listener);
     currentLikedAlbumsLength.addListener(_listener);
+    //TODO: add album liking
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
   }
 
   void _listener() {
@@ -111,6 +125,7 @@ class _LibraryPageState extends State<LibraryPage> {
           cardIcon: FluentIcons.history_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver
         ),
         PlaylistBar(
           context.l10n!.likedSongs,
@@ -118,6 +133,7 @@ class _LibraryPageState extends State<LibraryPage> {
               () => NavigationManager.router.go('/library/userSongs/liked'),
           cardIcon: FluentIcons.music_note_2_24_regular,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver
         ),
         PlaylistBar(
           context.l10n!.artist,
@@ -129,6 +145,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   ? commonCustomBarRadiusLast
                   : BorderRadius.zero,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver
         ),
         PlaylistBar(
           context.l10n!.offlineSongs,
@@ -140,6 +157,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   ? commonCustomBarRadiusLast
                   : BorderRadius.zero,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver
         ),
         ValueListenableBuilder<List>(
           valueListenable: userCustomPlaylists,
@@ -227,6 +245,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   ? () => _showRemovePlaylistDialog(playlist)
                   : null,
           borderRadius: borderRadius,
+          navigatorObserver: widget.navigatorObserver
         );
       },
     );
@@ -347,7 +366,7 @@ class _LibraryPageState extends State<LibraryPage> {
                     );
                   }
 
-                  Navigator.pop(context);
+                  GoRouter.of(context).pop(context);
                 },
               ),
             ],
@@ -364,10 +383,10 @@ class _LibraryPageState extends State<LibraryPage> {
         confirmationMessage: context.l10n!.removePlaylistQuestion,
         submitMessage: context.l10n!.remove,
         onCancel: () {
-          Navigator.of(context).pop();
+          GoRouter.of(context).pop();
         },
         onSubmit: () {
-          Navigator.of(context).pop();
+          GoRouter.of(context).pop();
 
           if (playlist['ytid'] == null &&
               playlist['source'] == 'user-created') {

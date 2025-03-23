@@ -12,13 +12,14 @@ import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class LikedArtistsPage extends StatefulWidget {
-  const LikedArtistsPage({super.key});
+  const LikedArtistsPage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _LikedArtistsPageState createState() => _LikedArtistsPageState();
 }
 
-class _LikedArtistsPageState extends State<LikedArtistsPage> {
+class _LikedArtistsPageState extends State<LikedArtistsPage> with RouteAware {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
   late final double artistHeight =
@@ -48,19 +49,30 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> {
   void dispose() {
     artistsFuture.ignore();
     currentLikedArtistsLength.removeListener(_listener);
+    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
+  }  
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n!.artist)),
+      appBar: AppBar(title: Text(context.l10n!.artists)),
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildSearchBar(context),
             _buildGenreList(),
-            SectionHeader(title: context.l10n!.artist),
+            SectionHeader(title: context.l10n!.artists),
             _buildArtistsGrid(context),
           ],
         ),
@@ -69,16 +81,26 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> {
   }
 
   void _listener() {
-    setState(() {});
+    setState(() {
+      artistsFuture = _getArtistsDetails();
+    });
   }
 
   Widget _buildArtistsGrid(BuildContext context) {
     return FutureBuilder(
       future: artistsFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting)
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          artistDetails.clear();
           return const Padding(padding: EdgeInsets.all(35), child: Spinner());
+        }
         if (snapshot.connectionState == ConnectionState.done) {
+          if(artistDetails.isEmpty)
+            for (final data in snapshot.data as List) {
+              data['filterShow'] = true;
+              artistDetails.add(data);
+              _parseGenres(data);
+            }
           _buildArtistCards(context);
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -110,7 +132,9 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> {
   }
 
   void _buildArtistCard(BuildContext context, dynamic data) {
-    final widget = BaseCard(
+    //TODO: restore sorting on refresh due to like status change
+    //TODO: add custom sorting
+    final card = BaseCard(
       inputData: data as Map<dynamic, dynamic>,
       icon: FluentIcons.mic_sparkle_24_filled,
       size: artistHeight,
@@ -120,15 +144,15 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> {
           () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ArtistPage(artistData: data),
+              builder: (context) => ArtistPage(artistData: data, navigatorObserver: widget.navigatorObserver ,),
+              settings: RouteSettings(name: 'artist?${data['id']}'),
             ),
           ),
     );
-    artistCards.add(widget);
+    artistCards.add(card);
   }
 
   Future<dynamic> _getArtistsDetails() async {
-    //TODO: add custom sorting
     final futures = <Future>[];
     for (final artist in userLikedArtistsList) {
       futures.add(getArtistDetailsById(artist['id']));

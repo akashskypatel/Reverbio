@@ -31,13 +31,14 @@ import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_list.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  HomePage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with RouteAware {
   final Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
     playlistsNum: recommendedCardsNumber,
   );
@@ -52,6 +53,22 @@ class _HomePageState extends State<HomePage> {
         _recommendedSongs = songs;
       }),
     );
+  }
+
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
   }
 
   @override
@@ -78,17 +95,30 @@ class _HomePageState extends State<HomePage> {
             ),
             Column(
               children: [
-                HorizontalCardScroller(
-                  title: context.l10n!.suggestedPlaylists,
-                  future: _recommendedPlaylistsFuture,
+                ValueListenableBuilder<int>(
+                  valueListenable: currentLikedPlaylistsLength,
+                  builder: (_, value, _) {
+                    return HorizontalCardScroller(
+                      title: context.l10n!.suggestedPlaylists,
+                      future: _recommendedPlaylistsFuture,
+                      navigatorObserver: widget.navigatorObserver,
+                    );
+                  },
                 ),
                 if (_recommendedSongs != null)
-                  FutureBuilder(
-                    future: _recommendedSongsFuture,
-                    builder: (context, snapshot) {
-                      return HorizontalCardScroller(
-                        title: context.l10n!.suggestedArtists,
-                        future: _parseArtistList(_recommendedSongs),
+                  ValueListenableBuilder<int>(
+                    valueListenable: currentLikedArtistsLength,
+                    builder: (_, value, _) {
+                      return FutureBuilder(
+                        future: _recommendedSongsFuture,
+                        builder: (context, snapshot) {
+                          return HorizontalCardScroller(
+                            title: context.l10n!.suggestedArtists,
+                            //TODO: add more recommended artists from likes
+                            future: _parseArtistList(_recommendedSongs),
+                            navigatorObserver: widget.navigatorObserver,
+                          );
+                        },
                       );
                     },
                   ),

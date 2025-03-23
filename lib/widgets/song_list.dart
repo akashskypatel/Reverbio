@@ -62,18 +62,19 @@ class _SongListState extends State<SongList> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        SectionHeader(
-          title: widget.title,
-          actionButton: IconButton(
-            onPressed: () {
-              setActivePlaylist({'title': widget.title, 'list': inputData});
-            },
-            icon: Icon(
-              FluentIcons.play_circle_24_filled,
-              color: Theme.of(context).colorScheme.primary,
-              size: 30,
-            ),
-          ),
+        Row(
+          children: [
+             SectionHeader(
+                title: widget.title,                
+              ),
+              Row(
+                //TODO: fix
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+             _buildPlayActionButton()
+          ],
+        ),
+          ],
         ),
         FutureBuilder(
           future: widget.future,
@@ -87,6 +88,32 @@ class _SongListState extends State<SongList> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildAddToQueueActionButton() {
+    return IconButton(
+      color: Theme.of(context).colorScheme.primary,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      icon: const Icon(FluentIcons.add_circle_24_filled),
+      iconSize: 30,
+      onPressed: () {
+        //TODO: add "add to queue" action
+      },
+    );
+  }
+
+  Widget _buildPlayActionButton() {
+    return IconButton(
+      onPressed: () {
+        setActivePlaylist({'title': widget.title, 'list': inputData});
+      },
+      icon: Icon(
+        FluentIcons.play_circle_24_filled,
+        color: Theme.of(context).colorScheme.primary,
+        size: 30,
+      ),
     );
   }
 

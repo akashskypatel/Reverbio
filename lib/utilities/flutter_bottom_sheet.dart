@@ -20,6 +20,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 void showCustomBottomSheet(BuildContext context, Widget content) {
   final size = MediaQuery.sizeOf(context);
@@ -42,7 +43,7 @@ void showCustomBottomSheet(BuildContext context, Widget content) {
               Padding(
                 padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
                 child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => GoRouter.of(context).pop(context),
                   child: Container(
                     width: 60,
                     height: 8,

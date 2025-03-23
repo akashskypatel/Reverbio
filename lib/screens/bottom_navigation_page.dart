@@ -30,15 +30,21 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 
 class BottomNavigationPage extends StatefulWidget {
-  const BottomNavigationPage({super.key, required this.child});
+  const BottomNavigationPage({
+    super.key,
+    required this.child,
+    required this.navigatorObserver,
+  });
 
   final StatefulNavigationShell child;
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   State<BottomNavigationPage> createState() => _BottomNavigationPageState();
 }
 
-class _BottomNavigationPageState extends State<BottomNavigationPage> {
+class _BottomNavigationPageState extends State<BottomNavigationPage>
+    with RouteAware {
   final _selectedIndex = ValueNotifier<int>(0);
   bool showMiniPlayer = false;
   @override
@@ -61,42 +67,78 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
     });
   }
 
-  List<NavigationDestination> _getNavigationDestinations(BuildContext context) {
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
+
+  Map<String, NavigationDestination> _getNavigationDestinations(
+    BuildContext context,
+  ) {
     return !offlineMode.value
-        ? [
-          NavigationDestination(
+        ? {
+          'home': NavigationDestination(
+            key: const Key('/home'),
             icon: const Icon(FluentIcons.home_24_regular),
             selectedIcon: const Icon(FluentIcons.home_24_filled),
             label: context.l10n?.home ?? 'Home',
           ),
-          NavigationDestination(
+          'search': NavigationDestination(
+            key: const Key('/search'),
             icon: const Icon(FluentIcons.search_24_regular),
             selectedIcon: const Icon(FluentIcons.search_24_filled),
             label: context.l10n?.search ?? 'Search',
           ),
-          NavigationDestination(
+          'library': NavigationDestination(
+            key: const Key('/library'),
             icon: const Icon(FluentIcons.book_24_regular),
             selectedIcon: const Icon(FluentIcons.book_24_filled),
             label: context.l10n?.library ?? 'Library',
           ),
-          NavigationDestination(
+          'queue': NavigationDestination(
+            key: const Key('/queue'),
+            icon: const Icon(Icons.queue_music),
+            selectedIcon: const Icon(Icons.queue_music),
+            label: context.l10n?.queue ?? 'Queue',
+          ),
+          'settings': NavigationDestination(
+            key: const Key('/settings'),
             icon: const Icon(FluentIcons.settings_24_regular),
             selectedIcon: const Icon(FluentIcons.settings_24_filled),
             label: context.l10n?.settings ?? 'Settings',
           ),
-        ]
-        : [
-          NavigationDestination(
+        }
+        : {
+          'home': NavigationDestination(
+            key: const Key('/home'),
             icon: const Icon(FluentIcons.home_24_regular),
             selectedIcon: const Icon(FluentIcons.home_24_filled),
             label: context.l10n?.home ?? 'Home',
           ),
-          NavigationDestination(
+          'queue': NavigationDestination(
+            key: const Key('/queue'),
+            icon: const Icon(Icons.queue_music),
+            selectedIcon: const Icon(Icons.queue_music),
+            label: context.l10n?.queue ?? 'Queue',
+          ),
+          'settings': NavigationDestination(
+            key: const Key('/settings'),
             icon: const Icon(FluentIcons.settings_24_regular),
             selectedIcon: const Icon(FluentIcons.settings_24_filled),
             label: context.l10n?.settings ?? 'Settings',
           ),
-        ];
+        };
   }
 
   bool _isLargeScreen(BuildContext context) {
@@ -115,7 +157,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                 NavigationRail(
                   labelType: NavigationRailLabelType.selected,
                   destinations:
-                      _getNavigationDestinations(context)
+                      _getNavigationDestinations(context).values
                           .map(
                             (destination) => NavigationRailDestination(
                               icon: destination.icon,
@@ -126,10 +168,11 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                           .toList(),
                   selectedIndex: _selectedIndex.value,
                   onDestinationSelected: (index) {
-                    widget.child.goBranch(
+                    /* widget.child.goBranch(
                       index,
                       initialLocation: index == widget.child.currentIndex,
-                    );
+                    ); */
+                    _onDestinationSelected(index, context);
                     setState(() {
                       _selectedIndex.value = index;
                     });
@@ -150,6 +193,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                             return MiniPlayer(
                               metadata: metadata,
                               closeButton: _buildMiniPlayerCloseButton(context),
+                              navigatorObserver: widget.navigatorObserver,
                             );
                           }
                         },
@@ -169,20 +213,28 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                                 .onlyShowSelected
                             : NavigationDestinationLabelBehavior.alwaysHide,
                     onDestinationSelected: (index) {
-                      widget.child.goBranch(
+                      /* widget.child.goBranch(
                         index,
                         initialLocation: index == widget.child.currentIndex,
-                      );
+                      ); */
+                      _onDestinationSelected(index, context);
                       setState(() {
                         _selectedIndex.value = index;
                       });
                     },
-                    destinations: _getNavigationDestinations(context),
+                    destinations:
+                        _getNavigationDestinations(context).values.toList(),
                   )
                   : null,
         );
       },
     );
+  }
+
+  void _onDestinationSelected(int index, BuildContext context) {
+    GoRouter.of(
+      context,
+    ).go('/${_getNavigationDestinations(context).keys.elementAt(index)}');
   }
 
   Widget _buildMiniPlayerCloseButton(BuildContext context) {

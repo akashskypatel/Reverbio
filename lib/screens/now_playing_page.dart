@@ -24,6 +24,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -44,8 +45,30 @@ import 'package:reverbio/widgets/spinner.dart';
 
 final _lyricsController = FlipCardController();
 
-class NowPlayingPage extends StatelessWidget {
-  const NowPlayingPage({super.key});
+class NowPlayingPage extends StatefulWidget {
+  const NowPlayingPage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
+
+  @override
+  _NowPlayingPageState createState() => _NowPlayingPageState();
+}
+
+class _NowPlayingPageState extends State<NowPlayingPage> with RouteAware {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +84,7 @@ class NowPlayingPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_downward),
           splashColor: Colors.transparent,
           onPressed: () {
-            Navigator.pop(context);
+            GoRouter.of(context).pop(context);
           },
         ),
       ),
@@ -892,7 +915,7 @@ class BottomActionsRow extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => GoRouter.of(context).pop(context),
                   child: Text(context.l10n!.cancel),
                 ),
                 ElevatedButton(
@@ -906,7 +929,7 @@ class BottomActionsRow extends StatelessWidget {
                       );
                       showToast(context, context.l10n!.addedSuccess);
                     }
-                    Navigator.pop(context);
+                    GoRouter.of(context).pop(context);
                   },
                   child: Text(context.l10n!.setTimer),
                 ),

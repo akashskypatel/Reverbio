@@ -27,21 +27,43 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
-import 'package:reverbio/widgets/playlist_card.dart';
+import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 
 class UserSongsPage extends StatefulWidget {
-  const UserSongsPage({super.key, required this.page});
+  const UserSongsPage({super.key, required this.page, required this.navigatorObserver});
 
   final String page;
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   State<UserSongsPage> createState() => _UserSongsPageState();
 }
 
-class _UserSongsPageState extends State<UserSongsPage> {
+class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
   bool _isEditEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +121,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
           'liked': context.l10n!.likedSongs,
           'offline': context.l10n!.offlineSongs,
           'recents': context.l10n!.recentlyPlayed,
+          'queue': context.l10n!.queue,
         }[page] ??
         context.l10n!.playlist;
   }
@@ -108,6 +131,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
           'liked': FluentIcons.heart_24_regular,
           'offline': FluentIcons.cellular_off_24_regular,
           'recents': FluentIcons.history_24_regular,
+          'queue': Icons.queue_music,
         }[page] ??
         FluentIcons.heart_24_regular;
   }
@@ -117,6 +141,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
           'liked': userLikedSongsList,
           'offline': userOfflineSongs,
           'recents': userRecentlyPlayed,
+          'queue': null,
         }[page] ??
         userLikedSongsList;
   }
@@ -126,6 +151,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
           'liked': currentLikedSongsLength,
           'offline': currentOfflineSongsLength,
           'recents': currentRecentlyPlayedLength,
+          'queue': null,
         }[page] ??
         currentLikedSongsLength;
   }
@@ -135,10 +161,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
   }
 
   Widget _buildPlaylistImage(String title, IconData icon) {
-    return PlaylistCard(
-      {'title': title},
+    return BaseCard(
+      inputData: {'title': title},
       size: MediaQuery.sizeOf(context).width / 2.5,
-      cardIcon: icon,
+      icon: icon,
     );
   }
 

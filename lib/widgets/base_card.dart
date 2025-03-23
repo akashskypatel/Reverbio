@@ -87,7 +87,13 @@ class _BaseCardState extends State<BaseCard> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    isLiked = _getLikeStatus();
     final colorScheme = Theme.of(context).colorScheme;
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,

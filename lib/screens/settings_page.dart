@@ -21,6 +21,7 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -42,8 +43,24 @@ import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
+
+  @override
+  _SettingsPageState createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> with RouteAware {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +371,7 @@ class SettingsPage extends StatelessWidget {
                 useSystemColor: false,
               );
               showToast(context, context.l10n!.accentChangeMsg);
-              Navigator.pop(context);
+              GoRouter.of(context).pop(context);
             },
             child: Stack(
               alignment: Alignment.center,
@@ -404,7 +421,7 @@ class SettingsPage extends StatelessWidget {
             () {
               addOrUpdateData('settings', 'themeMode', mode.name);
               Reverbio.updateAppState(context, newThemeMode: mode);
-              Navigator.pop(context);
+              GoRouter.of(context).pop(context);
             },
             themeMode == mode ? activatedColor : inactivatedColor,
             borderRadius: borderRadius,
@@ -503,7 +520,7 @@ class SettingsPage extends StatelessWidget {
               addOrUpdateData('settings', 'language', newLocaleFullCode);
               Reverbio.updateAppState(context, newLocale: newLocale);
               showToast(context, context.l10n!.languageMsg);
-              Navigator.pop(context);
+              GoRouter.of(context).pop(context);
             },
             activeLanguageFullCode == newLocaleFullCode
                 ? activatedColor
@@ -543,7 +560,7 @@ class SettingsPage extends StatelessWidget {
               addOrUpdateData('settings', 'audioQuality', quality);
               audioQualitySetting.value = quality;
               showToast(context, context.l10n!.audioQualityMsg);
-              Navigator.pop(context);
+              GoRouter.of(context).pop(context);
             },
             isCurrentQuality ? activatedColor : inactivatedColor,
             borderRadius: borderRadius,
@@ -650,7 +667,7 @@ class SettingsPage extends StatelessWidget {
             TextButton(
               child: Text(context.l10n!.understand.toUpperCase()),
               onPressed: () {
-                Navigator.pop(context);
+                GoRouter.of(context).pop(context);
               },
             ),
           ],

@@ -23,6 +23,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:reverbio/API/version.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -112,14 +113,14 @@ Future<void> checkAppUpdates() async {
           actions: <Widget>[
             OutlinedButton(
               onPressed: () {
-                Navigator.pop(context);
+                GoRouter.of(context).pop(context);
               },
               child: Text(context.l10n!.cancel.toUpperCase()),
             ),
             FilledButton(
               onPressed: () {
                 getDownloadUrl(map).then(
-                  (url) => {launchURL(Uri.parse(url)), Navigator.pop(context)},
+                  (url) => {launchURL(Uri.parse(url)), GoRouter.of(context).pop(context)},
                 );
               },
               child: Text(context.l10n!.download.toUpperCase()),

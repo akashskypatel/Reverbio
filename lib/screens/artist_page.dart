@@ -21,6 +21,7 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/widgets/artist_header.dart';
@@ -34,16 +35,18 @@ class ArtistPage extends StatefulWidget {
     super.key,
     this.artistData,
     this.cardIcon = FluentIcons.mic_sparkle_24_regular,
+    required this.navigatorObserver,
   });
 
   final dynamic artistData;
   final IconData cardIcon;
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _ArtistPageState createState() => _ArtistPageState();
 }
 
-class _ArtistPageState extends State<ArtistPage> {
+class _ArtistPageState extends State<ArtistPage> with RouteAware {
   late final double playlistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final isLargeScreen = MediaQuery.of(context).size.width > 480;
@@ -59,12 +62,28 @@ class _ArtistPageState extends State<ArtistPage> {
   }
 
   @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context, widget.artistData),
+          onPressed: () => GoRouter.of(context).pop(context),
         ),
         actions: [],
       ),
@@ -172,18 +191,23 @@ class _ArtistPageState extends State<ArtistPage> {
   Widget _buildContentList() {
     return Column(
       children: [
+        //Albums
         if (albums.isNotEmpty)
           HorizontalCardScroller(
             future: getAlbumCoverArt(albums),
             icon: FluentIcons.cd_16_filled,
             title: context.l10n!.albums,
+            navigatorObserver: widget.navigatorObserver,
           ),
+        //Others
         if (others.isNotEmpty)
           HorizontalCardScroller(
             future: getAlbumCoverArt(others),
             icon: FluentIcons.cd_16_filled,
             title: context.l10n!.others,
+            navigatorObserver: widget.navigatorObserver,
           ),
+        //Singles
         if (singles.isNotEmpty)
           SongList(
             title: context.l10n!.songs,
