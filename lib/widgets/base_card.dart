@@ -90,6 +90,7 @@ class _BaseCardState extends State<BaseCard> {
 
   @override
   void dispose() {
+    _removeListeners();
     super.dispose();
   }
 
