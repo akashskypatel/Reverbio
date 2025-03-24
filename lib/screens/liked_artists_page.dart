@@ -40,7 +40,7 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> with RouteAware {
         artistDetails.add(data);
         _parseGenres(data);
       }
-      setState(() {});
+      if (mounted) setState(() {});
     });
     currentLikedArtistsLength.addListener(_listener);
   }
@@ -51,7 +51,7 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> with RouteAware {
     currentLikedArtistsLength.removeListener(_listener);
     widget.navigatorObserver.unsubscribe(this);
     super.dispose();
-  }  
+  }
 
   @override
   void didChangeDependencies() {
@@ -81,9 +81,10 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> with RouteAware {
   }
 
   void _listener() {
-    setState(() {
-      artistsFuture = _getArtistsDetails();
-    });
+    if (mounted)
+      setState(() {
+        artistsFuture = _getArtistsDetails();
+      });
   }
 
   Widget _buildArtistsGrid(BuildContext context) {
@@ -95,7 +96,7 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> with RouteAware {
           return const Padding(padding: EdgeInsets.all(35), child: Spinner());
         }
         if (snapshot.connectionState == ConnectionState.done) {
-          if(artistDetails.isEmpty)
+          if (artistDetails.isEmpty)
             for (final data in snapshot.data as List) {
               data['filterShow'] = true;
               artistDetails.add(data);
@@ -144,7 +145,11 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> with RouteAware {
           () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ArtistPage(artistData: data, navigatorObserver: widget.navigatorObserver ,),
+              builder:
+                  (context) => ArtistPage(
+                    artistData: data,
+                    navigatorObserver: widget.navigatorObserver,
+                  ),
               settings: RouteSettings(name: 'artist?${data['id']}'),
             ),
           ),

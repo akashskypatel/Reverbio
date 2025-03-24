@@ -44,15 +44,17 @@ class _HomePageState extends State<HomePage> with RouteAware {
   );
   final Future<dynamic> _recommendedSongsFuture = getRecommendedSongs();
   dynamic _recommendedSongs;
-
+  Future<dynamic>? _recommendedArtistsFuture;
   @override
   void initState() {
     super.initState();
-    _recommendedSongsFuture.then(
-      (songs) => setState(() {
-        _recommendedSongs = songs;
-      }),
-    );
+    _recommendedSongsFuture.then((songs) {
+      if (mounted)
+        setState(() {
+          _recommendedSongs = songs;
+          _parseArtistList(_recommendedSongs);
+        });
+    });
   }
 
   @override
@@ -105,7 +107,20 @@ class _HomePageState extends State<HomePage> with RouteAware {
                     );
                   },
                 ),
-                if (_recommendedSongs != null)
+                if (_recommendedSongs != null &&
+                    _recommendedArtistsFuture != null)
+                  FutureBuilder(
+                    future: _recommendedSongsFuture,
+                    builder: (context, snapshot) {
+                      return HorizontalCardScroller(
+                        title: context.l10n!.suggestedArtists,
+                        //TODO: add more recommended artists from likes
+                        future: _recommendedArtistsFuture,
+                        navigatorObserver: widget.navigatorObserver,
+                      );
+                    },
+                  ),
+                /* 
                   ValueListenableBuilder<int>(
                     valueListenable: currentLikedArtistsLength,
                     builder: (_, value, _) {
@@ -121,7 +136,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                         },
                       );
                     },
-                  ),
+                  ), */
                 SongList(
                   title: context.l10n!.recommendedForYou,
                   future: _recommendedSongsFuture,
@@ -134,7 +149,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
     );
   }
 
-  Future<dynamic> _parseArtistList(List<dynamic> data) async {
+  void _parseArtistList(List<dynamic> data) {
     final artists =
         data
             .where((e) => e['artist'] != null)
@@ -149,6 +164,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
             )
             .toSet()
             .toList();
-    return getArtistsDetails(artists);
+    _recommendedArtistsFuture = getArtistsDetails(
+      artists,
+      limit: 25,
+      paginated: true,
+    );
   }
 }

@@ -63,17 +63,16 @@ class _SongListState extends State<SongList> {
     return Column(
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-             SectionHeader(
-                title: widget.title,                
-              ),
-              Row(
-                //TODO: fix
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-             _buildPlayActionButton()
-          ],
-        ),
+            SectionHeader(title: widget.title),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildPlayActionButton(),
+                _buildAddToQueueActionButton(),
+              ],
+            ),
           ],
         ),
         FutureBuilder(
@@ -93,6 +92,8 @@ class _SongListState extends State<SongList> {
 
   Widget _buildAddToQueueActionButton() {
     return IconButton(
+      //TODO: add "Add to queue" text to localization
+      tooltip: context.l10n!.add,
       color: Theme.of(context).colorScheme.primary,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
@@ -106,6 +107,7 @@ class _SongListState extends State<SongList> {
 
   Widget _buildPlayActionButton() {
     return IconButton(
+      //TODO: add "Play all" text to localization
       onPressed: () {
         setActivePlaylist({'title': widget.title, 'list': inputData});
       },

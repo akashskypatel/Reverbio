@@ -464,17 +464,18 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
               return BottomSheetBar(
                 client,
                 () {
-                  setState(() {
-                    if (isSelected) {
-                      clientsSetting.value.remove(client);
-                      userChosenClients.remove(_clientInModel);
-                    } else {
-                      if (_clientInModel != null) {
-                        clientsSetting.value.add(client);
-                        userChosenClients.add(_clientInModel);
+                  if (mounted)
+                    setState(() {
+                      if (isSelected) {
+                        clientsSetting.value.remove(client);
+                        userChosenClients.remove(_clientInModel);
+                      } else {
+                        if (_clientInModel != null) {
+                          clientsSetting.value.add(client);
+                          userChosenClients.add(_clientInModel);
+                        }
                       }
-                    }
-                  });
+                    });
                   addOrUpdateData('settings', 'clients', clientsSetting.value);
                 },
                 isSelected ? activatedColor : inactivatedColor,

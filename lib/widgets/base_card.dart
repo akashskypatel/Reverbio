@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 
@@ -84,11 +85,54 @@ class _BaseCardState extends State<BaseCard> {
     super.initState();
     dataType = _parseDataType();
     isLiked = _getLikeStatus();
+    _setupListeners();
   }
 
   @override
   void dispose() {
     super.dispose();
+  }
+
+  void _setupListeners() {
+    switch (dataType) {
+      case 'playlist':
+        currentLikedPlaylistsLength.addListener(_listener);
+        break;
+      case 'song':
+        currentLikedSongsLength.addListener(_listener);
+        break;
+      case 'album':
+        currentLikedAlbumsLength.addListener(_listener);
+        break;
+      case 'artist':
+        currentLikedArtistsLength.addListener(_listener);
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _removeListeners() {
+    switch (dataType) {
+      case 'playlist':
+        currentLikedPlaylistsLength.removeListener(_listener);
+        break;
+      case 'song':
+        currentLikedSongsLength.removeListener(_listener);
+        break;
+      case 'album':
+        currentLikedAlbumsLength.removeListener(_listener);
+        break;
+      case 'artist':
+        currentLikedArtistsLength.removeListener(_listener);
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _listener() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -243,7 +287,9 @@ class _BaseCardState extends State<BaseCard> {
 
   Widget _buildLiked(BuildContext context) {
     final liked =
-        isLiked ? FluentIcons.heart_12_filled : FluentIcons.heart_12_regular;
+        _getLikeStatus()
+            ? FluentIcons.heart_12_filled
+            : FluentIcons.heart_12_regular;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
       child: Align(
@@ -259,9 +305,10 @@ class _BaseCardState extends State<BaseCard> {
 
   void _toggleLike(BuildContext context) async {
     final liked = await _updateLikeStatus();
-    setState(() {
-      isLiked = liked;
-    });
+    if (mounted)
+      setState(() {
+        isLiked = liked;
+      });
   }
 
   Future<bool> _updateLikeStatus() async {
@@ -284,10 +331,10 @@ class _BaseCardState extends State<BaseCard> {
     var liked = false;
     switch (dataType) {
       case 'playlist':
-        liked = isPlaylistAlreadyLiked(widget.inputData?['ytid']);
+        liked = isPlaylistAlreadyLiked(widget.inputData?['id']);
       case 'album':
         if (widget.inputData?['source'] == 'youtube')
-          liked = isPlaylistAlreadyLiked(widget.inputData?['ytid']);
+          liked = isPlaylistAlreadyLiked(widget.inputData?['id']);
         else
           liked = isAlbumAlreadyLiked(widget.inputData?['id']);
       case 'artist':

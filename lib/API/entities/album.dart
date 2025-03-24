@@ -47,7 +47,7 @@ Future<dynamic> getAlbumCoverArt(List<dynamic> albums) async {
       return value;
     }).wait;
   } catch (e, stackTrace) {
-    logger.log('error in getAlbumCoverArt', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
   }
 }
@@ -79,6 +79,8 @@ Future<dynamic> getAlbumsTrackList(List<dynamic> albums) async {
         for (final track in album['list']) {
           if (tracklist.add(track['title'].toString().toLowerCase().trim()))
             tracks.add({
+              'id': 'mb=${track['mbid']}',
+              'album': album['title'],
               'title': track['title'],
               'artist': album['artist'],
               'primary-type': 'song',
@@ -88,7 +90,7 @@ Future<dynamic> getAlbumsTrackList(List<dynamic> albums) async {
     }
     return tracks.toList();
   } catch (e, stackTrace) {
-    logger.log('error in getAlbumsTrackList', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
   }
 }
@@ -164,7 +166,8 @@ Future<bool> getTrackList(dynamic album) async {
         media['tracks'].forEach((track) {
           if (tracklist.add(track['title'])) {
             album['list'].add({
-              'id': i++,
+              'index': i++,
+              'mbid': track['id'],
               'ytid': null,
               'title': track['title'],
               'source': null,
@@ -183,7 +186,7 @@ Future<bool> getTrackList(dynamic album) async {
 
     return true;
   } catch (e, stackTrace) {
-    logger.log('error in getTrackList', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return false;
   }
 }
@@ -204,7 +207,7 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
     addOrUpdateData('user', 'likedAlbums', userLikedAlbumsList);
     return add;
   } catch (e, stackTrace) {
-    logger.log('error in updateAlbumLikeStatus:', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }

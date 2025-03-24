@@ -77,7 +77,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
   }
 
   void _listener() {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   @override
@@ -125,7 +125,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
           cardIcon: FluentIcons.history_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver
+          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.likedSongs,
@@ -133,7 +133,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
               () => NavigationManager.router.go('/library/userSongs/liked'),
           cardIcon: FluentIcons.music_note_2_24_regular,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver
+          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.artist,
@@ -145,7 +145,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                   ? commonCustomBarRadiusLast
                   : BorderRadius.zero,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver
+          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.offlineSongs,
@@ -157,7 +157,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                   ? commonCustomBarRadiusLast
                   : BorderRadius.zero,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver
+          navigatorObserver: widget.navigatorObserver,
         ),
         ValueListenableBuilder<List>(
           valueListenable: userCustomPlaylists,
@@ -245,7 +245,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                   ? () => _showRemovePlaylistDialog(playlist)
                   : null,
           borderRadius: borderRadius,
-          navigatorObserver: widget.navigatorObserver
+          navigatorObserver: widget.navigatorObserver,
         );
       },
     );
@@ -277,12 +277,13 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          setState(() {
-                            isYouTubeMode = true;
-                            id = '';
-                            customPlaylistName = '';
-                            imageUrl = null;
-                          });
+                          if (mounted)
+                            setState(() {
+                              isYouTubeMode = true;
+                              id = '';
+                              customPlaylistName = '';
+                              imageUrl = null;
+                            });
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
@@ -295,12 +296,13 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                       const SizedBox(width: 10),
                       ElevatedButton(
                         onPressed: () {
-                          setState(() {
-                            isYouTubeMode = false;
-                            id = '';
-                            customPlaylistName = '';
-                            imageUrl = null;
-                          });
+                          if (mounted)
+                            setState(() {
+                              isYouTubeMode = false;
+                              id = '';
+                              customPlaylistName = '';
+                              imageUrl = null;
+                            });
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:

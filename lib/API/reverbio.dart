@@ -25,6 +25,7 @@ import 'dart:convert';
 import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -117,8 +118,8 @@ Future<List<Map<String, int>>> getSkipSegments(String id) async {
     } else {
       return [];
     }
-  } catch (e, stack) {
-    logger.log('Error in getSkipSegments', e, stack);
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
   }
 }
@@ -161,7 +162,7 @@ Future<Map<String, dynamic>> getIPGeolocation() async {
     final response = await http.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {
-    logger.log('Error getting geolocation.', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return {};
   }
 }

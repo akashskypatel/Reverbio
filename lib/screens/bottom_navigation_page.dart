@@ -51,19 +51,20 @@ class _BottomNavigationPageState extends State<BottomNavigationPage>
   void initState() {
     super.initState();
     audioHandler.audioPlayer.playerStateStream.listen((state) {
-      setState(() {
-        switch (state) {
-          case AudioPlayerState.playing:
-          case AudioPlayerState.paused:
-            showMiniPlayer = true;
-            break;
-          case AudioPlayerState.stopped:
-          case AudioPlayerState.uninitialized:
-          case AudioPlayerState.initialized:
-            showMiniPlayer = false;
-            break;
-        }
-      });
+      if (mounted)
+        setState(() {
+          switch (state) {
+            case AudioPlayerState.playing:
+            case AudioPlayerState.paused:
+              showMiniPlayer = true;
+              break;
+            case AudioPlayerState.stopped:
+            case AudioPlayerState.uninitialized:
+            case AudioPlayerState.initialized:
+              showMiniPlayer = false;
+              break;
+          }
+        });
     });
   }
 
@@ -173,9 +174,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage>
                       initialLocation: index == widget.child.currentIndex,
                     ); */
                     _onDestinationSelected(index, context);
-                    setState(() {
-                      _selectedIndex.value = index;
-                    });
+                    if (mounted)
+                      setState(() {
+                        _selectedIndex.value = index;
+                      });
                   },
                 ),
               Expanded(
@@ -218,9 +220,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage>
                         initialLocation: index == widget.child.currentIndex,
                       ); */
                       _onDestinationSelected(index, context);
-                      setState(() {
-                        _selectedIndex.value = index;
-                      });
+                      if (mounted)
+                        setState(() {
+                          _selectedIndex.value = index;
+                        });
                     },
                     destinations:
                         _getNavigationDestinations(context).values.toList(),
@@ -241,9 +244,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage>
     return IconButton(
       onPressed: () {
         audioHandler.stop();
-        setState(() {
-          showMiniPlayer = false;
-        });
+        if (mounted)
+          setState(() {
+            showMiniPlayer = false;
+          });
       },
       icon: Icon(
         FluentIcons.dismiss_24_filled,

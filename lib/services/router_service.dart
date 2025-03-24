@@ -126,7 +126,6 @@ class NavigationManager {
         routes: [
           GoRoute(
             path: homePath,
-            //TODO: figure out a way to refresh Library and Home page when navigating to it
             pageBuilder: (context, GoRouterState state) {
               return getPage(child: homePage, state: state);
             },

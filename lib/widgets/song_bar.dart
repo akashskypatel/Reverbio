@@ -32,6 +32,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -63,6 +64,15 @@ class _SongBarState extends State<SongBar> {
   dynamic loadedSong = false;
   bool isLoading = false;
   bool isError = false;
+  TapDownDetails? doubleTapdetails;
+
+  late final songLikeStatus = ValueNotifier<bool>(
+    isSongAlreadyLiked(widget.song['ytid']),
+  );
+  late final songOfflineStatus = ValueNotifier<bool>(
+    isSongAlreadyOffline(widget.song['ytid']),
+  );
+  final ValueNotifier<bool> isLikedAnimationPlaying = ValueNotifier(false);
 
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
@@ -77,73 +87,106 @@ class _SongBarState extends State<SongBar> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    return Padding(
-      padding: commonBarPadding,
-      child: GestureDetector(
-        onTap: widget.onPlay ?? _playSong,
-        child: Card(
-          color: widget.backgroundColor,
-          shape: RoundedRectangleBorder(borderRadius: widget.borderRadius),
-          margin: const EdgeInsets.only(bottom: 3),
-          child: Padding(
-            padding: commonBarContentPadding,
-            child: Row(
-              children: [
-                _buildAlbumArt(primaryColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        widget.song['title'],
-                        overflow: TextOverflow.ellipsis,
-                        style: commonBarTitleStyle.copyWith(
-                          color: primaryColor,
-                        ),
+    return Stack(
+      children: [
+        Padding(
+          padding: commonBarPadding,
+          child: GestureDetector(
+            onDoubleTapDown: (details) {
+              doubleTapdetails = details;
+              likeItem();
+            },
+            onTap: widget.onPlay ?? _playSong,
+            child: Card(
+              color: widget.backgroundColor,
+              shape: RoundedRectangleBorder(borderRadius: widget.borderRadius),
+              margin: const EdgeInsets.only(bottom: 3),
+              child: Padding(
+                padding: commonBarContentPadding,
+                child: Row(
+                  children: [
+                    _buildAlbumArt(primaryColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            widget.song['title'],
+                            overflow: TextOverflow.ellipsis,
+                            style: commonBarTitleStyle.copyWith(
+                              color: primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            widget.song['artist'].toString(),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w400,
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        widget.song['artist'].toString(),
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child:
+                          isLoading
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Spinner(),
+                              )
+                              : isError
+                              ? Icon(
+                                FluentIcons.error_circle_24_filled,
+                                color: Theme.of(context).colorScheme.primary,
+                              )
+                              : const SizedBox.shrink(),
+                    ),
+                    _buildActionButtons(context, primaryColor),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child:
-                      isLoading
-                          ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Spinner(),
-                          )
-                          : isError
-                          ? Icon(
-                            FluentIcons.error_circle_24_filled,
-                            color: Theme.of(context).colorScheme.primary,
-                          )
-                          : const SizedBox.shrink(),
-                ),
-                _buildActionButtons(context, primaryColor),
-              ],
+              ),
             ),
           ),
         ),
-      ),
+        ValueListenableBuilder(
+          valueListenable: isLikedAnimationPlaying,
+          builder:
+              (_, value, _) =>
+                  isLikedAnimationPlaying.value && doubleTapdetails != null
+                      ? AnimatedHeart(
+                        like: songLikeStatus.value,
+                        position: doubleTapdetails!.localPosition,
+                      )
+                      : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 
+  void likeItem() {
+    final isLiked = isSongAlreadyLiked(widget.song['id']);
+    updateSongLikeStatus(widget.song['id'], !isLiked);
+    songLikeStatus.value = !isLiked;
+    _startLikeAnimationTimer();
+  }
+
+  Future<void> _startLikeAnimationTimer() async {
+    isLikedAnimationPlaying.value = true;
+    await Future.delayed(AnimatedHeart.duration);
+    isLikedAnimationPlaying.value = false;
+  }
+
   void _playSong() async {
-    setState(() {
-      isLoading = true;
-    });
+    if (mounted)
+      setState(() {
+        isLoading = true;
+      });
     final loaded = await audioHandler.playSong(widget.song);
 
     if (activePlaylist.isNotEmpty && widget.clearPlaylist) {
@@ -156,12 +199,12 @@ class _SongBarState extends State<SongBar> {
       };
       activeSongId = 0;
     }
-
-    setState(() {
-      loadedSong = loaded;
-      isLoading = false;
-      isError = loaded['source'] == null;
-    });
+    if (mounted)
+      setState(() {
+        loadedSong = loaded;
+        isLoading = false;
+        isError = loaded['source'] == null;
+      });
   }
 
   Widget _buildAlbumArt(Color primaryColor) {
@@ -261,12 +304,12 @@ class _SongBarState extends State<SongBar> {
   }
 
   Widget _buildActionButtons(BuildContext context, Color primaryColor) {
-    final songLikeStatus = ValueNotifier<bool>(
+    /* final songLikeStatus = ValueNotifier<bool>(
       isSongAlreadyLiked(widget.song['ytid']),
     );
     final songOfflineStatus = ValueNotifier<bool>(
       isSongAlreadyOffline(widget.song['ytid']),
-    );
+    ); */
 
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

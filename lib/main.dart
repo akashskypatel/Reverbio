@@ -114,23 +114,24 @@ class _ReverbioState extends State<Reverbio> {
     Color? newAccentColor,
     bool? systemColorStatus,
   }) {
-    setState(() {
-      if (newThemeMode != null) {
-        themeMode = newThemeMode;
-        brightness = getBrightnessFromThemeMode(newThemeMode);
-      }
-      if (newLocale != null) {
-        languageSetting = newLocale;
-      }
-      if (newAccentColor != null) {
-        if (systemColorStatus != null &&
-            useSystemColor.value != systemColorStatus) {
-          useSystemColor.value = systemColorStatus;
-          addOrUpdateData('settings', 'useSystemColor', systemColorStatus);
+    if (mounted)
+      setState(() {
+        if (newThemeMode != null) {
+          themeMode = newThemeMode;
+          brightness = getBrightnessFromThemeMode(newThemeMode);
         }
-        primaryColorSetting = newAccentColor;
-      }
-    });
+        if (newLocale != null) {
+          languageSetting = newLocale;
+        }
+        if (newAccentColor != null) {
+          if (systemColorStatus != null &&
+              useSystemColor.value != systemColorStatus) {
+            useSystemColor.value = systemColorStatus;
+            addOrUpdateData('settings', 'useSystemColor', systemColorStatus);
+          }
+          primaryColorSetting = newAccentColor;
+        }
+      });
   }
 
   @override

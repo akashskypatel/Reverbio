@@ -32,7 +32,11 @@ import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 
 class UserSongsPage extends StatefulWidget {
-  const UserSongsPage({super.key, required this.page, required this.navigatorObserver});
+  const UserSongsPage({
+    super.key,
+    required this.page,
+    required this.navigatorObserver,
+  });
 
   final String page;
   final RouteObserver<PageRoute> navigatorObserver;
@@ -79,9 +83,10 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
           if (title == context.l10n!.likedSongs)
             IconButton(
               onPressed: () {
-                setState(() {
-                  _isEditEnabled = !_isEditEnabled;
-                });
+                if (mounted)
+                  setState(() {
+                    _isEditEnabled = !_isEditEnabled;
+                  });
               },
               icon: Icon(
                 FluentIcons.re_order_24_filled,
@@ -210,12 +215,13 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              setState(() {
-                if (oldIndex < newIndex) {
-                  newIndex -= 1;
-                }
-                moveLikedSong(oldIndex, newIndex);
-              });
+              if (mounted)
+                setState(() {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  moveLikedSong(oldIndex, newIndex);
+                });
             },
           );
         } else {

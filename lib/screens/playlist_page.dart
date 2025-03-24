@@ -93,7 +93,6 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   }
 
   Future<void> _initializePlaylist() async {
-
     if (widget.playlistData?['artist-details'] != null) {
       await getTrackList(widget.playlistData);
     }
@@ -192,7 +191,9 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed:
-            () => GoRouter.of(context).pop(context), //Navigator.pop(context, widget.playlistData == _playlist),
+            () => GoRouter.of(context).pop(
+              context,
+            ), //Navigator.pop(context, widget.playlistData == _playlist),
       ),
       actions: [
         if (widget.playlistData['ytid'] != null) ...[_buildLikeButton()],
@@ -322,34 +323,35 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
                   TextButton(
                     child: Text(context.l10n!.add.toUpperCase()),
                     onPressed: () {
-                      setState(() {
-                        final index = userCustomPlaylists.value.indexOf(
-                          widget.playlistData,
-                        );
-
-                        if (index != -1) {
-                          final newPlaylist = {
-                            'title': customPlaylistName,
-                            'source': 'user-created',
-                            if (imageUrl != null) 'image': imageUrl,
-                            'list': widget.playlistData['list'],
-                          };
-                          final updatedPlaylists = List<Map>.from(
-                            userCustomPlaylists.value,
+                      if (mounted)
+                        setState(() {
+                          final index = userCustomPlaylists.value.indexOf(
+                            widget.playlistData,
                           );
-                          updatedPlaylists[index] = newPlaylist;
-                          userCustomPlaylists.value = updatedPlaylists;
-                          addOrUpdateData(
-                            'user',
-                            'customPlaylists',
-                            userCustomPlaylists,
-                          );
-                          _playlist = newPlaylist;
-                          showToast(context, context.l10n!.playlistUpdated);
-                        }
 
-                        GoRouter.of(context).pop(context);
-                      });
+                          if (index != -1) {
+                            final newPlaylist = {
+                              'title': customPlaylistName,
+                              'source': 'user-created',
+                              if (imageUrl != null) 'image': imageUrl,
+                              'list': widget.playlistData['list'],
+                            };
+                            final updatedPlaylists = List<Map>.from(
+                              userCustomPlaylists.value,
+                            );
+                            updatedPlaylists[index] = newPlaylist;
+                            userCustomPlaylists.value = updatedPlaylists;
+                            addOrUpdateData(
+                              'user',
+                              'customPlaylists',
+                              userCustomPlaylists,
+                            );
+                            _playlist = newPlaylist;
+                            showToast(context, context.l10n!.playlistUpdated);
+                          }
+
+                          GoRouter.of(context).pop(context);
+                        });
                     },
                   ),
                 ],
@@ -364,19 +366,21 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       _playlist = await updatePlaylistList(context, _playlist['ytid']);
       _hasMore = true;
       _songsList.clear();
-      setState(() {
-        _currentPage = 0;
-        _currentLastLoadedId = 0;
-        _loadMore();
-      });
+      if (mounted)
+        setState(() {
+          _currentPage = 0;
+          _currentLastLoadedId = 0;
+          _loadMore();
+        });
     } else {
       final updatedPlaylist = await getPlaylistInfoForWidget(
         widget.playlistData['ytid'],
       );
       if (updatedPlaylist != null) {
-        setState(() {
-          _songsList = updatedPlaylist['list'];
-        });
+        if (mounted)
+          setState(() {
+            _songsList = updatedPlaylist['list'];
+          });
       }
     }
   }
@@ -395,13 +399,13 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
           indexToInsert: indexOfRemovedSong,
         );
         _songsList.insert(indexOfRemovedSong, songToRemove);
-        setState(() {});
+        if (mounted) setState(() {});
       },
     );
-
-    setState(() {
-      _songsList.removeAt(indexOfRemovedSong);
-    });
+    if (mounted)
+      setState(() {
+        _songsList.removeAt(indexOfRemovedSong);
+      });
   }
 
   Widget _buildPlayActionButton() {
@@ -464,32 +468,33 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
             return DropdownMenuItem<String>(value: value, child: Text(value));
           }).toList(),
       onChanged: (item) {
-        setState(() {
-          final playlist = _playlist['list'];
+        if (mounted)
+          setState(() {
+            final playlist = _playlist['list'];
 
-          void sortBy(String key) {
-            playlist.sort((a, b) {
-              final valueA = a[key].toString().toLowerCase();
-              final valueB = b[key].toString().toLowerCase();
-              return valueA.compareTo(valueB);
-            });
-          }
+            void sortBy(String key) {
+              playlist.sort((a, b) {
+                final valueA = a[key].toString().toLowerCase();
+                final valueB = b[key].toString().toLowerCase();
+                return valueA.compareTo(valueB);
+              });
+            }
 
-          if (item == context.l10n!.name) {
-            sortBy('title');
-          } else if (item == context.l10n!.artist) {
-            sortBy('artist');
-          }
+            if (item == context.l10n!.name) {
+              sortBy('title');
+            } else if (item == context.l10n!.artist) {
+              sortBy('artist');
+            }
 
-          _playlist['list'] = playlist;
+            _playlist['list'] = playlist;
 
-          // Reset pagination and reload
-          _hasMore = true;
-          _songsList.clear();
-          _currentPage = 0;
-          _currentLastLoadedId = 0;
-          _loadMore();
-        });
+            // Reset pagination and reload
+            _hasMore = true;
+            _songsList.clear();
+            _currentPage = 0;
+            _currentLastLoadedId = 0;
+            _loadMore();
+          });
       },
     );
   }

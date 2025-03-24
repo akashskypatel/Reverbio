@@ -11,7 +11,7 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-List playlists = [...playlistsDB, ...albumsDB];
+List dbPlaylists = [...playlistsDB, ...albumsDB];
 final userPlaylists = ValueNotifier<List>(
   Hive.box('user').get('playlists', defaultValue: []),
 );
@@ -27,6 +27,7 @@ List userRecentlyPlayed = Hive.box(
 List suggestedPlaylists = [];
 List onlinePlaylists = [];
 Map activePlaylist = {
+  'id': '',
   'ytid': '',
   'title': 'No Playlist',
   'image': '',
@@ -44,6 +45,7 @@ Future<List<dynamic>> getUserPlaylists() async {
     try {
       final plist = await yt.playlists.get(playlistID);
       playlistsByUser.add({
+        'id': 'yt=${plist.id}',
         'ytid': plist.id.toString(),
         'title': plist.title,
         'image': null,
@@ -51,7 +53,13 @@ Future<List<dynamic>> getUserPlaylists() async {
         'list': [],
       });
     } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       playlistsByUser.add({
+        'id': 'yt=$playlistID',
         'ytid': playlistID.toString(),
         'title': 'Failed playlist',
         'image': null,
@@ -102,7 +110,8 @@ Future<String> addUserPlaylist(String input, BuildContext context) async {
     userPlaylists.value = [...userPlaylists.value, playlistId];
     addOrUpdateData('user', 'playlists', userPlaylists.value);
     return '${context.l10n!.addedSuccess}!';
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return '${context.l10n!.error}: $e';
   }
 }
@@ -137,7 +146,7 @@ String addSongInCustomPlaylist(
   if (customPlaylist != null) {
     final List<dynamic> playlistSongs = customPlaylist['list'];
     if (playlistSongs.any(
-      (playlistElement) => playlistElement['ytid'] == song['ytid'],
+      (playlistElement) => playlistElement['id'] == song['id'],
     )) {
       return context.l10n!.songAlreadyInPlaylist;
     }
@@ -168,7 +177,7 @@ bool removeSongFromPlaylist(
       playlistSongs.removeAt(removeOneAtIndex);
     } else {
       final initialLength = playlistSongs.length;
-      playlistSongs.removeWhere((song) => song['ytid'] == songToRemove['ytid']);
+      playlistSongs.removeWhere((song) => song['id'] == songToRemove['id']);
       if (playlistSongs.length == initialLength) return false;
     }
 
@@ -182,7 +191,7 @@ bool removeSongFromPlaylist(
 
     return true;
   } catch (e, stackTrace) {
-    logger.log('Error while removing song from playlist: ', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return false;
   }
 }
@@ -204,34 +213,32 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
   try {
     if (add) {
       if (playlist.isNotEmpty) {
-        userLikedPlaylists.addOrUpdate('ytid', playlist['ytid'], {
-          'ytid': playlist['ytid'],
+        userLikedPlaylists.addOrUpdate('id', playlist['id'], {
+          'id': playlist['id'],
           'title': playlist['title'],
         });
       } else {
-        final playlistInfo = await getPlaylistInfoForWidget(playlist['ytid']);
+        final playlistInfo = await getPlaylistInfoForWidget(playlist['id']);
         if (playlistInfo != null) {
           userLikedPlaylists.add(playlistInfo);
         }
       }
       currentLikedPlaylistsLength.value++;
     } else {
-      userLikedPlaylists.removeWhere(
-        (value) => value['ytid'] == playlist['ytid'],
-      );
+      userLikedPlaylists.removeWhere((value) => value['id'] == playlist['id']);
       currentLikedPlaylistsLength.value--;
     }
 
     addOrUpdateData('user', 'likedPlaylists', userLikedPlaylists);
     return add;
   } catch (e, stackTrace) {
-    logger.log('Error updating playlist like status: ', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
 
 bool isPlaylistAlreadyLiked(playlistIdToCheck) =>
-    userLikedPlaylists.any((playlist) => playlist['ytid'] == playlistIdToCheck);
+    userLikedPlaylists.any((playlist) => playlist['id'] == playlistIdToCheck);
 
 Future<List> getPlaylists({
   String? query,
@@ -240,7 +247,7 @@ Future<List> getPlaylists({
   String type = 'all',
 }) async {
   // Early exit if there are no playlists to process.
-  if (playlists.isEmpty ||
+  if (dbPlaylists.isEmpty ||
       (playlistsNum == null && query == null && suggestedPlaylists.isEmpty)) {
     return [];
   }
@@ -250,7 +257,7 @@ Future<List> getPlaylists({
   if (query != null && playlistsNum == null) {
     final lowercaseQuery = query.toLowerCase();
     final filteredPlaylists =
-        playlists.where((playlist) {
+        dbPlaylists.where((playlist) {
           final title = playlist['title'].toLowerCase();
           final matchesQuery = title.contains(lowercaseQuery);
           final matchesType =
@@ -267,22 +274,22 @@ Future<List> getPlaylists({
     );
 
     // Avoid duplicate online playlists.
-    final existingYtIds =
-        onlinePlaylists.map((p) => p['ytid'] as String).toSet();
+    final existingYtIds = onlinePlaylists.map((p) => p['id'] as String).toSet();
 
     final newPlaylists =
         searchResults
             .whereType<SearchPlaylist>()
             .map((playlist) {
               final playlistMap = {
+                'id': 'yt=${playlist.id}',
                 'ytid': playlist.id.toString(),
                 'title': playlist.title,
                 'source': 'youtube',
                 'list': [],
                 'primary-type': 'playlist',
               };
-              if (!existingYtIds.contains(playlistMap['ytid'])) {
-                existingYtIds.add(playlistMap['ytid'].toString());
+              if (!existingYtIds.contains(playlistMap['id'])) {
+                existingYtIds.add(playlistMap['id'].toString());
                 return playlistMap;
               }
               return null;
@@ -308,7 +315,7 @@ Future<List> getPlaylists({
   // return a shuffled subset of suggested playlists.
   if (playlistsNum != null && query == null) {
     if (suggestedPlaylists.isEmpty) {
-      suggestedPlaylists = List.from(playlists)..shuffle();
+      suggestedPlaylists = List.from(dbPlaylists)..shuffle();
     }
     return suggestedPlaylists.take(playlistsNum).map((value) {
       value['primary-type'] = 'playlist';
@@ -323,7 +330,7 @@ Future<List> getPlaylists({
 
   // If a specific type is requested, filter accordingly.
   if (type != 'all') {
-    return playlists
+    return dbPlaylists
         .where((playlist) {
           return type == 'album'
               ? playlist['isAlbum'] == true
@@ -337,14 +344,20 @@ Future<List> getPlaylists({
   }
 
   // Default to returning all playlists.
-  return playlists;
+  return dbPlaylists;
 }
 
 Future<List> getSongsFromPlaylist(dynamic playlistId) async {
   final songList = await getData('cache', 'playlistSongs$playlistId') ?? [];
+  String id;
+  if (playlistId.toString().contains('yt=')) {
+    id = Uri.parse('?$playlistId').queryParameters['yt'] ?? '';
+  } else {
+    id = playlistId;
+  }
 
   if (songList.isEmpty) {
-    await for (final song in yt.playlists.getVideos(playlistId)) {
+    await for (final song in yt.playlists.getVideos(id)) {
       songList.add(returnSongLayout(songList.length, song));
     }
 
@@ -362,15 +375,15 @@ Future updatePlaylistList(BuildContext context, String playlistId) async {
       songList.add(returnSongLayout(songList.length, song));
     }
 
-    playlists[index]['list'] = songList;
+    dbPlaylists[index]['list'] = songList;
     addOrUpdateData('cache', 'playlistSongs$playlistId', songList);
     showToast(context, context.l10n!.playlistUpdated);
   }
-  return playlists[index];
+  return dbPlaylists[index];
 }
 
 int findPlaylistIndexByYtId(String ytid) {
-  return playlists.indexWhere((playlist) => playlist['ytid'] == ytid);
+  return dbPlaylists.indexWhere((playlist) => playlist['id'] == ytid);
 }
 
 Future<void> setActivePlaylist(Map info) async {
@@ -391,7 +404,7 @@ Future<Map?> getPlaylistInfoForWidget(
   Map? playlist;
 
   // Check in local playlists.
-  playlist = playlists.firstWhere((p) => p['ytid'] == id, orElse: () => null);
+  playlist = dbPlaylists.firstWhere((p) => p['ytid'] == id, orElse: () => null);
 
   // Check in user playlists if not found.
   if (playlist == null) {
@@ -410,6 +423,7 @@ Future<Map?> getPlaylistInfoForWidget(
     try {
       final ytPlaylist = await yt.playlists.get(id);
       playlist = {
+        'id': 'yt=${ytPlaylist.id}',
         'ytid': ytPlaylist.id.toString(),
         'title': ytPlaylist.title,
         'image': null,
@@ -418,7 +432,11 @@ Future<Map?> getPlaylistInfoForWidget(
       };
       onlinePlaylists.add(playlist);
     } catch (e, stackTrace) {
-      logger.log('Failed to fetch playlist info for id $id', e, stackTrace);
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       return null;
     }
   }
@@ -426,9 +444,9 @@ Future<Map?> getPlaylistInfoForWidget(
   // If the playlist exists but its song list is empty, fetch and cache the songs.
   if (playlist['list'] == null ||
       (playlist['list'] is List && (playlist['list'] as List).isEmpty)) {
-    playlist['list'] = await getSongsFromPlaylist(playlist['ytid']);
-    if (!playlists.contains(playlist)) {
-      playlists.add(playlist);
+    playlist['list'] = await getSongsFromPlaylist(playlist['id']);
+    if (!dbPlaylists.contains(playlist)) {
+      dbPlaylists.add(playlist);
     }
   }
 

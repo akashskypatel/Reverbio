@@ -40,9 +40,9 @@ import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key, required this.navigatorObserver,});
+  const SearchPage({super.key, required this.navigatorObserver});
   final RouteObserver<PageRoute> navigatorObserver;
-  
+
   @override
   _SearchPageState createState() => _SearchPageState();
 }
@@ -94,7 +94,7 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
 
     if (query.isEmpty) {
       _suggestionsList = [];
-      setState(() {});
+      if (mounted) setState(() {});
       return;
     }
 
@@ -106,8 +106,7 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
     }
 
     _setFutures(query);
-
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   void _setFutures(String query) {
@@ -163,7 +162,7 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
                 } else {
                   _suggestionsList = [];
                 }
-                setState(() {});
+                if (mounted) setState(() {});
               }, */
               onSubmitted: (String value) {
                 search();
@@ -208,9 +207,10 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
                           await _showConfirmationDialog(context) ?? false;
 
                       if (confirm) {
-                        setState(() {
-                          searchHistory.remove(query);
-                        });
+                        if (mounted)
+                          setState(() {
+                            searchHistory.remove(query);
+                          });
 
                         addOrUpdateData('user', 'searchHistory', searchHistory);
                       }
@@ -253,7 +253,7 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
         icon: FluentIcons.mic_sparkle_24_filled,
         title: context.l10n!.artist,
         future: Future.value(snapshot.data),
-        navigatorObserver: widget.navigatorObserver
+        navigatorObserver: widget.navigatorObserver,
       );
     if (snapshot.connectionState == ConnectionState.waiting)
       return Column(
@@ -355,7 +355,7 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
                 cardIcon: FluentIcons.cd_16_filled,
                 isAlbum: true,
                 borderRadius: borderRadius,
-                navigatorObserver: widget.navigatorObserver
+                navigatorObserver: widget.navigatorObserver,
               );
             },
           ),
@@ -402,7 +402,7 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
                 playlistId: playlist['ytid'],
                 playlistArtwork: playlist['image'],
                 cardIcon: FluentIcons.apps_list_24_filled,
-                navigatorObserver: widget.navigatorObserver
+                navigatorObserver: widget.navigatorObserver,
               );
             },
           ),

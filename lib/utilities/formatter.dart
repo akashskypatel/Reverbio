@@ -56,7 +56,8 @@ String formatSongTitle(String title) {
 }
 
 Map<String, dynamic> returnSongLayout(int index, Video song) => {
-  'id': index,
+  'index': index,
+  'id': 'yt=${song.id}',
   'ytid': song.id.toString(),
   'title': formatSongTitle(
     song.title.split('-')[song.title.split('-').length - 1],

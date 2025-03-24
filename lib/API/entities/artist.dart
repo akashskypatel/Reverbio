@@ -55,7 +55,7 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
     addOrUpdateData('user', 'likedArtists', userLikedArtistsList);
     return add;
   } catch (e, stackTrace) {
-    logger.log('error in updateArtistLikeStatus:', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -92,7 +92,8 @@ dynamic getArtistDetailsById(String id) async {
       final dcRes = await _getArtistDetailsDC(match);
       return await _combineResults({'mbRes': mbRes, 'dcRes': dcRes});
     }
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -104,7 +105,8 @@ Future<dynamic> searchArtistDetails(String query, {bool exact = true}) async {
     if (cached != null && cached.isNotEmpty) return cached.first;
     final res = await _callApis(q, exact: exact);
     return res;
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
   }
 }
@@ -124,20 +126,20 @@ Future<dynamic> getArtistsDetails(
       if (cached != null && cached.isNotEmpty && exact)
         result.add(cached.first);
     }
-    if (!exact) {
-      for (final q in queries) {
-        final res = await _callApis(
-          q,
-          exact: exact,
-          limit: limit,
-          offset: offset,
-          paginated: paginated,
-        );
-        if (res.isNotEmpty) result.addAll(res);
-      }
+    for (final q in queries) {
+      final res = await _callApis(
+        q,
+        exact: exact,
+        limit: limit,
+        offset: offset,
+        paginated: paginated,
+      );
+      if (res.isNotEmpty) result.addAll(res);
     }
+
     return result;
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
   }
 }
@@ -158,24 +160,39 @@ Future<List<dynamic>> _callApis(
       paginated: paginated,
     );
     final results = [];
-    for (final artist in mbRes) {
-      if (artist['type'] != 'Other') {
-        final urls =
-            List.from(
-              artist['relations'] ?? [],
-            ).where((e) => e['type'] == 'discogs').toList();
-        if (urls.isNotEmpty) {
-          final discogsUrl = urls[0]['url']['resource'];
-          final regex = RegExp(r'/artist/(\d+)');
-          final match = regex.firstMatch(discogsUrl)?.group(1) ?? '';
-          final dcRes = await _getArtistDetailsDC(match);
-          results.add(await _combineResults({'mbRes': artist, 'dcRes': dcRes}));
+    if (mbRes != null) {
+      for (final artist in mbRes) {
+        if (artist['type'] != 'Other') {
+          final urls =
+              List.from(
+                artist['relations'] ?? [],
+              ).where((e) => e['type'] == 'discogs').toList();
+          if (urls.isNotEmpty) {
+            final discogsUrl = urls[0]['url']['resource'];
+            final regex = RegExp(r'/artist/(\d+)');
+            final match = regex.firstMatch(discogsUrl)?.group(1) ?? '';
+            final dcRes = await _getArtistDetailsDC(match);
+            final combined = await _combineResults({
+              'mbRes': artist,
+              'dcRes': dcRes,
+            });
+            results.add(combined);
+          }
         }
       }
     }
-    if (exact) return [results[0]];
+    if (exact) {
+      if (results.isEmpty) return [];
+      if (results.length == 1)
+        return results;
+      else {
+        final res = results.first;
+        return [res];
+      }
+    }
     return results;
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -205,7 +222,8 @@ Future<Map<String, dynamic>> _combineResults(Map<String, dynamic> data) async {
     cachedArtistsList.addOrUpdate('id', id, res);
     addOrUpdateData('cache', 'cachedArtists', cachedArtistsList);
     return res;
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -213,7 +231,8 @@ Future<Map<String, dynamic>> _combineResults(Map<String, dynamic> data) async {
 dynamic _getCachedArtist(String id) {
   try {
     return cachedArtistsList.firstWhere((e) => e['id'] == id);
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
   }
 }
@@ -291,7 +310,8 @@ dynamic _searchCachedArtists(
       );
       return result;
     }
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -348,14 +368,12 @@ Future<dynamic> _getArtistDetailsMB(
       ];
       if (result.isNotEmpty)
         if (exact) {
-          return [
-            mb.artists.get(
+          final artistId =
               _results.firstWhere(
                 (e) => e['id'] == result.first.item['id'],
-              )['id'],
-              inc: inc,
-            ),
-          ];
+              )['id'];
+          final finalResult = await mb.artists.get(artistId, inc: inc);
+          return [finalResult];
         } else {
           final finalResult = [];
           for (final artist in result) {
@@ -365,7 +383,8 @@ Future<dynamic> _getArtistDetailsMB(
         }
     }
     return null;
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -414,11 +433,14 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
       );
       final result = fuzzy.search(query)
         ..sort((a, b) => a.score.compareTo(b.score));
-      return _getArtistDetailsDC(
-        _results.firstWhere((e) => e['id'] == result.first.item['id']),
-      );
+      final val = _results.where((e) => e['id'] == result.first.item['id']);
+      if (val.isNotEmpty)
+        await _getArtistDetailsDC(val.first['id']);
+      else
+        return;
     }
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
