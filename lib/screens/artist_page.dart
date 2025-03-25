@@ -142,7 +142,6 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
                 .map((ele) {
                   ele['source'] = 'musicbrainz';
                   ele['artist'] = widget.artistData['artist'];
-                  //ele['artist-details'] = widget.artistData;
                   ele['isAlbum'] = true;
                   ele['ytid'] = null;
                   return ele;
@@ -164,7 +163,6 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
                   ele['source'] = 'musicbrainz';
                   ele['primary-type'] = ele['primary-type'] ?? 'unknown';
                   ele['artist'] = widget.artistData['artist'];
-                  //ele['artist-details'] = widget.artistData;
                   ele['isAlbum'] = false;
                   ele['ytid'] = null;
                   return ele;
@@ -182,7 +180,6 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
                 .map((ele) {
                   ele['source'] = 'musicbrainz';
                   ele['artist'] = widget.artistData['artist'];
-                  //ele['artist-details'] = widget.artistData;
                   ele['isAlbum'] = false;
                   ele['isSong'] = true;
                   ele['ytid'] = null;
