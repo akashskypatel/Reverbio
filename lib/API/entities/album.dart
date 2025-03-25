@@ -22,6 +22,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -33,18 +34,37 @@ List userLikedAlbumsList = Hive.box(
   'user',
 ).get('likedAlbums', defaultValue: []);
 
+List cachedAlbumsList = Hive.box('cache').get('cachedAlbums', defaultValue: []);
+
 late final ValueNotifier<int> currentLikedAlbumsLength;
+
+dynamic _getCachedAlbum(String id) {
+  try {
+    final cached = cachedAlbumsList.where((e) => e['id'] == id);
+    if (cached.isEmpty) return null;
+    return cached.first;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
+  }
+}
 
 Future<dynamic> getAlbumCoverArt(List<dynamic> albums) async {
   if (albums.isEmpty) return null;
   try {
     return albums.map((value) async {
-      final result = await mb.coverArt.get(value['id'], 'release-group');
-      if (value['error'] == null) {
-        value['images'] = result['images'];
-        value['release'] = result['release'];
-      }
-      return value;
+      final cached = _getCachedAlbum(value['id']);
+      if (cached == null || cached['images'] == null) {
+        final result = await mb.coverArt.get(value['id'], 'release-group');
+        if (value['error'] == null) {
+          value['images'] = result['images'];
+          value['release'] = result['release'];
+        }
+        cachedAlbumsList.addOrUpdate('id', value['id'], value);
+        addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
+        return value;
+      } else
+        return cached;
     }).wait;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -70,21 +90,29 @@ Future<dynamic> getReleaseGroupDetails(String id) async {
   );
 }
 
-Future<dynamic> getAlbumsTrackList(List<dynamic> albums) async {
+Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
   try {
     final tracklist = LinkedHashSet<String>();
     final tracks = [];
-    for (final album in albums) {
-      if (await getTrackList(album)) {
-        for (final track in album['list']) {
-          if (tracklist.add(track['title'].toString().toLowerCase().trim()))
-            tracks.add({
-              'id': 'mb=${track['mbid']}',
-              'album': album['title'],
-              'title': track['title'],
-              'artist': album['artist'],
-              'primary-type': 'song',
-            });
+    List list;
+    for (final release in singlesReleases) {
+      final cached = _getCachedAlbum(release['id']);
+      if (cached != null && cached['list'] != null) {
+        list = cached['list'];
+      } else {
+        final fetched = await getTrackList(release);
+        if (fetched) {
+          list = release['list'];
+          for (final track in list) {
+            if (tracklist.add(track['title'].toString().toLowerCase().trim()))
+              tracks.add({
+                'id': 'mb=${track['mbid']}',
+                'album': release['title'],
+                'title': track['title'],
+                'artist': release['artist'],
+                'primary-type': 'song',
+              });
+          }
         }
       }
     }
@@ -101,6 +129,14 @@ Future<bool> getTrackList(dynamic album) async {
         userGeolocation['countryCode'] ??
         (await getIPGeolocation())['countryCode'];
     final albumId = album['id'];
+    final cached = _getCachedAlbum(albumId);
+
+    if (cached != null &&
+        cached['list'] != null &&
+        (cached['list'] as List).isNotEmpty) {
+      album['list'] = cached['list'];
+      return true;
+    }
 
     final result = await mb.releases.browse(
       'release-group',
@@ -183,7 +219,8 @@ Future<bool> getTrackList(dynamic album) async {
         });
       });
     }
-
+    cachedAlbumsList.addOrUpdate('id', albumId, album);
+    addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
     return true;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

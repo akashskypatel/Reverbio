@@ -93,7 +93,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   }
 
   Future<void> _initializePlaylist() async {
-    if (widget.playlistData?['artist-details'] != null) {
+    if (widget.playlistData?['source'] == 'musicbrainz') {
       await getTrackList(widget.playlistData);
     }
     _playlist =

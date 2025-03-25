@@ -119,14 +119,18 @@ Future<dynamic> getArtistsDetails(
   bool paginated = false,
 }) async {
   try {
-    final queries = query.map((e) => e.replaceAll(RegExp(r'\s+'), ' ').trim());
+    final queries =
+        query.map((e) => e.replaceAll(RegExp(r'\s+'), ' ').trim()).toList();
     final result = [];
+    final uncached = <String>[];
     for (final q in queries) {
       final cached = _searchCachedArtists(q, exact: exact);
-      if (cached != null && cached.isNotEmpty && exact)
+      if (cached != null && cached.isNotEmpty && exact) {
         result.add(cached.first);
+      } else
+        uncached.add(q);
     }
-    for (final q in queries) {
+    for (final q in uncached) {
       final res = await _callApis(
         q,
         exact: exact,
@@ -287,9 +291,8 @@ dynamic _searchCachedArtists(
             return 0;
           });
     if (exact) {
-      final filtered = sorted.where(
-        (e) => e.score.isNearlyZero(tolerance: 0.0001),
-      );
+      final filtered =
+          sorted.where((e) => e.score.isNearlyZero(tolerance: 0.0001)).toList();
       if (filtered.isEmpty) {
         return null;
       }
