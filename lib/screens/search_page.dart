@@ -297,7 +297,6 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
               );
               return SongBar(
                 snapshot.data[index],
-                true,
                 showMusicDuration: true,
                 borderRadius: borderRadius,
               );

@@ -28,7 +28,6 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
-import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -37,6 +36,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
+import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class PlaylistPage extends StatefulWidget {
@@ -144,45 +144,25 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       appBar: _buildNavigationBar(),
       body:
           _playlist != null
-              ? CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: _buildPlaylistHeader(),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 20,
-                      ),
-                      child: _buildSongActionsRow(),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: commonListViewBottmomPadding,
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (BuildContext context, int index) {
-                          final isRemovable =
-                              _playlist['source'] == 'user-created';
-                          return _buildSongListItem(index, isRemovable);
-                        },
-                        childCount:
-                            _hasMore
-                                ? _songsList.length + 1
-                                : _songsList.length,
-                      ),
-                    ),
-                  ),
-                ],
-              )
+              ? _buildList()
               : SizedBox(
                 height: MediaQuery.sizeOf(context).height - 100,
                 child: const Spinner(),
               ),
+    );
+  }
+
+  Widget _buildList() {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: _buildPlaylistHeader(),
+          ),
+        ),
+        SongList(inputData: _songsList, isEditable: _playlist['source'] == ['user-created'],)
+      ],
     );
   }
 
@@ -443,9 +423,12 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       iconSize: 30,
       onPressed: () {
         final _newList = List.of(_playlist['list'])..shuffle();
-        setActivePlaylist({
+        setQueueToPlaylist({
+          'id': _playlist['id'],
+          'ytid': _playlist['ytid'],
           'title': _playlist['title'],
           'image': _playlist['image'],
+          'source': _playlist['source'],
           'list': _newList,
         });
       },
@@ -524,7 +507,6 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
 
     return SongBar(
       _songsList[index],
-      true,
       onRemove:
           isRemovable
               ? () => {
@@ -536,14 +518,8 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
                   {_updateSongsListOnRemove(index)},
               }
               : null,
-      onPlay:
-          () => {
-            audioHandler.playPlaylistSong(
-              playlist: activePlaylist != _playlist ? _playlist : null,
-              songIndex: index,
-            ),
-          },
       borderRadius: borderRadius,
+      showMusicDuration: true,
     );
   }
 }

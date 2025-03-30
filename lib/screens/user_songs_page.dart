@@ -25,11 +25,14 @@ import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
+import 'package:reverbio/widgets/song_list.dart';
 
 class UserSongsPage extends StatefulWidget {
   const UserSongsPage({
@@ -80,6 +83,14 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
       appBar: AppBar(
         title: offlineMode.value ? Text(title) : null,
         actions: [
+          if (title == context.l10n!.queue)
+            Row(
+              children: [
+                //TODO: define actions
+                _buildQueueActionsList(),
+                const SizedBox(width: 24, height: 24),
+              ],
+            ),
           if (title == context.l10n!.likedSongs)
             IconButton(
               onPressed: () {
@@ -102,6 +113,46 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
     );
   }
 
+  Widget _buildQueueActionsList() {
+    return ValueListenableBuilder(
+      valueListenable: activeQueueLength,
+      builder: (_, value, __) {
+        return Row(
+          children: [
+            IconButton(
+              tooltip: context.l10n!.addToPlaylist,
+              onPressed: null,
+              disabledColor: Theme.of(context).colorScheme.inversePrimary,
+              color: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.playlist_add),
+            ),
+            IconButton(
+              tooltip: context.l10n!.saveAsPlayList,
+              onPressed: null,
+              disabledColor: Theme.of(context).colorScheme.inversePrimary,
+              color: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.playlist_play),
+            ),
+            IconButton(
+              tooltip: context.l10n!.clearQueue,
+              onPressed: value == 0 ? null : clearSongQueue,
+              disabledColor: Theme.of(context).colorScheme.inversePrimary,
+              color: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.clear_all),
+            ),
+            IconButton(
+              tooltip: context.l10n!.shuffle,
+              onPressed: null,
+              disabledColor: Theme.of(context).colorScheme.inversePrimary,
+              color: Theme.of(context).colorScheme.primary,
+              icon: const Icon(FluentIcons.arrow_shuffle_24_filled),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildCustomScrollView(
     String title,
     IconData icon,
@@ -116,7 +167,10 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
             child: buildPlaylistHeader(title, icon, songsList.length),
           ),
         ),
-        buildSongList(title, songsList, length),
+        SongList(
+          title: getTitle(widget.page, context),
+          isEditable: widget.page == 'queue',
+        ),
       ],
     );
   }
@@ -146,9 +200,9 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
           'liked': userLikedSongsList,
           'offline': userOfflineSongs,
           'recents': userRecentlyPlayed,
-          'queue': null,
+          'queue': activeQueue['list'],
         }[page] ??
-        userLikedSongsList;
+        activeQueue['list'];
   }
 
   ValueNotifier<int> getLength(String page) {
@@ -156,19 +210,60 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
           'liked': currentLikedSongsLength,
           'offline': currentOfflineSongsLength,
           'recents': currentRecentlyPlayedLength,
-          'queue': null,
+          'queue': activeQueueLength,
         }[page] ??
         currentLikedSongsLength;
   }
 
   Widget buildPlaylistHeader(String title, IconData icon, int songsLength) {
-    return PlaylistHeader(_buildPlaylistImage(title, icon), title, songsLength);
+    return PlaylistHeader(
+      _buildPlaylistImage(title, icon, songsLength),
+      title,
+      songsLength,
+      customWidget: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ValueListenableBuilder(
+            valueListenable: audioHandler.songValueNotifier,
+            builder: (context, value, _) {
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    audioHandler.songValueNotifier.value['title'] ?? '',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    audioHandler.songValueNotifier.value['artist'] ?? '',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.secondary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          PositionSlider(
+            positionDataNotifier: audioHandler.positionDataNotifier,
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildPlaylistImage(String title, IconData icon) {
+  Widget _buildPlaylistImage(String title, IconData icon, int songsLength) {
+    final denom = MediaQuery.of(context).size.width > 480 ? 8 : 2.5;
     return BaseCard(
-      inputData: {'title': title},
-      size: MediaQuery.sizeOf(context).width / 2.5,
+      inputData: {'title': '$title\n$songsLength Songs'},
+      size: MediaQuery.sizeOf(context).width / denom,
       icon: icon,
     );
   }
@@ -178,12 +273,6 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
     List songsList,
     ValueNotifier currentSongsLength,
   ) {
-    final _playlist = {
-      'ytid': '',
-      'title': title,
-      'source': 'user-created',
-      'list': songsList,
-    };
     return ValueListenableBuilder(
       valueListenable: currentSongsLength,
       builder: (_, value, __) {
@@ -201,16 +290,8 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                 index: index,
                 child: SongBar(
                   song,
-                  true,
-                  onPlay:
-                      () => {
-                        audioHandler.playPlaylistSong(
-                          playlist:
-                              activePlaylist != _playlist ? _playlist : null,
-                          songIndex: index,
-                        ),
-                      },
                   borderRadius: borderRadius,
+                  showMusicDuration: true,
                 ),
               );
             },
@@ -235,19 +316,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
 
               final borderRadius = getItemBorderRadius(index, songsList.length);
 
-              return SongBar(
-                song,
-                true,
-                onPlay:
-                    () => {
-                      audioHandler.playPlaylistSong(
-                        playlist:
-                            activePlaylist != _playlist ? _playlist : null,
-                        songIndex: index,
-                      ),
-                    },
-                borderRadius: borderRadius,
-              );
+              return SongBar(song, borderRadius: borderRadius);
               // ignore: require_trailing_commas
             }, childCount: songsList.length),
           );

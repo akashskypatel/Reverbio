@@ -37,7 +37,7 @@ class HorizontalCardScroller extends StatefulWidget {
     this.title = '',
     this.icon = FluentIcons.music_note_1_24_regular,
     this.future,
-    required this.navigatorObserver
+    required this.navigatorObserver,
   });
 
   final IconData icon;
@@ -67,6 +67,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   @override
   void dispose() {
     widget.future?.ignore();
+    cards.clear();
     super.dispose();
   }
 
@@ -143,13 +144,21 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
               () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  settings: RouteSettings(name: '$dataType?${data['id'] ?? 'yt=${data['ytid']}'}'),
+                  settings: RouteSettings(
+                    name: '$dataType?${data['id'] ?? 'yt=${data['ytid']}'}',
+                  ),
                   builder: (context) {
                     switch (dataType) {
                       case 'artist':
-                        return ArtistPage(artistData: data, navigatorObserver: widget.navigatorObserver,);
+                        return ArtistPage(
+                          artistData: data,
+                          navigatorObserver: widget.navigatorObserver,
+                        );
                       default:
-                        return PlaylistPage(playlistData: data, navigatorObserver: widget.navigatorObserver,);
+                        return PlaylistPage(
+                          playlistData: data,
+                          navigatorObserver: widget.navigatorObserver,
+                        );
                     }
                   },
                 ),
@@ -192,14 +201,23 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
               () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  settings: RouteSettings(name: '$dataType?${inputData[index]['id'] ?? 'yt=${inputData[index]['ytid']}'}'),
+                  settings: RouteSettings(
+                    name:
+                        '$dataType?${inputData[index]['id'] ?? 'yt=${inputData[index]['ytid']}'}',
+                  ),
                   builder: (context) {
                     final dataType = _parseDataType(inputData[index]);
                     switch (dataType) {
                       case 'artist':
-                        return ArtistPage(artistData: inputData[index], navigatorObserver: widget.navigatorObserver,);
+                        return ArtistPage(
+                          artistData: inputData[index],
+                          navigatorObserver: widget.navigatorObserver,
+                        );
                       default:
-                        return PlaylistPage(playlistData: inputData[index], navigatorObserver: widget.navigatorObserver,);
+                        return PlaylistPage(
+                          playlistData: inputData[index],
+                          navigatorObserver: widget.navigatorObserver,
+                        );
                     }
                   },
                 ),

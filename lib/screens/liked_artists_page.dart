@@ -50,6 +50,7 @@ class _LikedArtistsPageState extends State<LikedArtistsPage> with RouteAware {
     artistsFuture.ignore();
     currentLikedArtistsLength.removeListener(_listener);
     widget.navigatorObserver.unsubscribe(this);
+    artistCards.clear();
     super.dispose();
   }
 

@@ -25,11 +25,11 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
+import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
@@ -300,7 +300,7 @@ class QueueListView extends StatelessWidget {
         ),
         Expanded(
           child:
-              activePlaylist['list'].isEmpty
+              activeQueue['list'].isEmpty
                   ? Center(
                     child: Text(
                       context.l10n!.noSongsInQueue,
@@ -308,21 +308,22 @@ class QueueListView extends StatelessWidget {
                     ),
                   )
                   : ListView.builder(
-                    itemCount: activePlaylist['list'].length,
+                    itemCount: activeQueue['list'].length,
                     itemBuilder: (context, index) {
                       final borderRadius = getItemBorderRadius(
                         index,
-                        activePlaylist['list'].length,
+                        activeQueue['list'].length,
                       );
                       return SongBar(
-                        activePlaylist['list'][index],
-                        false,
+                        activeQueue['list'][index],
                         onPlay: () {
-                          audioHandler.playPlaylistSong(songIndex: index);
+                          //TODO: fix playing new playlist
+                          //playPlaylistSong(songIndex: index);
                         },
                         backgroundColor:
                             Theme.of(context).colorScheme.surfaceContainerHigh,
                         borderRadius: borderRadius,
+                        showMusicDuration: true,
                       );
                     },
                   ),
@@ -433,13 +434,9 @@ class PositionSlider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: StreamBuilder<PositionData>(
-        stream: audioHandler.positionDataStream,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data == null) {
-            return const SizedBox.shrink();
-          }
-          final positionData = snapshot.data!;
+      child: ValueListenableBuilder<PositionData>(
+        valueListenable: audioHandler.positionDataNotifier,
+        builder: (context, positionData, _) {
           final primaryColor = Theme.of(context).colorScheme.primary;
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -660,7 +657,7 @@ class PlayerControlButtons extends StatelessWidget {
               ),
               iconSize: iconSize,
               onPressed: () {
-                final _isSingleSongPlaying = activePlaylist['list'].isEmpty;
+                final _isSingleSongPlaying = activeQueue['list'].isEmpty;
                 repeatNotifier.value =
                     _isSingleSongPlaying
                         ? AudioServiceRepeatMode.one
@@ -704,7 +701,7 @@ class BottomActionsRow extends StatelessWidget {
       children: [
         _buildOfflineButton(songOfflineStatus, _primaryColor),
         if (!offlineMode.value) _buildAddToPlaylistButton(_primaryColor),
-        if (activePlaylist['list'].isNotEmpty && !isLargeScreen)
+        if (activeQueue['list'].isNotEmpty && !isLargeScreen)
           _buildQueueButton(context, _primaryColor),
         if (!offlineMode.value) ...[
           _buildLyricsButton(_primaryColor),
@@ -761,21 +758,22 @@ class BottomActionsRow extends StatelessWidget {
             shrinkWrap: true,
             physics: const BouncingScrollPhysics(),
             padding: commonListViewBottmomPadding,
-            itemCount: activePlaylist['list'].length,
+            itemCount: activeQueue['list'].length,
             itemBuilder: (BuildContext context, int index) {
               final borderRadius = getItemBorderRadius(
                 index,
-                activePlaylist['list'].length,
+                activeQueue['list'].length,
               );
               return SongBar(
-                activePlaylist['list'][index],
-                false,
+                activeQueue['list'][index],
                 onPlay: () {
-                  audioHandler.playPlaylistSong(songIndex: index);
+                  //TODO: fix playing new playlist
+                  //playPlaylistSong(songIndex: index);
                 },
                 backgroundColor:
                     Theme.of(context).colorScheme.surfaceContainerHigh,
                 borderRadius: borderRadius,
+                showMusicDuration: true,
               );
             },
           ),

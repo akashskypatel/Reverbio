@@ -47,3 +47,15 @@ Locale getLocaleFromLanguageCode(String? languageCode) {
   // Default fallback
   return const Locale('en');
 }
+
+List<Map<String, dynamic>> safeConvert(dynamic input) {
+  if (input is List) {
+    return input
+        .whereType<Map>()
+        .map((e) => e.cast<String, dynamic>())
+        .toList();
+  }
+  return [];
+}
+
+bool isLargeScreen(BuildContext context) => MediaQuery.of(context).size.width > 480;

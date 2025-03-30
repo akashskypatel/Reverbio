@@ -143,7 +143,7 @@ class _BaseCardState extends State<BaseCard> {
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,
       builder:
-          (_, value, _) => Visibility(
+          (_, value, __) => Visibility(
             visible: value,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),

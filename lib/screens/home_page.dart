@@ -77,11 +77,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Reverbio')),
-      body: SingleChildScrollView(
-        padding: commonSingleChildScrollViewPadding,
-        child: Column(
-          children: [
-            ValueListenableBuilder<String?>(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: ValueListenableBuilder<String?>(
               valueListenable: announcementURL,
               builder: (_, _url, __) {
                 if (_url == null) return const SizedBox.shrink();
@@ -95,56 +94,38 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 );
               },
             ),
-            Column(
-              children: [
-                ValueListenableBuilder<int>(
-                  valueListenable: currentLikedPlaylistsLength,
-                  builder: (_, value, _) {
-                    return HorizontalCardScroller(
-                      title: context.l10n!.suggestedPlaylists,
-                      future: _recommendedPlaylistsFuture,
-                      navigatorObserver: widget.navigatorObserver,
-                    );
-                  },
-                ),
-                if (_recommendedSongs != null &&
-                    _recommendedArtistsFuture != null)
-                  FutureBuilder(
-                    future: _recommendedSongsFuture,
-                    builder: (context, snapshot) {
-                      return HorizontalCardScroller(
-                        title: context.l10n!.suggestedArtists,
-                        //TODO: add more recommended artists from likes
-                        future: _recommendedArtistsFuture,
-                        navigatorObserver: widget.navigatorObserver,
-                      );
-                    },
-                  ),
-                /* 
-                  ValueListenableBuilder<int>(
-                    valueListenable: currentLikedArtistsLength,
-                    builder: (_, value, _) {
-                      return FutureBuilder(
-                        future: _recommendedSongsFuture,
-                        builder: (context, snapshot) {
-                          return HorizontalCardScroller(
-                            title: context.l10n!.suggestedArtists,
-                            //TODO: add more recommended artists from likes
-                            future: _parseArtistList(_recommendedSongs),
-                            navigatorObserver: widget.navigatorObserver,
-                          );
-                        },
-                      );
-                    },
-                  ), */
-                SongList(
-                  title: context.l10n!.recommendedForYou,
-                  future: _recommendedSongsFuture,
-                ),
-              ],
+          ),
+          SliverToBoxAdapter(
+            child: ValueListenableBuilder<int>(
+              valueListenable: currentLikedPlaylistsLength,
+              builder: (_, value, __) {
+                return HorizontalCardScroller(
+                  title: context.l10n!.suggestedPlaylists,
+                  future: _recommendedPlaylistsFuture,
+                  navigatorObserver: widget.navigatorObserver,
+                );
+              },
             ),
-          ],
-        ),
+          ),
+          if (_recommendedSongs != null && _recommendedArtistsFuture != null)
+            SliverToBoxAdapter(
+              child: FutureBuilder(
+                future: _recommendedSongsFuture,
+                builder: (context, snapshot) {
+                  return HorizontalCardScroller(
+                    title: context.l10n!.suggestedArtists,
+                    //TODO: add more recommended artists from likes
+                    future: _recommendedArtistsFuture,
+                    navigatorObserver: widget.navigatorObserver,
+                  );
+                },
+              ),
+            ),
+          SongList(
+            title: context.l10n!.recommendedForYou,
+            future: _recommendedSongsFuture,
+          ),
+        ],
       ),
     );
   }

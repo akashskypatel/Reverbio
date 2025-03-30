@@ -34,10 +34,13 @@ import 'package:reverbio/widgets/song_artwork.dart';
 
 const double playerHeight = 120;
 
-
-
 class MiniPlayer extends StatefulWidget {
-  MiniPlayer({super.key, required this.metadata, required this.closeButton, required this.navigatorObserver});
+  MiniPlayer({
+    super.key,
+    required this.metadata,
+    required this.closeButton,
+    required this.navigatorObserver,
+  });
   final MediaItem metadata;
   final Widget closeButton;
   final RouteObserver<PageRoute> navigatorObserver;
@@ -46,125 +49,136 @@ class MiniPlayer extends StatefulWidget {
   _MiniPlayerState createState() => _MiniPlayerState();
 }
 
-class _MiniPlayerState extends State<MiniPlayer> with RouteAware {
+class _MiniPlayerState extends State<MiniPlayer> {
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
+  void initState() {
+    super.initState();
   }
 
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return GestureDetector(
-      onVerticalDragUpdate: (details) {
-        if (details.primaryDelta! < 0) {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              settings: const RouteSettings(name: 'nowPlaying?'),
-              pageBuilder: (context, animation, secondaryAnimation) {
-                return NowPlayingPage(navigatorObserver: widget.navigatorObserver);
-              },
-              transitionsBuilder: (
-                context,
-                animation,
-                secondaryAnimation,
-                child,
-              ) {
-                const begin = Offset(0, 1);
-                const end = Offset.zero;
-
-                final tween = Tween(begin: begin, end: end);
-                final curve = CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                );
-
-                final offsetAnimation = tween.animate(curve);
-
-                return SlideTransition(position: offsetAnimation, child: child);
-              },
-            ),
-          );
-        }
-      },
-      onTap:
-          () => Navigator.push(
-            context,
-            PageRouteBuilder(
-              settings: const RouteSettings(name: 'nowPlaying?'),
-              pageBuilder: (context, animation, secondaryAnimation) {
-                return NowPlayingPage(navigatorObserver: widget.navigatorObserver);
-              },
-              transitionsBuilder: (
-                context,
-                animation,
-                secondaryAnimation,
-                child,
-              ) {
-                const begin = Offset(0, 1);
-                const end = Offset.zero;
-
-                final tween = Tween(begin: begin, end: end);
-                final curve = CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                );
-
-                final offsetAnimation = tween.animate(curve);
-
-                return SlideTransition(position: offsetAnimation, child: child);
-              },
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
+      child: Column(
+        children: [
+          PositionSlider(
+            closeButton: widget.closeButton,
+            positionDataNotifier: audioHandler.positionDataNotifier,
           ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            PositionSlider(closeButton: widget.closeButton),
-            Row(
+          GestureDetector(
+            onVerticalDragUpdate: (details) {
+              if (details.primaryDelta! < 0) {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    settings: const RouteSettings(name: 'nowPlaying?'),
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      return NowPlayingPage(
+                        navigatorObserver: widget.navigatorObserver,
+                      );
+                    },
+                    transitionsBuilder: (
+                      context,
+                      animation,
+                      secondaryAnimation,
+                      child,
+                    ) {
+                      const begin = Offset(0, 1);
+                      const end = Offset.zero;
+
+                      final tween = Tween(begin: begin, end: end);
+                      final curve = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      );
+
+                      final offsetAnimation = tween.animate(curve);
+
+                      return SlideTransition(
+                        position: offsetAnimation,
+                        child: child,
+                      );
+                    },
+                  ),
+                );
+              }
+            },
+            onTap:
+                () => Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    settings: const RouteSettings(name: 'nowPlaying?'),
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      return NowPlayingPage(
+                        navigatorObserver: widget.navigatorObserver,
+                      );
+                    },
+                    transitionsBuilder: (
+                      context,
+                      animation,
+                      secondaryAnimation,
+                      child,
+                    ) {
+                      const begin = Offset(0, 1);
+                      const end = Offset.zero;
+
+                      final tween = Tween(begin: begin, end: end);
+                      final curve = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      );
+
+                      final offsetAnimation = tween.animate(curve);
+
+                      return SlideTransition(
+                        position: offsetAnimation,
+                        child: child,
+                      );
+                    },
+                  ),
+                ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildArtwork(),
-                _buildMetadata(colorScheme.primary, colorScheme.secondary),
                 Row(
                   children: [
-                    _buildPreviousButton(context),
-                    if (audioHandler.hasPrevious) const SizedBox(width: 10),
-                    StreamBuilder<Duration>(
-                      stream: audioHandler.audioPlayer.positionStream,
-                      builder: (context, snapshot) {
-                        return _buildStopButton(context);
-                      },
+                    _buildArtwork(),
+                    _buildMetadata(colorScheme.primary, colorScheme.secondary),
+                    Row(
+                      children: [
+                        _buildPreviousButton(context),
+                        if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                        StreamBuilder<Duration>(
+                          stream: audioHandler.audioPlayer.positionStream,
+                          builder: (context, snapshot) {
+                            return _buildStopButton(context);
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        StreamBuilder<PlaybackState>(
+                          stream: audioHandler.playbackState,
+                          builder: (context, snapshot) {
+                            return _buildPlayPauseButton(context);
+                          },
+                        ),
+                        if (audioHandler.hasNext) const SizedBox(width: 10),
+                        _buildNextButton(context),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    StreamBuilder<PlaybackState>(
-                      stream: audioHandler.playbackState,
-                      builder: (context, snapshot) {
-                        return _buildPlayPauseButton(context);
-                      },
-                    ),
-                    if (audioHandler.hasNext) const SizedBox(width: 10),
-                    _buildNextButton(context),
                   ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -274,54 +288,53 @@ class _MiniPlayerState extends State<MiniPlayer> with RouteAware {
 }
 
 class PositionSlider extends StatelessWidget {
-  const PositionSlider({super.key, required this.closeButton});
-  final Widget closeButton;
+  const PositionSlider({
+    super.key,
+    this.closeButton,
+    required this.positionDataNotifier,
+  });
+  final Widget? closeButton;
+  final ValueNotifier<PositionData> positionDataNotifier;
+
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: StreamBuilder<PositionData>(
-        stream: audioHandler.positionDataStream,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data == null) {
-            return const SizedBox.shrink();
-          }
-          final positionData = snapshot.data!;
-          final primaryColor = Theme.of(context).colorScheme.primary;
-          return _buildSlider(context, primaryColor, positionData);
-        },
-      ),
+      child: _buildSlider(context, primaryColor),
     );
   }
 
-  Widget _buildSlider(
-    BuildContext context,
-    Color fontColor,
-    PositionData positionData,
-  ) {
-    return Row(
-      children: [
-        _buildPositionText(context, fontColor, positionData),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Slider(
-                value: positionData.position.inSeconds.toDouble(),
-                max: max(
-                  positionData.position.inSeconds.toDouble(),
-                  positionData.duration.inSeconds.toDouble(),
-                ),
-                onChanged: (value) {
-                  audioHandler.seek(Duration(seconds: value.toInt()));
-                },
+  Widget _buildSlider(BuildContext context, Color fontColor) {
+    return ValueListenableBuilder(
+      valueListenable: positionDataNotifier,
+      builder: (context, value, _) {
+        return Row(
+          children: [
+            _buildPositionText(context, fontColor, value),
+            Flexible(
+              fit: FlexFit.tight,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Slider(
+                    value: value.position.inSeconds.toDouble(),
+                    max: max(
+                      value.position.inSeconds.toDouble(),
+                      value.duration.inSeconds.toDouble(),
+                    ),
+                    onChanged: (value) {
+                      audioHandler.seek(Duration(seconds: value.toInt()));
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        _buildDurationText(context, fontColor, positionData),
-        closeButton,
-      ],
+            ),
+            _buildDurationText(context, fontColor, value),
+            closeButton ?? const SizedBox.shrink(),
+          ],
+        );
+      },
     );
   }
 

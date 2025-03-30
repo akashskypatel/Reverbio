@@ -104,12 +104,7 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
                 ),
               ),
             ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: _buildContentList(),
-            ),
-          ),
+          _buildContentList(),
         ],
       ),
     );
@@ -189,23 +184,27 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
   }
 
   Widget _buildContentList() {
-    return Column(
-      children: [
+    return SliverMainAxisGroup(
+      slivers: [
         //Albums
         if (albums.isNotEmpty)
-          HorizontalCardScroller(
-            future: getAlbumCoverArt(albums),
-            icon: FluentIcons.cd_16_filled,
-            title: context.l10n!.albums,
-            navigatorObserver: widget.navigatorObserver,
+          SliverToBoxAdapter(
+            child: HorizontalCardScroller(
+              future: getAlbumCoverArt(albums),
+              icon: FluentIcons.cd_16_filled,
+              title: context.l10n!.albums,
+              navigatorObserver: widget.navigatorObserver,
+            ),
           ),
         //Others
         if (others.isNotEmpty)
-          HorizontalCardScroller(
-            future: getAlbumCoverArt(others),
-            icon: FluentIcons.cd_16_filled,
-            title: context.l10n!.others,
-            navigatorObserver: widget.navigatorObserver,
+          SliverToBoxAdapter(
+            child: HorizontalCardScroller(
+              future: getAlbumCoverArt(others),
+              icon: FluentIcons.cd_16_filled,
+              title: context.l10n!.others,
+              navigatorObserver: widget.navigatorObserver,
+            ),
           ),
         //Singles
         if (singles.isNotEmpty)

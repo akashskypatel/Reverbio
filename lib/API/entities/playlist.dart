@@ -6,6 +6,7 @@ import 'package:reverbio/DB/albums.db.dart';
 import 'package:reverbio/DB/playlists.db.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
@@ -26,18 +27,60 @@ List userRecentlyPlayed = Hive.box(
 ).get('recentlyPlayedSongs', defaultValue: []);
 List suggestedPlaylists = [];
 List onlinePlaylists = [];
-Map activePlaylist = {
-  'id': '',
-  'ytid': '',
-  'title': 'No Playlist',
-  'image': '',
-  'source': 'user-created',
-  'list': [],
-};
 
 dynamic nextRecommendedSong;
 
 late final ValueNotifier<int> currentLikedPlaylistsLength;
+
+void addSongsToQueue(List<dynamic> songs) {
+  for (final song in songs) {
+    addSongToQueue(song);
+  }  
+}
+
+dynamic addSongToQueue(dynamic song) {
+  if (!isSongInQueue(song)) {
+    activeQueue['list'].add(song);
+    activeQueueLength.value = activeQueue['list'].length;
+  }
+}
+
+bool removeSongFromQueue(dynamic song) {
+  final val = activeQueue['list'].remove(song);
+  activeQueueLength.value = activeQueue['list'].length;
+  return val;
+}
+
+bool isSongInQueue(dynamic song) {
+  return activeQueue['list'].contains(song);
+}
+
+void setQueueToPlaylist(dynamic playlist) {
+  activeQueue.addAll(playlist);
+  activeQueueLength.value = activeQueue['list'].length;
+}
+
+void clearSongQueue() {
+  activeQueue['id'] = '';
+  activeQueue['ytid'] = '';
+  activeQueue['title'] = 'No Songs in Queue';
+  activeQueue['image'] = '';
+  activeQueue['source'] = '';
+  activeQueue['list'].clear();
+  activeQueueLength.value = 0;
+}
+
+/* Future<void> playPlaylistSong({
+  Map<dynamic, dynamic>? playlist,
+  required int songIndex,
+}) async {
+  if (playlist != null && playlist['list'] != activeQueue['list'])
+    setQueueToPlaylist(playlist);
+  if (activeQueue['list'].isNotEmpty) {
+    activeSongId = songIndex;
+    await audioHandler.queueSong(activeQueue['list'][activeSongId], play: true);
+  }
+} */
 
 Future<List<dynamic>> getUserPlaylists() async {
   final playlistsByUser = [];
@@ -358,7 +401,7 @@ Future<List> getSongsFromPlaylist(dynamic playlistId) async {
 
   if (songList.isEmpty) {
     await for (final song in yt.playlists.getVideos(id)) {
-      songList.add(returnSongLayout(songList.length, song));
+      songList.add(returnYtSongLayout(songList.length, song));
     }
 
     addOrUpdateData('cache', 'playlistSongs$playlistId', songList);
@@ -372,7 +415,7 @@ Future updatePlaylistList(BuildContext context, String playlistId) async {
   if (index != -1) {
     final songList = [];
     await for (final song in yt.playlists.getVideos(playlistId)) {
-      songList.add(returnSongLayout(songList.length, song));
+      songList.add(returnYtSongLayout(songList.length, song));
     }
 
     dbPlaylists[index]['list'] = songList;
@@ -386,12 +429,12 @@ int findPlaylistIndexByYtId(String ytid) {
   return dbPlaylists.indexWhere((playlist) => playlist['id'] == ytid);
 }
 
-Future<void> setActivePlaylist(Map info) async {
-  activePlaylist = info;
+/* Future<void> setActivePlaylist(Map info) async {
+  activeQueue = info;
   activeSongId = 0;
 
-  await audioHandler.playSong(activePlaylist['list'][activeSongId]);
-}
+  await audioHandler.playSong(activeQueue['list'][activeSongId]);
+} */
 
 Future<Map?> getPlaylistInfoForWidget(
   dynamic id, {

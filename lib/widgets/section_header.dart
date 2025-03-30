@@ -29,12 +29,13 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        SectionTitle(title, Theme.of(context).colorScheme.primary),
-        if (actionButton != null) actionButton!,
-      ],
+    return ClipRRect(
+      child: Row(
+        children: [
+          SectionTitle(title, Theme.of(context).colorScheme.primary),
+          if (actionButton != null) actionButton!,
+        ],
+      ),
     );
   }
 }

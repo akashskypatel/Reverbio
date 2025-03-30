@@ -94,19 +94,18 @@ Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
   try {
     final tracklist = LinkedHashSet<String>();
     final tracks = [];
-    List list;
     for (final release in singlesReleases) {
       final cached = _getCachedAlbum(release['id']);
       if (cached != null && cached['list'] != null) {
-        list = cached['list'];
+        tracks.addAll(cached['list']);
       } else {
         final fetched = await getTrackList(release);
         if (fetched) {
-          list = release['list'];
-          for (final track in list) {
+          for (final track in release['list']) {
             if (tracklist.add(track['title'].toString().toLowerCase().trim()))
               tracks.add({
                 'id': 'mb=${track['mbid']}',
+                'mdid': track['mbid'],
                 'album': release['title'],
                 'title': track['title'],
                 'artist': release['artist'],
@@ -208,10 +207,10 @@ Future<bool> getTrackList(dynamic album) async {
               'title': track['title'],
               'source': null,
               'artist': album['artist'],
-              'image': album['image'],
-              'lowResImage': album['image'],
-              'highResImage': album['image'],
-              'duration': track['length'],
+              'image': (album['image'] ?? '').toLowerCase() == 'null' ? null : album['image'],
+              'lowResImage': (album['image'] ?? '').toLowerCase() == 'null' ? null : album['image'],
+              'highResImage': (album['image'] ?? '').toLowerCase() == 'null' ? null : album['image'],
+              'duration': (track['length'] ?? 0) ~/ 1000,
               'isLive': false,
               'primary-type': 'song',
             });

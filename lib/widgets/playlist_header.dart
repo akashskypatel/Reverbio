@@ -23,11 +23,18 @@ import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/l10n.dart';
 
 class PlaylistHeader extends StatelessWidget {
-  const PlaylistHeader(this.image, this.title, this.songsLength, {super.key});
+  const PlaylistHeader(
+    this.image,
+    this.title,
+    this.songsLength, {
+    super.key,
+    this.customWidget,
+  });
 
   final Widget image;
   final String title;
   final int songsLength;
+  final Widget? customWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -38,33 +45,39 @@ class PlaylistHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(6),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
           const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              children: [
-                Text(
-                  title,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '$songsLength ${context.l10n!.songs}'.toUpperCase(),
-                  style: textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+            child:
+                customWidget == null
+                    ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '$songsLength ${context.l10n!.songs}'.toUpperCase(),
+                          style: textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    )
+                    : customWidget ?? const SizedBox.shrink(),
           ),
         ],
       ),

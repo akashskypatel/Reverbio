@@ -33,13 +33,11 @@ import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
-import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
   SongBar(
-    this.song,
-    this.clearPlaylist, {
+    this.song, {
     this.backgroundColor,
     this.showMusicDuration = false,
     this.onPlay,
@@ -49,21 +47,37 @@ class SongBar extends StatefulWidget {
   });
 
   final dynamic song;
-  final bool clearPlaylist;
   final Color? backgroundColor;
   final VoidCallback? onRemove;
   final VoidCallback? onPlay;
   final bool showMusicDuration;
   final BorderRadius borderRadius;
-
+  final ValueNotifier<bool> _queueSongNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _playSongNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
+  bool get isError => _isErrorNotifier.value;
+  bool get isLoading => _isLoadingNotifier.value;
   @override
   _SongBarState createState() => _SongBarState();
+
+  ///Returns false if song cannot play
+  Future<bool> queueSong({bool play = false}) async {
+    _isLoadingNotifier.value = true;
+    if (play) {
+      _playSongNotifier.value = true;
+      await getSongUrl(song);
+    } else {
+      _queueSongNotifier.value = true;
+    }
+    _isLoadingNotifier.value = false;
+    return !(song.containsKey('isError') ? song['isError'] : false);
+  }
 }
 
 class _SongBarState extends State<SongBar> {
   dynamic loadedSong = false;
-  bool isLoading = false;
-  bool isError = false;
+
   TapDownDetails? doubleTapdetails;
 
   late final songLikeStatus = ValueNotifier<bool>(
@@ -82,6 +96,15 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
+    widget._queueSongNotifier.addListener(_queueSongListener);
+    widget._playSongNotifier.addListener(_playSongListener);
+  }
+
+  @override
+  void dispose() {
+    widget._queueSongNotifier.removeListener(_queueSongListener);
+    widget._playSongNotifier.removeListener(_playSongListener);
+    super.dispose();
   }
 
   @override
@@ -91,12 +114,20 @@ class _SongBarState extends State<SongBar> {
       children: [
         Padding(
           padding: commonBarPadding,
+          //TODO: add left/right sliding action to add song to queue or to offline
           child: GestureDetector(
             onDoubleTapDown: (details) {
               doubleTapdetails = details;
               likeItem();
             },
-            onTap: widget.onPlay ?? _playSong,
+            onSecondaryTapDown: (details) {
+              _showContextMenu(context, details);
+            },
+            onTap:
+                widget.onPlay ??
+                () {
+                  _queueSong(play: true);
+                },
             child: Card(
               color: widget.backgroundColor,
               shape: RoundedRectangleBorder(borderRadius: widget.borderRadius),
@@ -133,19 +164,28 @@ class _SongBarState extends State<SongBar> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child:
-                          isLoading
-                              ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: Spinner(),
-                              )
-                              : isError
-                              ? Icon(
-                                FluentIcons.error_circle_24_filled,
-                                color: Theme.of(context).colorScheme.primary,
-                              )
-                              : const SizedBox.shrink(),
+                      child: Row(
+                        children: [
+                          ValueListenableBuilder(
+                            valueListenable: widget._isLoadingNotifier,
+                            builder: (context, value, _) {
+                              if (value)
+                                return _buildLoadingSpinner(context);
+                              else
+                                return const SizedBox.shrink();
+                            },
+                          ),
+                          ValueListenableBuilder(
+                            valueListenable: widget._isErrorNotifier,
+                            builder: (context, value, _) {
+                              if (value)
+                                return _buildErrorIconWidget(context);
+                              else
+                                return const SizedBox.shrink();
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     _buildActionButtons(context, primaryColor),
                   ],
@@ -157,7 +197,7 @@ class _SongBarState extends State<SongBar> {
         ValueListenableBuilder(
           valueListenable: isLikedAnimationPlaying,
           builder:
-              (_, value, _) =>
+              (_, value, __) =>
                   isLikedAnimationPlaying.value && doubleTapdetails != null
                       ? AnimatedHeart(
                         like: songLikeStatus.value,
@@ -167,6 +207,45 @@ class _SongBarState extends State<SongBar> {
         ),
       ],
     );
+  }
+
+  Widget _buildLoadingSpinner(BuildContext context) {
+    return Tooltip(
+      message: context.l10n!.loading,
+      child: const SizedBox(width: 24, height: 24, child: Spinner()),
+    );
+  }
+
+  Widget _buildErrorIconWidget(BuildContext context) {
+    return Tooltip(
+      message: context.l10n!.errorCouldNotFindAStream,
+      child: Icon(
+        FluentIcons.error_circle_24_filled,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
+  void _queueSongListener() {
+    if (!widget._isErrorNotifier.value && widget._queueSongNotifier.value)
+      _queueSong();
+  }
+
+  void _playSongListener() {
+    if (!widget._isErrorNotifier.value && widget._playSongNotifier.value)
+      _queueSong(play: true);
+  }
+
+  void _queueSong({bool play = false}) async {
+    widget._isLoadingNotifier.value = true;
+    final isError =
+        widget.song.containsKey('isError') ? widget.song['isError'] : false;
+    if (!isError) await audioHandler.queueSong(widget.song, play: play);
+
+    widget._isLoadingNotifier.value = false;
+    widget._isErrorNotifier.value = isError;
+    widget._queueSongNotifier.value = false;
+    widget._playSongNotifier.value = false;
   }
 
   void likeItem() {
@@ -182,37 +261,12 @@ class _SongBarState extends State<SongBar> {
     isLikedAnimationPlaying.value = false;
   }
 
-  void _playSong() async {
-    if (mounted)
-      setState(() {
-        isLoading = true;
-      });
-    final loaded = await audioHandler.playSong(widget.song);
-
-    if (activePlaylist.isNotEmpty && widget.clearPlaylist) {
-      activePlaylist = {
-        'ytid': '',
-        'title': 'No Playlist',
-        'image': '',
-        'source': 'user-created',
-        'list': [],
-      };
-      activeSongId = 0;
-    }
-    if (mounted)
-      setState(() {
-        loadedSong = loaded;
-        isLoading = false;
-        isError = loaded['source'] == null;
-      });
-  }
-
   Widget _buildAlbumArt(Color primaryColor) {
     const size = 55.0;
 
     final bool isOffline = widget.song['isOffline'] ?? false;
     final String? artworkPath = widget.song['artworkPath'];
-    final lowResImageUrl = widget.song['lowResImage'].toString();
+    final lowResImageUrl = (widget.song['lowResImage'] ?? '').toString();
     final isDurationAvailable =
         widget.showMusicDuration && widget.song['duration'] != null;
 
@@ -249,10 +303,7 @@ class _SongBarState extends State<SongBar> {
       alignment: Alignment.center,
       children: <Widget>[
         if (lowResImageUrl.isEmpty)
-          Icon(
-            FluentIcons.music_note_1_24_filled,
-            color: Theme.of(context).colorScheme.primary,
-          )
+          _buildNoArtworkCard(size, isDurationAvailable)
         else
           CachedNetworkImage(
             key: Key(widget.song['ytid'].toString()),
@@ -283,7 +334,7 @@ class _SongBarState extends State<SongBar> {
                 ),
             errorWidget:
                 (context, url, error) =>
-                    BaseCard(iconSize: 30, paddingValue: 0, size: size),
+                    _buildNoArtworkCard(size, isDurationAvailable),
           ),
         if (isDurationAvailable)
           SizedBox(
@@ -303,115 +354,189 @@ class _SongBarState extends State<SongBar> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, Color primaryColor) {
-    /* final songLikeStatus = ValueNotifier<bool>(
-      isSongAlreadyLiked(widget.song['ytid']),
+  Widget _buildNoArtworkCard(double size, bool isDurationAvailable) {
+    return Stack(
+      children: [
+        Icon(
+          FluentIcons.music_note_1_24_regular,
+          color: Theme.of(context).colorScheme.primary,
+          size: size,
+        ),
+        if (isDurationAvailable)
+          SizedBox(
+            width: size,
+            height: size,
+            child: ClipRRect(
+              borderRadius: commonBarRadius,
+              child: Container(
+                color: Colors.black.withValues(
+                  alpha: 0.8,
+                ), // Translucent overlay
+              ),
+            ),
+          ),
+      ],
     );
-    final songOfflineStatus = ValueNotifier<bool>(
-      isSongAlreadyOffline(widget.song['ytid']),
-    ); */
+  }
 
+  void _showContextMenu(BuildContext context, TapDownDetails details) async {
+    //TODO: fix positioning to account for navigation rail on large screen
+    final RenderBox tappedBox = context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromLTRB(
+      details.globalPosition.dx,
+      details.globalPosition.dy,
+      tappedBox.size.width - details.globalPosition.dx,
+      tappedBox.size.height - details.globalPosition.dy,
+    );
+
+    var value = await showMenu(
+      context: context,
+      position: position,
+      color: Theme.of(context).colorScheme.surface,
+      items: _buildPopupMenuItems(context),
+    );
+    if (value != null) {
+      _popupMenuItemAction(value);
+    }
+  }
+
+  List<PopupMenuItem<String>> _buildPopupMenuItems(BuildContext context) {
+    final isInQueue = isSongInQueue(widget.song);
+    return [
+      PopupMenuItem<String>(
+        value: 'like',
+        child: ValueListenableBuilder<bool>(
+          valueListenable: songLikeStatus,
+          builder: (_, value, __) {
+            return Row(
+              children: [
+                Icon(
+                  likeStatusToIconMapper[value],
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  value
+                      ? context.l10n!.removeFromLikedSongs
+                      : context.l10n!.addToLikedSongs,
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      if (widget.onRemove != null)
+        PopupMenuItem<String>(
+          value: 'remove',
+          child: Row(
+            children: [
+              Icon(
+                FluentIcons.delete_24_filled,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(context.l10n!.removeFromPlaylist),
+            ],
+          ),
+        ),
+      PopupMenuItem<String>(
+        value: 'add_to_playlist',
+        child: Row(
+          children: [
+            Icon(
+              FluentIcons.add_24_regular,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(context.l10n!.addToPlaylist),
+          ],
+        ),
+      ),
+      PopupMenuItem<String>(
+        value: isInQueue ? 'remove_from_queue' : 'add_to_queue',
+        child: Row(
+          children: [
+            Icon(
+              isInQueue ? Icons.playlist_remove : Icons.playlist_add,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isInQueue
+                  ? context.l10n!.removeSongFromQueue
+                  : context.l10n!.addSongToQueue,
+            ),
+          ],
+        ),
+      ),
+      PopupMenuItem<String>(
+        value: 'offline',
+        child: ValueListenableBuilder<bool>(
+          valueListenable: songOfflineStatus,
+          builder: (_, value, __) {
+            return Row(
+              children: [
+                Icon(
+                  value
+                      ? FluentIcons.cellular_off_24_regular
+                      : FluentIcons.cellular_data_1_24_regular,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  value
+                      ? context.l10n!.removeOffline
+                      : context.l10n!.makeOffline,
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    ];
+  }
+
+  void _popupMenuItemAction(String value) {
+    switch (value) {
+      case 'like':
+        songLikeStatus.value = !songLikeStatus.value;
+        updateSongLikeStatus(widget.song['ytid'], songLikeStatus.value);
+        final likedSongsLength = currentLikedSongsLength.value;
+        currentLikedSongsLength.value =
+            songLikeStatus.value ? likedSongsLength + 1 : likedSongsLength - 1;
+        break;
+      case 'remove':
+        if (widget.onRemove != null) widget.onRemove!();
+        break;
+      case 'remove_from_queue':
+        removeSongFromQueue(widget.song);
+        break;
+      case 'add_to_queue':
+        addSongToQueue(widget.song);
+        break;
+      case 'add_to_playlist':
+        showAddToPlaylistDialog(context, widget.song);
+        break;
+      case 'offline':
+        if (songOfflineStatus.value) {
+          removeSongFromOffline(widget.song['ytid']);
+          showToast(context, context.l10n!.songRemovedFromOffline);
+        } else {
+          makeSongOffline(widget.song);
+          showToast(context, context.l10n!.songAddedToOffline);
+        }
+        songOfflineStatus.value = !songOfflineStatus.value;
+        break;
+    }
+  }
+
+  Widget _buildActionButtons(BuildContext context, Color primaryColor) {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).colorScheme.surface,
       icon: Icon(FluentIcons.more_horizontal_24_filled, color: primaryColor),
-      onSelected: (String value) {
-        switch (value) {
-          case 'like':
-            songLikeStatus.value = !songLikeStatus.value;
-            updateSongLikeStatus(widget.song['ytid'], songLikeStatus.value);
-            final likedSongsLength = currentLikedSongsLength.value;
-            currentLikedSongsLength.value =
-                songLikeStatus.value
-                    ? likedSongsLength + 1
-                    : likedSongsLength - 1;
-            break;
-          case 'remove':
-            if (widget.onRemove != null) widget.onRemove!();
-            break;
-          case 'add_to_playlist':
-            showAddToPlaylistDialog(context, widget.song);
-            break;
-          case 'offline':
-            if (songOfflineStatus.value) {
-              removeSongFromOffline(widget.song['ytid']);
-              showToast(context, context.l10n!.songRemovedFromOffline);
-            } else {
-              makeSongOffline(widget.song);
-              showToast(context, context.l10n!.songAddedToOffline);
-            }
-            songOfflineStatus.value = !songOfflineStatus.value;
-            break;
-        }
-      },
-      itemBuilder: (BuildContext context) {
-        return [
-          PopupMenuItem<String>(
-            value: 'like',
-            child: ValueListenableBuilder<bool>(
-              valueListenable: songLikeStatus,
-              builder: (_, value, __) {
-                return Row(
-                  children: [
-                    Icon(likeStatusToIconMapper[value], color: primaryColor),
-                    const SizedBox(width: 8),
-                    Text(
-                      value
-                          ? context.l10n!.removeFromLikedSongs
-                          : context.l10n!.addToLikedSongs,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          if (widget.onRemove != null)
-            PopupMenuItem<String>(
-              value: 'remove',
-              child: Row(
-                children: [
-                  Icon(FluentIcons.delete_24_filled, color: primaryColor),
-                  const SizedBox(width: 8),
-                  Text(context.l10n!.removeFromPlaylist),
-                ],
-              ),
-            ),
-          PopupMenuItem<String>(
-            value: 'add_to_playlist',
-            child: Row(
-              children: [
-                Icon(FluentIcons.add_24_regular, color: primaryColor),
-                const SizedBox(width: 8),
-                Text(context.l10n!.addToPlaylist),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'offline',
-            child: ValueListenableBuilder<bool>(
-              valueListenable: songOfflineStatus,
-              builder: (_, value, __) {
-                return Row(
-                  children: [
-                    Icon(
-                      value
-                          ? FluentIcons.cellular_off_24_regular
-                          : FluentIcons.cellular_data_1_24_regular,
-                      color: primaryColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      value
-                          ? context.l10n!.removeOffline
-                          : context.l10n!.makeOffline,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ];
-      },
+      onSelected: _popupMenuItemAction,
+      itemBuilder: _buildPopupMenuItems,
     );
   }
 }
