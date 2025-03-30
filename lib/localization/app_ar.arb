@@ -70,7 +70,7 @@
   "name": "اسم",
   "newAnnouncement": "إعلان جديد نشر",
   "noCustomPlaylists": "لم تنشئ أي قوائم تشغيل مخصصة بعد",
-  "noSongsInQueue": "لا أغاني في قائمة الانتظار",
+  "noSongsInQueue": "No songs in the queue.",
   "notYTlist": "هذا ليس معرف قائمة تشغيل YouTube",
   "offlineMode": "وضع عدم الاتصال",
   "offlineSongs": "أغاني غير متصلة بالإنترنت",

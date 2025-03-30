@@ -70,7 +70,7 @@
   "name": "名稱",
   "newAnnouncement": "發布了新公告",
   "noCustomPlaylists": "尚未創建任何自定義播放列表",
-  "noSongsInQueue": "隊列中沒有歌曲",
+  "noSongsInQueue": "No songs in the queue.",
   "notYTlist": "無效的 YouTube 播放列表 ID",
   "offlineMode": "離線模式",
   "offlineSongs": "已離線歌曲",

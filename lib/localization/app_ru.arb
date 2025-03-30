@@ -70,7 +70,7 @@
   "name": "Имя",
   "newAnnouncement": "Новое объявление опубликовано",
   "noCustomPlaylists": "Вы ещё не создали свои плейлисты",
-  "noSongsInQueue": "Нет песен в очереди",
+  "noSongsInQueue": "No songs in the queue.",
   "notYTlist": "Неверный ID плейлиста YouTube",
   "offlineMode": "Режим без интернета",
   "offlineSongs": "Треки без интернета",

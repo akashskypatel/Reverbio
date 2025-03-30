@@ -70,7 +70,7 @@
   "name": "이름",
   "newAnnouncement": "새 공지가 게시되었음",
   "noCustomPlaylists": "아직 커스텀 재생목록을 만들지 않았음",
-  "noSongsInQueue": "대기열에 노래 없음",
+  "noSongsInQueue": "No songs in the queue.",
   "notYTlist": "잘못된 유튜브 재생목록 ID",
   "offlineMode": "오프라인 모드",
   "offlineSongs": "오프라인 노래",
