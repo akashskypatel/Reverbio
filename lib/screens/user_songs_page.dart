@@ -27,6 +27,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/mini_player.dart';
@@ -120,14 +121,14 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         return Row(
           children: [
             IconButton(
-              tooltip: context.l10n!.addToPlaylist,
+              tooltip: '${context.l10n!.addToPlaylist}(Not implemented yet)',
               onPressed: null,
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
               color: Theme.of(context).colorScheme.primary,
               icon: const Icon(Icons.playlist_add),
             ),
             IconButton(
-              tooltip: context.l10n!.saveAsPlayList,
+              tooltip: '${context.l10n!.saveAsPlayList}(Not implemented yet)',
               onPressed: null,
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
               color: Theme.of(context).colorScheme.primary,
@@ -135,17 +136,16 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
             ),
             IconButton(
               tooltip: context.l10n!.clearQueue,
-              onPressed: value == 0 ? null : clearSongQueue,
+              onPressed:
+                  value == 0
+                      ? null
+                      : () {
+                        clearSongQueue();
+                        showToast(context, 'Queue cleared!');
+                      },
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
               color: Theme.of(context).colorScheme.primary,
               icon: const Icon(Icons.clear_all),
-            ),
-            IconButton(
-              tooltip: context.l10n!.shuffle,
-              onPressed: null,
-              disabledColor: Theme.of(context).colorScheme.inversePrimary,
-              color: Theme.of(context).colorScheme.primary,
-              icon: const Icon(FluentIcons.arrow_shuffle_24_filled),
             ),
           ],
         );

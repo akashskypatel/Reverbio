@@ -362,6 +362,7 @@ class _BaseCardState extends State<BaseCard> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
+          overflow: TextOverflow.ellipsis,
           dataType == 'artist'
               ? ''
               : dataType == 'playlist'
@@ -379,7 +380,7 @@ class _BaseCardState extends State<BaseCard> {
 
   Widget _buildOverflowLabel(BuildContext context) {
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: artistHeight, maxHeight: 44),
+      constraints: BoxConstraints(minWidth: artistHeight, minHeight: 44),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         child: Text(

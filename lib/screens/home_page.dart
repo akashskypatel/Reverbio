@@ -78,6 +78,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
     return Scaffold(
       appBar: AppBar(title: const Text('Reverbio')),
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: ValueListenableBuilder<String?>(

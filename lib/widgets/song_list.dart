@@ -289,6 +289,8 @@ class _SongListState extends State<SongList> {
       iconSize: 30,
       onPressed: () {
         addSongsToQueue(_songsList);
+        //todo: localize
+        showToast(context, 'Added ${_songsList.length} songs to queue!');
         if (activeQueue['list'].isNotEmpty &&
             !audioHandler.audioPlayer.playing &&
             widget._songBars.isNotEmpty) {
