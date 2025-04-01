@@ -88,8 +88,8 @@ class PlaylistBar extends StatelessWidget {
                         navigatorObserver: navigatorObserver,
                       ),
                 ),
-              ).then((isPlaylistUpdated) {
-                if (isPlaylistUpdated != null && isPlaylistUpdated) {
+              ).then((value) {
+                if (isPlaylistUpdated()) {
                   getPlaylistInfoForWidget(
                     playlistId,
                   ).then((result) => {updatedPlaylist = result});
@@ -127,6 +127,11 @@ class PlaylistBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool isPlaylistUpdated() {
+    final data = playlistData;
+    return false;
   }
 
   Widget _buildAlbumArt() {

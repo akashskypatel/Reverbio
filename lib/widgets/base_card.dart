@@ -149,33 +149,38 @@ class _BaseCardState extends State<BaseCard> {
               padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
               child: GestureDetector(
                 onTap: widget.onPressed,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      clipBehavior: Clip.antiAlias,
-                      child: SizedBox(
-                        width: widget.size,
-                        height: widget.size,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: colorScheme.secondary,
-                          ),
-                          child: Stack(
-                            children: [
-                              _buildImage(context),
-                              if (widget.showLabel) _buildLabel(context),
-                              if (widget.showLike) _buildLiked(context),
-                            ],
+                child: SizedBox(
+                  width: widget.size,
+                  height: widget.size,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        clipBehavior: Clip.antiAlias,
+                        child: SizedBox(
+                          width: widget.size,
+                          height: widget.size,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: colorScheme.secondary,
+                            ),
+                            child: Stack(
+                              children: [
+                                _buildImage(context),
+                                if (widget.showLabel) _buildLabel(context),
+                                if (widget.showLike) _buildLiked(context),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    if (widget.showOverflowLabel) _buildOverflowLabel(context),
-                  ],
+                      if (widget.showOverflowLabel)
+                        _buildOverflowLabel(context),
+                    ],
+                  ),
                 ),
               ),
             ),

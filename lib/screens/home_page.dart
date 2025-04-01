@@ -81,45 +81,55 @@ class _HomePageState extends State<HomePage> with RouteAware {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
-            child: ValueListenableBuilder<String?>(
-              valueListenable: announcementURL,
-              builder: (_, _url, __) {
-                if (_url == null) return const SizedBox.shrink();
+            child: Padding(
+              padding: commonBarPadding,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: announcementURL,
+                builder: (_, _url, __) {
+                  if (_url == null) return const SizedBox.shrink();
 
-                return AnnouncementBox(
-                  message: context.l10n!.newAnnouncement,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.secondaryContainer,
-                  textColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                  url: _url,
-                );
-              },
+                  return AnnouncementBox(
+                    message: context.l10n!.newAnnouncement,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.secondaryContainer,
+                    textColor:
+                        Theme.of(context).colorScheme.onSecondaryContainer,
+                    url: _url,
+                  );
+                },
+              ),
             ),
           ),
           SliverToBoxAdapter(
-            child: ValueListenableBuilder<int>(
-              valueListenable: currentLikedPlaylistsLength,
-              builder: (_, value, __) {
-                return HorizontalCardScroller(
-                  title: context.l10n!.suggestedPlaylists,
-                  future: _recommendedPlaylistsFuture,
-                  navigatorObserver: widget.navigatorObserver,
-                );
-              },
+            child: Padding(
+              padding: commonBarPadding,
+              child: ValueListenableBuilder<int>(
+                valueListenable: currentLikedPlaylistsLength,
+                builder: (_, value, __) {
+                  return HorizontalCardScroller(
+                    title: context.l10n!.suggestedPlaylists,
+                    future: _recommendedPlaylistsFuture,
+                    navigatorObserver: widget.navigatorObserver,
+                  );
+                },
+              ),
             ),
           ),
           if (_recommendedSongs != null && _recommendedArtistsFuture != null)
             SliverToBoxAdapter(
-              child: FutureBuilder(
-                future: _recommendedSongsFuture,
-                builder: (context, snapshot) {
-                  return HorizontalCardScroller(
-                    title: context.l10n!.suggestedArtists,
-                    //TODO: add more recommended artists from likes
-                    future: _recommendedArtistsFuture,
-                    navigatorObserver: widget.navigatorObserver,
-                  );
-                },
+              child: Padding(
+                padding: commonBarPadding,
+                child: FutureBuilder(
+                  future: _recommendedSongsFuture,
+                  builder: (context, snapshot) {
+                    return HorizontalCardScroller(
+                      title: context.l10n!.suggestedArtists,
+                      //TODO: add more recommended artists from likes
+                      future: _recommendedArtistsFuture,
+                      navigatorObserver: widget.navigatorObserver,
+                    );
+                  },
+                ),
               ),
             ),
           SongList(

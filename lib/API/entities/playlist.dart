@@ -35,7 +35,7 @@ late final ValueNotifier<int> currentLikedPlaylistsLength;
 void addSongsToQueue(List<dynamic> songs) {
   for (final song in songs) {
     addSongToQueue(song);
-  }  
+  }
 }
 
 dynamic addSongToQueue(dynamic song) {
@@ -126,7 +126,7 @@ String? youtubePlaylistParser(String url) {
   return match?.group(1);
 }
 
-Future<String> addUserPlaylist(String input, BuildContext context) async {
+Future<String> addYTUserPlaylist(String input, BuildContext context) async {
   String? playlistId = input;
 
   if (input.startsWith('http://') || input.startsWith('https://')) {
@@ -159,17 +159,38 @@ Future<String> addUserPlaylist(String input, BuildContext context) async {
   }
 }
 
+dynamic findPlaylistByName(String playlistName) {
+  final existing = userCustomPlaylists.value.where(
+    (value) => value['title'] == playlistName,
+  );
+  return existing.isNotEmpty ? existing.first : null;
+}
+
+List<String> getPlaylistNames() {
+  return userCustomPlaylists.value.map((e) {
+    return e['title'] as String;
+  }).toList();
+}
+
 String createCustomPlaylist(
   String playlistName,
+  BuildContext context, {
   String? image,
-  BuildContext context,
-) {
+  List<dynamic>? songList,
+}) {
   final customPlaylist = {
     'title': playlistName,
     'source': 'user-created',
     if (image != null) 'image': image,
-    'list': [],
+    'list': songList ?? [],
   };
+  final existing = findPlaylistByName(playlistName);
+  if (existing != null) {
+    if (image != null) existing['image'] = image;
+    existing['list'] = songList ?? [];
+    addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+    return '${context.l10n!.addedSuccess}!';
+  }
   userCustomPlaylists.value = [...userCustomPlaylists.value, customPlaylist];
   addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
   return '${context.l10n!.addedSuccess}!';

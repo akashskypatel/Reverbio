@@ -98,7 +98,10 @@ Future<List> getRecommendedSongs() async {
 
       playlistSongs.shuffle();
       final seenYtIds = <String>{};
-      playlistSongs.removeWhere((song) => !seenYtIds.add(song['ytid']));
+      playlistSongs.removeWhere((song) {
+        if (song['ytid'] != null) return !seenYtIds.add(song['ytid']);
+        return false;
+      });
       return playlistSongs.take(15).toList();
     }
   } catch (e, stackTrace) {
@@ -224,8 +227,7 @@ Future<String> getYouTubeAudioUrl(String songId) async {
     final uri = Uri.parse(cachedUrl);
     final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    if (expires > now)
-      return cachedUrl;
+    if (expires > now) return cachedUrl;
   }
 
   final manifest = await yt.videos.streamsClient.getManifest(songId);

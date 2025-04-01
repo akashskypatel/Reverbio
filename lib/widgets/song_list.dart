@@ -27,9 +27,9 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
-import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -69,8 +69,6 @@ class _SongListState extends State<SongList> {
   List<dynamic> _songsList = [];
   bool isProcessing = true;
   dynamic _playlist;
-  bool _isLoading = true;
-  bool _hasMore = true;
   var _currentPage = 0;
   var _currentLastLoadedId = 0;
   final int _itemsPerPage = 35;
@@ -96,25 +94,32 @@ class _SongListState extends State<SongList> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
-                child: Text(
-                  overflow: TextOverflow.ellipsis,
-                  widget.title,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize:
-                        Theme.of(context).textTheme.titleMedium?.fontSize ?? 16,
-                    fontWeight: FontWeight.bold,
+                child: Padding(
+                  padding: commonSingleChildScrollViewPadding * 2,
+                  child: Text(
+                    overflow: TextOverflow.ellipsis,
+                    widget.title,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize:
+                          Theme.of(context).textTheme.titleMedium?.fontSize ??
+                          16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildSortSongActionButton(),
-                  _buildShuffleSongActionButton(),
-                  _buildPlayActionButton(),
-                  if (widget.future != null) _buildAddToQueueActionButton(),
-                ],
+              Padding(
+                padding: commonSingleChildScrollViewPadding,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSortSongActionButton(),
+                    _buildShuffleSongActionButton(),
+                    _buildPlayActionButton(),
+                    if (widget.future != null) _buildAddToQueueActionButton(),
+                  ],
+                ),
               ),
             ],
           ),
@@ -250,22 +255,6 @@ class _SongListState extends State<SongList> {
     );
   }
 
-  void _loadMore() {
-    _isLoading = true;
-    fetch().then((List<dynamic> fetchedList) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          if (fetchedList.isEmpty) {
-            _hasMore = false;
-          } else {
-            _songsList.addAll(fetchedList);
-          }
-        });
-      }
-    });
-  }
-
   Future<List<dynamic>> fetch() async {
     final list = <dynamic>[];
     final _count = _playlist['list'].length as int;
@@ -289,8 +278,7 @@ class _SongListState extends State<SongList> {
       iconSize: 30,
       onPressed: () {
         addSongsToQueue(_songsList);
-        //todo: localize
-        showToast(context, 'Added ${_songsList.length} songs to queue!');
+        showToast(context, context.l10n!.songAdded);
         if (activeQueue['list'].isNotEmpty &&
             !audioHandler.audioPlayer.playing &&
             widget._songBars.isNotEmpty) {
@@ -326,10 +314,16 @@ class _SongListState extends State<SongList> {
   }
 
   Widget _buildErrorWidget() {
+    final errorText =
+        widget.future == null
+            ? (widget.inputData == null
+                ? context.l10n!.noSongsInQueue
+                : context.l10n!.error)
+            : context.l10n!.error;
     return SliverToBoxAdapter(
       child: Center(
         child: Text(
-          '${context.l10n!.error}!',
+          errorText,
           style: TextStyle(
             color: Theme.of(context).colorScheme.primary,
             fontSize: 18,
@@ -388,7 +382,10 @@ class _SongListState extends State<SongList> {
           key: key,
           enabled: widget.isEditable,
           index: index,
-          child: widget._songBars[index],
+          child: Padding(
+            padding: commonBarPadding,
+            child: widget._songBars[index],
+          ),
         );
       },
       onReorder: (oldIndex, newIndex) {

@@ -21,6 +21,7 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -30,6 +31,8 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
@@ -82,7 +85,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
 
     return Scaffold(
       appBar: AppBar(
-        title: offlineMode.value ? Text(title) : null,
+        title: Text(title),//offlineMode.value ? Text(title) : null,
         actions: [
           if (title == context.l10n!.queue)
             Row(
@@ -121,18 +124,18 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         return Row(
           children: [
             IconButton(
-              tooltip: '${context.l10n!.addToPlaylist}(Not implemented yet)',
-              onPressed: null,
+              tooltip: '${context.l10n!.addToPlaylist} (Not implemented yet)',
+              onPressed: _showExistingPlaylists,
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
               color: Theme.of(context).colorScheme.primary,
               icon: const Icon(Icons.playlist_add),
             ),
             IconButton(
-              tooltip: '${context.l10n!.saveAsPlayList}(Not implemented yet)',
-              onPressed: null,
+              tooltip: context.l10n!.saveAsPlayList,
+              onPressed: value == 0 ? null : _showSaveAsPlaylistDialog,
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
               color: Theme.of(context).colorScheme.primary,
-              icon: const Icon(Icons.playlist_play),
+              icon: const Icon(FluentIcons.add_24_filled),
             ),
             IconButton(
               tooltip: context.l10n!.clearQueue,
@@ -152,6 +155,155 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
       },
     );
   }
+
+  void _showExistingPlaylists() => showDialog(
+    context: context,
+    builder: (BuildContext savecontext) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final theme = Theme.of(context);
+          final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
+          final playlists = getPlaylistNames();
+          return AlertDialog(
+            backgroundColor: dialogBackgroundColor,
+            content: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: SizedBox(
+                width: 200,
+                height: 200,
+                //TODO: add search bar
+                child: ListView.builder(
+                  itemCount: playlists.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
+                      ),
+                      child: FilledButton(
+                        //TODO: clicking on playlist to save it
+                        onPressed: () => {},
+                        child: MarqueeWidget(
+                          child: Text(
+                            playlists[index],
+                            textAlign: TextAlign.left,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+
+  void _showSaveAsPlaylistDialog() => showDialog(
+    context: context,
+    builder: (BuildContext savecontext) {
+      var customPlaylistName = '';
+      String? imageUrl;
+
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final theme = Theme.of(context);
+          final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
+
+          return AlertDialog(
+            backgroundColor: dialogBackgroundColor,
+            content: SingleChildScrollView(
+              child: 
+              SizedBox(
+                width: 200,
+                child:
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const SizedBox(height: 15),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: context.l10n!.customPlaylistName,
+                    ),
+                    onChanged: (value) {
+                      customPlaylistName = value;
+                    },
+                  ),
+                  const SizedBox(height: 7),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: context.l10n!.customPlaylistImgUrl,
+                    ),
+                    onChanged: (value) {
+                      imageUrl = value;
+                    },
+                  ),
+                ],
+              ),)
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text(context.l10n!.add.toUpperCase()),
+                onPressed: () async {
+                  if (customPlaylistName.isNotEmpty) {
+                    if (findPlaylistByName(customPlaylistName) != null)
+                      await showDialog(
+                        routeSettings: const RouteSettings(
+                          name: '/confirmation',
+                        ),
+                        context: savecontext,
+                        builder:
+                            (BuildContext confirmcontext) => ConfirmationDialog(
+                              message:
+                                  '${context.l10n!.playlistAlreadyExists}. ${context.l10n!.overwriteExistingPlaylist}',
+                              confirmText: context.l10n!.confirm,
+                              cancelText: context.l10n!.cancel,
+                              onCancel:
+                                  () => GoRouter.of(
+                                    savecontext,
+                                  ).pop(confirmcontext),
+                              onSubmit: () {
+                                showToast(
+                                  context,
+                                  createCustomPlaylist(
+                                    customPlaylistName,
+                                    image: imageUrl,
+                                    context,
+                                  ),
+                                );
+                                GoRouter.of(context).pop(context);
+                              },
+                            ),
+                      );
+                    else {
+                      showToast(
+                        context,
+                        createCustomPlaylist(
+                          customPlaylistName,
+                          image: imageUrl,
+                          context,
+                        ),
+                      );
+                      GoRouter.of(context).pop(context);
+                    }
+                  } else {
+                    showToast(
+                      context,
+                      '${context.l10n!.provideIdOrNameError}.',
+                    );
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 
   Widget _buildCustomScrollView(
     String title,
