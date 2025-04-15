@@ -40,7 +40,8 @@ import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _SearchPageState createState() => _SearchPageState();
@@ -48,7 +49,7 @@ class SearchPage extends StatefulWidget {
 
 List searchHistory = Hive.box('user').get('searchHistory', defaultValue: []);
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageState extends State<SearchPage> with RouteAware {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
   final ValueNotifier<bool> _fetching = ValueNotifier(false);
@@ -68,6 +69,7 @@ class _SearchPageState extends State<SearchPage> {
     _songsSearchFuture?.ignore();
     _albumsSearchFuture?.ignore();
     _playlistsSearchFuture?.ignore();
+    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -76,12 +78,23 @@ class _SearchPageState extends State<SearchPage> {
     super.initState();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
+
   Future<void> search() async {
+    //TODO: add genre search
     final query = _searchBar.text;
 
     if (query.isEmpty) {
       _suggestionsList = [];
-      setState(() {});
+      if (mounted) setState(() {});
       return;
     }
 
@@ -93,8 +106,7 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     _setFutures(query);
-
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   void _setFutures(String query) {
@@ -150,7 +162,7 @@ class _SearchPageState extends State<SearchPage> {
                 } else {
                   _suggestionsList = [];
                 }
-                setState(() {});
+                if (mounted) setState(() {});
               }, */
               onSubmitted: (String value) {
                 search();
@@ -195,9 +207,10 @@ class _SearchPageState extends State<SearchPage> {
                           await _showConfirmationDialog(context) ?? false;
 
                       if (confirm) {
-                        setState(() {
-                          searchHistory.remove(query);
-                        });
+                        if (mounted)
+                          setState(() {
+                            searchHistory.remove(query);
+                          });
 
                         addOrUpdateData('user', 'searchHistory', searchHistory);
                       }
@@ -240,6 +253,7 @@ class _SearchPageState extends State<SearchPage> {
         icon: FluentIcons.mic_sparkle_24_filled,
         title: context.l10n!.artist,
         future: Future.value(snapshot.data),
+        navigatorObserver: widget.navigatorObserver,
       );
     if (snapshot.connectionState == ConnectionState.waiting)
       return Column(
@@ -283,7 +297,6 @@ class _SearchPageState extends State<SearchPage> {
               );
               return SongBar(
                 snapshot.data[index],
-                true,
                 showMusicDuration: true,
                 borderRadius: borderRadius,
               );
@@ -341,6 +354,7 @@ class _SearchPageState extends State<SearchPage> {
                 cardIcon: FluentIcons.cd_16_filled,
                 isAlbum: true,
                 borderRadius: borderRadius,
+                navigatorObserver: widget.navigatorObserver,
               );
             },
           ),
@@ -387,6 +401,7 @@ class _SearchPageState extends State<SearchPage> {
                 playlistId: playlist['ytid'],
                 playlistArtwork: playlist['image'],
                 cardIcon: FluentIcons.apps_list_24_filled,
+                navigatorObserver: widget.navigatorObserver,
               );
             },
           ),
@@ -412,8 +427,9 @@ class _SearchPageState extends State<SearchPage> {
       context: context,
       builder: (BuildContext context) {
         return ConfirmationDialog(
-          confirmationMessage: context.l10n!.removeSearchQueryQuestion,
-          submitMessage: context.l10n!.confirm,
+          message: context.l10n!.removeSearchQueryQuestion,
+          confirmText: context.l10n!.confirm,
+          cancelText: context.l10n!.cancel,
           onCancel: () {
             Navigator.of(context).pop(false);
           },

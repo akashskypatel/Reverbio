@@ -28,10 +28,14 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 
 void addOrUpdateData(String category, String key, dynamic value) async {
-  final _box = await _openBox(category);
-  await _box.put(key, value);
-  if (category == 'cache') {
-    await _box.put('${key}_date', DateTime.now());
+  try {
+    final _box = await _openBox(category);
+    await _box.put(key, value);
+    if (category == 'cache') {
+      await _box.put('${key}_date', DateTime.now());
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
 }
 

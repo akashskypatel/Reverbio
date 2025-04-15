@@ -41,6 +41,7 @@ class PlaylistBar extends StatelessWidget {
     this.showBuildActions = true,
     this.isAlbum = false,
     this.borderRadius = BorderRadius.zero,
+    required this.navigatorObserver,
   }) : playlistLikeStatus = ValueNotifier<bool>(
          isPlaylistAlreadyLiked(playlistId),
        );
@@ -55,6 +56,7 @@ class PlaylistBar extends StatelessWidget {
   final bool? isAlbum;
   final bool showBuildActions;
   final BorderRadius borderRadius;
+  final RouteObserver<PageRoute> navigatorObserver;
 
   static const double artworkSize = 60;
   static const double iconSize = 27;
@@ -79,13 +81,15 @@ class PlaylistBar extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
+                  settings: RouteSettings(name: 'playlist?yt=$playlistId'),
                   builder:
                       (context) => PlaylistPage(
                         playlistData: updatedPlaylist ?? playlistData,
+                        navigatorObserver: navigatorObserver,
                       ),
                 ),
-              ).then((isPlaylistUpdated) {
-                if (isPlaylistUpdated != null && isPlaylistUpdated) {
+              ).then((value) {
+                if (isPlaylistUpdated()) {
                   getPlaylistInfoForWidget(
                     playlistId,
                   ).then((result) => {updatedPlaylist = result});
@@ -123,6 +127,11 @@ class PlaylistBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool isPlaylistUpdated() {
+    final data = playlistData;
+    return false;
   }
 
   Widget _buildAlbumArt() {

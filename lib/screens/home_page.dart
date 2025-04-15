@@ -31,80 +31,117 @@ import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_list.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  HomePage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with RouteAware {
   final Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
     playlistsNum: recommendedCardsNumber,
   );
   final Future<dynamic> _recommendedSongsFuture = getRecommendedSongs();
   dynamic _recommendedSongs;
-
+  Future<dynamic>? _recommendedArtistsFuture;
   @override
   void initState() {
     super.initState();
-    _recommendedSongsFuture.then(
-      (songs) => setState(() {
-        _recommendedSongs = songs;
-      }),
-    );
+    _recommendedSongsFuture.then((songs) {
+      if (mounted)
+        setState(() {
+          _recommendedSongs = songs;
+          _parseArtistList(_recommendedSongs);
+        });
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Reverbio')),
-      body: SingleChildScrollView(
-        padding: commonSingleChildScrollViewPadding,
-        child: Column(
-          children: [
-            ValueListenableBuilder<String?>(
-              valueListenable: announcementURL,
-              builder: (_, _url, __) {
-                if (_url == null) return const SizedBox.shrink();
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: commonBarPadding,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: announcementURL,
+                builder: (_, _url, __) {
+                  if (_url == null) return const SizedBox.shrink();
 
-                return AnnouncementBox(
-                  message: context.l10n!.newAnnouncement,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.secondaryContainer,
-                  textColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                  url: _url,
-                );
-              },
+                  return AnnouncementBox(
+                    message: context.l10n!.newAnnouncement,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.secondaryContainer,
+                    textColor:
+                        Theme.of(context).colorScheme.onSecondaryContainer,
+                    url: _url,
+                  );
+                },
+              ),
             ),
-            Column(
-              children: [
-                HorizontalCardScroller(
-                  title: context.l10n!.suggestedPlaylists,
-                  future: _recommendedPlaylistsFuture,
-                ),
-                if (_recommendedSongs != null)
-                  FutureBuilder(
-                    future: _recommendedSongsFuture,
-                    builder: (context, snapshot) {
-                      return HorizontalCardScroller(
-                        title: context.l10n!.suggestedArtists,
-                        future: _parseArtistList(_recommendedSongs),
-                      );
-                    },
-                  ),
-                SongList(
-                  title: context.l10n!.recommendedForYou,
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: commonBarPadding,
+              child: ValueListenableBuilder<int>(
+                valueListenable: currentLikedPlaylistsLength,
+                builder: (_, value, __) {
+                  return HorizontalCardScroller(
+                    title: context.l10n!.suggestedPlaylists,
+                    future: _recommendedPlaylistsFuture,
+                    navigatorObserver: widget.navigatorObserver,
+                  );
+                },
+              ),
+            ),
+          ),
+          if (_recommendedSongs != null && _recommendedArtistsFuture != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: commonBarPadding,
+                child: FutureBuilder(
                   future: _recommendedSongsFuture,
+                  builder: (context, snapshot) {
+                    return HorizontalCardScroller(
+                      title: context.l10n!.suggestedArtists,
+                      //TODO: add more recommended artists from likes
+                      future: _recommendedArtistsFuture,
+                      navigatorObserver: widget.navigatorObserver,
+                    );
+                  },
                 ),
-              ],
+              ),
             ),
-          ],
-        ),
+          SongList(
+            title: context.l10n!.recommendedForYou,
+            future: _recommendedSongsFuture,
+          ),
+        ],
       ),
     );
   }
 
-  Future<dynamic> _parseArtistList(List<dynamic> data) async {
+  void _parseArtistList(List<dynamic> data) {
     final artists =
         data
             .where((e) => e['artist'] != null)
@@ -119,6 +156,10 @@ class _HomePageState extends State<HomePage> {
             )
             .toSet()
             .toList();
-    return getArtistsDetails(artists);
+    _recommendedArtistsFuture = getArtistsDetails(
+      artists,
+      limit: 25,
+      paginated: true,
+    );
   }
 }

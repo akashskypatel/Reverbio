@@ -61,7 +61,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                 ? (value) async {
                   widget.onChanged!(value);
 
-                  setState(() {});
+                  if (mounted) setState(() {});
                 }
                 : null,
         textInputAction: TextInputAction.search,

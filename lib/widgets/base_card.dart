@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 
@@ -84,47 +85,102 @@ class _BaseCardState extends State<BaseCard> {
     super.initState();
     dataType = _parseDataType();
     isLiked = _getLikeStatus();
+    _setupListeners();
+  }
+
+  @override
+  void dispose() {
+    _removeListeners();
+    super.dispose();
+  }
+
+  void _setupListeners() {
+    switch (dataType) {
+      case 'playlist':
+        currentLikedPlaylistsLength.addListener(_listener);
+        break;
+      case 'song':
+        currentLikedSongsLength.addListener(_listener);
+        break;
+      case 'album':
+        currentLikedAlbumsLength.addListener(_listener);
+        break;
+      case 'artist':
+        currentLikedArtistsLength.addListener(_listener);
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _removeListeners() {
+    switch (dataType) {
+      case 'playlist':
+        currentLikedPlaylistsLength.removeListener(_listener);
+        break;
+      case 'song':
+        currentLikedSongsLength.removeListener(_listener);
+        break;
+      case 'album':
+        currentLikedAlbumsLength.removeListener(_listener);
+        break;
+      case 'artist':
+        currentLikedArtistsLength.removeListener(_listener);
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _listener() {
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    isLiked = _getLikeStatus();
     final colorScheme = Theme.of(context).colorScheme;
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,
       builder:
-          (_, value, _) => Visibility(
+          (_, value, __) => Visibility(
             visible: value,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
               child: GestureDetector(
                 onTap: widget.onPressed,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      clipBehavior: Clip.antiAlias,
-                      child: SizedBox(
-                        width: widget.size,
-                        height: widget.size,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: colorScheme.secondary,
-                          ),
-                          child: Stack(
-                            children: [
-                              _buildImage(context),
-                              if (widget.showLabel) _buildLabel(context),
-                              if (widget.showLike) _buildLiked(context),
-                            ],
+                child: SizedBox(
+                  width: widget.size,
+                  height: widget.size,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        clipBehavior: Clip.antiAlias,
+                        child: SizedBox(
+                          width: widget.size,
+                          height: widget.size,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: colorScheme.secondary,
+                            ),
+                            child: Stack(
+                              children: [
+                                _buildImage(context),
+                                if (widget.showLabel) _buildLabel(context),
+                                if (widget.showLike) _buildLiked(context),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    if (widget.showOverflowLabel) _buildOverflowLabel(context),
-                  ],
+                      if (widget.showOverflowLabel)
+                        _buildOverflowLabel(context),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -237,7 +293,9 @@ class _BaseCardState extends State<BaseCard> {
 
   Widget _buildLiked(BuildContext context) {
     final liked =
-        isLiked ? FluentIcons.heart_12_filled : FluentIcons.heart_12_regular;
+        _getLikeStatus()
+            ? FluentIcons.heart_12_filled
+            : FluentIcons.heart_12_regular;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
       child: Align(
@@ -253,9 +311,10 @@ class _BaseCardState extends State<BaseCard> {
 
   void _toggleLike(BuildContext context) async {
     final liked = await _updateLikeStatus();
-    setState(() {
-      isLiked = liked;
-    });
+    if (mounted)
+      setState(() {
+        isLiked = liked;
+      });
   }
 
   Future<bool> _updateLikeStatus() async {
@@ -278,10 +337,10 @@ class _BaseCardState extends State<BaseCard> {
     var liked = false;
     switch (dataType) {
       case 'playlist':
-        liked = isPlaylistAlreadyLiked(widget.inputData?['ytid']);
+        liked = isPlaylistAlreadyLiked(widget.inputData?['id']);
       case 'album':
         if (widget.inputData?['source'] == 'youtube')
-          liked = isPlaylistAlreadyLiked(widget.inputData?['ytid']);
+          liked = isPlaylistAlreadyLiked(widget.inputData?['id']);
         else
           liked = isAlbumAlreadyLiked(widget.inputData?['id']);
       case 'artist':
@@ -308,6 +367,7 @@ class _BaseCardState extends State<BaseCard> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
+          overflow: TextOverflow.ellipsis,
           dataType == 'artist'
               ? ''
               : dataType == 'playlist'
@@ -325,7 +385,7 @@ class _BaseCardState extends State<BaseCard> {
 
   Widget _buildOverflowLabel(BuildContext context) {
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: artistHeight, maxHeight: 44),
+      constraints: BoxConstraints(minWidth: artistHeight, minHeight: 44),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         child: Text(

@@ -28,6 +28,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
@@ -44,6 +45,7 @@ List userOfflineSongs = Hive.box(
 late final ValueNotifier<int> currentLikedSongsLength;
 late final ValueNotifier<int> currentOfflineSongsLength;
 late final ValueNotifier<int> currentRecentlyPlayedLength;
+late final ValueNotifier<int> activeQueueLength;
 
 int activeSongId = 0;
 
@@ -54,9 +56,9 @@ Future<List> getSongsList(String searchQuery) async {
   try {
     final List<Video> searchResults = await yt.search.search(searchQuery);
 
-    return searchResults.map((video) => returnSongLayout(0, video)).toList();
+    return searchResults.map((video) => returnYtSongLayout(0, video)).toList();
   } catch (e, stackTrace) {
-    logger.log('Error in fetchSongsList', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
   }
 }
@@ -72,7 +74,7 @@ Future<List> getRecommendedSongs() async {
             final relatedSongs = await yt.videos.getRelatedVideos(song) ?? [];
             return relatedSongs
                 .take(3)
-                .map((s) => returnSongLayout(0, s))
+                .map((s) => returnYtSongLayout(0, s))
                 .toList();
           }).toList();
 
@@ -82,7 +84,7 @@ Future<List> getRecommendedSongs() async {
     } else {
       final playlistSongs = [...userLikedSongsList, ...userRecentlyPlayed];
       if (globalSongs.isEmpty) {
-        const playlistId = 'PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
+        const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
         globalSongs = await getSongsFromPlaylist(playlistId);
       }
       playlistSongs.addAll(globalSongs.take(10));
@@ -96,23 +98,25 @@ Future<List> getRecommendedSongs() async {
 
       playlistSongs.shuffle();
       final seenYtIds = <String>{};
-      playlistSongs.removeWhere((song) => !seenYtIds.add(song['ytid']));
+      playlistSongs.removeWhere((song) {
+        if (song['ytid'] != null) return !seenYtIds.add(song['ytid']);
+        return false;
+      });
       return playlistSongs.take(15).toList();
     }
   } catch (e, stackTrace) {
-    logger.log('Error in getRecommendedSongs', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
   }
 }
 
 Future<void> updateSongLikeStatus(dynamic songId, bool add) async {
-  if (add) {
-    userLikedSongsList.add(
-      await getSongDetails(userLikedSongsList.length, songId),
-    );
+  if (add && songId != null) {
+    final song = await getSongDetails(userLikedSongsList.length, songId);
+    userLikedSongsList.add(song);
     currentLikedSongsLength.value++;
   } else {
-    userLikedSongsList.removeWhere((song) => song['ytid'] == songId);
+    userLikedSongsList.removeWhere((song) => song['id'] == songId);
     currentLikedSongsLength.value--;
   }
   addOrUpdateData('user', 'likedSongs', userLikedSongsList);
@@ -128,10 +132,10 @@ void moveLikedSong(int oldIndex, int newIndex) {
 }
 
 bool isSongAlreadyLiked(songIdToCheck) =>
-    userLikedSongsList.any((song) => song['ytid'] == songIdToCheck);
+    userLikedSongsList.any((song) => song['id'] == songIdToCheck);
 
 bool isSongAlreadyOffline(songIdToCheck) =>
-    userOfflineSongs.any((song) => song['ytid'] == songIdToCheck);
+    userOfflineSongs.any((song) => song['id'] == songIdToCheck);
 
 void getSimilarSong(String songYtId) async {
   try {
@@ -139,10 +143,10 @@ void getSimilarSong(String songYtId) async {
     final relatedSongs = await yt.videos.getRelatedVideos(song) ?? [];
 
     if (relatedSongs.isNotEmpty) {
-      nextRecommendedSong = returnSongLayout(0, relatedSongs[0]);
+      nextRecommendedSong = returnYtSongLayout(0, relatedSongs[0]);
     }
   } catch (e, stackTrace) {
-    logger.log('Error while fetching next similar song:', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
 }
 
@@ -162,7 +166,7 @@ Future<dynamic> findSong(String songName, String artist) async {
 
     return result.isNotEmpty ? result.first : {};
   } catch (e, stackTrace) {
-    logger.log('Error while getting song streaming URL', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -176,42 +180,56 @@ Future<AudioOnlyStreamInfo> getSongManifest(String songId) async {
     final audioStream = manifest.audioOnly.withHighestBitrate();
     return audioStream;
   } catch (e, stackTrace) {
-    logger.log('Error while getting song streaming manifest', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow; // Rethrow the exception to allow the caller to handle it
   }
 }
 
 const Duration _cacheDuration = Duration(hours: 3);
 
-Future<String> getSong(String songId, bool isLive) async {
+Future<String> getSongUrl(dynamic song) async {
   try {
-    final qualitySetting = audioQualitySetting.value;
-    final cacheKey = 'song_${songId}_${qualitySetting}_url';
-
-    final cachedUrl = await getData(
-      'cache',
-      cacheKey,
-      cachingDuration: _cacheDuration,
-    );
-
-    unawaited(updateRecentlyPlayed(songId));
-
-    if (cachedUrl != null) {
-      return cachedUrl;
+    if (song == null) return '';
+    if (song['ytid'] == null)
+      song.addAll(await findSong(song['title'], song['artist']));
+    if (song['ytid'] != null && song['ytid'].isNotEmpty) {
+      unawaited(updateRecentlyPlayed(song['ytid']));
+      final songUrl = await getYouTubeAudioUrl(song['ytid']);
+      final uri = Uri.parse(songUrl);
+      final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+      song['songUrl'] = songUrl;
+      song['songUrlExpire'] = expires;
+      song['isError'] = false;
     }
-
-    if (isLive) {
-      return await getLiveStreamUrl(songId);
+    if (song['songUrl'] == null || song['songUrl'].isEmpty) {
+      song['error'] = 'Could not find YoutTube stream for this song.';
+      song['isError'] = true;
+      return '';
     }
-
-    return await getAudioUrl(songId);
+    return song['songUrl'];
   } catch (e, stackTrace) {
-    logger.log('Error while getting song streaming URL', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
 
-Future<String> getAudioUrl(String songId) async {
+Future<String> getYouTubeAudioUrl(String songId) async {
+  final qualitySetting = audioQualitySetting.value;
+  final cacheKey = 'song_${songId}_${qualitySetting}_url';
+
+  final cachedUrl = await getData(
+    'cache',
+    cacheKey,
+    cachingDuration: _cacheDuration,
+  );
+
+  if (cachedUrl != null) {
+    final uri = Uri.parse(cachedUrl);
+    final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    if (expires > now) return cachedUrl;
+  }
+
   final manifest = await yt.videos.streamsClient.getManifest(songId);
   final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
   final audioUrl = audioQuality.url.toString();
@@ -224,10 +242,16 @@ Future<Map<String, dynamic>> getSongDetails(
   String songId,
 ) async {
   try {
-    final song = await yt.videos.get(songId);
-    return returnSongLayout(songIndex, song);
+    String id;
+    if (songId.contains('yt=')) {
+      id = Uri.parse('?$songId').queryParameters['yt'] ?? '';
+    } else {
+      id = songId;
+    }
+    final song = await yt.videos.get(id);
+    return returnYtSongLayout(songIndex, song);
   } catch (e, stackTrace) {
-    logger.log('Error while getting song details', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -256,22 +280,26 @@ Future<void> makeSongOffline(dynamic song) async {
     final _dir = await getApplicationSupportDirectory();
     final _audioDirPath = '${_dir.path}/tracks';
     final _artworkDirPath = '${_dir.path}/artworks';
-    final String ytid = song['ytid'];
-    final _audioFile = File('$_audioDirPath/$ytid.m4a');
-    final _artworkFile = File('$_artworkDirPath/$ytid.jpg');
+    final String id = song['id'];
+    final _audioFile = File('$_audioDirPath/$id.m4a');
+    final _artworkFile = File('$_artworkDirPath/$id.jpg');
 
     await Directory(_audioDirPath).create(recursive: true);
     await Directory(_artworkDirPath).create(recursive: true);
 
     try {
-      final audioManifest = await getSongManifest(ytid);
+      final audioManifest = await getSongManifest(id);
       final stream = yt.videos.streamsClient.get(audioManifest);
       final fileStream = _audioFile.openWrite();
       await stream.pipe(fileStream);
       await fileStream.flush();
       await fileStream.close();
     } catch (e, stackTrace) {
-      logger.log('Error downloading audio file', e, stackTrace);
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       throw Exception('Failed to download audio: $e');
     }
 
@@ -287,7 +315,11 @@ Future<void> makeSongOffline(dynamic song) async {
         song['lowResImage'] = artworkFile.path;
       }
     } catch (e, stackTrace) {
-      logger.log('Error downloading artwork', e, stackTrace);
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
     }
 
     song['audioPath'] = _audioFile.path;
@@ -295,7 +327,7 @@ Future<void> makeSongOffline(dynamic song) async {
     addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
     currentOfflineSongsLength.value = userOfflineSongs.length;
   } catch (e, stackTrace) {
-    logger.log('Error making song offline', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
 }
@@ -310,7 +342,7 @@ Future<void> removeSongFromOffline(dynamic songId) async {
   if (await _audioFile.exists()) await _audioFile.delete(recursive: true);
   if (await _artworkFile.exists()) await _artworkFile.delete(recursive: true);
 
-  userOfflineSongs.removeWhere((song) => song['ytid'] == songId);
+  userOfflineSongs.removeWhere((song) => song['id'] == songId);
   currentOfflineSongsLength.value = userOfflineSongs.length;
   addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
 }
@@ -331,30 +363,34 @@ Future<File?> _downloadAndSaveArtworkFile(String url, String filePath) async {
       );
     }
   } catch (e, stackTrace) {
-    logger.log('Error downloading and saving file', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-
   return null;
 }
 
 const recentlyPlayedSongsLimit = 50;
 
 Future<void> updateRecentlyPlayed(dynamic songId) async {
-  if (userRecentlyPlayed.length == 1 && userRecentlyPlayed[0]['ytid'] == songId)
-    return;
-  if (userRecentlyPlayed.length >= recentlyPlayedSongsLimit) {
-    userRecentlyPlayed.removeLast();
+  try {
+    if (userRecentlyPlayed.length == 1 && userRecentlyPlayed[0]['id'] == songId)
+      return;
+    if (userRecentlyPlayed.length >= recentlyPlayedSongsLimit) {
+      userRecentlyPlayed.removeLast();
+    }
+
+    userRecentlyPlayed.removeWhere((song) => song['id'] == songId);
+    currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
+
+    final newSongDetails = await getSongDetails(
+      userRecentlyPlayed.length,
+      songId,
+    );
+
+    userRecentlyPlayed.insert(0, newSongDetails);
+    currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
+    addOrUpdateData('user', 'recentlyPlayedSongs', userRecentlyPlayed);
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    rethrow;
   }
-
-  userRecentlyPlayed.removeWhere((song) => song['ytid'] == songId);
-  currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
-
-  final newSongDetails = await getSongDetails(
-    userRecentlyPlayed.length,
-    songId,
-  );
-
-  userRecentlyPlayed.insert(0, newSongDetails);
-  currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
-  addOrUpdateData('user', 'recentlyPlayedSongs', userRecentlyPlayed);
 }

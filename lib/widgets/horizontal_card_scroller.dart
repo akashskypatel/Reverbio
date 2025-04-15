@@ -37,11 +37,14 @@ class HorizontalCardScroller extends StatefulWidget {
     this.title = '',
     this.icon = FluentIcons.music_note_1_24_regular,
     this.future,
+    required this.navigatorObserver,
   });
 
   final IconData icon;
   final String title;
   final Future<dynamic>? future;
+  final RouteObserver<PageRoute> navigatorObserver;
+
   @override
   State<HorizontalCardScroller> createState() => _HorizontalCardScrollerState();
 }
@@ -54,6 +57,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final isLargeScreen = MediaQuery.of(context).size.width > 480;
   int itemsNumber = recommendedCardsNumber;
+  final Map<String, BaseCard> cards = {};
 
   @override
   void initState() {
@@ -63,6 +67,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   @override
   void dispose() {
     widget.future?.ignore();
+    cards.clear();
     super.dispose();
   }
 
@@ -72,7 +77,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
       children: [
         SectionHeader(title: widget.title),
         ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: playlistHeight + 44),
+          constraints: BoxConstraints(maxHeight: playlistHeight + (isLargeScreen ? 44 : 60)),
           child: FutureBuilder(
             future: widget.future,
             builder: (context, snapshot) {
@@ -122,40 +127,54 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
     );
   }
 
+  void _buildCards(BuildContext context) {
+    for (final data in inputData) {
+      final dataType = _parseDataType(data);
+      final isArtist = data['isArtist'] = dataType == 'artist';
+      data['isPlaylist'] = dataType == 'playlist';
+      if ((data['id'] ?? data['ytid']) != null)
+        cards[data['id'] ?? data['ytid']] = BaseCard(
+          inputData: data,
+          icon: widget.icon,
+          size: playlistHeight,
+          showLabel: !isArtist,
+          showOverflowLabel: true,
+          showLike: true,
+          onPressed:
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  settings: RouteSettings(
+                    name: '$dataType?${data['id'] ?? 'yt=${data['ytid']}'}',
+                  ),
+                  builder: (context) {
+                    switch (dataType) {
+                      case 'artist':
+                        return ArtistPage(
+                          artistData: data,
+                          navigatorObserver: widget.navigatorObserver,
+                        );
+                      default:
+                        return PlaylistPage(
+                          playlistData: data,
+                          navigatorObserver: widget.navigatorObserver,
+                        );
+                    }
+                  },
+                ),
+              ),
+        );
+    }
+  }
+
   Widget _buildLargeScreenScroller(BuildContext context) {
+    cards.clear();
+    _buildCards(context);
     return ScrollConfiguration(
       behavior: CustomScrollBehavior(),
-      child: ListView.builder(
+      child: ListView(
         scrollDirection: Axis.horizontal,
-        itemCount: itemsNumber,
-        itemBuilder: (context, index) {
-          final dataType = _parseDataType(inputData[index]);
-          if (dataType == null) return _buildErrorWidget(context);
-          final isArtist = inputData[index]['isArtist'] = dataType == 'artist';
-          inputData[index]['isPlaylist'] = dataType == 'playlist';
-          return BaseCard(
-            inputData: inputData[index],
-            icon: widget.icon,
-            size: playlistHeight,
-            showLabel: !isArtist,
-            showOverflowLabel: true,
-            showLike: true,
-            onPressed:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      switch (dataType) {
-                        case 'artist':
-                          return ArtistPage(artistData: inputData[index]);
-                        default:
-                          return PlaylistPage(playlistData: inputData[index]);
-                      }
-                    },
-                  ),
-                ),
-          );
-        },
+        children: cards.values.toList(),
       ),
     );
   }
@@ -178,17 +197,28 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
           size: playlistHeight,
           showLabel: !isArtist,
           showLike: true,
+          showOverflowLabel: true,
           onPressed:
               () => Navigator.push(
                 context,
                 MaterialPageRoute(
+                  settings: RouteSettings(
+                    name:
+                        '$dataType?${inputData[index]['id'] ?? 'yt=${inputData[index]['ytid']}'}',
+                  ),
                   builder: (context) {
                     final dataType = _parseDataType(inputData[index]);
                     switch (dataType) {
                       case 'artist':
-                        return ArtistPage(artistData: inputData[index]);
+                        return ArtistPage(
+                          artistData: inputData[index],
+                          navigatorObserver: widget.navigatorObserver,
+                        );
                       default:
-                        return PlaylistPage(playlistData: inputData[index]);
+                        return PlaylistPage(
+                          playlistData: inputData[index],
+                          navigatorObserver: widget.navigatorObserver,
+                        );
                     }
                   },
                 ),

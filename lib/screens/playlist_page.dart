@@ -24,18 +24,18 @@ import 'dart:math';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
-import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
-import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
-import 'package:reverbio/widgets/playlist_card.dart';
+import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
+import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class PlaylistPage extends StatefulWidget {
@@ -44,17 +44,19 @@ class PlaylistPage extends StatefulWidget {
     this.playlistData,
     this.cardIcon = FluentIcons.music_note_1_24_regular,
     this.isArtist = false,
+    required this.navigatorObserver,
   });
 
   final dynamic playlistData;
   final IconData cardIcon;
   final bool isArtist;
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _PlaylistPageState createState() => _PlaylistPageState();
 }
 
-class _PlaylistPageState extends State<PlaylistPage> {
+class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   List<dynamic> _songsList = [];
   dynamic _playlist;
 
@@ -73,12 +75,28 @@ class _PlaylistPageState extends State<PlaylistPage> {
     _initializePlaylist();
   }
 
+  @override
+  void dispose() {
+    widget.navigatorObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
+  }
+
   Future<void> _initializePlaylist() async {
-    if (widget.playlistData?['artist-details'] != null) {
+    if (widget.playlistData?['source'] == 'musicbrainz') {
       await getTrackList(widget.playlistData);
     }
     _playlist =
-        (widget.playlistData['ytid'] != null)
+        widget.playlistData['ytid'] != null
             ? await getPlaylistInfoForWidget(
               widget.playlistData['ytid'],
               isArtist: widget.isArtist,
@@ -125,45 +143,28 @@ class _PlaylistPageState extends State<PlaylistPage> {
       appBar: _buildNavigationBar(),
       body:
           _playlist != null
-              ? CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: _buildPlaylistHeader(),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 20,
-                      ),
-                      child: _buildSongActionsRow(),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: commonListViewBottmomPadding,
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (BuildContext context, int index) {
-                          final isRemovable =
-                              _playlist['source'] == 'user-created';
-                          return _buildSongListItem(index, isRemovable);
-                        },
-                        childCount:
-                            _hasMore
-                                ? _songsList.length + 1
-                                : _songsList.length,
-                      ),
-                    ),
-                  ),
-                ],
-              )
+              ? _buildList()
               : SizedBox(
                 height: MediaQuery.sizeOf(context).height - 100,
                 child: const Spinner(),
               ),
+    );
+  }
+
+  Widget _buildList() {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: _buildPlaylistHeader(),
+          ),
+        ),
+        SongList(
+          inputData: _songsList,
+          isEditable: _playlist['source'] == ['user-created'],
+        ),
+      ],
     );
   }
 
@@ -172,7 +173,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed:
-            () => Navigator.pop(context, widget.playlistData == _playlist),
+            () => GoRouter.of(context).pop(
+              context,
+            ), //Navigator.pop(context, widget.playlistData == _playlist),
       ),
       actions: [
         if (widget.playlistData['ytid'] != null) ...[_buildLikeButton()],
@@ -205,10 +208,10 @@ class _PlaylistPageState extends State<PlaylistPage> {
   Widget _buildPlaylistImage() {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isLandscape = screenWidth > MediaQuery.sizeOf(context).height;
-    return PlaylistCard(
-      _playlist,
+    return BaseCard(
+      inputData: _playlist,
       size: isLandscape ? 300 : screenWidth / 2.5,
-      cardIcon: widget.cardIcon,
+      icon: widget.cardIcon,
     );
   }
 
@@ -302,34 +305,35 @@ class _PlaylistPageState extends State<PlaylistPage> {
                   TextButton(
                     child: Text(context.l10n!.add.toUpperCase()),
                     onPressed: () {
-                      setState(() {
-                        final index = userCustomPlaylists.value.indexOf(
-                          widget.playlistData,
-                        );
-
-                        if (index != -1) {
-                          final newPlaylist = {
-                            'title': customPlaylistName,
-                            'source': 'user-created',
-                            if (imageUrl != null) 'image': imageUrl,
-                            'list': widget.playlistData['list'],
-                          };
-                          final updatedPlaylists = List<Map>.from(
-                            userCustomPlaylists.value,
+                      if (mounted)
+                        setState(() {
+                          final index = userCustomPlaylists.value.indexOf(
+                            widget.playlistData,
                           );
-                          updatedPlaylists[index] = newPlaylist;
-                          userCustomPlaylists.value = updatedPlaylists;
-                          addOrUpdateData(
-                            'user',
-                            'customPlaylists',
-                            userCustomPlaylists,
-                          );
-                          _playlist = newPlaylist;
-                          showToast(context, context.l10n!.playlistUpdated);
-                        }
 
-                        Navigator.pop(context);
-                      });
+                          if (index != -1) {
+                            final newPlaylist = {
+                              'title': customPlaylistName,
+                              'source': 'user-created',
+                              if (imageUrl != null) 'image': imageUrl,
+                              'list': widget.playlistData['list'],
+                            };
+                            final updatedPlaylists = List<Map>.from(
+                              userCustomPlaylists.value,
+                            );
+                            updatedPlaylists[index] = newPlaylist;
+                            userCustomPlaylists.value = updatedPlaylists;
+                            addOrUpdateData(
+                              'user',
+                              'customPlaylists',
+                              userCustomPlaylists,
+                            );
+                            _playlist = newPlaylist;
+                            showToast(context, context.l10n!.playlistUpdated);
+                          }
+
+                          GoRouter.of(context).pop(context);
+                        });
                     },
                   ),
                 ],
@@ -344,19 +348,25 @@ class _PlaylistPageState extends State<PlaylistPage> {
       _playlist = await updatePlaylistList(context, _playlist['ytid']);
       _hasMore = true;
       _songsList.clear();
+      if (mounted)
+        setState(() {
+          _currentPage = 0;
+          _currentLastLoadedId = 0;
+          _loadMore();
+        });
+    } else if (_playlist['source'] == 'user-created') {
       setState(() {
-        _currentPage = 0;
-        _currentLastLoadedId = 0;
-        _loadMore();
+        _songsList = _playlist['list'];
       });
     } else {
       final updatedPlaylist = await getPlaylistInfoForWidget(
         widget.playlistData['ytid'],
       );
       if (updatedPlaylist != null) {
-        setState(() {
-          _songsList = updatedPlaylist['list'];
-        });
+        if (mounted)
+          setState(() {
+            _songsList = updatedPlaylist['list'];
+          });
       }
     }
   }
@@ -375,13 +385,39 @@ class _PlaylistPageState extends State<PlaylistPage> {
           indexToInsert: indexOfRemovedSong,
         );
         _songsList.insert(indexOfRemovedSong, songToRemove);
-        setState(() {});
+        if (mounted) setState(() {});
       },
     );
+    if (mounted)
+      setState(() {
+        _songsList.removeAt(indexOfRemovedSong);
+      });
+  }
 
-    setState(() {
-      _songsList.removeAt(indexOfRemovedSong);
-    });
+  Widget _buildPlayActionButton() {
+    return IconButton(
+      color: Theme.of(context).colorScheme.primary,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      icon: const Icon(FluentIcons.play_circle_24_filled),
+      iconSize: 30,
+      onPressed: () {
+        //TODO: add "play" action
+      },
+    );
+  }
+
+  Widget _buildAddToQueueActionButton() {
+    return IconButton(
+      color: Theme.of(context).colorScheme.primary,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      icon: const Icon(FluentIcons.add_circle_24_filled),
+      iconSize: 30,
+      onPressed: () {
+        //TODO: add "add to queue" action
+      },
+    );
   }
 
   Widget _buildShuffleSongActionButton() {
@@ -390,12 +426,15 @@ class _PlaylistPageState extends State<PlaylistPage> {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
-      iconSize: 25,
+      iconSize: 30,
       onPressed: () {
         final _newList = List.of(_playlist['list'])..shuffle();
-        setActivePlaylist({
+        setQueueToPlaylist({
+          'id': _playlist['id'],
+          'ytid': _playlist['ytid'],
           'title': _playlist['title'],
           'image': _playlist['image'],
+          'source': _playlist['source'],
           'list': _newList,
         });
       },
@@ -409,7 +448,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       underline: const SizedBox.shrink(),
       iconEnabledColor: Theme.of(context).colorScheme.primary,
       elevation: 0,
-      iconSize: 25,
+      iconSize: 30,
       icon: const Icon(FluentIcons.filter_16_filled),
       items:
           <String>[context.l10n!.name, context.l10n!.artist].map((
@@ -418,32 +457,33 @@ class _PlaylistPageState extends State<PlaylistPage> {
             return DropdownMenuItem<String>(value: value, child: Text(value));
           }).toList(),
       onChanged: (item) {
-        setState(() {
-          final playlist = _playlist['list'];
+        if (mounted)
+          setState(() {
+            final playlist = _playlist['list'];
 
-          void sortBy(String key) {
-            playlist.sort((a, b) {
-              final valueA = a[key].toString().toLowerCase();
-              final valueB = b[key].toString().toLowerCase();
-              return valueA.compareTo(valueB);
-            });
-          }
+            void sortBy(String key) {
+              playlist.sort((a, b) {
+                final valueA = a[key].toString().toLowerCase();
+                final valueB = b[key].toString().toLowerCase();
+                return valueA.compareTo(valueB);
+              });
+            }
 
-          if (item == context.l10n!.name) {
-            sortBy('title');
-          } else if (item == context.l10n!.artist) {
-            sortBy('artist');
-          }
+            if (item == context.l10n!.name) {
+              sortBy('title');
+            } else if (item == context.l10n!.artist) {
+              sortBy('artist');
+            }
 
-          _playlist['list'] = playlist;
+            _playlist['list'] = playlist;
 
-          // Reset pagination and reload
-          _hasMore = true;
-          _songsList.clear();
-          _currentPage = 0;
-          _currentLastLoadedId = 0;
-          _loadMore();
-        });
+            // Reset pagination and reload
+            _hasMore = true;
+            _songsList.clear();
+            _currentPage = 0;
+            _currentLastLoadedId = 0;
+            _loadMore();
+          });
       },
     );
   }
@@ -455,6 +495,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
         _buildSortSongActionButton(),
         const SizedBox(width: 5),
         _buildShuffleSongActionButton(),
+        _buildPlayActionButton(),
+        _buildAddToQueueActionButton(),
       ],
     );
   }
@@ -471,7 +513,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
     return SongBar(
       _songsList[index],
-      true,
       onRemove:
           isRemovable
               ? () => {
@@ -483,14 +524,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
                   {_updateSongsListOnRemove(index)},
               }
               : null,
-      onPlay:
-          () => {
-            audioHandler.playPlaylistSong(
-              playlist: activePlaylist != _playlist ? _playlist : null,
-              songIndex: index,
-            ),
-          },
       borderRadius: borderRadius,
+      showMusicDuration: true,
     );
   }
 }

@@ -22,7 +22,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:reverbio/localization/app_localizations.dart';
 
 extension ContextX on BuildContext {
@@ -77,4 +76,34 @@ class CustomScrollBehavior extends MaterialScrollBehavior {
     PointerDeviceKind.touch,
     PointerDeviceKind.mouse, // Enable mouse dragging
   };
+
+    // Optionally, you can customize the scrollbar appearance or behavior
+  @override
+  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+    // Use the default scrollbar provided by MaterialScrollBehavior
+    return super.buildScrollbar(context, child, details);
+  }
+
+  // Optionally, you can customize the scroll physics or behavior
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics(); // Example: Use BouncingScrollPhysics
+  }
+}
+
+extension StackTraceExtensions on StackTrace {
+  /// Returns the name of the current method from the stack trace.
+  String getCurrentMethodName() {
+    // Convert the stack trace to a string
+    final stackTraceString = toString();
+    // Split the stack trace into lines
+    final lines = stackTraceString.split('\n');
+    // The first line contains the current method
+    final currentLine = lines[0];
+    // Extract the method name using a regular expression
+    final regex = RegExp(r'^#0\s+([\w<>]+)');
+    final match = regex.firstMatch(currentLine);
+    // Return the method name if found
+    return match?.group(1) ?? 'Unknown';
+  }
 }

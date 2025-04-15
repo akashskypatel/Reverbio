@@ -25,24 +25,28 @@ import 'package:reverbio/extensions/l10n.dart';
 class ConfirmationDialog extends StatelessWidget {
   const ConfirmationDialog({
     super.key,
-    this.confirmationMessage,
-    required this.submitMessage,
+    this.title,
+    this.message,
+    required this.confirmText,
+    required this.cancelText,
     required this.onCancel,
     required this.onSubmit,
   });
-  final String? confirmationMessage;
-  final String submitMessage;
+  final String? message;
+  final String? title;
+  final String confirmText;
+  final String cancelText;
   final VoidCallback? onCancel;
   final VoidCallback? onSubmit;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n!.confirmation),
-      content: confirmationMessage != null ? Text(confirmationMessage!) : null,
+      title: Text(title ?? context.l10n!.confirmation),
+      content: message != null ? Text(message!) : null,
       actions: <Widget>[
-        TextButton(onPressed: onCancel, child: Text(context.l10n!.cancel)),
-        TextButton(onPressed: onSubmit, child: Text(context.l10n!.remove)),
+        TextButton(onPressed: onCancel, child: Text(cancelText)),
+        TextButton(onPressed: onSubmit, child: Text(confirmText)),
       ],
     );
   }

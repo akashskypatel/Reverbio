@@ -55,8 +55,9 @@ String formatSongTitle(String title) {
   return finalTitle;
 }
 
-Map<String, dynamic> returnSongLayout(int index, Video song) => {
-  'id': index,
+Map<String, dynamic> returnYtSongLayout(int index, Video song) => {
+  'index': index,
+  'id': 'yt=${song.id}',
   'ytid': song.id.toString(),
   'title': formatSongTitle(
     song.title.split('-')[song.title.split('-').length - 1],
@@ -72,6 +73,7 @@ Map<String, dynamic> returnSongLayout(int index, Video song) => {
   'channelName': song.author,
   'channelId': song.channelId.value,
   'views': song.engagement.viewCount,
+  'isError': false,
 };
 
 String formatDuration(int audioDurationInSeconds) {

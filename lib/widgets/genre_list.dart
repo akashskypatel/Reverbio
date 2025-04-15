@@ -42,6 +42,7 @@ class GenreBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: FilledButton(
+        //TODO: clicking on genre bubble should open search by genre
         onPressed: () => {},
         child: Text(
           genre['name'] + (showCount ? ' (${genre['count'] ?? 0})' : ''),

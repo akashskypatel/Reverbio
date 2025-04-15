@@ -21,6 +21,7 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -35,13 +36,14 @@ import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/section_title.dart';
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key});
+  const LibraryPage({super.key, required this.navigatorObserver});
+  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _LibraryPageState createState() => _LibraryPageState();
 }
 
-class _LibraryPageState extends State<LibraryPage> {
+class _LibraryPageState extends State<LibraryPage> with RouteAware {
   @override
   void dispose() {
     currentLikedPlaylistsLength.removeListener(_listener);
@@ -49,6 +51,7 @@ class _LibraryPageState extends State<LibraryPage> {
     currentOfflineSongsLength.removeListener(_listener);
     currentRecentlyPlayedLength.removeListener(_listener);
     currentLikedAlbumsLength.removeListener(_listener);
+    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -60,10 +63,21 @@ class _LibraryPageState extends State<LibraryPage> {
     currentOfflineSongsLength.addListener(_listener);
     currentRecentlyPlayedLength.addListener(_listener);
     currentLikedAlbumsLength.addListener(_listener);
+    //TODO: add album liking
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the RouteObserver
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      widget.navigatorObserver.subscribe(this, route as PageRoute);
+    }
   }
 
   void _listener() {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   @override
@@ -71,7 +85,16 @@ class _LibraryPageState extends State<LibraryPage> {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n!.library)),
+      appBar: AppBar(
+        title: Text(context.l10n!.library),
+        actions: [
+          IconButton(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            onPressed: _showAddPlaylistDialog,
+            icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -95,15 +118,6 @@ class _LibraryPageState extends State<LibraryPage> {
         userPlaylists.value.isEmpty && userCustomPlaylists.value.isEmpty;
     return Column(
       children: [
-        SectionHeader(
-          title: context.l10n!.customPlaylists,
-          actionButton: IconButton(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-            onPressed: _showAddPlaylistDialog,
-            icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
-          ),
-        ),
-
         PlaylistBar(
           context.l10n!.recentlyPlayed,
           onPressed:
@@ -111,6 +125,7 @@ class _LibraryPageState extends State<LibraryPage> {
           cardIcon: FluentIcons.history_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.likedSongs,
@@ -118,6 +133,7 @@ class _LibraryPageState extends State<LibraryPage> {
               () => NavigationManager.router.go('/library/userSongs/liked'),
           cardIcon: FluentIcons.music_note_2_24_regular,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.artist,
@@ -129,18 +145,19 @@ class _LibraryPageState extends State<LibraryPage> {
                   ? commonCustomBarRadiusLast
                   : BorderRadius.zero,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.offlineSongs,
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/offline'),
           cardIcon: FluentIcons.cellular_off_24_filled,
-          borderRadius:
-              isUserPlaylistsEmpty
-                  ? commonCustomBarRadiusLast
-                  : BorderRadius.zero,
+          borderRadius: commonCustomBarRadiusLast,
           showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver,
         ),
+        //TODO: add search bar
+        SectionHeader(title: context.l10n!.customPlaylists),
         ValueListenableBuilder<List>(
           valueListenable: userCustomPlaylists,
           builder: (context, playlists, _) {
@@ -150,7 +167,6 @@ class _LibraryPageState extends State<LibraryPage> {
             return _buildPlaylistListView(context, playlists);
           },
         ),
-
         ValueListenableBuilder<List>(
           valueListenable: userPlaylists,
           builder: (context, playlists, _) {
@@ -227,14 +243,16 @@ class _LibraryPageState extends State<LibraryPage> {
                   ? () => _showRemovePlaylistDialog(playlist)
                   : null,
           borderRadius: borderRadius,
+          navigatorObserver: widget.navigatorObserver,
         );
       },
     );
   }
 
   void _showAddPlaylistDialog() => showDialog(
+    routeSettings: const RouteSettings(name: '/save-playlist'),
     context: context,
-    builder: (BuildContext context) {
+    builder: (BuildContext savecontext) {
       var id = '';
       var customPlaylistName = '';
       var isYouTubeMode = true;
@@ -250,79 +268,84 @@ class _LibraryPageState extends State<LibraryPage> {
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isYouTubeMode = true;
-                            id = '';
-                            customPlaylistName = '';
-                            imageUrl = null;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              isYouTubeMode
-                                  ? inactiveButtonBackground
-                                  : activeButtonBackground,
+              child: SizedBox(
+                width: 200,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            if (mounted)
+                              setState(() {
+                                isYouTubeMode = true;
+                                id = '';
+                                customPlaylistName = '';
+                                imageUrl = null;
+                              });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isYouTubeMode
+                                    ? inactiveButtonBackground
+                                    : activeButtonBackground,
+                          ),
+                          child: const Icon(FluentIcons.globe_add_24_filled),
                         ),
-                        child: const Icon(FluentIcons.globe_add_24_filled),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (mounted)
+                              setState(() {
+                                isYouTubeMode = false;
+                                id = '';
+                                customPlaylistName = '';
+                                imageUrl = null;
+                              });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isYouTubeMode
+                                    ? activeButtonBackground
+                                    : inactiveButtonBackground,
+                          ),
+                          child: const Icon(FluentIcons.person_add_24_filled),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    if (isYouTubeMode)
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: context.l10n!.youtubePlaylistLinkOrId,
+                        ),
+                        onChanged: (value) {
+                          id = value;
+                        },
+                      )
+                    else ...[
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: context.l10n!.customPlaylistName,
+                        ),
+                        onChanged: (value) {
+                          customPlaylistName = value;
+                        },
                       ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isYouTubeMode = false;
-                            id = '';
-                            customPlaylistName = '';
-                            imageUrl = null;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              isYouTubeMode
-                                  ? activeButtonBackground
-                                  : inactiveButtonBackground,
+                      const SizedBox(height: 7),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: context.l10n!.customPlaylistImgUrl,
                         ),
-                        child: const Icon(FluentIcons.person_add_24_filled),
+                        onChanged: (value) {
+                          imageUrl = value;
+                        },
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 15),
-                  if (isYouTubeMode)
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: context.l10n!.youtubePlaylistLinkOrId,
-                      ),
-                      onChanged: (value) {
-                        id = value;
-                      },
-                    )
-                  else ...[
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: context.l10n!.customPlaylistName,
-                      ),
-                      onChanged: (value) {
-                        customPlaylistName = value;
-                      },
-                    ),
-                    const SizedBox(height: 7),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: context.l10n!.customPlaylistImgUrl,
-                      ),
-                      onChanged: (value) {
-                        imageUrl = value;
-                      },
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
             actions: <Widget>[
@@ -330,24 +353,54 @@ class _LibraryPageState extends State<LibraryPage> {
                 child: Text(context.l10n!.add.toUpperCase()),
                 onPressed: () async {
                   if (isYouTubeMode && id.isNotEmpty) {
-                    showToast(context, await addUserPlaylist(id, context));
+                    showToast(context, await addYTUserPlaylist(id, context));
                   } else if (!isYouTubeMode && customPlaylistName.isNotEmpty) {
-                    showToast(
-                      context,
-                      createCustomPlaylist(
-                        customPlaylistName,
-                        imageUrl,
+                    if (findPlaylistByName(customPlaylistName) != null)
+                      await showDialog(
+                        routeSettings: const RouteSettings(
+                          name: '/confirmation',
+                        ),
+                        context: savecontext,
+                        builder:
+                            (BuildContext confirmcontext) => ConfirmationDialog(
+                              message:
+                                  '${context.l10n!.playlistAlreadyExists}. ${context.l10n!.overwriteExistingPlaylist}',
+                              confirmText: context.l10n!.confirm,
+                              cancelText: context.l10n!.cancel,
+                              onCancel:
+                                  () => GoRouter.of(
+                                    savecontext,
+                                  ).pop(confirmcontext),
+                              onSubmit: () {
+                                showToast(
+                                  context,
+                                  createCustomPlaylist(
+                                    customPlaylistName,
+                                    image: imageUrl,
+                                    context,
+                                  ),
+                                );
+                                GoRouter.of(context).pop(context);
+                              },
+                            ),
+                      );
+                    else {
+                      showToast(
                         context,
-                      ),
-                    );
+                        createCustomPlaylist(
+                          customPlaylistName,
+                          image: imageUrl,
+                          context,
+                        ),
+                      );
+                      GoRouter.of(context).pop(context);
+                    }
                   } else {
                     showToast(
                       context,
                       '${context.l10n!.provideIdOrNameError}.',
                     );
                   }
-
-                  Navigator.pop(context);
                 },
               ),
             ],
@@ -361,13 +414,14 @@ class _LibraryPageState extends State<LibraryPage> {
     context: context,
     builder: (BuildContext context) {
       return ConfirmationDialog(
-        confirmationMessage: context.l10n!.removePlaylistQuestion,
-        submitMessage: context.l10n!.remove,
+        message: context.l10n!.removePlaylistQuestion,
+        confirmText: context.l10n!.remove,
+        cancelText: context.l10n!.cancel,
         onCancel: () {
-          Navigator.of(context).pop();
+          GoRouter.of(context).pop();
         },
         onSubmit: () {
-          Navigator.of(context).pop();
+          GoRouter.of(context).pop();
 
           if (playlist['ytid'] == null &&
               playlist['source'] == 'user-created') {

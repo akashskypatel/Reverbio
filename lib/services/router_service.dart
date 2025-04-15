@@ -48,7 +48,10 @@ class NavigationManager {
           StatefulNavigationShell navigationShell,
         ) {
           return getPage(
-            child: BottomNavigationPage(child: navigationShell),
+            child: BottomNavigationPage(
+              navigatorObserver: navigatorObserver,
+              child: navigationShell,
+            ),
             state: state,
           );
         },
@@ -59,8 +62,10 @@ class NavigationManager {
       navigatorKey: parentNavigatorKey,
       initialLocation: homePath,
       routes: routes,
+      observers: [navigatorObserver],
     );
   }
+
   static final NavigationManager _instance = NavigationManager._internal();
 
   static NavigationManager get instance => _instance;
@@ -75,6 +80,8 @@ class NavigationManager {
       GlobalKey<NavigatorState>();
   static final GlobalKey<NavigatorState> libraryTabNavigatorKey =
       GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> queueTabNavigatorKey =
+      GlobalKey<NavigatorState>();
   static final GlobalKey<NavigatorState> settingsTabNavigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -86,10 +93,31 @@ class NavigationManager {
   GoRouteInformationParser get routeInformationParser =>
       router.routeInformationParser;
 
+  static RouteObserver<PageRoute> navigatorObserver =
+      RouteObserver<PageRoute>();
+
   static const String homePath = '/home';
   static const String settingsPath = '/settings';
   static const String searchPath = '/search';
   static const String libraryPath = '/library';
+  static const String queuePath = '/queue';
+
+  static HomePage homePage = HomePage(
+    navigatorObserver: navigatorObserver,
+  ); //key: homeTabNavigatorKey);
+  static LibraryPage libraryPage = LibraryPage(
+    navigatorObserver: navigatorObserver,
+  ); //key: libraryTabNavigatorKey);
+  static SearchPage searchPage = SearchPage(
+    navigatorObserver: navigatorObserver,
+  ); //key: searchTabNavigatorKey);
+  static UserSongsPage queuePage = UserSongsPage(
+    page: 'queue',
+    navigatorObserver: navigatorObserver,
+  ); //key: queueTabNavigatorKey,page: 'queue',);
+  static SettingsPage settingsPage = SettingsPage(
+    navigatorObserver: navigatorObserver,
+  ); //key: settingsTabNavigatorKey);
 
   List<StatefulShellBranch> _onlineRoutes() {
     return [
@@ -99,14 +127,12 @@ class NavigationManager {
           GoRoute(
             path: homePath,
             pageBuilder: (context, GoRouterState state) {
-              return getPage(child: const HomePage(), state: state);
+              return getPage(child: homePage, state: state);
             },
             routes: [
               GoRoute(
                 path: 'library',
-                builder:
-                    (context, state) =>
-                        LibraryPage(key: ValueKey(DateTime.now())),
+                builder: (context, state) => libraryPage,
               ),
             ],
           ),
@@ -118,7 +144,7 @@ class NavigationManager {
           GoRoute(
             path: searchPath,
             pageBuilder: (context, GoRouterState state) {
-              return getPage(child: const SearchPage(), state: state);
+              return getPage(child: searchPage, state: state);
             },
           ),
         ],
@@ -129,10 +155,7 @@ class NavigationManager {
           GoRoute(
             path: libraryPath,
             pageBuilder: (context, GoRouterState state) {
-              return getPage(
-                child: LibraryPage(key: ValueKey(DateTime.now())),
-                state: state,
-              );
+              return getPage(child: libraryPage, state: state);
             },
             routes: [
               GoRoute(
@@ -141,18 +164,33 @@ class NavigationManager {
                   switch (state.pathParameters['page']) {
                     case 'recents':
                     case 'liked':
-                    case 'artists':
-                      return LikedArtistsPage(key: ValueKey(DateTime.now()));
                     case 'offline':
                       return UserSongsPage(
                         page: state.pathParameters['page'] ?? '',
+                        navigatorObserver: navigatorObserver,
+                      );
+                    case 'artists':
+                      return LikedArtistsPage(
+                        key: ValueKey(DateTime.now()),
+                        navigatorObserver: navigatorObserver,
                       );
                     default:
-                      return const HomePage();
+                      return homePage;
                   }
                 },
               ),
             ],
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        navigatorKey: queueTabNavigatorKey,
+        routes: [
+          GoRoute(
+            path: queuePath,
+            pageBuilder: (context, GoRouterState state) {
+              return getPage(child: queuePage, state: state);
+            },
           ),
         ],
       ),
@@ -162,7 +200,7 @@ class NavigationManager {
           GoRoute(
             path: settingsPath,
             pageBuilder: (context, state) {
-              return getPage(child: const SettingsPage(), state: state);
+              return getPage(child: settingsPage, state: state);
             },
             routes: [
               GoRoute(
@@ -175,7 +213,9 @@ class NavigationManager {
               ),
               GoRoute(
                 path: 'about',
-                builder: (context, state) => const AboutPage(),
+                builder:
+                    (context, state) =>
+                        AboutPage(navigatorObserver: navigatorObserver),
               ),
             ],
           ),
@@ -193,7 +233,10 @@ class NavigationManager {
             path: homePath,
             pageBuilder: (context, GoRouterState state) {
               return getPage(
-                child: const UserSongsPage(page: 'offline'),
+                child: UserSongsPage(
+                  page: 'offline',
+                  navigatorObserver: navigatorObserver,
+                ),
                 state: state,
               );
             },
@@ -206,7 +249,7 @@ class NavigationManager {
           GoRoute(
             path: settingsPath,
             pageBuilder: (context, state) {
-              return getPage(child: const SettingsPage(), state: state);
+              return getPage(child: settingsPage, state: state);
             },
             routes: [
               GoRoute(
@@ -219,7 +262,9 @@ class NavigationManager {
               ),
               GoRoute(
                 path: 'about',
-                builder: (context, state) => const AboutPage(),
+                builder:
+                    (context, state) =>
+                        AboutPage(navigatorObserver: navigatorObserver),
               ),
             ],
           ),

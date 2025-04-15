@@ -1,4 +1,9 @@
 analyzer:
+  errors:
+    prefer_collection_literals: ignore
+    omit_local_variable_types: ignore
+    unnecessary_this: ignore
+    require_trailing_commas: ignore
   exclude:
     - packages/**
     - scripts/**

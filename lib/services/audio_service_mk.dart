@@ -23,9 +23,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
@@ -34,6 +36,15 @@ import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:rxdart/rxdart.dart';
 
 enum AudioPlayerState { uninitialized, initialized, playing, paused, stopped }
+
+final Map activeQueue = {
+  'id': '',
+  'ytid': '',
+  'title': 'No Songs in Queue',
+  'image': '',
+  'source': '',
+  'list': [],
+};
 
 class AudioPlayerService {
   AudioPlayerService() {
@@ -50,7 +61,7 @@ class AudioPlayerService {
   static final _playerStateController =
       StreamController<AudioPlayerState>.broadcast();
 
-  static AudioPlayerState get playerState => _playerState;
+  AudioPlayerState get playerState => _playerState;
   AudioProcessingState get state => _processingState;
   static Player get player => _player;
   bool get shuffleModeEnabled => _isShuffleEnabled;
@@ -62,6 +73,7 @@ class AudioPlayerService {
   Duration get position => _player.state.position;
   Duration get bufferedPosition => _player.state.buffer;
   double get speed => _player.state.rate;
+
   Stream<AudioPlayerState> get playerStateStream =>
       _playerStateController.stream;
   Stream<AudioProcessingState> get processingStateStream =>
@@ -70,6 +82,14 @@ class AudioPlayerService {
   Stream<Duration> get durationStream => _player.stream.duration;
   Stream<Duration> get positionStream => _player.stream.position;
   Stream<Duration> get bufferedPositionStream => _player.stream.buffer;
+  Stream<PositionData> get positionDataStream =>
+      Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
+        _player.stream.position,
+        _player.stream.buffer,
+        _player.stream.duration,
+        (position, bufferedPosition, duration) =>
+            PositionData(position, bufferedPosition, duration ?? Duration.zero),
+      );
   Stream<int> get currentIndexStream => _indexController.stream;
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
 
@@ -101,6 +121,7 @@ class AudioPlayerService {
     _player.stream.playing.listen((playing) {
       if (playing && _processingState != AudioProcessingState.error) {
         _updateProcessingState(AudioProcessingState.ready);
+        _updatePlayerState(AudioPlayerState.paused);
         logger.log(
           'Playing:${_player.state.buffer.inSeconds} \n Status:$_processingState',
           null,
@@ -175,6 +196,13 @@ class AudioPlayerService {
     return _player.open(media);
   }
 
+  Future<void> queue(Media media) async {
+    _updateProcessingState(AudioProcessingState.loading);
+    await _player.open(media);
+    await player.seek(Duration.zero);
+    return _player.pause();
+  }
+
   Future<void> setVolume(double volume) async {
     return _player.setVolume(volume);
   }
@@ -202,20 +230,16 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   bool sleepTimerExpired = false;
   late bool wasPlayingBeforeCall = false;
 
-  late StreamSubscription<bool?> _playbackEventSubscription;
-  late StreamSubscription<AudioProcessingState?> _stateChangeSubscription;
-  late StreamSubscription<Duration?> _durationSubscription;
-  late StreamSubscription<int?> _currentIndexSubscription;
-  late StreamSubscription<Playlist?> _sequenceStateSubscription;
-
-  Stream<PositionData> get positionDataStream =>
-      Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
-        audioPlayer.positionStream,
-        audioPlayer.bufferedPositionStream,
-        audioPlayer.durationStream,
-        (position, bufferedPosition, duration) =>
-            PositionData(position, bufferedPosition, duration ?? Duration.zero),
-      );
+  late final StreamSubscription<bool?> _playbackEventSubscription;
+  late final StreamSubscription<AudioProcessingState?> _stateChangeSubscription;
+  late final StreamSubscription<Duration?> _durationSubscription;
+  late final StreamSubscription<int?> _currentIndexSubscription;
+  late final StreamSubscription<Playlist?> _sequenceStateSubscription;
+  late final StreamSubscription<PositionData> _positionDataSubscription;
+  final ValueNotifier<dynamic> songValueNotifier = ValueNotifier({});
+  final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
+    PositionData(Duration.zero, Duration.zero, Duration.zero),
+  );
 
   void _handlePlaybackEvent(bool playing) {
     try {
@@ -296,6 +320,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _sequenceStateSubscription = audioPlayer.sequenceStateStream.listen(
       _handleSequenceStateChange,
     );
+    _positionDataSubscription = audioPlayer.positionDataStream.listen(
+      _positionDataNotify,
+    );
+  }
+
+  void _positionDataNotify(PositionData value) {
+    positionDataNotifier.value = value;
   }
 
   void _updatePlaybackState() {
@@ -378,18 +409,17 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _durationSubscription.cancel();
     await _currentIndexSubscription.cancel();
     await _sequenceStateSubscription.cancel();
+    await _positionDataSubscription.cancel();
     await super.onTaskRemoved();
   }
 
   bool get hasNext =>
-      activePlaylist['list'].isEmpty
+      activeQueue['list'].isEmpty
           ? audioPlayer.hasNext
-          : activeSongId + 1 < activePlaylist['list'].length;
+          : activeSongId + 1 < activeQueue['list'].length;
 
   bool get hasPrevious =>
-      activePlaylist['list'].isEmpty
-          ? audioPlayer.hasPrevious
-          : activeSongId > 0;
+      activeQueue['list'].isEmpty ? audioPlayer.hasPrevious : activeSongId > 0;
 
   @override
   Future<void> play() => audioPlayer.play();
@@ -397,7 +427,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> pause() => audioPlayer.pause();
   @override
   Future<void> stop() => audioPlayer.stop();
-
   @override
   Future<void> seek(Duration position) => audioPlayer.seek(position);
 
@@ -411,45 +440,30 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> rewind() =>
       seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
 
-  Future<dynamic> playSong(Map song) async {
+  Future<void> queueSong(dynamic song, {bool play = false}) async {
     try {
-      if (song['ytid'] == null)
-        song = await findSong(song['title'], song['artist']);
-
-      if (song.isEmpty) return song;
+      if (!isSongInQueue(song)) addSongToQueue(song);
+      songValueNotifier.value = song;
 
       final isOffline = song['isOffline'] ?? false;
 
       final preliminaryTag = mapToMediaItem(song);
-      mediaItem.add(preliminaryTag);
-
-      final songUrl =
-          isOffline
-              ? song['audioPath']
-              : await getSong(song['ytid'], song['isLive']);
-
+      final songUrl = song['songUrl'] == null || song['songUrl'].isEmpty ? await getSongUrl(song) : song['songUrl'];
       final audioSource = await buildAudioSource(song, songUrl, isOffline);
-
-      await audioPlayer.open(audioSource);
-      await audioPlayer.play();
+      mediaItem.add(preliminaryTag);
+      await audioPlayer.queue(audioSource);
 
       final cacheKey = 'song_${song['ytid']}_${audioQualitySetting.value}_url';
       if (!isOffline) addOrUpdateData('cache', cacheKey, songUrl);
       if (playNextSongAutomatically.value) getSimilarSong(song['ytid']);
-      return song;
+      if (play) await audioPlayer.play();
     } catch (e, stackTrace) {
-      logger.log('Error playing song', e, stackTrace);
-      return song;
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
     }
-  }
-
-  Future<void> playPlaylistSong({
-    Map<dynamic, dynamic>? playlist,
-    required int songIndex,
-  }) async {
-    if (playlist != null) activePlaylist = playlist;
-    activeSongId = songIndex;
-    await audioHandler.playSong(activePlaylist['list'][activeSongId]);
   }
 
   Future<Media> buildAudioSource(
@@ -492,17 +506,18 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     return null;
   }
 
-  Future<void> skipToSong(int newIndex) async {
-    if (newIndex >= 0 && newIndex < activePlaylist['list'].length) {
+  /*   Future<void> skipToSong(int newIndex) async {
+    if (newIndex >= 0 && newIndex < activeQueue['list'].length) {
       activeSongId =
           shuffleNotifier.value
-              ? _generateRandomIndex(activePlaylist['list'].length)
+              //TODO: fix potentially preventing it from repeating previously played song
+              ? _generateRandomIndex(activeQueue['list'].length)
               : newIndex;
-      await playSong(activePlaylist['list'][activeSongId]);
+      queueSong(activeQueue['list'][activeSongId], play: true);
     }
-  }
+  } */
 
-  @override
+  /*   @override
   Future<void> skipToNext() async {
     if (!hasNext && repeatNotifier.value == AudioServiceRepeatMode.all) {
       // If repeat mode is set to repeat the playlist, start from the beginning
@@ -511,23 +526,23 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         playNextSongAutomatically.value &&
         nextRecommendedSong != null) {
       // If there's no next song but playNextSongAutomatically is enabled, play the recommended song
-      await playSong(nextRecommendedSong);
+      queueSong(nextRecommendedSong, play: true);
     } else if (hasNext) {
       // If there is a next song, skip to the next song
       await skipToSong(activeSongId + 1);
     }
-  }
+  } */
 
-  @override
+  /*   @override
   Future<void> skipToPrevious() async {
     if (!hasPrevious && repeatNotifier.value == AudioServiceRepeatMode.all) {
       // If repeat mode is set to repeat the playlist, start from the end
-      await skipToSong(activePlaylist['list'].length - 1);
+      await skipToSong(activeQueue['list'].length - 1);
     } else if (hasPrevious) {
       // If there is a previous song, skip to the previous song
       await skipToSong(activeSongId - 1);
     }
-  }
+  } */
 
   Future<void> playAgain() async {
     await audioPlayer.seek(Duration.zero);
