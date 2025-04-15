@@ -310,12 +310,13 @@ class PositionSlider extends StatelessWidget {
       valueListenable: positionDataNotifier,
       builder: (context, value, _) {
         return Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             _buildPositionText(context, fontColor, value),
             Flexible(
-              fit: FlexFit.tight,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Slider(
                     value: value.position.inSeconds.toDouble(),
@@ -362,6 +363,7 @@ class PositionSlider extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 1),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: [Text(durationText, style: textStyle)],
       ),
     );

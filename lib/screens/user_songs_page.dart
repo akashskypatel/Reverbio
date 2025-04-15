@@ -32,6 +32,7 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
@@ -85,7 +86,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),//offlineMode.value ? Text(title) : null,
+        title: Text(title), //offlineMode.value ? Text(title) : null,
         actions: [
           if (title == context.l10n!.queue)
             Row(
@@ -124,8 +125,8 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         return Row(
           children: [
             IconButton(
-              tooltip: '${context.l10n!.addToPlaylist} (Not implemented yet)',
-              onPressed: _showExistingPlaylists,
+              tooltip: context.l10n!.addToPlaylist,
+              onPressed: value == 0 ? null : _showExistingPlaylists,
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
               color: Theme.of(context).colorScheme.primary,
               icon: const Icon(Icons.playlist_add),
@@ -159,41 +160,95 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
   void _showExistingPlaylists() => showDialog(
     context: context,
     builder: (BuildContext savecontext) {
+      // Moved state management outside StatefulBuilder
+      final allPlaylists = getPlaylistNames(); // Your original playlist
+
       return StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
           final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
-          final playlists = getPlaylistNames();
+          List<String> filteredPlaylists = allPlaylists;
+          final ValueNotifier<int> listLengthNotifier = ValueNotifier(
+            filteredPlaylists.length,
+          );
+          void filterPlaylists(String query) {
+            filteredPlaylists =
+                allPlaylists.where((playlist) {
+                  return playlist.toLowerCase().contains(query.toLowerCase());
+                }).toList();
+            listLengthNotifier.value = filteredPlaylists.length;
+          }
+
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: SizedBox(
                 width: 200,
-                height: 200,
-                //TODO: add search bar
-                child: ListView.builder(
-                  itemCount: playlists.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
-                      child: FilledButton(
-                        //TODO: clicking on playlist to save it
-                        onPressed: () => {},
-                        child: MarqueeWidget(
-                          child: Text(
-                            playlists[index],
-                            textAlign: TextAlign.left,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
+                height: 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Search bar
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: TextField(
+                        onChanged: filterPlaylists,
+                        decoration: const InputDecoration(
+                          hintText: 'Search playlists...',
+                          prefixIcon: Icon(Icons.search),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                          isDense: true,
                         ),
                       ),
-                    );
-                  },
+                    ),
+
+                    // Filtered list
+                    Expanded(
+                      child: ValueListenableBuilder(
+                        valueListenable: listLengthNotifier,
+                        builder: (_, value, __) {
+                          return filteredPlaylists.isEmpty
+                              ? const Center(child: Text('No playlists found'))
+                              : ListView.builder(
+                                itemCount: filteredPlaylists.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 4,
+                                    ),
+                                    child: FilledButton(
+                                      onPressed: () {
+                                        showToast(
+                                          context,
+                                          addSongsToPlaylist(
+                                            context,
+                                            filteredPlaylists[index],
+                                            activeQueue['list'],
+                                          ),
+                                        );
+                                        Navigator.pop(
+                                          context,
+                                          filteredPlaylists[index],
+                                        );
+                                      },
+                                      child: MarqueeWidget(
+                                        child: Text(
+                                          filteredPlaylists[index],
+                                          textAlign: TextAlign.left,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -217,33 +272,32 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
-              child: 
-              SizedBox(
+              child: SizedBox(
                 width: 200,
-                child:
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const SizedBox(height: 15),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: context.l10n!.customPlaylistName,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const SizedBox(height: 15),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: context.l10n!.customPlaylistName,
+                      ),
+                      onChanged: (value) {
+                        customPlaylistName = value;
+                      },
                     ),
-                    onChanged: (value) {
-                      customPlaylistName = value;
-                    },
-                  ),
-                  const SizedBox(height: 7),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: context.l10n!.customPlaylistImgUrl,
+                    const SizedBox(height: 7),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: context.l10n!.customPlaylistImgUrl,
+                      ),
+                      onChanged: (value) {
+                        imageUrl = value;
+                      },
                     ),
-                    onChanged: (value) {
-                      imageUrl = value;
-                    },
-                  ),
-                ],
-              ),)
+                  ],
+                ),
+              ),
             ),
             actions: <Widget>[
               TextButton(
@@ -273,6 +327,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                                     customPlaylistName,
                                     image: imageUrl,
                                     context,
+                                    songList: activeQueue['list'],
                                   ),
                                 );
                                 GoRouter.of(context).pop(context);
@@ -286,6 +341,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                           customPlaylistName,
                           image: imageUrl,
                           context,
+                          songList: activeQueue['list'],
                         ),
                       );
                       GoRouter.of(context).pop(context);
@@ -383,28 +439,38 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    audioHandler.songValueNotifier.value['title'] ?? '',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  if (audioHandler.songValueNotifier.value['title'] != null)
+                    Text(
+                      audioHandler.songValueNotifier.value['title'],
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Text(
-                    audioHandler.songValueNotifier.value['artist'] ?? '',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
+                  if (audioHandler.songValueNotifier.value['artist'] != null)
+                    Text(
+                      audioHandler.songValueNotifier.value['artist'] ?? '',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
                     ),
-                  ),
                 ],
               );
             },
           ),
-          PositionSlider(
-            positionDataNotifier: audioHandler.positionDataNotifier,
+          ValueListenableBuilder(
+            valueListenable: audioHandler.positionDataNotifier,
+            builder:
+                (context, value, _) =>
+                    value.duration != Duration.zero
+                        ? PositionSlider(
+                          positionDataNotifier:
+                              audioHandler.positionDataNotifier,
+                        )
+                        : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -412,10 +478,10 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
   }
 
   Widget _buildPlaylistImage(String title, IconData icon, int songsLength) {
-    final denom = MediaQuery.of(context).size.width > 480 ? 8 : 2.5;
+    final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
     return BaseCard(
       inputData: {'title': '$title\n$songsLength Songs'},
-      size: MediaQuery.sizeOf(context).width / denom,
+      size: size,
       icon: icon,
     );
   }

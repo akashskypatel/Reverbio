@@ -196,6 +196,17 @@ String createCustomPlaylist(
   return '${context.l10n!.addedSuccess}!';
 }
 
+String addSongsToPlaylist(
+  BuildContext context,
+  String playlistName,
+  List<dynamic> songList,
+) {
+  for (final song in songList) {
+    addSongInCustomPlaylist(context, playlistName, song);
+  }
+  return context.l10n!.addedSuccess;
+}
+
 String addSongInCustomPlaylist(
   BuildContext context,
   String playlistName,
@@ -210,7 +221,10 @@ String addSongInCustomPlaylist(
   if (customPlaylist != null) {
     final List<dynamic> playlistSongs = customPlaylist['list'];
     if (playlistSongs.any(
-      (playlistElement) => playlistElement['id'] == song['id'],
+      (playlistElement) =>
+          (playlistElement['id'] == song['id']) ||
+          ((playlistElement['title'] == song['title']) &&
+              (playlistElement['artist'] == song['artist'])),
     )) {
       return context.l10n!.songAlreadyInPlaylist;
     }

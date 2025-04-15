@@ -41,45 +41,55 @@ class PlaylistHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    List<Widget> _widgetList() {
+      return [
+        ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
+        const SizedBox(width: 16),
+        Flexible(
+          child:
+              customWidget == null
+                  ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$songsLength ${context.l10n!.songs}'.toUpperCase(),
+                        style: textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  )
+                  : customWidget ?? const SizedBox.shrink(),
+        ),
+      ];
+    }
 
     return Padding(
       padding: const EdgeInsets.all(6),
-      child: Row(
+      child: 
+      MediaQuery.of(context).size.width > 480 ?
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
-        children: [
-          ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
-          const SizedBox(width: 16),
-          Expanded(
-            child:
-                customWidget == null
-                    ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          title,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '$songsLength ${context.l10n!.songs}'.toUpperCase(),
-                          style: textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    )
-                    : customWidget ?? const SizedBox.shrink(),
-          ),
-        ],
+        children: _widgetList(),
+      ) : Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: _widgetList(),
       ),
     );
   }

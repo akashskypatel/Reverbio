@@ -448,8 +448,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       final isOffline = song['isOffline'] ?? false;
 
       final preliminaryTag = mapToMediaItem(song);
-      final songUrl = song['songUrl'];
-      if (songUrl == null || songUrl.isEmpty) return;
+      final songUrl = song['songUrl'] == null || song['songUrl'].isEmpty ? await getSongUrl(song) : song['songUrl'];
       final audioSource = await buildAudioSource(song, songUrl, isOffline);
       mediaItem.add(preliminaryTag);
       await audioPlayer.queue(audioSource);
@@ -507,7 +506,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     return null;
   }
 
-/*   Future<void> skipToSong(int newIndex) async {
+  /*   Future<void> skipToSong(int newIndex) async {
     if (newIndex >= 0 && newIndex < activeQueue['list'].length) {
       activeSongId =
           shuffleNotifier.value
@@ -518,7 +517,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
   } */
 
-/*   @override
+  /*   @override
   Future<void> skipToNext() async {
     if (!hasNext && repeatNotifier.value == AudioServiceRepeatMode.all) {
       // If repeat mode is set to repeat the playlist, start from the beginning
@@ -534,7 +533,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
   } */
 
-/*   @override
+  /*   @override
   Future<void> skipToPrevious() async {
     if (!hasPrevious && repeatNotifier.value == AudioServiceRepeatMode.all) {
       // If repeat mode is set to repeat the playlist, start from the end

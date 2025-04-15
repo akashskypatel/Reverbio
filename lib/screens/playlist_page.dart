@@ -160,7 +160,10 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
             child: _buildPlaylistHeader(),
           ),
         ),
-        SongList(inputData: _songsList, isEditable: _playlist['source'] == ['user-created'],)
+        SongList(
+          inputData: _songsList,
+          isEditable: _playlist['source'] == ['user-created'],
+        ),
       ],
     );
   }
@@ -351,6 +354,10 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
           _currentLastLoadedId = 0;
           _loadMore();
         });
+    } else if (_playlist['source'] == 'user-created') {
+      setState(() {
+        _songsList = _playlist['list'];
+      });
     } else {
       final updatedPlaylist = await getPlaylistInfoForWidget(
         widget.playlistData['ytid'],
