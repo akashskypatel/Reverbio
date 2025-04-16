@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/screens/now_playing_page.dart';
+import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
@@ -312,6 +313,11 @@ class PositionSlider extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              onPressed: () => _showVolumeSlider(context),
+              icon: const Icon(FluentIcons.speaker_2_24_regular),
+              color: Theme.of(context).colorScheme.primary,
+            ),
             _buildPositionText(context, fontColor, value),
             Flexible(
               child: Column(
@@ -368,4 +374,79 @@ class PositionSlider extends StatelessWidget {
       ),
     );
   }
+
+  void _showVolumeSlider(BuildContext context) => showDialog(
+    context: context,
+    builder: (BuildContext savecontext) {
+      int _duelCommandment = audioHandler.audioPlayer.volume.toInt();
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final theme = Theme.of(context);
+          return RotatedBox(
+            quarterTurns: -1,
+            child: AlertDialog(
+              contentPadding: EdgeInsets.zero,
+              content: SizedBox(
+                height: 50,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    RotatedBox(
+                      quarterTurns: 1,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        color: theme.colorScheme.primary,
+                        onPressed: () {
+                          setState(() {
+                            _duelCommandment = 0;
+                          });
+                          audioHandler.audioPlayer.setVolume(
+                            _duelCommandment.toDouble(),
+                          );
+                        },
+                        icon: const Icon(FluentIcons.speaker_0_24_regular),
+                      ),
+                    ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.15,
+                      child: Slider(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        value: _duelCommandment.toDouble(),
+                        max: 100,
+                        label: '$_duelCommandment',
+                        onChanged: (double newValue) {
+                          setState(() {
+                            _duelCommandment = newValue.round();
+                          });
+                          audioHandler.audioPlayer.setVolume(
+                            _duelCommandment.toDouble(),
+                          );
+                        },
+                      ),
+                    ),
+                    RotatedBox(
+                      quarterTurns: 1,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        color: theme.colorScheme.primary,
+                        onPressed: () {
+                          setState(() {
+                            _duelCommandment = 100;
+                          });
+                          audioHandler.audioPlayer.setVolume(
+                            _duelCommandment.toDouble(),
+                          );
+                        },
+                        icon: const Icon(FluentIcons.speaker_2_24_regular),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }
