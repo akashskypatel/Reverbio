@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./update_arb_entry.sh "key" "value" [l10n_dir]
+# Usage: ./l10n.sh "key" "value" [l10n_dir]
 
 KEY="$1"
 VALUE="$2"
