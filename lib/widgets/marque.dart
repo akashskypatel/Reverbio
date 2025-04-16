@@ -45,9 +45,14 @@ class _MarqueeWidgetState extends State<MarqueeWidget> {
 
   @override
   void initState() {
-    scrollController = ScrollController(initialScrollOffset: 50);
-    WidgetsBinding.instance.addPostFrameCallback(scroll);
+    scrollController = ScrollController();
     super.initState();
+    // Wait for the widget to be fully built before scrolling
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (scrollController.hasClients && scrollController.position.hasContentDimensions) {
+        scroll();
+      }
+    });
   }
 
   @override
@@ -61,32 +66,34 @@ class _MarqueeWidgetState extends State<MarqueeWidget> {
     return SingleChildScrollView(
       scrollDirection: widget.direction,
       controller: scrollController,
-      physics:
-          widget.manualScrollEnabled
-              ? const AlwaysScrollableScrollPhysics()
-              : const NeverScrollableScrollPhysics(),
+      physics: widget.manualScrollEnabled
+          ? const AlwaysScrollableScrollPhysics()
+          : const NeverScrollableScrollPhysics(),
       child: widget.child,
     );
   }
 
-  void scroll(_) async {
+  Future<void> scroll() async {
     while (scrollController.hasClients) {
       await Future.delayed(widget.pauseDuration);
-      if (scrollController.hasClients) {
-        await scrollController.animateTo(
-          scrollController.position.maxScrollExtent,
-          duration: widget.animationDuration,
-          curve: Curves.ease,
-        );
-      }
+      if (!scrollController.hasClients || !scrollController.position.hasContentDimensions) break;
+
+      // Scroll to max extent
+      await scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: widget.animationDuration,
+        curve: Curves.ease,
+      );
+
       await Future.delayed(widget.pauseDuration);
-      if (scrollController.hasClients) {
-        await scrollController.animateTo(
-          0,
-          duration: widget.backDuration,
-          curve: Curves.easeOut,
-        );
-      }
+      if (!scrollController.hasClients) break;
+
+      // Scroll back to start
+      await scrollController.animateTo(
+        0,
+        duration: widget.backDuration,
+        curve: Curves.easeOut,
+      );
     }
   }
 }
