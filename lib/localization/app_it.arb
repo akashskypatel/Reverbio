@@ -90,6 +90,8 @@
   "provideIdOrNameError": "Per favore fornisci un ID YouTube o un nome di playlist personalizzata",
   "pureBlackTheme": "Tema nero puro",
   "queue": "Coda",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "Recentemente riprodotti",
   "recentlyPlayedMsg": "Cronologia recenti cancellata",
   "recommendedForYou": "Raccomandato per te",

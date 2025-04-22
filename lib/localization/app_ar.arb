@@ -90,6 +90,8 @@
   "provideIdOrNameError": "يرجى توفير إما معرف YouTube أو اسم قائمة التشغيل الخاصة",
   "pureBlackTheme": "موضوع أسود نقي",
   "queue": "طابور",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "تم التشغيل مؤخرًا",
   "recentlyPlayedMsg": "تم تطهير التاريخ الذي لعب مؤخرًا",
   "recommendedForYou": "موصى به لك",

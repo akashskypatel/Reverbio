@@ -90,6 +90,8 @@
   "provideIdOrNameError": "Пожалуйста введите ID плейлиста YouTube или имя пользовательского плейлиста",
   "pureBlackTheme": "Ночная тема",
   "queue": "Очередь",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "Недавние треки",
   "recentlyPlayedMsg": "Недавние треки очищены",
   "recommendedForYou": "Рекомендовано вам",

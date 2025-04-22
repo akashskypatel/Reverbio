@@ -90,6 +90,8 @@
   "provideIdOrNameError": "유튜브 ID 또는 커스텀 재생목록 이름 입력",
   "pureBlackTheme": "순수 검정색 테마",
   "queue": "대기줄",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "최근 재생",
   "recentlyPlayedMsg": "최근 재생 기록 삭제됨",
   "recommendedForYou": "추천 항목",
