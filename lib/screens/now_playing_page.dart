@@ -292,7 +292,7 @@ class QueueListView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(8),
           child: Text(
-            context.l10n!.playlist,
+            context.l10n!.queue,
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(color: _textColor),
@@ -623,7 +623,7 @@ class PlayerControlButtons extends StatelessWidget {
       },
     );
   }
-
+  //TODO add to queue song-list
   Widget _buildRepeatButton(
     Color primaryColor,
     Color secondaryColor,

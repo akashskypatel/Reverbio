@@ -20,12 +20,15 @@
  */
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
+import 'package:fuzzy/fuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -150,7 +153,7 @@ void getSimilarSong(String songYtId) async {
   }
 }
 
-Future<dynamic> findSong(String songName, String artist) async {
+Future<dynamic> findYTSong(String songName, String artist) async {
   try {
     final lcSongName = songName.toLowerCase();
     final lcArtist = artist.toLowerCase();
@@ -165,6 +168,107 @@ Future<dynamic> findSong(String songName, String artist) async {
         }).toList();
 
     return result.isNotEmpty ? result.first : {};
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    rethrow;
+  }
+}
+
+Future<dynamic> findWDSong(String title, String artist) async {
+  try {
+    final searchStr = '${title.trim()} ${artist.trim()}'
+        .replaceAll(RegExp(r'\=|\&|\?'), '')
+        .replaceAll(RegExp(r'\s+'), ' ');
+
+    final uri = Uri.https('www.wikidata.org', '/w/api.php', {
+      'action': 'query',
+      'list': 'search',
+      'srsearch': searchStr,
+      'format': 'json',
+      'srprop': 'snippet|titlesnippet|categorysnippet',
+    });
+    final response = await http.get(uri);
+    final result = jsonDecode(response.body);
+    final search = result['query']['search'] as List;
+    return search;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    rethrow;
+  }
+}
+
+Future<dynamic> findMBSong(String title, String artist) async {
+  List<String> splitArtists(String input) {
+    final artistSplitRegex = RegExp(
+      r'''(?:\s*(?:,\s*|\s+&\s+|\s+(?:and|with|ft(?:\.)|feat(?:\.|uring)?)\s+|\s*\/\s*|\s*\\\s*|\s*\+\s*|\s*;\s*|\s*[|]\s*|\s* vs(?:\.)?\s*|\s* x\s*|\s*,\s*(?:and|&)\s*)(?![^()]*\)))''',
+      caseSensitive: false,
+    );
+    return input
+        .split(artistSplitRegex)
+        .where((artist) => artist.trim().isNotEmpty)
+        .map((artist) => artist.trim())
+        .toList();
+  }
+
+  try {
+    dynamic artistInfo = await searchArtistDetails(
+      artist.trim().replaceAll(RegExp(r'\s+'), ' '),
+    );
+    final artistId = Uri.parse('?${artistInfo['id']}').queryParameters['mb'];
+    final artists = splitArtists(artist);
+    final qry =
+        (artistId != null
+                ? title.trim().toLowerCase() == artist.trim().toLowerCase()
+                    ? '$title AND type:"song"'
+                    : '$title AND arid:"$artistId" AND type:"song"'
+                : title.trim().toLowerCase() == artist.trim().toLowerCase()
+                ? '$title AND type:"song"'
+                : '$title AND artist:"${artists.join(' & ')}" AND type:"song"')
+            .toLowerCase();
+    final works =
+        artistId != null
+            ? List<Map<String, dynamic>>.from(
+              (await mb.works.search(qry))['works'],
+            )
+            : List<Map<String, dynamic>>.from(
+              (await mb.recordings.search(qry))['recordings'],
+            );
+    if (works.isEmpty) return {};
+
+    dynamic work;
+
+    if (artists.length == 1 &&
+        title.trim().toLowerCase() != artist.trim().toLowerCase())
+      work = works.first;
+    else {
+      final WeightedKey<Map<String, dynamic>> keys = WeightedKey(
+        name: 'title',
+        getter: (e) => e['title'],
+        weight: 1,
+      );
+      final fuzzy = Fuzzy(
+        works,
+        options: FuzzyOptions(threshold: 1, keys: [keys]),
+      );
+      final result = fuzzy.search(title)
+        ..sort((a, b) => a.score.compareTo(b.score));
+      work = result.first.item;
+    }
+    if (artistId == null)
+      artistInfo = {
+        'artist': work['artist-credit'].first['artist']['name'],
+        'id': 'mb=${work['artist-credit'].first['artist']['id']}',
+      };
+
+    final songInfo = {
+      'mbid': work['id'],
+      'mbidType': 'work',
+      'title': work['title'],
+      'artist': artistInfo['artist'],
+      'artistId': artistInfo['id'],
+      'primary-type': 'song',
+    };
+    return songInfo;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
@@ -190,8 +294,18 @@ const Duration _cacheDuration = Duration(hours: 3);
 Future<String> getSongUrl(dynamic song) async {
   try {
     if (song == null) return '';
+    if (song['mbid'] == null)
+      song.addAll(
+        Map<String, dynamic>.from(
+          await findMBSong(song['title'], song['artist']),
+        ),
+      );
     if (song['ytid'] == null)
-      song.addAll(await findSong(song['title'], song['artist']));
+      song.addAll(
+        Map<String, dynamic>.from(
+          await findYTSong(song['title'], song['artist']),
+        ),
+      );
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song['ytid']));
       final songUrl = await getYouTubeAudioUrl(song['ytid']);
@@ -203,6 +317,12 @@ Future<String> getSongUrl(dynamic song) async {
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
       song['error'] = 'Could not find YoutTube stream for this song.';
+      song['isError'] = true;
+      return '';
+    }
+    //check if url resolves
+    if (await checkUrl(song['songUrl']) >= 400) {
+      song['error'] = 'Song url could not be resolved.';
       song['isError'] = true;
       return '';
     }
@@ -227,7 +347,9 @@ Future<String> getYouTubeAudioUrl(String songId) async {
     final uri = Uri.parse(cachedUrl);
     final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    if (expires > now) return cachedUrl;
+    //add 5 second grace
+    if (expires > (now + 5))
+      if (await checkUrl(cachedUrl) < 400) return cachedUrl;
   }
 
   final manifest = await yt.videos.streamsClient.getManifest(songId);
@@ -235,6 +357,15 @@ Future<String> getYouTubeAudioUrl(String songId) async {
   final audioUrl = audioQuality.url.toString();
 
   return audioUrl;
+}
+
+Future<int> checkUrl(String url) async {
+  try {
+    final response = await http.head(Uri.parse(url));
+    return response.statusCode;
+  } catch (e) {
+    rethrow;
+  }
 }
 
 Future<Map<String, dynamic>> getSongDetails(

@@ -25,6 +25,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -46,6 +47,28 @@ dynamic _getCachedAlbum(String id) {
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
+  }
+}
+
+Future<dynamic> findMBAlbum(String title, String artist) async {
+  try {
+    final artistInfo = await searchArtistDetails(artist);
+    final artistId = Uri.parse('?${artistInfo['id']}').queryParameters['mb'];
+    final albums =
+        (await mb.releaseGroups.search(
+              artistId != null
+                  ? '$title AND arid:"$artistId" AND type:"album"'
+                  : '$title AND artist:"$artist" AND type:"album"',
+            ))['release-groups']
+            as List;
+    if (albums.isEmpty) return;
+    final album = albums.first;
+    album['artist'] = artistInfo['artist'];
+    album['artistId'] = artistInfo['id'];
+    return album;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    rethrow;
   }
 }
 
@@ -110,6 +133,8 @@ Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
                 'title': track['title'],
                 'artist': release['artist'],
                 'primary-type': 'song',
+                'image': track['image'],
+                'duration': track['duration'],
               });
           }
         }
@@ -122,7 +147,7 @@ Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
   }
 }
 
-Future<bool> getTrackList(dynamic album) async {
+Future<bool> getTrackList(dynamic album, {String? query}) async {
   try {
     final countryCode =
         userGeolocation['countryCode'] ??
@@ -203,13 +228,23 @@ Future<bool> getTrackList(dynamic album) async {
             album['list'].add({
               'index': i++,
               'mbid': track['id'],
+              'mbidType': 'track',
               'ytid': null,
               'title': track['title'],
               'source': null,
               'artist': album['artist'],
-              'image': (album['image'] ?? '').toLowerCase() == 'null' ? null : album['image'],
-              'lowResImage': (album['image'] ?? '').toLowerCase() == 'null' ? null : album['image'],
-              'highResImage': (album['image'] ?? '').toLowerCase() == 'null' ? null : album['image'],
+              'image':
+                  (album['image'] ?? '').toLowerCase() == 'null'
+                      ? null
+                      : album['image'],
+              'lowResImage':
+                  (album['image'] ?? '').toLowerCase() == 'null'
+                      ? null
+                      : album['image'],
+              'highResImage':
+                  (album['image'] ?? '').toLowerCase() == 'null'
+                      ? null
+                      : album['image'],
               'duration': (track['length'] ?? 0) ~/ 1000,
               'isLive': false,
               'primary-type': 'song',

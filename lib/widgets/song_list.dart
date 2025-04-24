@@ -18,6 +18,7 @@
  *     For more information about Reverbio, including how to contribute,
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
+import 'dart:async';
 import 'dart:math';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -36,6 +37,7 @@ import 'package:reverbio/widgets/spinner.dart';
 class SongList extends StatefulWidget {
   SongList({
     super.key,
+    required this.page,
     this.title = '',
     this.icon = FluentIcons.music_note_1_24_regular,
     this.future,
@@ -45,42 +47,35 @@ class SongList extends StatefulWidget {
 
   final IconData icon;
   final String title;
+  final String page;
   final Future<dynamic>? future;
   final List<dynamic>? inputData;
-  final _songBars = <SongBar>[];
+  late final List<SongBar> songBars =
+      page == 'queue' ? audioHandler.queueSongBars : <SongBar>[];
   final bool isEditable;
   @override
   State<SongList> createState() => _SongListState();
-
-  Future<bool> queueSong({
-    int index = 0,
-    bool play = false,
-    bool skipOnError = false,
-  }) async {
-    if (_songBars.isEmpty) return false;
-    final isError = !(await _songBars[index++].queueSong(play: play));
-    if (play && isError && skipOnError && index < _songBars.length)
-      return queueSong(index: index, play: play, skipOnError: skipOnError);
-    return !isError;
-  }
 }
 
 class _SongListState extends State<SongList> {
   List<dynamic> _songsList = [];
   bool isProcessing = true;
+  bool loopSongs = false;
   dynamic _playlist;
   var _currentPage = 0;
   var _currentLastLoadedId = 0;
   final int _itemsPerPage = 35;
+  late final ValueNotifier<int> _songBarsLength;
   @override
   void initState() {
     super.initState();
+    _songBarsLength = ValueNotifier(widget.songBars.length);
   }
 
   @override
   void dispose() {
     widget.future?.ignore();
-    widget._songBars.clear();
+    widget.songBars.clear();
     super.dispose();
   }
 
@@ -117,7 +112,7 @@ class _SongListState extends State<SongList> {
                     _buildSortSongActionButton(),
                     _buildShuffleSongActionButton(),
                     _buildPlayActionButton(),
-                    if (widget.future != null) _buildAddToQueueActionButton(),
+                    if (widget.page != 'queue') _buildAddToQueueActionButton(),
                   ],
                 ),
               ),
@@ -143,7 +138,6 @@ class _SongListState extends State<SongList> {
             valueListenable: activeQueueLength,
             builder: (_, value, __) {
               if (value != 0) {
-                _songsList = activeQueue['list'];
                 return _buildSongList();
               } else
                 return _buildErrorWidget();
@@ -151,29 +145,6 @@ class _SongListState extends State<SongList> {
           ),
       ],
     );
-  }
-
-  void _updateSongsListOnRemove(int indexOfRemovedSong) {
-    final dynamic songToRemove = _songsList.elementAt(indexOfRemovedSong);
-    showToastWithButton(
-      context,
-      context.l10n!.songRemoved,
-      context.l10n!.undo.toUpperCase(),
-      () {
-        addSongInCustomPlaylist(
-          context,
-          _playlist['title'],
-          songToRemove,
-          indexToInsert: indexOfRemovedSong,
-        );
-        _songsList.insert(indexOfRemovedSong, songToRemove);
-        if (mounted) setState(() {});
-      },
-    );
-    if (mounted)
-      setState(() {
-        _songsList.removeAt(indexOfRemovedSong);
-      });
   }
 
   Widget _buildShuffleSongActionButton() {
@@ -185,8 +156,8 @@ class _SongListState extends State<SongList> {
       icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
       iconSize: 30,
       onPressed: () {
-        _songsList.shuffle();
-        setState(() {});
+        _songsList.shuffledWith(widget.songBars);
+        if (mounted) setState(() {});
       },
     );
   }
@@ -227,6 +198,11 @@ class _SongListState extends State<SongList> {
       _songsList.sort((a, b) {
         final valueA = a[key].toString().toLowerCase();
         final valueB = b[key].toString().toLowerCase();
+        return valueA.compareTo(valueB);
+      });
+      widget.songBars.sort((a, b) {
+        final valueA = a.song[key].toString().toLowerCase();
+        final valueB = b.song[key].toString().toLowerCase();
         return valueA.compareTo(valueB);
       });
     }
@@ -277,12 +253,14 @@ class _SongListState extends State<SongList> {
       icon: const Icon(FluentIcons.add_circle_24_filled),
       iconSize: 30,
       onPressed: () {
-        addSongsToQueue(_songsList);
-        showToast(context, context.l10n!.songAdded);
-        if (activeQueue['list'].isNotEmpty &&
+        if (widget.page != 'queue') {
+          addSongsToQueue(widget.songBars);
+          showToast(context, context.l10n!.songAdded);
+        }
+        if (audioHandler.queueSongBars.isNotEmpty &&
             !audioHandler.audioPlayer.playing &&
-            widget._songBars.isNotEmpty) {
-          widget.queueSong(play: true, skipOnError: true);
+            widget.songBars.isNotEmpty) {
+          audioHandler.queueSong(play: true, skipOnError: true);
         }
       },
     );
@@ -292,10 +270,14 @@ class _SongListState extends State<SongList> {
     return IconButton(
       tooltip: context.l10n!.play,
       onPressed: () {
-        if (widget.future != null)
-          setQueueToPlaylist({'title': widget.title, 'list': _songsList});
-        else
-          widget.queueSong(play: true, skipOnError: true);
+        if (widget.page != 'queue') {
+          setQueueToPlaylist({
+            'title': widget.title,
+            'list': _songsList,
+          }, widget.songBars);
+          showToast(context, context.l10n!.queueReplacedByPlaylist);
+        }
+        audioHandler.queueSong(play: true, skipOnError: true);
       },
       icon: Icon(
         FluentIcons.play_circle_24_filled,
@@ -334,24 +316,27 @@ class _SongListState extends State<SongList> {
   }
 
   void _buildSongBars() {
-    widget._songBars.clear();
-    for (var i = 0; i < _songsList.length; i++) {
-      final borderRadius = getItemBorderRadius(i, _songsList.length);
-      widget._songBars.add(
-        SongBar(
-          _songsList[i],
-          borderRadius: borderRadius,
-          showMusicDuration: true,
-        ),
-      );
+    if (widget.page != 'queue') {
+      widget.songBars.clear();
+      for (var i = 0; i < _songsList.length; i++) {
+        final borderRadius = getItemBorderRadius(i, _songsList.length);
+        widget.songBars.add(
+          SongBar(
+            _songsList[i],
+            borderRadius: borderRadius,
+            showMusicDuration: true,
+          ),
+        );
+      }
+      _songBarsLength.value = widget.songBars.length;
     }
   }
 
   void moveSongBar(int oldIndex, int newIndex) {
     if (oldIndex < 0 ||
         newIndex < 0 ||
-        oldIndex >= widget._songBars.length ||
-        newIndex >= widget._songBars.length) {
+        oldIndex >= widget.songBars.length ||
+        newIndex >= widget.songBars.length) {
       logger.log(
         'Invalid indices: oldIndex=$oldIndex, newIndex=$newIndex',
         null,
@@ -362,10 +347,10 @@ class _SongListState extends State<SongList> {
 
     if (oldIndex == newIndex) return;
 
-    final songBar = widget._songBars.removeAt(oldIndex);
+    final songBar = widget.songBars.removeAt(oldIndex);
     final song = _songsList.removeAt(oldIndex);
 
-    widget._songBars.insert(newIndex, songBar);
+    widget.songBars.insert(newIndex, songBar);
     _songsList.insert(newIndex, song);
 
     setState(() {});
@@ -373,29 +358,38 @@ class _SongListState extends State<SongList> {
 
   Widget _buildSongList() {
     _buildSongBars();
-    return SliverReorderableList(
-      itemCount: widget._songBars.length,
-      itemBuilder: (context, index) {
-        final song = widget._songBars[index].song;
-        final key = Key(song['id'] ?? '${song['artist']} - ${song['title']}');
-        return ReorderableDragStartListener(
-          key: key,
-          enabled: widget.isEditable,
-          index: index,
-          child: Padding(
-            padding: commonBarPadding,
-            child: widget._songBars[index],
-          ),
+    return ValueListenableBuilder(
+      valueListenable:
+          widget.page == 'queue' ? activeQueueLength : _songBarsLength,
+      builder: (_, value, _) {
+        return SliverReorderableList(
+          itemCount: value,
+          itemBuilder: (context, index) {
+            final song = widget.songBars[index].song;
+            final key = Key(
+              song['id'] ?? '${song['artist']} - ${song['title']}',
+            );
+            return ReorderableDragStartListener(
+              key: key,
+              enabled: widget.isEditable,
+              index: index,
+              child: Padding(
+                padding: commonBarPadding,
+                child: widget.songBars[index],
+              ),
+            );
+          },
+          onReorder: (oldIndex, newIndex) {
+            if (mounted)
+              setState(() {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                widget.songBars.rearrange(oldIndex, newIndex);
+                _songsList.rearrange(oldIndex, newIndex);
+              });
+          },
         );
-      },
-      onReorder: (oldIndex, newIndex) {
-        if (mounted)
-          setState(() {
-            if (oldIndex < newIndex) {
-              newIndex -= 1;
-            }
-            moveSongBar(oldIndex, newIndex);
-          });
       },
     );
   }

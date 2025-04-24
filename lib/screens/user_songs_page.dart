@@ -19,6 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +28,7 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
@@ -89,7 +91,6 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
           if (title == context.l10n!.queue)
             Row(
               children: [
-                //TODO: define actions
                 _buildQueueActionsList(),
                 const SizedBox(width: 24, height: 24),
               ],
@@ -117,11 +118,53 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
   }
 
   Widget _buildQueueActionsList() {
+    const adjustedMiniIconSize = 20.0;
     return ValueListenableBuilder(
       valueListenable: activeQueueLength,
       builder: (_, value, __) {
         return Row(
           children: [
+            ValueListenableBuilder<AudioServiceRepeatMode>(
+              valueListenable: repeatNotifier,
+              builder: (_, repeatMode, __) {
+                return repeatMode != AudioServiceRepeatMode.none
+                    ? IconButton(
+                      icon: Icon(
+                        repeatMode == AudioServiceRepeatMode.all
+                            ? FluentIcons.arrow_repeat_all_24_filled
+                            : FluentIcons.arrow_repeat_1_24_filled,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      iconSize: adjustedMiniIconSize,
+                      onPressed: () {
+                        repeatNotifier.value =
+                            repeatMode == AudioServiceRepeatMode.all
+                                ? AudioServiceRepeatMode.one
+                                : AudioServiceRepeatMode.none;
+
+                        audioHandler.setRepeatMode(repeatMode);
+                      },
+                    )
+                    : IconButton(
+                      icon: Icon(
+                        FluentIcons.arrow_repeat_all_off_24_filled,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      iconSize: adjustedMiniIconSize,
+                      onPressed: () {
+                        final _isSingleSongPlaying =
+                            audioHandler.queueSongBars.length == 1;
+                        repeatNotifier.value =
+                            _isSingleSongPlaying
+                                ? AudioServiceRepeatMode.one
+                                : AudioServiceRepeatMode.all;
+
+                        if (repeatNotifier.value == AudioServiceRepeatMode.one)
+                          audioHandler.setRepeatMode(repeatNotifier.value);
+                      },
+                    );
+              },
+            ),
             IconButton(
               tooltip: context.l10n!.addToPlaylist,
               onPressed: value == 0 ? null : _showExistingPlaylists,
@@ -189,7 +232,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                   children: [
                     // Search bar
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
+                      padding: const EdgeInsets.only(bottom: 8),
                       child: TextField(
                         onChanged: filterPlaylists,
                         decoration: const InputDecoration(
@@ -374,8 +417,10 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
           ),
         ),
         SongList(
+          page: widget.page,
           title: getTitle(widget.page, context),
           isEditable: widget.page == 'queue',
+          inputData: songsList,
         ),
       ],
     );
@@ -431,24 +476,43 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         mainAxisSize: MainAxisSize.min,
         children: [
           ValueListenableBuilder(
-            valueListenable: audioHandler.songValueNotifier,
+            valueListenable: audioHandler.audioPlayer.songValueNotifier,
             builder: (context, value, _) {
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (audioHandler.songValueNotifier.value['title'] != null)
+                  if (audioHandler
+                          .audioPlayer
+                          .songValueNotifier
+                          .value
+                          ?.song['title'] !=
+                      null)
                     Text(
-                      audioHandler.songValueNotifier.value['title'],
+                      audioHandler
+                          .audioPlayer
+                          .songValueNotifier
+                          .value
+                          ?.song['title'],
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  if (audioHandler.songValueNotifier.value['artist'] != null)
+                  if (audioHandler
+                          .audioPlayer
+                          .songValueNotifier
+                          .value
+                          ?.song['artist'] !=
+                      null)
                     Text(
-                      audioHandler.songValueNotifier.value['artist'] ?? '',
+                      audioHandler
+                              .audioPlayer
+                              .songValueNotifier
+                              .value
+                              ?.song['artist'] ??
+                          '',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.secondary,
                         fontSize: 14,

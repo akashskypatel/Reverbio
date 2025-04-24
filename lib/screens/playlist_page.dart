@@ -61,7 +61,6 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   dynamic _playlist;
 
   bool _isLoading = true;
-  bool _hasMore = true;
   final int _itemsPerPage = 35;
   var _currentPage = 0;
   var _currentLastLoadedId = 0;
@@ -101,7 +100,10 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
               widget.playlistData['ytid'],
               isArtist: widget.isArtist,
             )
-            : widget.playlistData;
+            : userCustomPlaylists.value.firstWhere(
+              (playlist) => playlist['title'] == widget.playlistData['title'],
+              orElse: () => null,
+            );
 
     if (_playlist != null) {
       _loadMore();
@@ -114,9 +116,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          if (fetchedList.isEmpty) {
-            _hasMore = false;
-          } else {
+          if (fetchedList.isNotEmpty) {
             _songsList.addAll(fetchedList);
           }
         });
@@ -126,9 +126,11 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
 
   Future<List<dynamic>> fetch() async {
     final list = <dynamic>[];
+    if (_playlist['list'] == null) return list;
     final _count = _playlist['list'].length as int;
     final n = min(_itemsPerPage, _count - _currentPage * _itemsPerPage);
-    for (var i = 0; i < n; i++) {
+    //TODO: restore pagination
+    for (var i = 0; i < _count; i++) {
       list.add(_playlist['list'][_currentLastLoadedId]);
       _currentLastLoadedId++;
     }
@@ -161,6 +163,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
           ),
         ),
         SongList(
+          page: 'playlist',
           inputData: _songsList,
           isEditable: _playlist['source'] == ['user-created'],
         ),
@@ -216,7 +219,8 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   }
 
   Widget _buildPlaylistHeader() {
-    final _songsLength = _playlist['list'].length;
+    final _songsLength =
+        _playlist['list'] == null ? 0 : _playlist['list'].length;
 
     return PlaylistHeader(
       _buildPlaylistImage(),
@@ -346,7 +350,6 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   void _handleSyncPlaylist() async {
     if (_playlist['ytid'] != null) {
       _playlist = await updatePlaylistList(context, _playlist['ytid']);
-      _hasMore = true;
       _songsList.clear();
       if (mounted)
         setState(() {
@@ -356,7 +359,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
         });
     } else if (_playlist['source'] == 'user-created') {
       setState(() {
-        _songsList = _playlist['list'];
+        _songsList = _playlist['list'] ?? [];
       });
     } else {
       final updatedPlaylist = await getPlaylistInfoForWidget(
@@ -394,53 +397,6 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       });
   }
 
-  Widget _buildPlayActionButton() {
-    return IconButton(
-      color: Theme.of(context).colorScheme.primary,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      icon: const Icon(FluentIcons.play_circle_24_filled),
-      iconSize: 30,
-      onPressed: () {
-        //TODO: add "play" action
-      },
-    );
-  }
-
-  Widget _buildAddToQueueActionButton() {
-    return IconButton(
-      color: Theme.of(context).colorScheme.primary,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      icon: const Icon(FluentIcons.add_circle_24_filled),
-      iconSize: 30,
-      onPressed: () {
-        //TODO: add "add to queue" action
-      },
-    );
-  }
-
-  Widget _buildShuffleSongActionButton() {
-    return IconButton(
-      color: Theme.of(context).colorScheme.primary,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
-      iconSize: 30,
-      onPressed: () {
-        final _newList = List.of(_playlist['list'])..shuffle();
-        setQueueToPlaylist({
-          'id': _playlist['id'],
-          'ytid': _playlist['ytid'],
-          'title': _playlist['title'],
-          'image': _playlist['image'],
-          'source': _playlist['source'],
-          'list': _newList,
-        });
-      },
-    );
-  }
-
   Widget _buildSortSongActionButton() {
     return DropdownButton<String>(
       borderRadius: BorderRadius.circular(5),
@@ -459,7 +415,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       onChanged: (item) {
         if (mounted)
           setState(() {
-            final playlist = _playlist['list'];
+            final playlist = _playlist['list'] ?? [];
 
             void sortBy(String key) {
               playlist.sort((a, b) {
@@ -478,26 +434,12 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
             _playlist['list'] = playlist;
 
             // Reset pagination and reload
-            _hasMore = true;
             _songsList.clear();
             _currentPage = 0;
             _currentLastLoadedId = 0;
             _loadMore();
           });
       },
-    );
-  }
-
-  Widget _buildSongActionsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        _buildSortSongActionButton(),
-        const SizedBox(width: 5),
-        _buildShuffleSongActionButton(),
-        _buildPlayActionButton(),
-        _buildAddToQueueActionButton(),
-      ],
     );
   }
 

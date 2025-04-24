@@ -151,7 +151,6 @@ class _BaseCardState extends State<BaseCard> {
                 onTap: widget.onPressed,
                 child: SizedBox(
                   width: widget.size,
-                  height: widget.size,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -177,6 +176,7 @@ class _BaseCardState extends State<BaseCard> {
                           ),
                         ),
                       ),
+
                       if (widget.showOverflowLabel)
                         _buildOverflowLabel(context),
                     ],
@@ -397,7 +397,7 @@ class _BaseCardState extends State<BaseCard> {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Theme.of(context).colorScheme.secondary,
-            fontSize: 14,
+            fontSize: 13,
             fontFamily: 'montserrat',
             fontVariations: [const FontVariation('wght', 300)],
           ),

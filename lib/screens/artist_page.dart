@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/artist_header.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/genre_list.dart';
@@ -137,6 +138,7 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
                 .map((ele) {
                   ele['source'] = 'musicbrainz';
                   ele['artist'] = widget.artistData['artist'];
+                  ele['artistId'] = widget.artistData['id'];
                   ele['isAlbum'] = true;
                   ele['ytid'] = null;
                   return ele;
@@ -158,6 +160,7 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
                   ele['source'] = 'musicbrainz';
                   ele['primary-type'] = ele['primary-type'] ?? 'unknown';
                   ele['artist'] = widget.artistData['artist'];
+                  ele['artistId'] = widget.artistData['id'];
                   ele['isAlbum'] = false;
                   ele['ytid'] = null;
                   return ele;
@@ -175,9 +178,13 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
                 .map((ele) {
                   ele['source'] = 'musicbrainz';
                   ele['artist'] = widget.artistData['artist'];
+                  ele['artistId'] = widget.artistData['id'];
                   ele['isAlbum'] = false;
                   ele['isSong'] = true;
                   ele['ytid'] = null;
+                  ele['image'] = pickRandomItem(
+                    widget.artistData['discogs']['images'] as List,
+                  )['uri150'];
                   return ele;
                 })
                 .toList();
@@ -209,6 +216,7 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
         //Singles
         if (singles.isNotEmpty)
           SongList(
+            page: 'singles',
             title: context.l10n!.songs,
             future: getSinglesTrackList(singles),
           ),

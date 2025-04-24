@@ -24,10 +24,10 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
-import 'package:reverbio/screens/now_playing_page.dart';
-import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
@@ -54,99 +54,33 @@ class _MiniPlayerState extends State<MiniPlayer> {
   @override
   void initState() {
     super.initState();
+    audioHandler.audioPlayer.songValueNotifier.addListener(_songListener);
   }
 
   @override
   void dispose() {
     super.dispose();
+    audioHandler.audioPlayer.songValueNotifier.removeListener(_songListener);
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
-      child: Column(
-        children: [
-          PositionSlider(
-            closeButton: widget.closeButton,
-            positionDataNotifier: audioHandler.positionDataNotifier,
-          ),
-          GestureDetector(
-            onVerticalDragUpdate: (details) {
-              if (details.primaryDelta! < 0) {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    settings: const RouteSettings(name: 'nowPlaying?'),
-                    pageBuilder: (context, animation, secondaryAnimation) {
-                      return NowPlayingPage(
-                        navigatorObserver: widget.navigatorObserver,
-                      );
-                    },
-                    transitionsBuilder: (
-                      context,
-                      animation,
-                      secondaryAnimation,
-                      child,
-                    ) {
-                      const begin = Offset(0, 1);
-                      const end = Offset.zero;
-
-                      final tween = Tween(begin: begin, end: end);
-                      final curve = CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      );
-
-                      final offsetAnimation = tween.animate(curve);
-
-                      return SlideTransition(
-                        position: offsetAnimation,
-                        child: child,
-                      );
-                    },
-                  ),
-                );
-              }
-            },
-            onTap:
-                () => Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    settings: const RouteSettings(name: 'nowPlaying?'),
-                    pageBuilder: (context, animation, secondaryAnimation) {
-                      return NowPlayingPage(
-                        navigatorObserver: widget.navigatorObserver,
-                      );
-                    },
-                    transitionsBuilder: (
-                      context,
-                      animation,
-                      secondaryAnimation,
-                      child,
-                    ) {
-                      const begin = Offset(0, 1);
-                      const end = Offset.zero;
-
-                      final tween = Tween(begin: begin, end: end);
-                      final curve = CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      );
-
-                      final offsetAnimation = tween.animate(curve);
-
-                      return SlideTransition(
-                        position: offsetAnimation,
-                        child: child,
-                      );
-                    },
-                  ),
-                ),
-            child: Column(
+    return GestureDetector(
+      onTap: () async {
+        await context.push('/nowPlaying');
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
+        child: Column(
+          children: [
+            PositionSlider(
+              closeButton: widget.closeButton,
+              positionDataNotifier: audioHandler.positionDataNotifier,
+            ),
+            Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
@@ -178,10 +112,14 @@ class _MiniPlayerState extends State<MiniPlayer> {
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  void _songListener() {
+    if (mounted) setState(() {});
   }
 
   Widget _buildPlayPauseButton(BuildContext context) {
@@ -242,10 +180,13 @@ class _MiniPlayerState extends State<MiniPlayer> {
   Widget _buildArtwork() {
     return Padding(
       padding: const EdgeInsets.only(top: 7, bottom: 7, right: 15),
-      child: SongArtworkWidget(
-        metadata: widget.metadata,
-        size: 55,
-        errorWidgetIconSize: 30,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 55, maxWidth: 55),
+        child: SongArtworkWidget(
+          metadata: widget.metadata,
+          size: 55,
+          errorWidgetIconSize: 30,
+        ),
       ),
     );
   }
@@ -271,12 +212,40 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   ),
                 ),
                 if (widget.metadata.artist != null)
-                  Text(
-                    widget.metadata.artist!,
-                    style: TextStyle(
-                      color: artistColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        final artistData =
+                            widget.metadata.extras?['artistId'] != null
+                                ? await getArtistDetailsById(
+                                  widget.metadata.extras?['artistId']!,
+                                )
+                                : await searchArtistDetails(
+                                  widget.metadata.artist!,
+                                  limit: 10,
+                                  paginated: true,
+                                  exact: false,
+                                );
+                        if (!mounted ||
+                            artistData == null ||
+                            artistData.isEmpty)
+                          throw Exception();
+                        await context.push('/artist', extra: artistData);
+                      } catch (e, stackTrace) {
+                        logger.log(
+                          'open artist page from miniplayer',
+                          e,
+                          stackTrace,
+                        );
+                      }
+                    },
+                    child: Text(
+                      widget.metadata.artist!,
+                      style: TextStyle(
+                        color: artistColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
                     ),
                   ),
               ],
