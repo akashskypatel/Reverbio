@@ -161,7 +161,7 @@ class _SongBarState extends State<SongBar> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            '${widget.song['index'] == null ? '' : '${widget.song['index'] + 1} - '}${widget.song['title']}',
+                            widget.song['title'],
                             overflow: TextOverflow.ellipsis,
                             style: commonBarTitleStyle.copyWith(
                               color: primaryColor,
