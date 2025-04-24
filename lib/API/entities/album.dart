@@ -50,6 +50,21 @@ dynamic _getCachedAlbum(String id) {
   }
 }
 
+Future<dynamic> getAlbumDetailsById(String id) async {
+  try {
+    final ids = Uri.parse('?$id').queryParameters;
+    if (ids['mb'] == null) return null;
+    final cached = _getCachedAlbum(id);
+    if (cached != null) return cached;
+    final album = await getReleaseGroupDetails(id);
+    await getTrackList(album);
+    return album;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return {};
+  }
+}
+
 Future<dynamic> findMBAlbum(String title, String artist) async {
   try {
     final artistInfo = await searchArtistDetails(artist);
@@ -147,7 +162,7 @@ Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
   }
 }
 
-Future<bool> getTrackList(dynamic album, {String? query}) async {
+Future<bool> getTrackList(dynamic album) async {
   try {
     final countryCode =
         userGeolocation['countryCode'] ??
