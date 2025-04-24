@@ -83,7 +83,7 @@ class PlaylistBar extends StatelessWidget {
                   settings: RouteSettings(name: 'playlist?yt=$playlistId'),
                   builder:
                       (context) => PlaylistPage(
-                        playlistData: {
+                        playlistData: playlistData ?? {
                           'title': playlistTitle,
                           'ytid': playlistId,
                         },
