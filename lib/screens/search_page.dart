@@ -297,7 +297,6 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
               );
               return SongBar(
                 snapshot.data[index],
-                true,
                 showMusicDuration: true,
                 borderRadius: borderRadius,
               );
@@ -428,8 +427,9 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
       context: context,
       builder: (BuildContext context) {
         return ConfirmationDialog(
-          confirmationMessage: context.l10n!.removeSearchQueryQuestion,
-          submitMessage: context.l10n!.confirm,
+          message: context.l10n!.removeSearchQueryQuestion,
+          confirmText: context.l10n!.confirm,
+          cancelText: context.l10n!.cancel,
           onCancel: () {
             Navigator.of(context).pop(false);
           },

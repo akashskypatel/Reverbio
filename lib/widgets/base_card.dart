@@ -143,39 +143,44 @@ class _BaseCardState extends State<BaseCard> {
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,
       builder:
-          (_, value, _) => Visibility(
+          (_, value, __) => Visibility(
             visible: value,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
               child: GestureDetector(
                 onTap: widget.onPressed,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      clipBehavior: Clip.antiAlias,
-                      child: SizedBox(
-                        width: widget.size,
-                        height: widget.size,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: colorScheme.secondary,
-                          ),
-                          child: Stack(
-                            children: [
-                              _buildImage(context),
-                              if (widget.showLabel) _buildLabel(context),
-                              if (widget.showLike) _buildLiked(context),
-                            ],
+                child: SizedBox(
+                  width: widget.size,
+                  height: widget.size,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        clipBehavior: Clip.antiAlias,
+                        child: SizedBox(
+                          width: widget.size,
+                          height: widget.size,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: colorScheme.secondary,
+                            ),
+                            child: Stack(
+                              children: [
+                                _buildImage(context),
+                                if (widget.showLabel) _buildLabel(context),
+                                if (widget.showLike) _buildLiked(context),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    if (widget.showOverflowLabel) _buildOverflowLabel(context),
-                  ],
+                      if (widget.showOverflowLabel)
+                        _buildOverflowLabel(context),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -362,6 +367,7 @@ class _BaseCardState extends State<BaseCard> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
+          overflow: TextOverflow.ellipsis,
           dataType == 'artist'
               ? ''
               : dataType == 'playlist'
@@ -379,7 +385,7 @@ class _BaseCardState extends State<BaseCard> {
 
   Widget _buildOverflowLabel(BuildContext context) {
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: artistHeight, maxHeight: 44),
+      constraints: BoxConstraints(minWidth: artistHeight, minHeight: 44),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         child: Text(

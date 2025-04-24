@@ -42,7 +42,7 @@ class PlaylistSharingService {
       songIds.map((ytid) async {
         try {
           final video = await _yt.videos.get(ytid);
-          return returnSongLayout(songIds.indexOf(ytid), video);
+          return returnYtSongLayout(songIds.indexOf(ytid), video);
         } catch (e, stackTrace) {
           logger.log('Error expanding song: $ytid', e, stackTrace);
           return null;

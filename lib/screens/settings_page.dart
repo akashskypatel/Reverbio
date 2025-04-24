@@ -629,8 +629,9 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
       context: context,
       builder: (BuildContext context) {
         return ConfirmationDialog(
-          submitMessage: context.l10n!.clear,
-          confirmationMessage: context.l10n!.clearSearchHistoryQuestion,
+          confirmText: context.l10n!.clear,
+          cancelText: context.l10n!.cancel,
+          message: context.l10n!.clearSearchHistoryQuestion,
           onCancel: () => {Navigator.of(context).pop()},
           onSubmit:
               () => {
@@ -649,8 +650,9 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
       context: context,
       builder: (BuildContext context) {
         return ConfirmationDialog(
-          submitMessage: context.l10n!.clear,
-          confirmationMessage: context.l10n!.clearRecentlyPlayedQuestion,
+          confirmText: context.l10n!.clear,
+          cancelText: context.l10n!.cancel,
+          message: context.l10n!.clearRecentlyPlayedQuestion,
           onCancel: () => {Navigator.of(context).pop()},
           onSubmit:
               () => {
