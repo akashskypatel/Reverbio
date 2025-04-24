@@ -25,14 +25,15 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:rxdart/rxdart.dart';
 
 enum AudioPlayerState { uninitialized, initialized, playing, paused, stopped }
@@ -62,15 +63,32 @@ class AudioPlayerService {
   static AudioPlayerState _playerState = AudioPlayerState.uninitialized;
   static final _playerStateController =
       StreamController<AudioPlayerState>.broadcast();
+  final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
+  final List<SongBar> _queueSongBars = [];
 
+  ValueNotifier<SongBar?> get songValueNotifier => _songValueNotifier;
+  List<SongBar> get queueSongBars => _queueSongBars;
   AudioPlayerState get playerState => _playerState;
   AudioProcessingState get state => _processingState;
   static Player get player => _player;
   bool get shuffleModeEnabled => _isShuffleEnabled;
   bool get playing => _player.state.playing;
-  bool get hasNext =>
-      _player.state.playlist.index < _player.state.playlist.medias.length - 1;
-  bool get hasPrevious => _player.state.playlist.index > 0;
+  bool get hasNext {
+    if (songValueNotifier.value == null) return false;
+    final index = _queueSongBars.indexOf(songValueNotifier.value!);
+    if (index == -1 || index >= _queueSongBars.length - 1) return false;
+    return true;
+  }
+
+  //_player.state.playlist.index < _player.state.playlist.medias.length - 1;
+  bool get hasPrevious {
+    if (songValueNotifier.value == null) return false;
+    final index = _queueSongBars.indexOf(songValueNotifier.value!);
+    if (index == -1 || index <= 0) return false;
+    return true;
+  }
+
+  //_player.state.playlist.index > 0;
   int get currentIndex => _player.state.playlist.index;
   Duration get position => _player.state.position;
   Duration get bufferedPosition => _player.state.buffer;
@@ -201,8 +219,9 @@ class AudioPlayerService {
     return _player.open(media);
   }
 
-  Future<void> queue(Media media) async {
+  Future<void> queue(Media media, SongBar songBar) async {
     _updateProcessingState(AudioProcessingState.loading);
+    songValueNotifier.value = songBar;
     await _player.open(media);
     await player.seek(Duration.zero);
     return _player.pause();
@@ -237,14 +256,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Timer? _sleepTimer;
   bool sleepTimerExpired = false;
   late bool wasPlayingBeforeCall = false;
-
+  List<SongBar> get queueSongBars => audioPlayer.queueSongBars;
   late final StreamSubscription<bool?> _playbackEventSubscription;
   late final StreamSubscription<AudioProcessingState?> _stateChangeSubscription;
   late final StreamSubscription<Duration?> _durationSubscription;
   late final StreamSubscription<int?> _currentIndexSubscription;
   late final StreamSubscription<Playlist?> _sequenceStateSubscription;
   late final StreamSubscription<PositionData> _positionDataSubscription;
-  final ValueNotifier<dynamic> songValueNotifier = ValueNotifier({});
+
   final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
     PositionData(Duration.zero, Duration.zero, Duration.zero),
   );
@@ -335,6 +354,18 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void _positionDataNotify(PositionData value) {
     positionDataNotifier.value = value;
+    if (positionDataNotifier.value.duration.inSeconds ==
+            positionDataNotifier.value.position.inSeconds &&
+        positionDataNotifier.value.duration.inSeconds != Duration.zero.inSeconds &&
+        positionDataNotifier.value.position.inSeconds != Duration.zero.inSeconds)
+      switch (repeatNotifier.value) {
+        case AudioServiceRepeatMode.one:
+          queueSong(songBar: audioPlayer.songValueNotifier.value, play: true);
+          break;
+        default:
+          skipToNext();
+          break;
+      }
   }
 
   void _updatePlaybackState() {
@@ -421,13 +452,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await super.onTaskRemoved();
   }
 
-  bool get hasNext =>
-      activeQueue['list'].isEmpty
-          ? audioPlayer.hasNext
-          : activeSongId + 1 < activeQueue['list'].length;
+  bool get hasNext => audioPlayer.hasNext;
 
-  bool get hasPrevious =>
-      activeQueue['list'].isEmpty ? audioPlayer.hasPrevious : activeSongId > 0;
+  bool get hasPrevious => audioPlayer.hasPrevious;
 
   @override
   Future<void> play() => audioPlayer.play();
@@ -437,8 +464,32 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> stop() => audioPlayer.stop();
   @override
   Future<void> seek(Duration position) => audioPlayer.seek(position);
+  @override
+  Future<void> skipToNext({bool play = true}) async {
+    final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
+    if (!audioPlayer.hasNext && !loopAllSongs) return;
+    if (audioPlayer.songValueNotifier.value?.song == null) return;
+    final index = queueSongBars.indexOf(audioPlayer.songValueNotifier.value!);
+    if (loopAllSongs && index == queueSongBars.length - 1)
+      await queueSong(songBar: queueSongBars.first, play: play);
+    else if (index < queueSongBars.length - 1)
+      await queueSong(songBar: queueSongBars[index + 1], play: play);
+    return;
+  }
 
   @override
+  Future<void> skipToPrevious({bool play = true}) async {
+    final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
+    if (!audioPlayer.hasPrevious && !loopAllSongs) return;
+    if (audioPlayer.songValueNotifier.value == null) return;
+    final index = queueSongBars.indexOf(audioPlayer.songValueNotifier.value!);
+    if (loopAllSongs && index == 0)
+      await queueSong(songBar: queueSongBars.last, play: play);
+    else if (index > 0)
+      await queueSong(songBar: queueSongBars[index - 1], play: play);
+    return;
+  }
+
   Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
 
   Future<void> seekToStart() => audioPlayer.seekToStart();
@@ -451,34 +502,61 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> rewind() =>
       seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
 
-  Future<void> queueSong(dynamic song, {bool play = false}) async {
+  Future<bool> queueSong({
+    SongBar? songBar,
+    bool play = false,
+    bool skipOnError = false,
+  }) async {
     try {
-      if (!isSongInQueue(song)) addSongToQueue(song);
-      songValueNotifier.value = song;
+      if (queueSongBars.isEmpty) return false;
+      final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
+      final index = songBar == null ? 0 : queueSongBars.indexOf(songBar);
+      songBar = queueSongBars[index];
+      bool isError = false;
+      if (index < queueSongBars.length) {
+        isError = !(await queueSongBars[index].queueSong(play: play));
+      }
+      final newIndex =
+          index >= queueSongBars.length && loopAllSongs ? 0 : index + 1;
+      if (play &&
+          !isError &&
+          queueSongBars.length > 1 &&
+          newIndex != index &&
+          newIndex < queueSongBars.length)
+        queueSongBars[newIndex].primeSong();
 
-      final isOffline = song['isOffline'] ?? false;
-
-      final preliminaryTag = mapToMediaItem(song);
-      final songUrl =
-          song['songUrl'] == null || song['songUrl'].isEmpty
-              ? await getSongUrl(song)
-              : song['songUrl'];
-      final audioSource = await buildAudioSource(song, songUrl, isOffline);
+      if (play &&
+          isError &&
+          skipOnError &&
+          newIndex < queueSongBars.length &&
+          newIndex != index)
+        return queueSong(
+          songBar: queueSongBars[newIndex],
+          play: play,
+          skipOnError: skipOnError,
+        );
+      final isOffline = songBar.song['isOffline'] ?? false;
+      final preliminaryTag = mapToMediaItem(songBar.song);
+      final songUrl = songBar.song['songUrl'];
+      final audioSource = await buildAudioSource(
+        songBar.song,
+        songUrl,
+        isOffline,
+      );
       mediaItem.add(preliminaryTag);
-      await audioPlayer.queue(audioSource);
-
+      await audioPlayer.queue(audioSource, songBar);
+      if (play) unawaited(audioPlayer.play());
       final cacheKey =
-          'song_${song['ytid']}_${settings.audioQualitySetting.value}_url';
+          'song_${songBar.song['ytid']}_${settings.audioQualitySetting.value}_url';
       if (!isOffline) addOrUpdateData('cache', cacheKey, songUrl);
-      if (settings.playNextSongAutomatically.value)
-        getSimilarSong(song['ytid']);
-      if (play) await audioPlayer.play();
+      return !isError;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
+      return false;
     }
   }
 
@@ -521,45 +599,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
     return null;
   }
-
-  /*   Future<void> skipToSong(int newIndex) async {
-    if (newIndex >= 0 && newIndex < activeQueue['list'].length) {
-      activeSongId =
-          shuffleNotifier.value
-              //TODO: fix potentially preventing it from repeating previously played song
-              ? _generateRandomIndex(activeQueue['list'].length)
-              : newIndex;
-      queueSong(activeQueue['list'][activeSongId], play: true);
-    }
-  } */
-
-  /*   @override
-  Future<void> skipToNext() async {
-    if (!hasNext && repeatNotifier.value == AudioServiceRepeatMode.all) {
-      // If repeat mode is set to repeat the playlist, start from the beginning
-      await skipToSong(0);
-    } else if (!hasNext &&
-        playNextSongAutomatically.value &&
-        nextRecommendedSong != null) {
-      // If there's no next song but playNextSongAutomatically is enabled, play the recommended song
-      queueSong(nextRecommendedSong, play: true);
-    } else if (hasNext) {
-      // If there is a next song, skip to the next song
-      await skipToSong(activeSongId + 1);
-    }
-  } */
-
-  /*   @override
-  Future<void> skipToPrevious() async {
-    if (!hasPrevious && repeatNotifier.value == AudioServiceRepeatMode.all) {
-      // If repeat mode is set to repeat the playlist, start from the end
-      await skipToSong(activeQueue['list'].length - 1);
-    } else if (hasPrevious) {
-      // If there is a previous song, skip to the previous song
-      await skipToSong(activeSongId - 1);
-    }
-  } */
-
+  
   Future<void> playAgain() async {
     await audioPlayer.seek(Duration.zero);
   }

@@ -4,6 +4,7 @@ analyzer:
     omit_local_variable_types: ignore
     unnecessary_this: ignore
     require_trailing_commas: ignore
+    unused_element: ignore
   exclude:
     - packages/**
     - scripts/**

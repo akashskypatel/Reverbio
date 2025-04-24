@@ -42,6 +42,7 @@ MediaItem mapToMediaItem(Map song) => MediaItem(
           ? Uri.file(song['highResImage'].toString())
           : Uri.parse(song['highResImage'].toString()),
   extras: {
+    'artistId': song['artistId'],
     'lowResImage': song['lowResImage'],
     'ytid': song['ytid'],
     'isLive': song['isLive'],
@@ -61,6 +62,7 @@ Map<String, dynamic> songToMediaExtras(Map song) => {
           ? Uri.file(song['highResImage'].toString())
           : Uri.parse(song['highResImage'].toString()),
   'extras': {
+    'artistId': song['artistId'],
     'lowResImage': song['lowResImage'],
     'ytid': song['ytid'],
     'isLive': song['isLive'],
@@ -76,6 +78,7 @@ MediaItem extrasToMediaItem(Map<String, dynamic> extras) => MediaItem(
   title: extras['title'],
   artUri: extras['artUri'],
   extras: {
+    'artistId': extras['extras']['artistId'],
     'lowResImage': extras['extras']['lowResImage'],
     'ytid': extras['extras']['ytid'],
     'isLive': extras['extras']['isLive'],

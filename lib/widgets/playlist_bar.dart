@@ -71,7 +71,6 @@ class PlaylistBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    Map<dynamic, dynamic>? updatedPlaylist;
     return Padding(
       padding: commonBarPadding,
       child: GestureDetector(
@@ -84,17 +83,14 @@ class PlaylistBar extends StatelessWidget {
                   settings: RouteSettings(name: 'playlist?yt=$playlistId'),
                   builder:
                       (context) => PlaylistPage(
-                        playlistData: updatedPlaylist ?? playlistData,
+                        playlistData: {
+                          'title': playlistTitle,
+                          'ytid': playlistId,
+                        },
                         navigatorObserver: navigatorObserver,
                       ),
                 ),
-              ).then((value) {
-                if (isPlaylistUpdated()) {
-                  getPlaylistInfoForWidget(
-                    playlistId,
-                  ).then((result) => {updatedPlaylist = result});
-                }
-              });
+              );
             },
         child: Card(
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
@@ -127,11 +123,6 @@ class PlaylistBar extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  bool isPlaylistUpdated() {
-    final data = playlistData;
-    return false;
   }
 
   Widget _buildAlbumArt() {

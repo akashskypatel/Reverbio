@@ -24,6 +24,7 @@ import 'dart:async';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/main.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -83,20 +84,24 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
           child: FutureBuilder(
             future: widget.future,
             builder: (context, snapshot) {
-              if (snapshot.hasData) {
+              try {
+                final dataLength = snapshot.hasData ? snapshot.data.length : 0;
                 itemsNumber =
-                    snapshot.data.length > recommendedCardsNumber
+                    dataLength > recommendedCardsNumber
                         ? recommendedCardsNumber
-                        : snapshot.data.length;
+                        : dataLength;
                 inputData = snapshot.data;
+                return snapshot.hasError
+                    ? _buildErrorWidget(context)
+                    : snapshot.connectionState == ConnectionState.waiting
+                    ? _buildLoadingWidget()
+                    : isLargeScreen
+                    ? _buildLargeScreenScroller(context)
+                    : _buildSmallScreenScroller(context);
+              } catch (e, stackTrace) {
+                logger.log('Error in horizontal card scroller', e, stackTrace);
+                return _buildErrorWidget(context);
               }
-              return snapshot.hasError
-                  ? _buildErrorWidget(context)
-                  : (snapshot.hasData
-                      ? (isLargeScreen
-                          ? _buildLargeScreenScroller(context)
-                          : _buildSmallScreenScroller(context))
-                      : _buildLoadingWidget());
             },
           ),
         ),
