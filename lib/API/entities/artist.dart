@@ -28,6 +28,7 @@ import 'package:reverbio/API/Reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/utilities/utils.dart';
 
 List userLikedArtistsList = Hive.box(
   'user',
@@ -63,14 +64,14 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
 bool isArtistAlreadyLiked(artistIdToCheck) =>
     userLikedArtistsList.any((artist) => artist['id'] == artistIdToCheck);
 
-dynamic getArtistDetailsById(String id) async {
+Future<dynamic> getArtistDetailsById(String id) async {
   try {
-    final cached = _getCachedArtist(id);
-    if (cached != null) return cached;
     final ids = Uri.parse('?$id').queryParameters;
     if (ids['mb'] == null) return null;
+    final cached = _getCachedArtist(id);
+    if (cached != null) return cached;    
     final mbRes = await mb.artists.get(
-      id,
+      ids['mb']!,
       inc: [
         'release-groups',
         'aliases',
@@ -98,17 +99,38 @@ dynamic getArtistDetailsById(String id) async {
   }
 }
 
-Future<dynamic> searchArtistDetails(String query, {bool exact = true}) async {
+Future<dynamic> searchArtistDetails(
+  String query, {
+  bool exact = true,
+  int limit = 100,
+  int offset = 0,
+  bool paginated = false,
+}) async {
   try {
     final q = query.replaceAll(RegExp(r'\s+'), ' ').trim();
     final cached = _searchCachedArtists(q, exact: exact);
     if (cached != null && cached.isNotEmpty) return cached.first;
-    final res = await _callApis(q, exact: exact);
-    return res;
+    final res = await _callApis(
+      q,
+      exact: exact,
+      limit: limit,
+      offset: offset,
+      paginated: true,
+    );
+    if (res.isNotEmpty) return res.first;
+    return {};
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return null;
+    return {};
   }
+}
+
+Future<dynamic> getRecommendedArtists(
+  List<String> query,
+  int itemsNumber,
+) async {
+  await getArtistsDetails(query, limit: itemsNumber, paginated: true);
+  return pickRandomItems(cachedArtistsList, itemsNumber);
 }
 
 Future<dynamic> getArtistsDetails(
@@ -234,7 +256,7 @@ Future<Map<String, dynamic>> _combineResults(Map<String, dynamic> data) async {
 
 dynamic _getCachedArtist(String id) {
   try {
-    return cachedArtistsList.firstWhere((e) => e['id'] == id);
+    return cachedArtistsList.firstWhere((e) => e['id'].contains(id));
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;

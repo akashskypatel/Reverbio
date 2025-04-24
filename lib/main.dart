@@ -239,7 +239,7 @@ Future<void> initialisation() async {
     currentLikedAlbumsLength = ValueNotifier<int>(userLikedAlbumsList.length);
     currentLikedArtistsLength = ValueNotifier<int>(userLikedArtistsList.length);
     activeQueueLength = ValueNotifier<int>(activeQueue['list'].length);
-    
+
     audioHandler = await AudioService.init(
       builder: ReverbioAudioHandler.new,
       config: const AudioServiceConfig(

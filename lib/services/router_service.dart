@@ -23,10 +23,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/version.dart';
 import 'package:reverbio/screens/about_page.dart';
+import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/bottom_navigation_page.dart';
 import 'package:reverbio/screens/home_page.dart';
 import 'package:reverbio/screens/library_page.dart';
 import 'package:reverbio/screens/liked_artists_page.dart';
+import 'package:reverbio/screens/now_playing_page.dart';
 import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/screens/settings_page.dart';
 import 'package:reverbio/screens/user_songs_page.dart';
@@ -125,28 +127,40 @@ class NavigationManager {
         navigatorKey: homeTabNavigatorKey,
         routes: [
           GoRoute(
-            path: homePath,
-            pageBuilder: (context, GoRouterState state) {
-              return getPage(child: homePage, state: state);
-            },
-            routes: [
-              GoRoute(
-                path: 'library',
-                builder: (context, state) => libraryPage,
-              ),
-            ],
-          ),
-          GoRoute(
             path: '/',
             pageBuilder: (context, GoRouterState state) {
               return getPage(child: homePage, state: state);
             },
-            routes: [
-              GoRoute(
-                path: 'library',
-                builder: (context, state) => libraryPage,
-              ),
-            ],
+          ),
+          GoRoute(
+            path: homePath,
+            pageBuilder: (context, GoRouterState state) {
+              return getPage(child: homePage, state: state);
+            },
+          ),
+          GoRoute(
+            path: '/artist',
+            pageBuilder: (context, GoRouterState state) {
+              // Extract passed data (if any)
+              final artistData = state.extra as dynamic;
+              return getPage(
+                child: ArtistPage(
+                  artistData: artistData,
+                  navigatorObserver: navigatorObserver,
+                ),
+                state: state,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/nowPlaying',
+            pageBuilder: (context, GoRouterState state) {
+              // Extract passed data (if any)
+              return getPage(
+                child: NowPlayingPage(navigatorObserver: navigatorObserver),
+                state: state,
+              );
+            },
           ),
         ],
       ),

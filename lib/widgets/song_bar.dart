@@ -19,6 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -32,6 +33,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -56,22 +58,38 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<bool> _playSongNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isPrimedNotifier = ValueNotifier(false);
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
+  bool get isPrimed => _isPrimedNotifier.value;
+  final FutureTracker<bool> _songFutureTracker = FutureTracker();
   @override
   _SongBarState createState() => _SongBarState();
 
   ///Returns false if song cannot play
   Future<bool> queueSong({bool play = false}) async {
-    _isLoadingNotifier.value = true;
+    if (!isPrimed) primeSong();
     if (play) {
+      await _songFutureTracker.completer?.future;
       _playSongNotifier.value = true;
-      await getSongUrl(song);
     } else {
       _queueSongNotifier.value = true;
     }
+    return !isError;
+  }
+
+  Future<bool> _primeSong() async {
+    _isLoadingNotifier.value = true;
+    if (!isPrimed) await getSongUrl(song);
+    _isPrimedNotifier.value = true;
+    _isErrorNotifier.value =
+        song.containsKey('isError') ? song['isError'] : false;
     _isLoadingNotifier.value = false;
-    return !(song.containsKey('isError') ? song['isError'] : false);
+    return !isError;
+  }
+
+  void primeSong() {
+    unawaited(_songFutureTracker.runFuture(_primeSong()));
   }
 }
 
@@ -143,7 +161,7 @@ class _SongBarState extends State<SongBar> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            widget.song['title'],
+                            '${widget.song['index'] == null ? '' : '${widget.song['index'] + 1} - '}${widget.song['title']}',
                             overflow: TextOverflow.ellipsis,
                             style: commonBarTitleStyle.copyWith(
                               color: primaryColor,
@@ -238,9 +256,10 @@ class _SongBarState extends State<SongBar> {
 
   void _queueSong({bool play = false}) async {
     widget._isLoadingNotifier.value = true;
+    if (!widget.isPrimed) await getSongUrl(widget.song);
     final isError =
         widget.song.containsKey('isError') ? widget.song['isError'] : false;
-    if (!isError) await audioHandler.queueSong(widget.song, play: play);
+    if (!isError) await audioHandler.queueSong(songBar: widget, play: play);
 
     widget._isLoadingNotifier.value = false;
     widget._isErrorNotifier.value = isError;
@@ -389,7 +408,7 @@ class _SongBarState extends State<SongBar> {
       tappedBox.size.height - details.globalPosition.dy,
     );
 
-    var value = await showMenu(
+    final value = await showMenu(
       context: context,
       position: position,
       color: Theme.of(context).colorScheme.surface,
@@ -401,7 +420,7 @@ class _SongBarState extends State<SongBar> {
   }
 
   List<PopupMenuItem<String>> _buildPopupMenuItems(BuildContext context) {
-    final isInQueue = isSongInQueue(widget.song);
+    final isInQueue = isSongInQueue(widget);
     return [
       PopupMenuItem<String>(
         value: 'like',
@@ -509,10 +528,10 @@ class _SongBarState extends State<SongBar> {
         if (widget.onRemove != null) widget.onRemove!();
         break;
       case 'remove_from_queue':
-        removeSongFromQueue(widget.song);
+        removeSongFromQueue(widget);
         break;
       case 'add_to_queue':
-        addSongToQueue(widget.song);
+        addSongToQueue(widget);
         break;
       case 'add_to_playlist':
         showAddToPlaylistDialog(context, widget.song);

@@ -19,10 +19,12 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:reverbio/localization/app_localizations.dart';
+import 'package:reverbio/main.dart';
 
 extension ContextX on BuildContext {
   AppLocalizations? get l10n => AppLocalizations.of(this);
@@ -60,6 +62,45 @@ extension ListOfMapsAddOrUpdate<T, K> on List<dynamic> {
   }
 }
 
+extension ShuffledPairExtension<T, U> on List<T> {
+  /// Returns a shuffled version of this list and another list,
+  /// both shuffled in the same order.
+  void shuffledWith(List<U> other, {Random? random}) {
+    assert(length == other.length, 'Lists must be same length');
+
+    // Create indices and shuffle them
+    final indices = List.generate(length, (i) => i)
+      ..shuffle(random ?? Random());
+
+    for (int i = 0; i < indices.length; i++) {
+      this.rearrange(i, indices[i]);
+      other.rearrange(i, indices[i]);
+    }
+  }
+}
+
+extension ListReordering<T> on List<T> {
+  /// Moves an item from [oldIndex] to [newIndex] and shifts other elements accordingly
+  void rearrange(int oldIndex, int newIndex) {
+    if (oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= this.length ||
+        newIndex >= this.length) {
+      logger.log(
+        'Invalid indices: oldIndex=$oldIndex, newIndex=$newIndex',
+        null,
+        null,
+      );
+      return;
+    }
+
+    if (oldIndex == newIndex) return;
+
+    final item = this.removeAt(oldIndex);
+    this.insert(newIndex, item);
+  }
+}
+
 extension StringCasingExtension on String {
   String get toCapitalized =>
       length > 0 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : '';
@@ -77,9 +118,13 @@ class CustomScrollBehavior extends MaterialScrollBehavior {
     PointerDeviceKind.mouse, // Enable mouse dragging
   };
 
-    // Optionally, you can customize the scrollbar appearance or behavior
+  // Optionally, you can customize the scrollbar appearance or behavior
   @override
-  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     // Use the default scrollbar provided by MaterialScrollBehavior
     return super.buildScrollbar(context, child, details);
   }

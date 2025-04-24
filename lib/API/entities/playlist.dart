@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
+import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/DB/albums.db.dart';
@@ -10,6 +11,7 @@ import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 List dbPlaylists = [...playlistsDB, ...albumsDB];
@@ -32,32 +34,39 @@ dynamic nextRecommendedSong;
 
 late final ValueNotifier<int> currentLikedPlaylistsLength;
 
-void addSongsToQueue(List<dynamic> songs) {
-  for (final song in songs) {
-    addSongToQueue(song);
+void addSongsToQueue(List<SongBar> songBars) {
+  for (final songBar in songBars) {
+    addSongToQueue(songBar);
   }
 }
 
-dynamic addSongToQueue(dynamic song) {
-  if (!isSongInQueue(song)) {
-    activeQueue['list'].add(song);
+void addSongToQueue(SongBar songBar) {
+  if (!isSongInQueue(songBar)) {
+    activeQueue['list'].add(songBar.song);
+    audioHandler.queueSongBars.add(songBar);
     activeQueueLength.value = activeQueue['list'].length;
   }
 }
 
-bool removeSongFromQueue(dynamic song) {
-  final val = activeQueue['list'].remove(song);
+bool removeSongFromQueue(SongBar songBar) {
+  final val = activeQueue['list'].remove(songBar.song);
+  audioHandler.queueSongBars.remove(songBar);
   activeQueueLength.value = activeQueue['list'].length;
   return val;
 }
 
-bool isSongInQueue(dynamic song) {
-  return activeQueue['list'].contains(song);
+bool isSongInQueue(SongBar songBar) {
+  return activeQueue['list'].contains(songBar.song);
 }
 
-void setQueueToPlaylist(dynamic playlist) {
-  activeQueue.addAll(playlist);
-  activeQueueLength.value = activeQueue['list'].length;
+void setQueueToPlaylist(dynamic playlist, List<SongBar> songBars) {
+  clearSongQueue();
+  activeQueue['id'] = playlist['id'];
+  activeQueue['ytid'] = playlist['ytid'];
+  activeQueue['title'] = playlist['title'];
+  activeQueue['image'] = playlist['image'];
+  activeQueue['source'] = playlist['source'];
+  addSongsToQueue(songBars);
 }
 
 void clearSongQueue() {
@@ -67,6 +76,7 @@ void clearSongQueue() {
   activeQueue['image'] = '';
   activeQueue['source'] = '';
   activeQueue['list'].clear();
+  audioHandler.queueSongBars.clear();
   activeQueueLength.value = 0;
 }
 
@@ -456,8 +466,8 @@ Future updatePlaylistList(BuildContext context, String playlistId) async {
     dbPlaylists[index]['list'] = songList;
     addOrUpdateData('cache', 'playlistSongs$playlistId', songList);
     showToast(context, context.l10n!.playlistUpdated);
+    return dbPlaylists[index];
   }
-  return dbPlaylists[index];
 }
 
 int findPlaylistIndexByYtId(String ytid) {
@@ -518,14 +528,29 @@ Future<Map?> getPlaylistInfoForWidget(
       return null;
     }
   }
-
   // If the playlist exists but its song list is empty, fetch and cache the songs.
   if (playlist['list'] == null ||
       (playlist['list'] is List && (playlist['list'] as List).isEmpty)) {
     playlist['list'] = await getSongsFromPlaylist(playlist['id']);
+    playlist['artists'] =
+        playlist['list']
+            .map((song) => (song['artist'] as String).trim())
+            .toSet();
+    if (playlist['artists'].length == 1)
+      playlist['artist'] = playlist['artists'].first;
     if (!dbPlaylists.contains(playlist)) {
       dbPlaylists.add(playlist);
     }
+  }
+
+  if (playlist['isAlbum'] != null &&
+      playlist['isAlbum'] &&
+      playlist['artist'] != null) {
+    playlist.addAll(
+      Map<String, Object>.from(
+        await findMBAlbum(playlist['title'], playlist['artist']),
+      ),
+    );
   }
 
   return playlist;

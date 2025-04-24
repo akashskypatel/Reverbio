@@ -49,11 +49,12 @@ class _HomePageState extends State<HomePage> with RouteAware {
   void initState() {
     super.initState();
     _recommendedSongsFuture.then((songs) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _recommendedSongs = songs;
-          _parseArtistList(_recommendedSongs);
         });
+        _parseArtistList(_recommendedSongs);
+      }
     });
   }
 
@@ -122,9 +123,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 child: FutureBuilder(
                   future: _recommendedSongsFuture,
                   builder: (context, snapshot) {
+                    //return SizedBox.shrink();
                     return HorizontalCardScroller(
                       title: context.l10n!.suggestedArtists,
-                      //TODO: add more recommended artists from likes
                       future: _recommendedArtistsFuture,
                       navigatorObserver: widget.navigatorObserver,
                     );
@@ -133,6 +134,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
               ),
             ),
           SongList(
+            page: 'recommended',
             title: context.l10n!.recommendedForYou,
             future: _recommendedSongsFuture,
           ),
@@ -156,10 +158,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
             )
             .toSet()
             .toList();
-    _recommendedArtistsFuture = getArtistsDetails(
-      artists,
-      limit: 25,
-      paginated: true,
-    );
+    _recommendedArtistsFuture = getRecommendedArtists(artists, 8);
   }
 }
