@@ -90,6 +90,8 @@
   "provideIdOrNameError": "请提供 YouTube ID 或自定义播放列表名称",
   "pureBlackTheme": "纯黑主题",
   "queue": "队列",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "最近播放",
   "recentlyPlayedMsg": "最近播放历史已清除",
   "recommendedForYou": "猜你喜欢",

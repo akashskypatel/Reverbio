@@ -90,6 +90,8 @@
   "provideIdOrNameError": "Παρακαλώ παρέχετε είτε αναγνωριστικό YouTube είτε όνομα προσαρμοσμένης λίστας αναπαραγωγής",
   "pureBlackTheme": "Καθαρό μαύρο θέμα",
   "queue": "Ουρά",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "Πρόσφατα εκτελεσμένα",
   "recentlyPlayedMsg": "Το ιστορικό αναπαραγωγής διαγράφηκε πρόσφατα",
   "recommendedForYou": "Συνιστάται για εσάς",

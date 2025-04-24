@@ -31,7 +31,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
-import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -53,9 +53,11 @@ class AudioPlayerService {
   }
   static final Player _player = Player();
   static bool _isShuffleEnabled = false;
+  static double _volume = settings.volume.toDouble();
   static final _processingStateController =
       StreamController<AudioProcessingState>.broadcast();
   static final _indexController = StreamController<int>.broadcast();
+  static final _volumeNotifier = ValueNotifier(_volume);
   static AudioProcessingState _processingState = AudioProcessingState.idle;
   static AudioPlayerState _playerState = AudioPlayerState.uninitialized;
   static final _playerStateController =
@@ -73,6 +75,7 @@ class AudioPlayerService {
   Duration get position => _player.state.position;
   Duration get bufferedPosition => _player.state.buffer;
   double get speed => _player.state.rate;
+  double get volume => _volume;
 
   Stream<AudioPlayerState> get playerStateStream =>
       _playerStateController.stream;
@@ -92,6 +95,7 @@ class AudioPlayerService {
       );
   Stream<int> get currentIndexStream => _indexController.stream;
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
+  ValueNotifier<double> get volumeNotifier => _volumeNotifier;
 
   void _initialize() {
     _playerState = AudioPlayerState.initialized;
@@ -143,6 +147,7 @@ class AudioPlayerService {
     _player.stream.playlist.listen((playlist) {
       _indexController.add(playlist.index);
     });
+    setVolume(_volume);
   }
 
   void _updateProcessingState(AudioProcessingState newState) {
@@ -204,6 +209,9 @@ class AudioPlayerService {
   }
 
   Future<void> setVolume(double volume) async {
+    _volume = volume;
+    _volumeNotifier.value = volume;
+    addOrUpdateData('settings', 'volume', volume.toInt());
     return _player.setVolume(volume);
   }
 
@@ -296,7 +304,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
                 .map((source) => extrasToMediaItem(source.extras ?? {}))
                 .toList();
         queue.add(items);
-        shuffleNotifier.value = audioPlayer.shuffleModeEnabled;
+        settings.shuffleNotifier.value = audioPlayer.shuffleModeEnabled;
       }
     } catch (e, stackTrace) {
       logger.log('Error handling sequence state change', e, stackTrace);
@@ -352,7 +360,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         },
         androidCompactActionIndices: const [0, 1, 2],
         processingState: audioPlayer.state,
-        repeatMode: repeatNotifier.value,
+        repeatMode: settings.repeatNotifier.value,
         shuffleMode:
             audioPlayer.shuffleModeEnabled
                 ? AudioServiceShuffleMode.all
@@ -430,6 +438,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> seek(Duration position) => audioPlayer.seek(position);
 
+  @override
+  Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
+
   Future<void> seekToStart() => audioPlayer.seekToStart();
 
   @override
@@ -448,14 +459,19 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       final isOffline = song['isOffline'] ?? false;
 
       final preliminaryTag = mapToMediaItem(song);
-      final songUrl = song['songUrl'] == null || song['songUrl'].isEmpty ? await getSongUrl(song) : song['songUrl'];
+      final songUrl =
+          song['songUrl'] == null || song['songUrl'].isEmpty
+              ? await getSongUrl(song)
+              : song['songUrl'];
       final audioSource = await buildAudioSource(song, songUrl, isOffline);
       mediaItem.add(preliminaryTag);
       await audioPlayer.queue(audioSource);
 
-      final cacheKey = 'song_${song['ytid']}_${audioQualitySetting.value}_url';
+      final cacheKey =
+          'song_${song['ytid']}_${settings.audioQualitySetting.value}_url';
       if (!isOffline) addOrUpdateData('cache', cacheKey, songUrl);
-      if (playNextSongAutomatically.value) getSimilarSong(song['ytid']);
+      if (settings.playNextSongAutomatically.value)
+        getSimilarSong(song['ytid']);
       if (play) await audioPlayer.play();
     } catch (e, stackTrace) {
       logger.log(
@@ -482,7 +498,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     final uri = Uri.parse(songUrl);
     final audioSource = Media(uri.toString(), extras: extras);
 
-    if (!sponsorBlockSupport.value) {
+    if (!settings.sponsorBlockSupport.value) {
       return audioSource;
     }
 
@@ -551,7 +567,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
     final shuffleEnabled = shuffleMode != AudioServiceShuffleMode.none;
-    shuffleNotifier.value = shuffleEnabled;
+    settings.shuffleNotifier.value = shuffleEnabled;
     await audioPlayer.setShuffleMode(shuffleEnabled);
   }
 
@@ -577,7 +593,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     sleepTimerExpired = false;
     _sleepTimer = Timer(duration, () async {
       await stop();
-      playNextSongAutomatically.value = false;
+      settings.playNextSongAutomatically.value = false;
       sleepTimerExpired = true;
       _sleepTimer = null;
     });
@@ -592,20 +608,21 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   void changeSponsorBlockStatus() {
-    sponsorBlockSupport.value = !sponsorBlockSupport.value;
+    settings.sponsorBlockSupport.value = !settings.sponsorBlockSupport.value;
     addOrUpdateData(
       'settings',
       'sponsorBlockSupport',
-      sponsorBlockSupport.value,
+      settings.sponsorBlockSupport.value,
     );
   }
 
   void changeAutoPlayNextStatus() {
-    playNextSongAutomatically.value = !playNextSongAutomatically.value;
+    settings.playNextSongAutomatically.value =
+        !settings.playNextSongAutomatically.value;
     addOrUpdateData(
       'settings',
       'playNextSongAutomatically',
-      playNextSongAutomatically.value,
+      settings.playNextSongAutomatically.value,
     );
   }
 

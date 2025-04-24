@@ -90,6 +90,8 @@
   "provideIdOrNameError": "YouTube のリストの ID か、リスト名を入力してください",
   "pureBlackTheme": "ピュアブラックを使用",
   "queue": "列",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "最近再生した曲",
   "recentlyPlayedMsg": "再生履歴を消去しました",
   "recommendedForYou": "あなたにおすすめ",

@@ -73,6 +73,8 @@ Color primaryColorSetting = Color(
   Hive.box('settings').get('accentColor', defaultValue: 0xff91cef4),
 );
 
+int volume = Hive.box('settings').get('volume', defaultValue: 100).toInt();
+
 // Non-Storage Notifiers
 
 final shuffleNotifier = ValueNotifier<bool>(false);

@@ -136,6 +136,18 @@ class NavigationManager {
               ),
             ],
           ),
+          GoRoute(
+            path: '/',
+            pageBuilder: (context, GoRouterState state) {
+              return getPage(child: homePage, state: state);
+            },
+            routes: [
+              GoRoute(
+                path: 'library',
+                builder: (context, state) => libraryPage,
+              ),
+            ],
+          ),
         ],
       ),
       StatefulShellBranch(

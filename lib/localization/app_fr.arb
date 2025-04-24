@@ -90,6 +90,8 @@
   "provideIdOrNameError": "Veuillez fournir soit un identifiant YouTube, soit un nom de playlist personnalisée",
   "pureBlackTheme": "Thème sombre",
   "queue": "File d'attente",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "Lectures récentes",
   "recentlyPlayedMsg": "Historique de lecture effacé",
   "recommendedForYou": "Recommandations",

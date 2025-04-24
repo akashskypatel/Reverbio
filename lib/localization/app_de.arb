@@ -90,6 +90,8 @@
   "provideIdOrNameError": "Bitte gib eine YouTube-ID oder einen benutzerdefinierten Playlist-Namen an",
   "pureBlackTheme": "Richtig dunkler Modus",
   "queue": "Warteschlange",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "Zuletzt gespielt",
   "recentlyPlayedMsg": "Wiedergabeverlauf gelöscht",
   "recommendedForYou": "Empfohlen für dich",

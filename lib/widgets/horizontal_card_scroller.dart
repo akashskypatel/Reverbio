@@ -77,7 +77,9 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
       children: [
         SectionHeader(title: widget.title),
         ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: playlistHeight + (isLargeScreen ? 44 : 60)),
+          constraints: BoxConstraints(
+            maxHeight: playlistHeight + (isLargeScreen ? 44 : 60),
+          ),
           child: FutureBuilder(
             future: widget.future,
             builder: (context, snapshot) {

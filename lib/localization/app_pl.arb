@@ -90,6 +90,8 @@
   "provideIdOrNameError": "Podaj ID YouTube lub własną nazwę playlisty",
   "pureBlackTheme": "Motyw czarny",
   "queue": "Queue",
+  "queueReplacedByPlaylist": "Queue replaced by playlist",
+  "queueUpdated": "Queue Updated",
   "recentlyPlayed": "Ostatnio odtwarzane",
   "recentlyPlayedMsg": "Wyczyszczono historię ostatnio odtworzonych utworów",
   "recommendedForYou": "Polecane dla Ciebie",
