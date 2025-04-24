@@ -95,15 +95,23 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       await getTrackList(widget.playlistData);
     }
     _playlist =
-        widget.playlistData['ytid'] != null
-            ? await getPlaylistInfoForWidget(
-              widget.playlistData['ytid'],
-              isArtist: widget.isArtist,
-            )
-            : userCustomPlaylists.value.firstWhere(
-              (playlist) => playlist['title'] == widget.playlistData['title'],
-              orElse: () => null,
-            );
+        widget.playlistData['list'] != null && widget.playlistData['list'].length > 0
+            ? widget.playlistData
+            : (widget.playlistData['source'] == 'user-created'
+                ? userCustomPlaylists.value.firstWhere(
+                  (playlist) =>
+                      playlist['title'] == widget.playlistData['title'],
+                  orElse: () => null,
+                )
+                : (widget.playlistData['ytid'] != null
+                    ? await getPlaylistInfoForWidget(
+                      widget.playlistData['ytid'],
+                      isArtist: widget.isArtist,
+                    )
+                    : (widget.playlistData['primary-type'].toLowerCase() ==
+                            'album'
+                        ? await getAlbumDetailsById(widget.playlistData['id'])
+                        : null)));
 
     if (_playlist != null) {
       _loadMore();
