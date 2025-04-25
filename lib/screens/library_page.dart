@@ -136,10 +136,22 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
           navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
-          context.l10n!.artist,
+          context.l10n!.likedArtists,
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/artists'),
           cardIcon: FluentIcons.mic_sparkle_24_filled,
+          borderRadius:
+              isUserPlaylistsEmpty
+                  ? commonCustomBarRadiusLast
+                  : BorderRadius.zero,
+          showBuildActions: false,
+          navigatorObserver: widget.navigatorObserver,
+        ),
+        PlaylistBar(
+          context.l10n!.likedAlbums,
+          onPressed:
+              () => NavigationManager.router.go('/library/userSongs/albums'),
+          cardIcon: FluentIcons.cd_16_filled,
           borderRadius:
               isUserPlaylistsEmpty
                   ? commonCustomBarRadiusLast

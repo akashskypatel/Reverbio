@@ -22,6 +22,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/version.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/about_page.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/bottom_navigation_page.dart';
@@ -196,7 +197,16 @@ class NavigationManager {
                         navigatorObserver: navigatorObserver,
                       );
                     case 'artists':
-                      return LikedArtistsPage(
+                      return LikedCardsPage(
+                        title: context.l10n!.likedArtists,
+                        page: state.pathParameters['page'] ?? 'artists',
+                        key: ValueKey(DateTime.now()),
+                        navigatorObserver: navigatorObserver,
+                      );
+                    case 'albums':
+                      return LikedCardsPage(
+                        title: context.l10n!.likedAlbums,
+                        page: state.pathParameters['page'] ?? 'albums',
                         key: ValueKey(DateTime.now()),
                         navigatorObserver: navigatorObserver,
                       );

@@ -52,8 +52,6 @@ dynamic _getCachedAlbum(String id) {
 
 Future<dynamic> getAlbumDetailsById(String id) async {
   try {
-    final ids = Uri.parse('?$id').queryParameters;
-    if (ids['mb'] == null) return null;
     final cached = _getCachedAlbum(id);
     if (cached != null) return cached;
     final album = await getReleaseGroupDetails(id);
