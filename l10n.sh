@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# [ar,bn,de,el,en,es,fr,hi,id,it,ja,ko,pl,pt,ru,uk,yue,zh-Hant,zh-TW,zh]
 # Usage: ./l10n.sh "key" "value" [l10n_dir]
 
 KEY="$1"
