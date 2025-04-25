@@ -31,6 +31,16 @@ languages=$(jq -r '.translations | map(keys) | add | unique[]' "$INPUT_FILE" 2>/
 
 if [ -z "$languages" ]; then
     echo "Error: Could not extract language codes from JSON file." >&2
+    echo "Please verify the JSON structure matches:"
+    echo '{
+      "translations": {
+        "key": {
+          "languageCode": "translation",
+          ...
+        },
+        ...
+      }
+    }'
     exit 1
 fi
 
