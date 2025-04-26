@@ -1,0 +1,11 @@
+/* 
+{
+    "translations": {
+      "key": {
+        "languageCode": "translation",
+        ...
+      },
+      ...
+    }
+} 
+*/

@@ -139,5 +139,6 @@
   "undo": "撤销",
   "userPlaylists": "用户歌单",
   "volume": "音量",
-  "youtubePlaylistLinkOrId": "YouTube歌单链接或ID"
+  "youtubePlaylistLinkOrId": "YouTube歌单链接或ID",
+  "count": "计数"
 }

@@ -31,6 +31,7 @@ import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -85,38 +86,17 @@ class _SongListState extends State<SongList> {
     return SliverMainAxisGroup(
       slivers: [
         SliverToBoxAdapter(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Padding(
-                  padding: commonSingleChildScrollViewPadding * 2,
-                  child: Text(
-                    overflow: TextOverflow.ellipsis,
-                    widget.title,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize:
-                          Theme.of(context).textTheme.titleMedium?.fontSize ??
-                          16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: commonSingleChildScrollViewPadding,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildSortSongActionButton(),
-                    _buildShuffleSongActionButton(),
-                    _buildPlayActionButton(),
-                    if (widget.page != 'queue') _buildAddToQueueActionButton(),
-                  ],
-                ),
-              ),
-            ],
+          child: Padding(
+            padding: commonSingleChildScrollViewPadding,
+            child: SectionHeader(
+              title: widget.title,
+              actions: [
+                _buildSortSongActionButton(),
+                _buildShuffleSongActionButton(),
+                _buildPlayActionButton(),
+                if (widget.page != 'queue') _buildAddToQueueActionButton(),
+              ],
+            ),
           ),
         ),
         if (widget.future != null)
@@ -162,7 +142,7 @@ class _SongListState extends State<SongList> {
     );
   }
 
-  List<PopupMenuItem<String>> _buildPopupMenuItems(BuildContext context) {
+  List<PopupMenuItem<String>> _buildSortMenuItems(BuildContext context) {
     return [
       PopupMenuItem<String>(
         value: 'artist',
@@ -193,7 +173,7 @@ class _SongListState extends State<SongList> {
     ];
   }
 
-  void _popupMenuItemAction(String value) {
+  void _sortMenuItemAction(String value) {
     void sortBy(String key) {
       _songsList.sort((a, b) {
         final valueA = a[key].toString().toLowerCase();
@@ -226,8 +206,8 @@ class _SongListState extends State<SongList> {
         color: Theme.of(context).colorScheme.primary,
         size: 30,
       ),
-      onSelected: _popupMenuItemAction,
-      itemBuilder: _buildPopupMenuItems,
+      onSelected: _sortMenuItemAction,
+      itemBuilder: _buildSortMenuItems,
     );
   }
 

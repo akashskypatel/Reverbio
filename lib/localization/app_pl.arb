@@ -139,5 +139,6 @@
   "undo": "Cofnij",
   "userPlaylists": "Playlisty użytkownika",
   "volume": "Głośność",
-  "youtubePlaylistLinkOrId": "Link lub ID playlisty YouTube"
+  "youtubePlaylistLinkOrId": "Link lub ID playlisty YouTube",
+  "count": "Liczyć"
 }

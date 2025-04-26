@@ -20,22 +20,32 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/widgets/section_title.dart';
 
 class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, required this.title, this.actionButton});
+  const SectionHeader({super.key, required this.title, this.actions});
   final String title;
-  final Widget? actionButton;
+  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      child: Row(
-        children: [
-          SectionTitle(title, Theme.of(context).colorScheme.primary),
-          if (actionButton != null) actionButton!,
-        ],
-      ),
+    //TODO: fix clipped if too small
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ClipRect(
+          child: SectionTitle(title, Theme.of(context).colorScheme.primary),
+        ),
+        if (actions != null)
+          Padding(
+            padding: commonSingleChildScrollViewPadding,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: actions!,
+            ),
+          ),
+      ],
     );
   }
 }

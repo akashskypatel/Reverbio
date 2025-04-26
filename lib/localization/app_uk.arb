@@ -139,5 +139,6 @@
   "undo": "Скасувати",
   "userPlaylists": "Користувацькі плейлисти",
   "volume": "Гучність",
-  "youtubePlaylistLinkOrId": "Посилання або ID плейлиста YouTube"
+  "youtubePlaylistLinkOrId": "Посилання або ID плейлиста YouTube",
+  "count": "Рахувати"
 }

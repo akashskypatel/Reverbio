@@ -139,5 +139,6 @@
   "undo": "Отменить",
   "userPlaylists": "Пользовательские плейлисты",
   "volume": "Громкость",
-  "youtubePlaylistLinkOrId": "Ссылка или ID плейлиста YouTube"
+  "youtubePlaylistLinkOrId": "Ссылка или ID плейлиста YouTube",
+  "count": "Считать"
 }

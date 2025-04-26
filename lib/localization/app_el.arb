@@ -139,5 +139,6 @@
   "undo": "Αναίρεση",
   "userPlaylists": "Λίστες αναπαραγωγής χρήστη",
   "volume": "Ένταση",
-  "youtubePlaylistLinkOrId": "Σύνδεσμος ή ID λίστας αναπαραγωγής YouTube"
+  "youtubePlaylistLinkOrId": "Σύνδεσμος ή ID λίστας αναπαραγωγής YouTube",
+  "count": "Καταμέτρηση"
 }
