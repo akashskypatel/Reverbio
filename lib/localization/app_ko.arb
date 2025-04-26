@@ -139,5 +139,6 @@
   "undo": "실행 취소",
   "userPlaylists": "사용자 재생 목록",
   "volume": "볼륨",
-  "youtubePlaylistLinkOrId": "YouTube 재생 목록 링크 또는 ID"
+  "youtubePlaylistLinkOrId": "YouTube 재생 목록 링크 또는 ID",
+  "count": "계수"
 }

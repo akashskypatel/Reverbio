@@ -139,5 +139,6 @@
   "undo": "復原",
   "userPlaylists": "用戶播放清單",
   "volume": "音量",
-  "youtubePlaylistLinkOrId": "YouTube播放清單連結或ID"
+  "youtubePlaylistLinkOrId": "YouTube播放清單連結或ID",
+  "count": "計數"
 }

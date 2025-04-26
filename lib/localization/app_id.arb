@@ -139,5 +139,6 @@
   "undo": "Batalkan",
   "userPlaylists": "Daftar putar pengguna",
   "volume": "Volume",
-  "youtubePlaylistLinkOrId": "Tautan atau ID daftar putar YouTube"
+  "youtubePlaylistLinkOrId": "Tautan atau ID daftar putar YouTube",
+  "count": "Hitung"
 }

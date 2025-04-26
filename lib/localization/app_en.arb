@@ -139,5 +139,6 @@
   "undo": "Undo",
   "userPlaylists": "User playlists",
   "volume": "Volume",
-  "youtubePlaylistLinkOrId": "YouTube playlist link or ID"
+  "youtubePlaylistLinkOrId": "YouTube playlist link or ID",
+  "count": "Count"
 }

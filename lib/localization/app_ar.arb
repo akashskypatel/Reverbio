@@ -139,5 +139,6 @@
   "undo": "تراجع",
   "userPlaylists": "قوائم تشغيل المستخدم",
   "volume": "الصوت",
-  "youtubePlaylistLinkOrId": "رابط قائمة تشغيل YouTube أو المعرّف"
+  "youtubePlaylistLinkOrId": "رابط قائمة تشغيل YouTube أو المعرّف",
+  "count": "عدد"
 }

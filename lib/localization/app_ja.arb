@@ -139,5 +139,6 @@
   "undo": "元に戻す",
   "userPlaylists": "ユーザープレイリスト",
   "volume": "音量",
-  "youtubePlaylistLinkOrId": "YouTubeプレイリストリンクまたはID"
+  "youtubePlaylistLinkOrId": "YouTubeプレイリストリンクまたはID",
+  "count": "カウント"
 }
