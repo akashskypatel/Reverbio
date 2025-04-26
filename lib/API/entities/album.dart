@@ -41,7 +41,7 @@ late final ValueNotifier<int> currentLikedAlbumsLength;
 
 dynamic _getCachedAlbum(String id) {
   try {
-    final cached = cachedAlbumsList.where((e) => e['id'] == id);
+    final cached = cachedAlbumsList.where((e) => e['id'].contains(id));
     if (cached.isEmpty) return null;
     return cached.first;
   } catch (e, stackTrace) {

@@ -73,7 +73,6 @@ class BaseCard extends StatefulWidget {
 
 class _BaseCardState extends State<BaseCard> {
   bool isLiked = false;
-  bool isVisible = true;
   String? dataType;
   final borderRadius = 13.0;
   late final likeSize =

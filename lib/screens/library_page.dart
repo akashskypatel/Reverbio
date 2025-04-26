@@ -29,11 +29,10 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
-import 'package:reverbio/widgets/section_title.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key, required this.navigatorObserver});
@@ -44,6 +43,11 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> with RouteAware {
+  final TextEditingController _searchBar = TextEditingController();
+  final FocusNode _inputNode = FocusNode();
+  ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
+  final List<PlaylistBar> userPlaylistBars = [];
+
   @override
   void dispose() {
     currentLikedPlaylistsLength.removeListener(_listener);
@@ -63,7 +67,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
     currentOfflineSongsLength.addListener(_listener);
     currentRecentlyPlayedLength.addListener(_listener);
     currentLikedAlbumsLength.addListener(_listener);
-    //TODO: add album liking
   }
 
   @override
@@ -93,6 +96,8 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
             onPressed: _showAddPlaylistDialog,
             icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
           ),
+          _clearFiltersButton(),
+          const SizedBox(width: 24, height: 24),
         ],
       ),
       body: Column(
@@ -114,6 +119,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
   }
 
   Widget _buildUserPlaylistsSection(Color primaryColor) {
+    userPlaylistBars.clear();
     final isUserPlaylistsEmpty =
         userPlaylists.value.isEmpty && userCustomPlaylists.value.isEmpty;
     return Column(
@@ -168,47 +174,64 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
           showBuildActions: false,
           navigatorObserver: widget.navigatorObserver,
         ),
-        //TODO: add search bar
-        SectionHeader(title: context.l10n!.customPlaylists),
+        _buildSearchBar(),
+        SectionHeader(
+          title: context.l10n!.customPlaylists,
+          actions: [
+            IconButton(
+              padding: const EdgeInsets.only(right: 5),
+              onPressed: _showAddPlaylistDialog,
+              icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+            ),
+          ],
+        ),
         ValueListenableBuilder<List>(
           valueListenable: userCustomPlaylists,
           builder: (context, playlists, _) {
             if (playlists.isEmpty) {
               return const SizedBox();
             }
-            return _buildPlaylistListView(context, playlists);
+            return _buildPlaylistListView(context, playlists, 'user-created');
           },
         ),
         ValueListenableBuilder<List>(
           valueListenable: userPlaylists,
           builder: (context, playlists, _) {
-            if (userPlaylists.value.isEmpty) {
-              return const SizedBox();
-            }
             return Column(
               children: [
                 SectionHeader(
                   title: context.l10n!.addedPlaylists,
-                  actionButton: IconButton(
-                    padding: const EdgeInsets.only(right: 5),
-                    onPressed: _showAddPlaylistDialog,
-                    icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+                  actions: [
+                    IconButton(
+                      padding: const EdgeInsets.only(right: 5),
+                      onPressed: _showAddPlaylistDialog,
+                      icon: Icon(
+                        FluentIcons.add_24_filled,
+                        color: primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                if (userPlaylists.value.isNotEmpty)
+                  FutureBuilder(
+                    future: getUserPlaylists(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      } else if (snapshot.hasData &&
+                          snapshot.data!.isNotEmpty) {
+                        return _buildPlaylistListView(
+                          context,
+                          snapshot.data!,
+                          'user-added',
+                        );
+                      } else {
+                        return const SizedBox();
+                      }
+                    },
                   ),
-                ),
-                FutureBuilder(
-                  future: getUserPlaylists(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                      return _buildPlaylistListView(context, snapshot.data!);
-                    } else {
-                      return const SizedBox();
-                    }
-                  },
-                ),
               ],
             );
           },
@@ -217,46 +240,113 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
     );
   }
 
-  Widget _buildUserLikedPlaylistsSection(Color primaryColor) {
+  Widget _clearFiltersButton() {
     return ValueListenableBuilder(
-      valueListenable: currentLikedPlaylistsLength,
+      valueListenable: isFilteredNotifier,
       builder: (_, value, __) {
-        return userLikedPlaylists.isNotEmpty
-            ? Column(
-              children: [
-                SectionTitle(context.l10n!.likedPlaylists, primaryColor),
-                _buildPlaylistListView(context, userLikedPlaylists),
-              ],
-            )
-            : const SizedBox();
+        return IconButton(
+          onPressed:
+              isFilteredNotifier.value
+                  ? () {
+                    _searchBar.clear();
+                    _filterPlaylistBars('');
+                    isFilteredNotifier.value = false;
+                  }
+                  : null,
+          icon: const Icon(FluentIcons.filter_dismiss_24_filled, size: 30),
+          color: Theme.of(context).colorScheme.primary,
+          disabledColor: Theme.of(context).colorScheme.primaryContainer,
+        );
       },
     );
   }
 
-  Widget _buildPlaylistListView(BuildContext context, List playlists) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: playlists.length,
-      padding: commonListViewBottmomPadding,
-      itemBuilder: (BuildContext context, index) {
-        final playlist = playlists[index];
-        final borderRadius = getItemBorderRadius(index, playlists.length);
-        return PlaylistBar(
-          key: ValueKey(playlist['ytid']),
+  void _filterPlaylistBars(String query) {
+    if (query.isEmpty) {
+      for (final widget in userPlaylistBars) {
+        widget.setVisibility(true);
+        isFilteredNotifier.value = false;
+      }
+    } else {
+      for (final widget in userPlaylistBars) {
+        final searchStr = widget.playlistData?['title'] ?? '';
+        if (searchStr.isNotEmpty && !searchStr.toLowerCase().contains(query)) {
+          widget.setVisibility(false);
+          isFilteredNotifier.value = true;
+        }
+      }
+    }
+  }
+
+  Widget _buildSearchBar() {
+    return CustomSearchBar(
+      //loadingProgressNotifier: _fetchingSongs,
+      controller: _searchBar,
+      focusNode: _inputNode,
+      labelText: '${context.l10n!.search}...',
+      onSubmitted: (String value) {
+        _inputNode.unfocus();
+      },
+      onChanged: (String value) {
+        _filterPlaylistBars(value);
+      },
+    );
+  }
+
+  Widget _buildUserLikedPlaylistsSection(Color primaryColor) {
+    return ValueListenableBuilder(
+      valueListenable: currentLikedPlaylistsLength,
+      builder: (_, value, __) {
+        return Column(
+          children: [
+            SectionHeader(title: context.l10n!.likedPlaylists),
+            if (userLikedPlaylists.isNotEmpty)
+              _buildPlaylistListView(context, userLikedPlaylists, 'user-liked'),
+          ],
+        );
+      },
+    );
+  }
+
+  void _buildPlaylistBars(List playlists) {
+    for (final playlist in playlists) {
+      if (playlist['source'] == null) playlist['source'] = 'user-liked';
+      userPlaylistBars.add(
+        PlaylistBar(
+          key: ValueKey(playlist['ytid'] ?? playlist['title']),
           playlist['title'],
           playlistId: playlist['ytid'],
           playlistArtwork: playlist['image'],
           isAlbum: playlist['isAlbum'],
-          playlistData: playlist['source'] == 'user-created' ? playlist : null,
+          playlistData: playlist,
           onDelete:
               playlist['source'] == 'user-created' ||
                       playlist['source'] == 'user-youtube'
                   ? () => _showRemovePlaylistDialog(playlist)
                   : null,
-          borderRadius: borderRadius,
           navigatorObserver: widget.navigatorObserver,
-        );
+        ),
+      );
+    }
+  }
+
+  Widget _buildPlaylistListView(
+    BuildContext context,
+    List playlists,
+    String source,
+  ) {
+    _buildPlaylistBars(playlists);
+    final bars =
+        userPlaylistBars
+            .where((value) => value.playlistData!['source'] == source)
+            .toList();
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: bars.length,
+      padding: commonListViewBottmomPadding,
+      itemBuilder: (BuildContext context, index) {
+        return bars[index];
       },
     );
   }

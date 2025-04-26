@@ -37,7 +37,9 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
   final List<dynamic> inputData = [];
   late Future<dynamic> dataFuture;
   final List<BaseCard> cardList = <BaseCard>[];
-
+  GenreList? genresWidget;
+  ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false); 
+  
   @override
   void initState() {
     super.initState();
@@ -77,7 +79,10 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [_clearFiltersButton(), const SizedBox(width: 24, height: 24)],
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -93,6 +98,28 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _clearFiltersButton() {
+    return ValueListenableBuilder(
+      valueListenable: isFilteredNotifier,
+      builder: (_, value, __) {
+        return IconButton(
+          onPressed:
+              isFilteredNotifier.value
+                  ? () {
+                    _filterCardsByGenre('');
+                    _filterCardList('');
+                    _searchBar.clear();
+                    isFilteredNotifier.value = false;
+                  }
+                  : null,
+          icon: const Icon(FluentIcons.filter_dismiss_24_filled, size: 30),
+          color: Theme.of(context).colorScheme.primary,
+          disabledColor: Theme.of(context).colorScheme.primaryContainer,
+        );
+      },
     );
   }
 
@@ -160,7 +187,6 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
 
   void _buildCard(BuildContext context, dynamic data) {
     //TODO: restore sorting on refresh due to like status change
-    //TODO: add custom sorting
     final card = BaseCard(
       inputData: data as Map<dynamic, dynamic>,
       icon: FluentIcons.mic_sparkle_24_filled,
@@ -206,9 +232,8 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
   }
 
   void _parseGenres(dynamic data) {
-    //TODO: Add search by genre
-    //TODO: Search genres
     final genres = data['genres'] ?? data['musicbrainz']['genres'] ?? [];
+    final Set<String> genreString = {};
     for (final genre in genres) {
       final count = genreList.where((e) => e['name'] == genre['name']).length;
       if (uniqueGenreList.add(genre['name'])) {
@@ -217,11 +242,31 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
           'name': genre['name'],
           'count': count + 1,
         });
+        genreString.add(genre['name']);
       } else {
         final existing = genreList.firstWhere(
           (e) => e['name'] == genre['name'],
         );
         existing['count'] = count + 1;
+      }
+    }
+    data['genreString'] = genreString.toList().join(',');
+  }
+
+  void _filterCardsByGenre(String query) {
+    if (query.isEmpty) {
+      for (final widget in cardList) {
+        widget.setVisibility(true);
+        isFilteredNotifier.value = false;
+      }
+    } else {
+      for (final widget in cardList) {
+        if (!widget.inputData!['genreString'].toString().toLowerCase().contains(
+          query,
+        )) {
+          widget.setVisibility(false);
+          isFilteredNotifier.value = true;
+        }
       }
     }
   }
@@ -230,6 +275,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
     if (query.isEmpty) {
       for (final widget in cardList) {
         widget.setVisibility(true);
+        isFilteredNotifier.value = false;
       }
     } else {
       for (final widget in cardList) {
@@ -240,17 +286,20 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
             '${widget.inputData!['title'] ?? ''}';
         if (!searchStr.toLowerCase().contains(query)) {
           widget.setVisibility(false);
+          isFilteredNotifier.value = true;
         }
       }
     }
+    genresWidget?.searchGenres(query);
   }
 
   Widget _buildGenreList() {
-    //TODO: add custom sorting
-    genreList.sort(
-      (a, b) => a['name'].toString().compareTo(b['name'].toString()),
+    genresWidget = GenreList(
+      genres: genreList,
+      showCount: true,
+      callback: _filterCardsByGenre,
     );
-    return GenreList(genres: genreList, showCount: true);
+    return genresWidget!;
   }
 
   Widget _buildSearchBar(BuildContext context) {

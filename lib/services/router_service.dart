@@ -28,7 +28,7 @@ import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/bottom_navigation_page.dart';
 import 'package:reverbio/screens/home_page.dart';
 import 'package:reverbio/screens/library_page.dart';
-import 'package:reverbio/screens/liked_artists_page.dart';
+import 'package:reverbio/screens/liked_entities_page.dart';
 import 'package:reverbio/screens/now_playing_page.dart';
 import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/screens/settings_page.dart';

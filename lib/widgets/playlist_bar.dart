@@ -62,66 +62,88 @@ class PlaylistBar extends StatelessWidget {
   static const double iconSize = 27;
 
   final ValueNotifier<bool> playlistLikeStatus;
+  final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
 
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
     false: FluentIcons.heart_24_regular,
   };
 
+  void setVisibility(bool value) {
+    hideNotifier.value = value;
+  }
+
+  void hide() {
+    setVisibility(false);
+  }
+
+  void show() {
+    setVisibility(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    return Padding(
-      padding: commonBarPadding,
-      child: GestureDetector(
-        onTap:
-            onPressed ??
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  settings: RouteSettings(name: 'playlist?yt=$playlistId'),
-                  builder:
-                      (context) => PlaylistPage(
-                        playlistData: playlistData ?? {
-                          'title': playlistTitle,
-                          'ytid': playlistId,
-                        },
-                        navigatorObserver: navigatorObserver,
-                      ),
-                ),
-              );
-            },
-        child: Card(
-          shape: RoundedRectangleBorder(borderRadius: borderRadius),
-          margin: const EdgeInsets.only(bottom: 3),
+    return ValueListenableBuilder(
+      valueListenable: hideNotifier,
+      builder: (_, value, __) {
+        return Visibility(
+          visible: hideNotifier.value,
           child: Padding(
-            padding: commonBarContentPadding,
-            child: Row(
-              children: [
-                _buildAlbumArt(),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        playlistTitle,
-                        overflow: TextOverflow.ellipsis,
-                        style: commonBarTitleStyle.copyWith(
-                          color: primaryColor,
+            padding: commonBarPadding,
+            child: GestureDetector(
+              onTap:
+                  onPressed ??
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        settings: RouteSettings(
+                          name: 'playlist?yt=$playlistId',
+                        ),
+                        builder:
+                            (context) => PlaylistPage(
+                              playlistData:
+                                  playlistData ??
+                                  {'title': playlistTitle, 'ytid': playlistId},
+                              navigatorObserver: navigatorObserver,
+                            ),
+                      ),
+                    );
+                  },
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: borderRadius),
+                margin: const EdgeInsets.only(bottom: 3),
+                child: Padding(
+                  padding: commonBarContentPadding,
+                  child: Row(
+                    children: [
+                      _buildAlbumArt(),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              playlistTitle,
+                              overflow: TextOverflow.ellipsis,
+                              style: commonBarTitleStyle.copyWith(
+                                color: primaryColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      if (showBuildActions)
+                        _buildActionButtons(context, primaryColor),
                     ],
                   ),
                 ),
-                if (showBuildActions)
-                  _buildActionButtons(context, primaryColor),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
