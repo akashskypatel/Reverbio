@@ -4,7 +4,20 @@
 export LC_ALL=C
 
 # Script to update localization ARB files from a JSON source
+# languages: [ar,bn,de,el,en,es,fr,hi,id,it,ja,ko,pl,pt,ru,uk,yue,zh-Hant,zh-TW,zh]
 # Usage: ./update_l10n.sh
+# l10nupdate.json file format:
+# {
+#     "translations": {
+#       "key": {
+#         "languageCode": "translation",
+#         ...
+#       },
+#       ...
+#     }
+# } 
+
+
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
@@ -31,6 +44,16 @@ languages=$(jq -r '.translations | map(keys) | add | unique[]' "$INPUT_FILE" 2>/
 
 if [ -z "$languages" ]; then
     echo "Error: Could not extract language codes from JSON file." >&2
+    echo "Please verify the JSON structure matches:"
+    echo '{
+      "translations": {
+        "key": {
+          "languageCode": "translation",
+          ...
+        },
+        ...
+      }
+    }'
     exit 1
 fi
 

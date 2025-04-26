@@ -139,5 +139,6 @@
   "undo": "Deshacer",
   "userPlaylists": "Listas del usuario",
   "volume": "Volumen",
-  "youtubePlaylistLinkOrId": "Enlace o ID de lista de YouTube"
+  "youtubePlaylistLinkOrId": "Enlace o ID de lista de YouTube",
+  "count": "Contar"
 }

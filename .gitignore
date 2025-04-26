@@ -47,5 +47,5 @@ android/app/.cxx/
 
 # Generated localization dart files
 lib/localization/app_*.dart
-
+l10nupdate.json
 .env

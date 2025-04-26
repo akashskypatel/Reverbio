@@ -139,5 +139,6 @@
   "undo": "পূর্বাবস্থা",
   "userPlaylists": "ব্যবহারকারীর প্লেলিস্ট",
   "volume": "ভলিউম",
-  "youtubePlaylistLinkOrId": "YouTube প্লেলিস্ট লিংক বা ID"
+  "youtubePlaylistLinkOrId": "YouTube প্লেলিস্ট লিংক বা ID",
+  "count": "গণনা"
 }

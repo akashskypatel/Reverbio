@@ -41,7 +41,7 @@ late final ValueNotifier<int> currentLikedAlbumsLength;
 
 dynamic _getCachedAlbum(String id) {
   try {
-    final cached = cachedAlbumsList.where((e) => e['id'] == id);
+    final cached = cachedAlbumsList.where((e) => e['id'].contains(id));
     if (cached.isEmpty) return null;
     return cached.first;
   } catch (e, stackTrace) {
@@ -52,8 +52,6 @@ dynamic _getCachedAlbum(String id) {
 
 Future<dynamic> getAlbumDetailsById(String id) async {
   try {
-    final ids = Uri.parse('?$id').queryParameters;
-    if (ids['mb'] == null) return null;
     final cached = _getCachedAlbum(id);
     if (cached != null) return cached;
     final album = await getReleaseGroupDetails(id);

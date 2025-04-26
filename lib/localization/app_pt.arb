@@ -139,5 +139,6 @@
   "undo": "Desfazer",
   "userPlaylists": "Playlists do usuário",
   "volume": "Volume",
-  "youtubePlaylistLinkOrId": "Link ou ID da playlist do YouTube"
+  "youtubePlaylistLinkOrId": "Link ou ID da playlist do YouTube",
+  "count": "Contar"
 }

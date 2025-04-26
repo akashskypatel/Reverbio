@@ -19,7 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'dart:math';
+//import 'dart:math';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -61,8 +61,8 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   dynamic _playlist;
 
   bool _isLoading = true;
-  final int _itemsPerPage = 35;
-  var _currentPage = 0;
+  //final int _itemsPerPage = 35;
+  //var _currentPage = 0;
   var _currentLastLoadedId = 0;
   late final playlistLikeStatus = ValueNotifier<bool>(
     isPlaylistAlreadyLiked(widget.playlistData['ytid']),
@@ -94,8 +94,15 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
     if (widget.playlistData?['source'] == 'musicbrainz') {
       await getTrackList(widget.playlistData);
     }
+    if (widget.playlistData['id'] != null &&
+        widget.playlistData['id']?.contains('yt=')) {
+      final uri = Uri.parse('?${widget.playlistData['id']}');
+      widget.playlistData['ytid'] = uri.queryParameters['yt'];
+    }
+
     _playlist =
-        widget.playlistData['list'] != null && widget.playlistData['list'].length > 0
+        widget.playlistData['list'] != null &&
+                widget.playlistData['list'].length > 0
             ? widget.playlistData
             : (widget.playlistData['source'] == 'user-created'
                 ? userCustomPlaylists.value.firstWhere(
@@ -108,7 +115,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
                       widget.playlistData['ytid'],
                       isArtist: widget.isArtist,
                     )
-                    : (widget.playlistData['primary-type'].toLowerCase() ==
+                    : (widget.playlistData['primary-type']?.toLowerCase() ==
                             'album'
                         ? await getAlbumDetailsById(widget.playlistData['id'])
                         : null)));
@@ -136,14 +143,14 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
     final list = <dynamic>[];
     if (_playlist['list'] == null) return list;
     final _count = _playlist['list'].length as int;
-    final n = min(_itemsPerPage, _count - _currentPage * _itemsPerPage);
+    //final n = min(_itemsPerPage, _count - _currentPage * _itemsPerPage);
     //TODO: restore pagination
     for (var i = 0; i < _count; i++) {
       list.add(_playlist['list'][_currentLastLoadedId]);
       _currentLastLoadedId++;
     }
 
-    _currentPage++;
+    //_currentPage++;
     return list;
   }
 
@@ -361,7 +368,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       _songsList.clear();
       if (mounted)
         setState(() {
-          _currentPage = 0;
+          // _currentPage = 0;
           _currentLastLoadedId = 0;
           _loadMore();
         });
@@ -443,7 +450,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
 
             // Reset pagination and reload
             _songsList.clear();
-            _currentPage = 0;
+            //_currentPage = 0;
             _currentLastLoadedId = 0;
             _loadMore();
           });
