@@ -237,7 +237,7 @@ class _SongListState extends State<SongList> {
           showToast(context, context.l10n!.songAdded);
         }
         if (audioHandler.queueSongBars.isNotEmpty &&
-            !audioHandler.audioPlayer.playing &&
+            audioHandler.audioPlayer.songValueNotifier.value == null &&
             widget.songBars.isNotEmpty) {
           audioHandler.queueSong(play: true, skipOnError: true);
         }
