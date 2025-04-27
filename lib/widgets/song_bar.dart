@@ -30,6 +30,7 @@ import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
@@ -70,7 +71,7 @@ class SongBar extends StatefulWidget {
   Future<bool> queueSong({bool play = false}) async {
     if (!isPrimed) primeSong();
     if (play) {
-      await _songFutureTracker.completer?.future;
+      await _songFutureTracker.completer!.future;
       _playSongNotifier.value = true;
     } else {
       _queueSongNotifier.value = true;
@@ -144,7 +145,7 @@ class _SongBarState extends State<SongBar> {
             onTap:
                 widget.onPlay ??
                 () {
-                  _queueSong(play: true);
+                  widget.queueSong(play: true);
                 },
             child: Card(
               color: widget.backgroundColor,

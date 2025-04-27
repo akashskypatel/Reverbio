@@ -29,7 +29,6 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
-import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
@@ -299,7 +298,7 @@ class QueueListView extends StatelessWidget {
         ),
         Expanded(
           child:
-              activeQueue['list'].isEmpty
+              audioHandler.queueSongBars.isEmpty
                   ? Center(
                     child: Text(
                       context.l10n!.noSongsInQueue,
@@ -637,7 +636,7 @@ class PlayerControlButtons extends StatelessWidget {
               ),
               iconSize: iconSize,
               onPressed: () {
-                final _isSingleSongPlaying = activeQueue['list'].isEmpty;
+                final _isSingleSongPlaying = audioHandler.queueSongBars.isEmpty;
                 repeatNotifier.value =
                     _isSingleSongPlaying
                         ? AudioServiceRepeatMode.one
@@ -681,7 +680,7 @@ class BottomActionsRow extends StatelessWidget {
       children: [
         _buildOfflineButton(songOfflineStatus, _primaryColor),
         if (!offlineMode.value) _buildAddToPlaylistButton(_primaryColor),
-        if (activeQueue['list'].isNotEmpty && !isLargeScreen)
+        if (audioHandler.queueSongBars.isNotEmpty && !isLargeScreen)
           _buildQueueButton(context, _primaryColor),
         if (!offlineMode.value) ...[
           _buildLyricsButton(_primaryColor),
