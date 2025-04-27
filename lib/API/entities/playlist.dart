@@ -7,11 +7,9 @@ import 'package:reverbio/DB/albums.db.dart';
 import 'package:reverbio/DB/playlists.db.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 List dbPlaylists = [...playlistsDB, ...albumsDB];
@@ -33,52 +31,6 @@ List onlinePlaylists = [];
 dynamic nextRecommendedSong;
 
 late final ValueNotifier<int> currentLikedPlaylistsLength;
-
-void addSongsToQueue(List<SongBar> songBars) {
-  for (final songBar in songBars) {
-    addSongToQueue(songBar);
-  }
-}
-
-void addSongToQueue(SongBar songBar) {
-  if (!isSongInQueue(songBar)) {
-    activeQueue['list'].add(songBar.song);
-    audioHandler.queueSongBars.add(songBar);
-    activeQueueLength.value = activeQueue['list'].length;
-  }
-}
-
-bool removeSongFromQueue(SongBar songBar) {
-  final val = activeQueue['list'].remove(songBar.song);
-  audioHandler.queueSongBars.remove(songBar);
-  activeQueueLength.value = activeQueue['list'].length;
-  return val;
-}
-
-bool isSongInQueue(SongBar songBar) {
-  return activeQueue['list'].contains(songBar.song);
-}
-
-void setQueueToPlaylist(dynamic playlist, List<SongBar> songBars) {
-  clearSongQueue();
-  activeQueue['id'] = playlist['id'];
-  activeQueue['ytid'] = playlist['ytid'];
-  activeQueue['title'] = playlist['title'];
-  activeQueue['image'] = playlist['image'];
-  activeQueue['source'] = playlist['source'];
-  addSongsToQueue(songBars);
-}
-
-void clearSongQueue() {
-  activeQueue['id'] = '';
-  activeQueue['ytid'] = '';
-  activeQueue['title'] = 'No Songs in Queue';
-  activeQueue['image'] = '';
-  activeQueue['source'] = '';
-  activeQueue['list'].clear();
-  audioHandler.queueSongBars.clear();
-  activeQueueLength.value = 0;
-}
 
 /* Future<void> playPlaylistSong({
   Map<dynamic, dynamic>? playlist,

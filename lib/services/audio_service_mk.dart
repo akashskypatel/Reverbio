@@ -356,8 +356,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     positionDataNotifier.value = value;
     if (positionDataNotifier.value.duration.inSeconds ==
             positionDataNotifier.value.position.inSeconds &&
-        positionDataNotifier.value.duration.inSeconds != Duration.zero.inSeconds &&
-        positionDataNotifier.value.position.inSeconds != Duration.zero.inSeconds)
+        positionDataNotifier.value.duration.inSeconds !=
+            Duration.zero.inSeconds &&
+        positionDataNotifier.value.position.inSeconds !=
+            Duration.zero.inSeconds)
       switch (repeatNotifier.value) {
         case AudioServiceRepeatMode.one:
           queueSong(songBar: audioPlayer.songValueNotifier.value, play: true);
@@ -508,6 +510,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     bool skipOnError = false,
   }) async {
     try {
+      if (songBar != null && !isSongInQueue(songBar)) {
+        addSongToQueue(songBar);
+      }
       if (queueSongBars.isEmpty) return false;
       final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
       final index = songBar == null ? 0 : queueSongBars.indexOf(songBar);
@@ -599,7 +604,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
     return null;
   }
-  
+
   Future<void> playAgain() async {
     await audioPlayer.seek(Duration.zero);
   }
@@ -676,4 +681,50 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
     return randomIndex;
   }
+}
+
+void addSongsToQueue(List<SongBar> songBars) {
+  for (final songBar in songBars) {
+    addSongToQueue(songBar);
+  }
+}
+
+void addSongToQueue(SongBar songBar) {
+  if (!isSongInQueue(songBar)) {
+    activeQueue['list'].add(songBar.song);
+    audioHandler.queueSongBars.add(songBar);
+    activeQueueLength.value = audioHandler.queueSongBars.length;
+  }
+}
+
+bool removeSongFromQueue(SongBar songBar) {
+  final val = activeQueue['list'].remove(songBar.song);
+  audioHandler.queueSongBars.remove(songBar);
+  activeQueueLength.value = audioHandler.queueSongBars.length;
+  return val;
+}
+
+bool isSongInQueue(SongBar songBar) {
+  return audioHandler.queueSongBars.contains(songBar);
+}
+
+void setQueueToPlaylist(dynamic playlist, List<SongBar> songBars) {
+  clearSongQueue();
+  activeQueue['id'] = playlist['id'];
+  activeQueue['ytid'] = playlist['ytid'];
+  activeQueue['title'] = playlist['title'];
+  activeQueue['image'] = playlist['image'];
+  activeQueue['source'] = playlist['source'];
+  addSongsToQueue(songBars);
+}
+
+void clearSongQueue() {
+  activeQueue['id'] = '';
+  activeQueue['ytid'] = '';
+  activeQueue['title'] = 'No Songs in Queue';
+  activeQueue['image'] = '';
+  activeQueue['source'] = '';
+  activeQueue['list'].clear();
+  audioHandler.queueSongBars.clear();
+  activeQueueLength.value = 0;
 }
