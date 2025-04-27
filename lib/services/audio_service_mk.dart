@@ -517,10 +517,12 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
       final index = songBar == null ? 0 : queueSongBars.indexOf(songBar);
       songBar = queueSongBars[index];
-      bool isError = false;
-      if (index < queueSongBars.length) {
+      final isError =
+          songBar.song.containsKey('isError') ? songBar.song['isError'] : false;
+      ;
+      /* if (index < queueSongBars.length) {
         isError = !(await queueSongBars[index].queueSong(play: play));
-      }
+      } */
       final newIndex =
           index >= queueSongBars.length && loopAllSongs ? 0 : index + 1;
       if (play &&
@@ -528,7 +530,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           queueSongBars.length > 1 &&
           newIndex != index &&
           newIndex < queueSongBars.length)
-        queueSongBars[newIndex].primeSong();
+        unawaited(queueSongBars[newIndex].primeSong());
 
       if (play &&
           isError &&
@@ -542,7 +544,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         );
       final isOffline = songBar.song['isOffline'] ?? false;
       final preliminaryTag = mapToMediaItem(songBar.song);
+      if (!songBar.isPrimed && !songBar.isLoading)
+        await songBar.primeSong(shouldWait: true);
       final songUrl = songBar.song['songUrl'];
+      if (songUrl == null) return !isError;
       final audioSource = await buildAudioSource(
         songBar.song,
         songUrl,

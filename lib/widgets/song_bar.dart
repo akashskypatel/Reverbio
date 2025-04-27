@@ -55,8 +55,6 @@ class SongBar extends StatefulWidget {
   final VoidCallback? onPlay;
   final bool showMusicDuration;
   final BorderRadius borderRadius;
-  final ValueNotifier<bool> _queueSongNotifier = ValueNotifier(false);
-  final ValueNotifier<bool> _playSongNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isPrimedNotifier = ValueNotifier(false);
@@ -69,13 +67,12 @@ class SongBar extends StatefulWidget {
 
   ///Returns false if song cannot play
   Future<bool> queueSong({bool play = false}) async {
-    if (!isPrimed) primeSong();
-    if (play) {
-      await _songFutureTracker.completer!.future;
-      _playSongNotifier.value = true;
-    } else {
-      _queueSongNotifier.value = true;
-    }
+    _isLoadingNotifier.value = true;
+    if (!isPrimed) unawaited(primeSong());
+    if (play) await _songFutureTracker.completer!.future;
+    if (!isError) await audioHandler.queueSong(songBar: this, play: play);
+    _isLoadingNotifier.value = false;
+    _isErrorNotifier.value = isError;
     return !isError;
   }
 
@@ -89,8 +86,11 @@ class SongBar extends StatefulWidget {
     return !isError;
   }
 
-  void primeSong() {
-    unawaited(_songFutureTracker.runFuture(_primeSong()));
+  Future<void> primeSong({bool shouldWait = false}) async {
+    if (shouldWait)
+      await _songFutureTracker.runFuture(_primeSong());
+    else
+      unawaited(_songFutureTracker.runFuture(_primeSong()));
   }
 }
 
@@ -115,14 +115,10 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    widget._queueSongNotifier.addListener(_queueSongListener);
-    widget._playSongNotifier.addListener(_playSongListener);
   }
 
   @override
   void dispose() {
-    widget._queueSongNotifier.removeListener(_queueSongListener);
-    widget._playSongNotifier.removeListener(_playSongListener);
     super.dispose();
   }
 
@@ -243,29 +239,6 @@ class _SongBarState extends State<SongBar> {
         color: Theme.of(context).colorScheme.primary,
       ),
     );
-  }
-
-  void _queueSongListener() {
-    if (!widget._isErrorNotifier.value && widget._queueSongNotifier.value)
-      _queueSong();
-  }
-
-  void _playSongListener() {
-    if (!widget._isErrorNotifier.value && widget._playSongNotifier.value)
-      _queueSong(play: true);
-  }
-
-  void _queueSong({bool play = false}) async {
-    widget._isLoadingNotifier.value = true;
-    if (!widget.isPrimed) await getSongUrl(widget.song);
-    final isError =
-        widget.song.containsKey('isError') ? widget.song['isError'] : false;
-    if (!isError) await audioHandler.queueSong(songBar: widget, play: play);
-
-    widget._isLoadingNotifier.value = false;
-    widget._isErrorNotifier.value = isError;
-    widget._queueSongNotifier.value = false;
-    widget._playSongNotifier.value = false;
   }
 
   void likeItem() {
