@@ -155,15 +155,15 @@ void getSimilarSong(String songYtId) async {
 
 Future<dynamic> findYTSong(String songName, String artist) async {
   try {
-    final lcSongName = songName.toLowerCase();
-    final lcArtist = artist.toLowerCase();
+    final lcSongName = songName.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    final lcArtist = artist.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
     final results = await getSongsList('"$lcArtist" "$lcSongName"');
     results.sort((a, b) => b['views'].compareTo(a['views']));
     final result =
         results.where((value) {
-          final lcS = value['title'].toString().trim().toLowerCase();
-          final lcC = value['channelName'].toString().trim().toLowerCase();
-          final ex = lcS.contains(lcSongName) && (lcC.contains(lcArtist));
+          final lcS = value['title'].toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+          final lcC = value['channelName'].toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+          final ex = (lcS.contains(lcSongName) && (lcC.contains(lcArtist))) || (lcS.contains(lcSongName) && lcS.contains(lcArtist));
           return ex;
         }).toList();
 
