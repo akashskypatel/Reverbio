@@ -19,6 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -88,7 +89,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 valueListenable: announcementURL,
                 builder: (_, _url, __) {
                   if (_url == null) return const SizedBox.shrink();
-
                   return AnnouncementBox(
                     message: context.l10n!.newAnnouncement,
                     backgroundColor:
@@ -123,11 +123,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 child: FutureBuilder(
                   future: _recommendedSongsFuture,
                   builder: (context, snapshot) {
-                    //return SizedBox.shrink();
                     return HorizontalCardScroller(
                       title: context.l10n!.suggestedArtists,
                       future: _recommendedArtistsFuture,
                       navigatorObserver: widget.navigatorObserver,
+                      icon: FluentIcons.mic_sparkle_24_filled,
                     );
                   },
                 ),
