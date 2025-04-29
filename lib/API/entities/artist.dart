@@ -66,12 +66,15 @@ bool isArtistAlreadyLiked(artistIdToCheck) =>
 
 Future<dynamic> getArtistDetailsById(String id) async {
   try {
-    final ids = Uri.parse('?$id').queryParameters;
-    if (ids['mb'] == null) return null;
+    dynamic ids;
+    if (id.contains(RegExp(r'(yt\=|mb\=|dc\=)'))) {
+      ids = Uri.parse('?$id').queryParameters;
+      if (ids['mb'] == null) return {};
+    }
     final cached = _getCachedArtist(id);
-    if (cached != null) return cached;    
+    if (cached != null) return cached;
     final mbRes = await mb.artists.get(
-      ids['mb']!,
+      ids == null ? id : ids['mb']!,
       inc: [
         'release-groups',
         'aliases',
@@ -166,7 +169,7 @@ Future<dynamic> getArtistsDetails(
     return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return null;
+    return {};
   }
 }
 
@@ -256,10 +259,15 @@ Future<Map<String, dynamic>> _combineResults(Map<String, dynamic> data) async {
 
 dynamic _getCachedArtist(String id) {
   try {
-    return cachedArtistsList.firstWhere((e) => e['id'].contains(id));
+    final cached =
+        cachedArtistsList.where((e) => e['id'].contains(id)).toList();
+    if (cached.isNotEmpty)
+      return cached.first;
+    else
+      return null;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return null;
+    rethrow;
   }
 }
 

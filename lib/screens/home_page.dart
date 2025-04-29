@@ -40,10 +40,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with RouteAware {
-  final Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
+  Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
     playlistsNum: recommendedCardsNumber,
   );
-  final Future<dynamic> _recommendedSongsFuture = getRecommendedSongs();
+  Future<dynamic> _recommendedSongsFuture = getRecommendedSongs();
   dynamic _recommendedSongs;
   Future<dynamic>? _recommendedArtistsFuture;
   @override
@@ -78,7 +78,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reverbio')),
+      appBar: AppBar(
+        title: const Text('Reverbio'),
+        actions: [_buildSyncButton()],
+      ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -140,6 +143,23 @@ class _HomePageState extends State<HomePage> with RouteAware {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSyncButton() {
+    return IconButton(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      icon: const Icon(FluentIcons.arrow_sync_24_filled),
+      iconSize: 26,
+      onPressed: () {
+        setState(() {
+          _recommendedPlaylistsFuture = getPlaylists(
+            playlistsNum: recommendedCardsNumber,
+          );
+          _recommendedSongsFuture = getRecommendedSongs();
+        });
+      },
     );
   }
 

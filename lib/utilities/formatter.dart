@@ -19,62 +19,30 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-final wordsPatternForSongTitle = RegExp(
-  r'\b(official music video|official lyric video|official lyrics video|official video|official 4k video|official audio|lyric video|lyrics video|official hd video|lyric visualizer|lyric vizualizer|official visualizer|lyrics|lyric)\b',
-  caseSensitive: false,
-);
-
-final replacementsForSongTitle = {
-  '[': '',
-  ']': '',
-  '(': '',
-  ')': '',
-  '|': '',
-  '&amp;': '&',
-  '&#039;': "'",
-  '&quot;': '"',
-};
-
-String formatSongTitle(String title) {
-  final pattern = RegExp(
-    replacementsForSongTitle.keys.map(RegExp.escape).join('|'),
-  );
-
-  var finalTitle =
-      title
-          .replaceAllMapped(
-            pattern,
-            (match) => replacementsForSongTitle[match.group(0)] ?? '',
-          )
-          .trimLeft();
-
-  finalTitle = finalTitle.replaceAll(wordsPatternForSongTitle, '');
-
-  return finalTitle;
+Map<String, dynamic> returnYtSongLayout(int index, Video song) {
+  final songInfo = tryParseTitleAndArtist(song.title);
+  return {
+    'index': index,
+    'id': 'yt=${song.id}',
+    'ytid': song.id.toString(),
+    'title': songInfo['title'],
+    'source': 'youtube',
+    'artist': songInfo['artist'],
+    'image': song.thumbnails.standardResUrl,
+    'lowResImage': song.thumbnails.lowResUrl,
+    'highResImage': song.thumbnails.maxResUrl,
+    'duration': song.duration?.inSeconds,
+    'isLive': song.isLive,
+    'primary-type': 'song',
+    'channelName': song.author,
+    'channelId': song.channelId.value,
+    'views': song.engagement.viewCount,
+    'isError': false,
+  };
 }
-
-Map<String, dynamic> returnYtSongLayout(int index, Video song) => {
-  'index': index,
-  'id': 'yt=${song.id}',
-  'ytid': song.id.toString(),
-  'title': formatSongTitle(
-    song.title.split('-')[song.title.split('-').length - 1],
-  ),
-  'source': 'youtube',
-  'artist': song.title.split('-')[0],
-  'image': song.thumbnails.standardResUrl,
-  'lowResImage': song.thumbnails.lowResUrl,
-  'highResImage': song.thumbnails.maxResUrl,
-  'duration': song.duration?.inSeconds,
-  'isLive': song.isLive,
-  'primary-type': 'song',
-  'channelName': song.author,
-  'channelId': song.channelId.value,
-  'views': song.engagement.viewCount,
-  'isError': false,
-};
 
 String formatDuration(int audioDurationInSeconds) {
   final duration = Duration(seconds: audioDurationInSeconds);
