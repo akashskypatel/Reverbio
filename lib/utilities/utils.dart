@@ -47,6 +47,72 @@ class FutureTracker<T> {
   }
 }
 
+String getFormattedDateTimeNow() {
+  return '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}T${DateTime.now().hour}:${DateTime.now().minute}:${DateTime.now().second}';
+}
+
+String formatSongTitle(String title) {
+  final wordsPatternForSongTitle = RegExp(
+    r'\b(?:official(?:\s(?:music|lyrics?|audio|visuali[sz]er|vizuali[sz]er|hd|4k)?\s*(?:video|audio|visuali[sz]er|vizuali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
+    caseSensitive: false,
+  );
+
+  final replacementsForSongTitle = {
+    '[': '',
+    ']': '',
+    '(': '',
+    ')': '',
+    '|': '',
+    '&amp;': '&',
+    '&#039;': "'",
+    '&quot;': '"',
+  };
+  final pattern = RegExp(
+    replacementsForSongTitle.keys.map(RegExp.escape).join('|'),
+  );
+
+  var finalTitle =
+      title
+          .replaceAllMapped(
+            pattern,
+            (match) => replacementsForSongTitle[match.group(0)] ?? '',
+          )
+          .trimLeft();
+
+  finalTitle = finalTitle.replaceAll(wordsPatternForSongTitle, '');
+
+  return finalTitle;
+}
+
+List<String> splitArtists(String input) {
+  final artistSplitRegex = RegExp(
+    r'''(?:\s*(?:,\s*|\s+&\s+|\s+(?:and|with|ft(?:\.)|feat(?:\.|uring)?)\s+|\s*\/\s*|\s*\\\s*|\s*\+\s*|\s*;\s*|\s*[|]\s*|\s* vs(?:\.)?\s*|\s* x\s*|\s*,\s*(?:and|&)\s*)(?![^()]*\)))''',
+    caseSensitive: false,
+  );
+  return input
+      .split(artistSplitRegex)
+      .where((artist) => artist.trim().isNotEmpty)
+      .map((artist) => artist.trim())
+      .toList();
+}
+
+Map<String, String> tryParseTitleAndArtist(String title) {
+  final formattedTitle = formatSongTitle(title);
+  final strings = formatSongTitle(formattedTitle).split('-');
+  final artists = splitArtists(formattedTitle);
+  if (strings.length > 2) {
+    strings.removeWhere((value) => int.tryParse(value.trim()) != null);
+  }
+  if (strings.length == 2) {
+    return {'title': strings.last.trim(), 'artist': strings.first.trim()};
+  } else {
+    return {
+      'title': formattedTitle,
+      'artist': artists.isNotEmpty ? artists.join(', ') : formattedTitle,
+    };
+  }
+}
+
 BorderRadius getItemBorderRadius(int index, int totalLength) {
   const defaultRadius = BorderRadius.zero;
   if (totalLength == 1) {

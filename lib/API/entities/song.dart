@@ -37,6 +37,7 @@ import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 List globalSongs = [];
@@ -161,9 +162,18 @@ Future<dynamic> findYTSong(String songName, String artist) async {
     results.sort((a, b) => b['views'].compareTo(a['views']));
     final result =
         results.where((value) {
-          final lcS = value['title'].toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-          final lcC = value['channelName'].toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-          final ex = (lcS.contains(lcSongName) && (lcC.contains(lcArtist))) || (lcS.contains(lcSongName) && lcS.contains(lcArtist));
+          final lcS = value['title'].toString().trim().toLowerCase().replaceAll(
+            RegExp(r'\s+'),
+            ' ',
+          );
+          final lcC = value['channelName']
+              .toString()
+              .trim()
+              .toLowerCase()
+              .replaceAll(RegExp(r'\s+'), ' ');
+          final ex =
+              (lcS.contains(lcSongName) && (lcC.contains(lcArtist))) ||
+              (lcS.contains(lcSongName) && lcS.contains(lcArtist));
           return ex;
         }).toList();
 
@@ -197,78 +207,128 @@ Future<dynamic> findWDSong(String title, String artist) async {
   }
 }
 
-Future<dynamic> findMBSong(String title, String artist) async {
-  List<String> splitArtists(String input) {
-    final artistSplitRegex = RegExp(
-      r'''(?:\s*(?:,\s*|\s+&\s+|\s+(?:and|with|ft(?:\.)|feat(?:\.|uring)?)\s+|\s*\/\s*|\s*\\\s*|\s*\+\s*|\s*;\s*|\s*[|]\s*|\s* vs(?:\.)?\s*|\s* x\s*|\s*,\s*(?:and|&)\s*)(?![^()]*\)))''',
-      caseSensitive: false,
-    );
-    return input
-        .split(artistSplitRegex)
-        .where((artist) => artist.trim().isNotEmpty)
-        .map((artist) => artist.trim())
-        .toList();
-  }
-
+Future<dynamic> findMBSong(dynamic song) async {
   try {
-    dynamic artistInfo = await searchArtistDetails(
-      artist.trim().replaceAll(RegExp(r'\s+'), ' '),
+    final artist = song['artist'].toString();
+    final title = song['title'].toString().replaceAll(
+      RegExp('(official)|(visualizer)|(visualiser)', caseSensitive: false),
+      '',
     );
-    final artistId = Uri.parse('?${artistInfo['id']}').queryParameters['mb'];
+    final regex = RegExp(r'''[+\-&|!(){}[\]^"~*?:\\']''');
     final artists = splitArtists(artist);
-    final qry =
-        (artistId != null
-                ? title.trim().toLowerCase() == artist.trim().toLowerCase()
-                    ? '$title AND type:"song"'
-                    : '$title AND arid:"$artistId" AND type:"song"'
-                : title.trim().toLowerCase() == artist.trim().toLowerCase()
-                ? '$title AND type:"song"'
-                : '$title AND artist:"${artists.join(' & ')}" AND type:"song"')
-            .toLowerCase();
-    final works =
-        artistId != null
-            ? List<Map<String, dynamic>>.from(
-              (await mb.works.search(qry))['works'],
-            )
-            : List<Map<String, dynamic>>.from(
-              (await mb.recordings.search(qry))['recordings'],
-            );
-    if (works.isEmpty) return {};
-
-    dynamic work;
-
-    if (artists.length == 1 &&
-        title.trim().toLowerCase() != artist.trim().toLowerCase())
-      work = works.first;
-    else {
-      final WeightedKey<Map<String, dynamic>> keys = WeightedKey(
-        name: 'title',
-        getter: (e) => e['title'],
-        weight: 1,
+    Map artistInfo = {};
+    String artistId = '';
+    List recordings = [];
+    List works = [];
+    String artistQry = '';
+    if (artists.length == 1) {
+      artistInfo = Map.from(
+        await searchArtistDetails(
+          artist
+              .trim()
+              .replaceAll(regex, ' ')
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .trim(),
+        ),
       );
-      final fuzzy = Fuzzy(
-        works,
-        options: FuzzyOptions(threshold: 1, keys: [keys]),
-      );
-      final result = fuzzy.search(title)
-        ..sort((a, b) => a.score.compareTo(b.score));
-      work = result.first.item;
+      if (artistInfo.isNotEmpty)
+        artistId =
+            Uri.parse('?${artistInfo['id']}').queryParameters['mb'] ?? '';
+    } else {
+      for (final artsts in artists) {
+        artistQry =
+            artistQry.isNotEmpty
+                ? '$artistQry OR artist:"${artsts.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}"'
+                : 'artist:"${artsts.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}"';
+      }
+      artistQry = '($artistQry)';
     }
-    if (artistId == null)
-      artistInfo = {
-        'artist': work['artist-credit'].first['artist']['name'],
-        'id': 'mb=${work['artist-credit'].first['artist']['id']}',
-      };
+    final sTitle =
+        title.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    final sArtist =
+        artist.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    final similar =
+        sTitle.toLowerCase().contains(sArtist.toLowerCase()) ||
+        sArtist.toLowerCase().contains(sTitle.toLowerCase());
+    final exact = sTitle.toLowerCase() == sArtist.toLowerCase();
+    final rA =
+        sTitle.toLowerCase() != sArtist.toLowerCase() &&
+                sTitle.toLowerCase().contains(sArtist.toLowerCase())
+            ? sTitle.toLowerCase().replaceAll(sArtist.toLowerCase(), '')
+            : sTitle.toLowerCase();
+    final rB =
+        sTitle.toLowerCase() != sArtist.toLowerCase() &&
+                sArtist.toLowerCase().contains(sTitle.toLowerCase())
+            ? sArtist.toLowerCase().replaceAll(sTitle.toLowerCase(), '')
+            : sArtist.toLowerCase();
+    final qry =
+        (artistId.isNotEmpty
+            ? (exact ? '"$sTitle"~0.75' : '"$sTitle"~0.75 AND arid:"$artistId"')
+            : exact
+            ? '"$sTitle"~0.75'
+            : (similar
+                ? '("$rA" AND artist:"$rB") OR ("$rB" AND artist:"$rA")'
+                : (artistQry.isNotEmpty
+                    ? '"$sTitle"~0.75 AND (artist:"${artists.join('" & "')}" OR $artistQry)'
+                    : '(("$sTitle"~0.75 AND artist:"$sArtist") OR ("$sArtist"~0.75 AND artist:"$sTitle"))')));
+    works = List<Map<String, dynamic>>.from(
+      (await mb.works.search(qry))['works'],
+    );
+    recordings = List<Map<String, dynamic>>.from(
+      (await mb.recordings.search(qry))['recordings'],
+    );
+    if (recordings.isEmpty && works.isEmpty) return song;
 
-    final songInfo = {
-      'mbid': work['id'],
-      'mbidType': 'work',
-      'title': work['title'],
-      'artist': artistInfo['artist'],
+    dynamic recording;
+    if (works.length != 1) {
+      recordings =
+          recordings.where((rcd) {
+            final acs =
+                (rcd['artist-credit'] as List).where((value) {
+                  for (final a in artists) {
+                    if (value['name'].toLowerCase().contains(a.toLowerCase()))
+                      return true;
+                  }
+                  return false;
+                }).toList();
+            return acs.isNotEmpty;
+          }).toList();
+      if (recordings.isEmpty) return song;
+      if (recordings.length == 1) {
+        recording = recordings.first;
+      } else {
+        final WeightedKey<Map<String, dynamic>> keys = WeightedKey(
+          name: 'title',
+          getter: (e) => e['title'],
+          weight: 1,
+        );
+        final fuzzy = Fuzzy(
+          recordings as List<Map<String, dynamic>>,
+          options: FuzzyOptions(threshold: 1, keys: [keys]),
+        );
+        final result = fuzzy.search(title)
+          ..sort((a, b) => a.score.compareTo(b.score));
+        recording = result.first.item;
+      }
+      if (recording['artist-credit'] != null)
+        artistInfo = {
+          'artist': recording['artist-credit'].first['artist']['name'],
+          'id': 'mb=${recording['artist-credit'].first['artist']['id']}',
+        };
+    } else {
+      recording = works.first;
+    }
+
+    song.addAll({
+      'id': 'mb=${recording['id']}',
+      'mbid': recording['id'],
+      'mbidType': works.length != 1 ? 'recording' : 'work',
+      'title': recording['title'],
+      'artist': artistInfo['artist'] ?? artists.join(' & '),
       'artistId': artistInfo['id'],
       'primary-type': 'song',
-    };
-    return songInfo;
+    });
+    return song;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
@@ -294,12 +354,7 @@ const Duration _cacheDuration = Duration(hours: 3);
 Future<String> getSongUrl(dynamic song) async {
   try {
     if (song == null) return '';
-    if (song['mbid'] == null)
-      song.addAll(
-        Map<String, dynamic>.from(
-          await findMBSong(song['title'], song['artist']),
-        ),
-      );
+    if (song['mbid'] == null) unawaited(findMBSong(song));
     if (song['ytid'] == null)
       song.addAll(
         Map<String, dynamic>.from(
@@ -308,7 +363,9 @@ Future<String> getSongUrl(dynamic song) async {
       );
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song['ytid']));
+      print('getYouTubeAudioUrl: ${getFormattedDateTimeNow()}');
       final songUrl = await getYouTubeAudioUrl(song['ytid']);
+      print('getYouTubeAudioUrl: ${getFormattedDateTimeNow()}');
       final uri = Uri.parse(songUrl);
       final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
       song['songUrl'] = songUrl;

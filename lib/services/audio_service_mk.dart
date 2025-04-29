@@ -544,7 +544,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         );
       final isOffline = songBar.song['isOffline'] ?? false;
       final preliminaryTag = mapToMediaItem(songBar.song);
-      if (!songBar.isPrimed && !songBar.isLoading)
+      if (songBar.song['songUrl'] == null && !songBar.isPrimed && !songBar.isLoading)
         await songBar.primeSong(shouldWait: true);
       final songUrl = songBar.song['songUrl'];
       if (songUrl == null) return !isError;
