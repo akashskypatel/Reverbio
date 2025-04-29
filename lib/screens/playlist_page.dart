@@ -112,7 +112,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
                 )
                 : (widget.playlistData['ytid'] != null
                     ? await getPlaylistInfoForWidget(
-                      widget.playlistData['ytid'],
+                      widget.playlistData,
                       isArtist: widget.isArtist,
                     )
                     : (widget.playlistData['primary-type']?.toLowerCase() ==
@@ -378,7 +378,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       });
     } else {
       final updatedPlaylist = await getPlaylistInfoForWidget(
-        widget.playlistData['ytid'],
+        widget.playlistData,
       );
       if (updatedPlaylist != null) {
         if (mounted)
