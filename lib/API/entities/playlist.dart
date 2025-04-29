@@ -258,7 +258,7 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
           'title': playlist['title'],
         });
       } else {
-        final playlistInfo = await getPlaylistInfoForWidget(playlist['id']);
+        final playlistInfo = await getPlaylistInfoForWidget(playlist);
         if (playlistInfo != null) {
           userLikedPlaylists.add(playlistInfo);
         }
@@ -287,8 +287,7 @@ Future<List> getPlaylists({
   String type = 'all',
 }) async {
   // Early exit if there are no playlists to process.
-  if (dbPlaylists.isEmpty ||
-      (playlistsNum == null && query == null && suggestedPlaylists.isEmpty)) {
+  if (dbPlaylists.isEmpty || (playlistsNum == null && query == null)) {
     return [];
   }
 
@@ -354,9 +353,7 @@ Future<List> getPlaylists({
   // If a specific number of playlists is requested (without a query),
   // return a shuffled subset of suggested playlists.
   if (playlistsNum != null && query == null) {
-    if (suggestedPlaylists.isEmpty) {
-      suggestedPlaylists = List.from(dbPlaylists)..shuffle();
-    }
+    suggestedPlaylists = List.from(dbPlaylists)..shuffle();
     return suggestedPlaylists.take(playlistsNum).map((value) {
       value['primary-type'] = 'playlist';
       return value;
@@ -400,7 +397,6 @@ Future<List> getSongsFromPlaylist(dynamic playlistId) async {
     await for (final song in yt.playlists.getVideos(id)) {
       songList.add(returnYtSongLayout(songList.length, song));
     }
-
     addOrUpdateData('cache', 'playlistSongs$playlistId', songList);
   }
 
@@ -434,9 +430,11 @@ int findPlaylistIndexByYtId(String ytid) {
 } */
 
 Future<Map?> getPlaylistInfoForWidget(
-  dynamic id, {
+  dynamic playlistData, {
   bool isArtist = false,
 }) async {
+  final id = playlistData['ytid'] ?? playlistData['id'];
+  if (id == null) return {};
   if (isArtist) {
     return {'title': id, 'list': await getSongsList(id)};
   }
@@ -484,25 +482,32 @@ Future<Map?> getPlaylistInfoForWidget(
   if (playlist['list'] == null ||
       (playlist['list'] is List && (playlist['list'] as List).isEmpty)) {
     playlist['list'] = await getSongsFromPlaylist(playlist['id']);
-    playlist['artists'] =
-        playlist['list']
-            .map((song) => (song['artist'] as String).trim())
-            .toSet();
-    if (playlist['artists'].length == 1)
-      playlist['artist'] = playlist['artists'].first;
+    if (playlistData['isAlbum'] != null &&
+        playlistData['isAlbum'] &&
+        (playlistData['artist'].toString() == 'null' ||
+            playlistData['artist'].toString().isEmpty)) {
+      final strings = playlistData['title'].toString().split('-');
+      final albumInfo = Map<String, dynamic>.from(
+        await findMBAlbum(strings.first.trim(), strings.last.trim()),
+      );
+      if (albumInfo.isNotEmpty) {
+        playlist = Map<String, dynamic>.from(playlist)..addAll(albumInfo);
+        for (final song in playlist['list']) {
+          song['artist-details'] = albumInfo['artist-details'];
+          song['artist'] = albumInfo['artist'];
+        }
+      }
+    } else {
+      playlist['artists'] =
+          playlist['list']
+              .map((song) => (song['artist'] as String).trim())
+              .toSet();
+      if (playlist['artists'].length == 1)
+        playlist['artist'] = playlist['artists'].first;
+    }
     if (!dbPlaylists.contains(playlist)) {
       dbPlaylists.add(playlist);
     }
-  }
-
-  if (playlist['isAlbum'] != null &&
-      playlist['isAlbum'] &&
-      playlist['artist'] != null) {
-    playlist.addAll(
-      Map<String, Object>.from(
-        await findMBAlbum(playlist['title'], playlist['artist']),
-      ),
-    );
   }
 
   return playlist;

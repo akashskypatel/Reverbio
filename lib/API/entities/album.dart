@@ -63,22 +63,22 @@ Future<dynamic> getAlbumDetailsById(String id) async {
   }
 }
 
-Future<dynamic> findMBAlbum(String title, String artist) async {
+Future<Map<String, dynamic>> findMBAlbum(String title, String artist) async {
   try {
-    final artistInfo = await searchArtistDetails(artist);
-    final artistId = Uri.parse('?${artistInfo['id']}').queryParameters['mb'];
     final albums =
         (await mb.releaseGroups.search(
-              artistId != null
-                  ? '$title AND arid:"$artistId" AND type:"album"'
-                  : '$title AND artist:"$artist" AND type:"album"',
+              '("$title" AND artist:"$artist" AND type:"album") OR ("$artist" AND artist:"$title" AND type:"album")',
             ))['release-groups']
             as List;
-    if (albums.isEmpty) return;
-    final album = albums.first;
-    album['artist'] = artistInfo['artist'];
-    album['artistId'] = artistInfo['id'];
-    return album;
+    if (albums.isEmpty) return {};
+    final id = (albums.first['artist-credit'] as List).first['artist']['id'];
+    final artistInfo = Map.from(await getArtistDetailsById(id));
+    if (artistInfo.isNotEmpty) {
+      albums.first['artist-details'] = artistInfo;
+      albums.first['artist'] = artistInfo['artist'];
+      albums.first['artistId'] = artistInfo['id'];
+    }
+    return albums.first;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
