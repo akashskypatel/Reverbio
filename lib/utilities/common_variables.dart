@@ -22,7 +22,8 @@
 import 'package:flutter/material.dart';
 
 const recommendedCardsNumber = 8;
-
+const pageHeaderIconSize = 30.0;
+const listHeaderIconSize = 26.0;
 const commonSingleChildScrollViewPadding = EdgeInsets.symmetric(horizontal: 10);
 const commonBarPadding = EdgeInsets.symmetric(horizontal: 8);
 var commonBarRadius = BorderRadius.circular(18);
