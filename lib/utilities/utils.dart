@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 
@@ -53,7 +56,8 @@ String getFormattedDateTimeNow() {
 
 String formatSongTitle(String title) {
   final wordsPatternForSongTitle = RegExp(
-    r'\b(?:official(?:\s(?:music|lyrics?|audio|visuali[sz]er|vizuali[sz]er|hd|4k)?\s*(?:video|audio|visuali[sz]er|vizuali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
+    //r'\b(?:official(?:\s(?:music|lyrics?|dtmf|audio|vi[sz]uali[sz]er|hd|4k)?\s*(?:video|dtmf|audio|vi[sz]uali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
+    '(official|music|lyrics?|dtmf|video|audio|vi[sz]uali[sz]er?|hd|4k)+?',
     caseSensitive: false,
   );
 
@@ -66,6 +70,7 @@ String formatSongTitle(String title) {
     '&amp;': '&',
     '&#039;': "'",
     '&quot;': '"',
+    '  ': '-'
   };
   final pattern = RegExp(
     replacementsForSongTitle.keys.map(RegExp.escape).join('|'),
@@ -81,7 +86,7 @@ String formatSongTitle(String title) {
 
   finalTitle = finalTitle.replaceAll(wordsPatternForSongTitle, '');
 
-  return finalTitle;
+  return finalTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
 List<String> splitArtists(String input) {
@@ -190,4 +195,27 @@ T pickRandomItem<T>(List<T> list) {
   }
   final random = Random();
   return list[random.nextInt(list.length)];
+}
+
+
+bool isFilePath(String path) {
+  return isAbsolute(path) || isRelative(path);
+}
+
+Future<bool> doesFileExist(String path) async {
+  try {
+    final file = File(path);
+    return await file.exists();
+  } catch (e) {
+    return false; // Invalid path or permissions issue
+  }
+}
+
+Future<int> checkUrl(String url) async {
+  try {
+    final response = await http.head(Uri.parse(url));
+    return response.statusCode;
+  } catch (e) {
+    rethrow;
+  }
 }
