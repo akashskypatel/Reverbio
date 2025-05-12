@@ -25,7 +25,7 @@ import 'dart:convert';
 import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
-import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';

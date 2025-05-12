@@ -25,7 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:reverbio/API/Reverbio.dart';
-import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
@@ -47,6 +47,9 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
       userLikedArtistsList.addOrUpdate('id', artist['id'], {
         'id': artist['id'],
         'name': artist['artist'],
+        'image': artist['image'],
+        'genres': artist['genres'] ?? artist['musicbrainz']?['genres'] ?? [],
+        'primary-type': 'artist',
       });
       currentLikedArtistsLength.value++;
     } else {

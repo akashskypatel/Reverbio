@@ -23,6 +23,7 @@ import 'dart:async';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/screens/artist_page.dart';
@@ -158,11 +159,13 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
                     switch (dataType) {
                       case 'artist':
                         return ArtistPage(
+                          page: 'artist',
                           artistData: data,
                           navigatorObserver: widget.navigatorObserver,
                         );
                       default:
                         return PlaylistPage(
+                          page: dataType ?? '',
                           playlistData: data,
                           navigatorObserver: widget.navigatorObserver,
                         );
@@ -218,11 +221,13 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
                     switch (dataType) {
                       case 'artist':
                         return ArtistPage(
+                          page: 'artist',
                           artistData: inputData[index],
                           navigatorObserver: widget.navigatorObserver,
                         );
                       default:
                         return PlaylistPage(
+                          page: dataType ?? '',
                           playlistData: inputData[index],
                           navigatorObserver: widget.navigatorObserver,
                         );

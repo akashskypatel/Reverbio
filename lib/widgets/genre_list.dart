@@ -1,6 +1,8 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/widgets/section_header.dart';
 
 class GenreList extends StatefulWidget {
@@ -151,8 +153,8 @@ class _GenreListState extends State<GenreList> {
       icon: Icon(
         FluentIcons.filter_16_filled,
         color: Theme.of(context).colorScheme.primary,
-        size: 30,
       ),
+      iconSize: listHeaderIconSize,
       onSelected: _sortAction,
       itemBuilder: _buildSortMenuItems,
     );

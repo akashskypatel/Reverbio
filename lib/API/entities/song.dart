@@ -31,7 +31,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
-import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
@@ -363,9 +363,7 @@ Future<String> getSongUrl(dynamic song) async {
       );
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song['ytid']));
-      print('getYouTubeAudioUrl: ${getFormattedDateTimeNow()}');
       final songUrl = await getYouTubeAudioUrl(song['ytid']);
-      print('getYouTubeAudioUrl: ${getFormattedDateTimeNow()}');
       final uri = Uri.parse(songUrl);
       final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
       song['songUrl'] = songUrl;
@@ -414,15 +412,6 @@ Future<String> getYouTubeAudioUrl(String songId) async {
   final audioUrl = audioQuality.url.toString();
 
   return audioUrl;
-}
-
-Future<int> checkUrl(String url) async {
-  try {
-    final response = await http.head(Uri.parse(url));
-    return response.statusCode;
-  } catch (e) {
-    rethrow;
-  }
 }
 
 Future<Map<String, dynamic>> getSongDetails(
@@ -581,4 +570,81 @@ Future<void> updateRecentlyPlayed(dynamic songId) async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
+}
+
+Future<Map<String, String>?> getYtSongAndArtist(String ytid) async {
+  String? songName;
+  String? artistName;
+
+  try {
+    final response = await http.get(
+      Uri.parse('https://www.youtube.com/watch?v=$ytid'),
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      },
+    );
+    final htmlContent = response.body;
+
+    final regex = RegExp(
+      r'(\{"metadataRowRenderer":.*?\})(?=,{"metadataRowRenderer")',
+    );
+    final matches = regex.allMatches(htmlContent);
+
+    final jsonObjects = [];
+    for (final match in matches) {
+      final jsonStr = match.group(1);
+      if (jsonStr != null &&
+          (jsonStr.contains('{"simpleText":"Song"}') ||
+              jsonStr.contains('{"simpleText":"Artist"}'))) {
+        try {
+          jsonObjects.add(json.decode(jsonStr));
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+
+    if (jsonObjects.length == 2) {
+      final songContents = jsonObjects[0]['metadataRowRenderer']['contents'][0];
+      final artistContents =
+          jsonObjects[1]['metadataRowRenderer']['contents'][0];
+
+      songName =
+          songContents.containsKey('runs')
+              ? songContents['runs'][0]['text']
+              : songContents['simpleText'];
+
+      artistName =
+          artistContents.containsKey('runs')
+              ? artistContents['runs'][0]['text']
+              : artistContents['simpleText'];
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
+  }
+  if (songName != null && artistName != null)
+    return {'title': songName, 'artist': artistName};
+
+  return null;
+}
+
+bool isSongLive(String title, String artist, String value) {
+  // Convert to lowercase and remove title/artist
+  final replaced =
+      value
+          .toLowerCase()
+          .replaceAll(title.toLowerCase(), '')
+          .replaceAll(artist.toLowerCase(), '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+
+  // Live detection regex
+  final liveRegex = RegExp(
+    r'(\blive\b\s*(?:\bat\b|\@|\bfrom\b|\bin\b|\bon\b|\bperformance\b|\b))|(concert|tour|cover|perform(?:ance|ed))',
+    caseSensitive: false,
+  );
+
+  return liveRegex.hasMatch(replaced);
 }

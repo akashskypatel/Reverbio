@@ -146,6 +146,7 @@ class NavigationManager {
               final artistData = state.extra as dynamic;
               return getPage(
                 child: ArtistPage(
+                  page: 'artist',
                   artistData: artistData,
                   navigatorObserver: navigatorObserver,
                 ),
