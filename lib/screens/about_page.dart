@@ -98,6 +98,7 @@ class _AboutPageState extends State<AboutPage> with RouteAware {
                   children: <Widget>[
                     IconButton(
                       icon: const Icon(FluentIcons.code_24_filled),
+                      iconSize: pageHeaderIconSize,
                       tooltip: 'Github',
                       onPressed: () {
                         launchURL(
@@ -107,6 +108,7 @@ class _AboutPageState extends State<AboutPage> with RouteAware {
                     ),
                     IconButton(
                       icon: const Icon(FluentIcons.globe_24_filled),
+                      iconSize: pageHeaderIconSize,
                       tooltip: 'Website',
                       onPressed: () {
                         launchURL(Uri.parse('https://fryingpan.games/'));

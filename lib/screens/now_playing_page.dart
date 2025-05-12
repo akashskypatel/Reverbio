@@ -80,6 +80,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> with RouteAware {
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_downward),
+          iconSize: pageHeaderIconSize,
           splashColor: Colors.transparent,
           onPressed: () {
             GoRouter.of(context).pop(context);
