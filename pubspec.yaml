@@ -19,11 +19,13 @@ dependencies:
   discogs_api_client:
     path: ../discogs_api_client
   dynamic_color: ^1.7.0
-  file_picker: ^9.0.2
+  file_picker: ^10.1.2
   fluentui_system_icons: ^1.1.273
   flutter:
     sdk: flutter
   flutter_flip_card: ^0.0.6
+  flutter_js:
+    path: ../flutter_js
   flutter_localizations:
     sdk: flutter
   fuzzy: ^0.5.1
@@ -39,6 +41,7 @@ dependencies:
   media_kit_libs_audio: ^1.0.5
   musicbrainz_api_client:
     path: ../musicbrainz_api_client
+  path: ^1.9.1
   path_provider: ^2.1.5
   rxdart: ^0.28.0
   url_launcher: ^6.3.1
@@ -89,3 +92,5 @@ flutter_launcher_icons:
   adaptive_icon_round: 'assets/images/ic_launcher_round.png'
   adaptive_icon_monochrome: 'assets/images/ic_launcher_foreground.png'
   image_path: 'assets/images/ic_launcher.png'
+
+flutter_lints: ^5.0.0
