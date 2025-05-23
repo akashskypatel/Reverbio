@@ -294,13 +294,13 @@ class PositionSlider extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Slider(
-                    value: value.position.inSeconds.toDouble(),
+                    value: value.position.inMilliseconds.toDouble(),
                     max: max(
-                      value.position.inSeconds.toDouble(),
-                      value.duration.inSeconds.toDouble(),
+                      value.position.inMilliseconds.toDouble(),
+                      value.duration.inMilliseconds.toDouble(),
                     ),
                     onChanged: (value) {
-                      audioHandler.seek(Duration(seconds: value.toInt()));
+                      audioHandler.seek(Duration(milliseconds: value.toInt()));
                     },
                   ),
                 ],

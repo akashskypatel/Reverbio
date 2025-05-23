@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -54,10 +55,10 @@ String getFormattedDateTimeNow() {
   return '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}T${DateTime.now().hour}:${DateTime.now().minute}:${DateTime.now().second}';
 }
 
-String formatSongTitle(String title) {
+String sanitizeSongTitle(String title) {
   final wordsPatternForSongTitle = RegExp(
     //r'\b(?:official(?:\s(?:music|lyrics?|dtmf|audio|vi[sz]uali[sz]er|hd|4k)?\s*(?:video|dtmf|audio|vi[sz]uali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
-    '(official|music|lyrics?|dtmf|video|audio|vi[sz]uali[sz]er?|hd|4k)+?',
+    r'(\bofficial\b|\bmusic\b|\blyrics?\b|\bdtmf\b|\bvideo\b|\baudio\b|\bvi[sz]uali[sz]er?\b|\bhd\b|\b4k\b|\bhigh\b|\bquality\b)+?',
     caseSensitive: false,
   );
 
@@ -70,7 +71,9 @@ String formatSongTitle(String title) {
     '&amp;': '&',
     '&#039;': "'",
     '&quot;': '"',
-    '  ': '-'
+    '  ': '-',
+    '—': '-',
+    '–': '-',
   };
   final pattern = RegExp(
     replacementsForSongTitle.keys.map(RegExp.escape).join('|'),
@@ -102,8 +105,8 @@ List<String> splitArtists(String input) {
 }
 
 Map<String, String> tryParseTitleAndArtist(String title) {
-  final formattedTitle = formatSongTitle(title);
-  final strings = formatSongTitle(formattedTitle).split('-');
+  final formattedTitle = sanitizeSongTitle(title);
+  final strings = sanitizeSongTitle(formattedTitle).split(RegExp('-|—|–'));
   final artists = splitArtists(formattedTitle);
   if (strings.length > 2) {
     strings.removeWhere((value) => int.tryParse(value.trim()) != null);
@@ -197,7 +200,6 @@ T pickRandomItem<T>(List<T> list) {
   return list[random.nextInt(list.length)];
 }
 
-
 bool isFilePath(String path) {
   return isAbsolute(path) || isRelative(path);
 }
@@ -217,5 +219,21 @@ Future<int> checkUrl(String url) async {
     return response.statusCode;
   } catch (e) {
     rethrow;
+  }
+}
+
+String? tryEncode(data) {
+  try {
+    return jsonEncode(data);
+  } catch (e) {
+    return null;
+  }
+}
+
+dynamic tryDecode(data) {
+  try {
+    return jsonDecode(data);
+  } catch (e) {
+    return null;
   }
 }

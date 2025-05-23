@@ -39,6 +39,7 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 List globalSongs = [];
 List userLikedSongsList = Hive.box('user').get('likedSongs', defaultValue: []);
@@ -154,27 +155,57 @@ void getSimilarSong(String songYtId) async {
   }
 }
 
-Future<dynamic> findYTSong(String songName, String artist) async {
+Future<dynamic> findYTSong(dynamic song) async {
   try {
-    final lcSongName = songName.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    final lcArtist = artist.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    final results = await getSongsList('"$lcArtist" "$lcSongName"');
+    final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
+    final lcSongName = (song['title'] ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(specialRegex, '');
+    final lcArtist = (song['artist'] ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(specialRegex, '');
+    final lcAlbum = (song['album'] ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(specialRegex, '');
+    final results = await getSongsList('"$lcArtist" "$lcSongName" "$lcAlbum"');
     results.sort((a, b) => b['views'].compareTo(a['views']));
     final result =
         results.where((value) {
-          final lcS = value['title'].toString().trim().toLowerCase().replaceAll(
-            RegExp(r'\s+'),
-            ' ',
-          );
-          final lcC = value['channelName']
+          final lcS = sanitizeSongTitle(value['title'] ?? '')
+              .trim()
+              .toLowerCase()
+              .replaceAll(lcArtist, '')
+              .replaceAll(lcAlbum, '')
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .replaceAll(specialRegex, '');
+          final lcC = (value['channelName'] ?? '')
               .toString()
               .trim()
               .toLowerCase()
-              .replaceAll(RegExp(r'\s+'), ' ');
-          final ex =
-              (lcS.contains(lcSongName) && (lcC.contains(lcArtist))) ||
-              (lcS.contains(lcSongName) && lcS.contains(lcArtist));
-          return ex;
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .replaceAll(specialRegex, '');
+          final lcA = (value['artist'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase()
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .replaceAll(specialRegex, '');
+          final isLive = isSongLive(lcArtist, lcAlbum, lcSongName, lcS);
+          final isDerivative = isSongDerivative(
+            lcArtist,
+            lcAlbum,
+            lcSongName,
+            lcS,
+          );
+          final isMatch =
+              (ratio(lcS, lcSongName) >= 90) &&
+              (ratio(lcC, lcArtist) >= 90 ||
+                  ratio(lcA, lcArtist) >= 90 ||
+                  lcS.contains(lcArtist));
+          return isMatch && !isLive && !isDerivative;
         }).toList();
 
     return result.isNotEmpty ? result.first : {};
@@ -214,7 +245,7 @@ Future<dynamic> findMBSong(dynamic song) async {
       RegExp('(official)|(visualizer)|(visualiser)', caseSensitive: false),
       '',
     );
-    final regex = RegExp(r'''[+\-&|!(){}[\]^"~*?:\\']''');
+    final regex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
     final artists = splitArtists(artist);
     Map artistInfo = {};
     String artistId = '';
@@ -356,11 +387,7 @@ Future<String> getSongUrl(dynamic song) async {
     if (song == null) return '';
     if (song['mbid'] == null) unawaited(findMBSong(song));
     if (song['ytid'] == null)
-      song.addAll(
-        Map<String, dynamic>.from(
-          await findYTSong(song['title'], song['artist']),
-        ),
-      );
+      song.addAll(Map<String, dynamic>.from(await findYTSong(song)));
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song['ytid']));
       final songUrl = await getYouTubeAudioUrl(song['ytid']);
@@ -369,6 +396,7 @@ Future<String> getSongUrl(dynamic song) async {
       song['songUrl'] = songUrl;
       song['songUrlExpire'] = expires;
       song['isError'] = false;
+      song['source'] = 'youtube';
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
       song['error'] = 'Could not find YoutTube stream for this song.';
@@ -630,21 +658,49 @@ Future<Map<String, String>?> getYtSongAndArtist(String ytid) async {
   return null;
 }
 
-bool isSongLive(String title, String artist, String value) {
+bool isSongLive(String? artist, String? album, String? title, String value) {
   // Convert to lowercase and remove title/artist
+  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
   final replaced =
       value
           .toLowerCase()
-          .replaceAll(title.toLowerCase(), '')
-          .replaceAll(artist.toLowerCase(), '')
+          .replaceAll(title?.toLowerCase() ?? '', '')
+          .replaceAll(album?.toLowerCase() ?? '', '')
+          .replaceAll(artist?.toLowerCase() ?? '', '')
           .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll(specialRegex, '')
           .trim();
 
   // Live detection regex
   final liveRegex = RegExp(
-    r'(\blive\b\s*(?:\bat\b|\@|\bfrom\b|\bin\b|\bon\b|\bperformance\b|\b))|(concert|tour|cover|perform(?:ance|ed))',
+    r'(\blive\b\s*(?:\bat\b|\@|\bfrom\b|\bin\b|\bon\b|\bperformance\b|\b))|(\bstage\b|\bshow\b|\bconcert\b|\btour\b|\bcover\b|\bperform(?:ance\b|ed\b))',
     caseSensitive: false,
   );
 
   return liveRegex.hasMatch(replaced);
+}
+
+bool isSongDerivative(
+  String? artist,
+  String? album,
+  String? title,
+  String value,
+) {
+  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
+  final replaced =
+      value
+          .toLowerCase()
+          .replaceAll(title?.toLowerCase() ?? '', '')
+          .replaceAll(album?.toLowerCase() ?? '', '')
+          .replaceAll(artist?.toLowerCase() ?? '', '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll(specialRegex, '')
+          .trim();
+
+  final regex = RegExp(
+    r'(\bversion\b|\bacoustic\b|\binstrumental\b|\bre\s?mix(?:\b|es\b|ed\b)|\bcover(?:\b|s\b|ed\b)|\bperform(?:ance\b|ed\b)|\bmashup\b|\bparod(?:y\b|ies\b|ied\b)|\bedit(?:\b|s\b|ed\b))',
+    caseSensitive: false,
+  );
+
+  return regex.hasMatch(replaced);
 }

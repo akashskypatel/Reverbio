@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reverbio'),
-        actions: [_buildSyncButton()],
+        actions: [_buildSyncButton(), const SizedBox(width: 10),],
       ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
@@ -151,7 +151,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_sync_24_filled),
-      iconSize: 26,
+      iconSize: pageHeaderIconSize,
       onPressed: () {
         setState(() {
           _recommendedPlaylistsFuture = getPlaylists(
