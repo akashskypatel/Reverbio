@@ -30,6 +30,7 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/settings_manager.dart';
 
 List userLikedAlbumsList = Hive.box(
   'user',
@@ -37,7 +38,7 @@ List userLikedAlbumsList = Hive.box(
 
 List cachedAlbumsList = Hive.box('cache').get('cachedAlbums', defaultValue: []);
 
-late final ValueNotifier<int> currentLikedAlbumsLength;
+final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(userLikedAlbumsList.length);
 
 dynamic _getCachedAlbum(String id) {
   try {
@@ -84,7 +85,7 @@ Future<Map<String, dynamic>> findMBAlbum(String title, String artist) async {
             as List;
     if (albums.isEmpty) return {};
     final id = (albums.first['artist-credit'] as List).first['artist']['id'];
-    final artistInfo = Map.from(await getArtistDetailsById(id));
+    final artistInfo = Map.from(await getArtistDetails(id));
     if (artistInfo.isNotEmpty) {
       albums.first['artist-details'] = artistInfo;
       albums.first['artist'] = artistInfo['artist'];
@@ -241,8 +242,8 @@ Future<bool> getTrackList(dynamic album) async {
 
     var i = 0;
     for (final release in effectiveReleases) {
-      release['media'].forEach((media) {
-        media['tracks'].forEach((track) {
+      release['media']?.forEach((media) {
+        media['tracks']?.forEach((track) {
           if (tracklist.add(track['title'])) {
             final artist = (track['artist-credit'] as List)
                 .map((value) {
@@ -301,6 +302,15 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
         'primary-type': 'album',
       });
       currentLikedAlbumsLength.value++;
+      album['album'] = album['title'];
+      for (final plugin in PM.plugins) {
+        final hook = PM.getHooks(plugin['name'])['onEntityLiked'];
+        PM.queueBackground(
+          pluginName: plugin['name'],
+          methodName: hook['onTrigger']['methodName'],
+          args: [album],
+        );
+      }
     } else {
       userLikedAlbumsList.removeWhere((value) => value['id'] == album['id']);
       currentLikedAlbumsLength.value--;

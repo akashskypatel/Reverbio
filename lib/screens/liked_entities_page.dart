@@ -1,17 +1,17 @@
-import 'dart:async';
-
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/playlist_page.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/genre_list.dart';
 import 'package:reverbio/widgets/section_header.dart';
-import 'package:reverbio/widgets/spinner.dart';
 
 class LikedCardsPage extends StatefulWidget {
   const LikedCardsPage({
@@ -35,32 +35,29 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
   late final Set<String> uniqueGenreList = {};
   late final List<dynamic> genreList = [];
   final List<dynamic> inputData = [];
-  late Future<dynamic> dataFuture;
   final List<BaseCard> cardList = <BaseCard>[];
   GenreList? genresWidget;
-  ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false); 
-  
+  ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
+  final dataMap = {
+    'albums': {
+      'list': userLikedAlbumsList,
+      'notifier': currentLikedAlbumsLength,
+      'widgetContext': 'AlbumsPageHeader',
+    },
+    'artists': {
+      'list': userLikedArtistsList,
+      'notifier': currentLikedArtistsLength,
+      'widgetContext': 'ArtistsPageHeader',
+    },
+  };
+
   @override
   void initState() {
     super.initState();
-    _setDataFutures();
-    dataFuture.then((value) {
-      for (final data in value as List) {
-        data['filterShow'] = true;
-        inputData.add(data);
-        _parseGenres(data);
-      }
-      if (mounted) setState(() {});
-    });
-    currentLikedArtistsLength.addListener(_listener);
-    currentLikedAlbumsLength.addListener(_listener);
   }
 
   @override
   void dispose() {
-    dataFuture.ignore();
-    currentLikedArtistsLength.removeListener(_listener);
-    currentLikedAlbumsLength.removeListener(_listener);
     widget.navigatorObserver.unsubscribe(this);
     cardList.clear();
     super.dispose();
@@ -81,23 +78,17 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        actions: [_clearFiltersButton(), const SizedBox(width: 24, height: 24)],
+        actions: [
+          _clearFiltersButton(),
+          ...PM.getWidgetsByType(
+            _getEntityListData,
+            dataMap[widget.page]?['widgetContext'] as String, 
+            context,
+          ),
+          if (kDebugMode) const SizedBox(width: 24, height: 24,),
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildSearchBar(context),
-            _buildGenreList(),
-            SectionHeader(
-              title:
-                  widget.page == 'artists'
-                      ? context.l10n!.artists
-                      : context.l10n!.albums,
-            ),
-            _buildCardsGrid(context),
-          ],
-        ),
-      ),
+      body: _buildBody(context),
     );
   }
 
@@ -115,67 +106,61 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
                     isFilteredNotifier.value = false;
                   }
                   : null,
-          icon: const Icon(FluentIcons.filter_dismiss_24_filled, size: 30),
+          icon: const Icon(FluentIcons.filter_dismiss_24_filled),
+          iconSize: pageHeaderIconSize,
           color: Theme.of(context).colorScheme.primary,
           disabledColor: Theme.of(context).colorScheme.primaryContainer,
+          tooltip: context.l10n!.clearFilters,
         );
       },
     );
   }
 
-  void _listener() {
-    if (mounted) setState(_setDataFutures);
-  }
-
-  void _setDataFutures() {
-    switch (widget.page) {
-      case 'artists':
-        dataFuture = _getArtistsDetails();
-      case 'albums':
-        dataFuture = _getAlbumsDetails();
-      default:
-        break;
-    }
-  }
-
-  Widget _buildCardsGrid(BuildContext context) {
-    return FutureBuilder(
-      future: dataFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          inputData.clear();
-          return const Padding(padding: EdgeInsets.all(35), child: Spinner());
+  Widget _buildBody(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: dataMap[widget.page]?['notifier'] as ValueNotifier<int>,
+      builder: (context, value, child) {
+        inputData.clear();
+        for (final data in (dataMap[widget.page]?['list'] as List)) {
+          data['filterShow'] = true;
+          inputData.add(data);
+          _parseGenres(data);
         }
-        if (snapshot.connectionState == ConnectionState.done) {
-          if (inputData.isEmpty)
-            for (final data in snapshot.data as List) {
-              data['filterShow'] = true;
-              inputData.add(data);
-              _parseGenres(data);
-            }
-          _buildCards(context);
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final innerWidth = constraints.maxWidth;
-              final innerHeight = constraints.maxHeight;
-              return ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: innerHeight,
-                  maxWidth: innerWidth,
-                ),
-                child: Wrap(children: cardList),
-              );
-            },
-          );
-        }
-        return Text(
-          widget.page == 'artists'
-              ? context.l10n!.noLikedartists
-              : context.l10n!.noLikedAlbums,
-          textAlign: TextAlign.center,
+        _buildCards(context);
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildSearchBar(context),
+              _buildGenreList(),
+              SectionHeader(
+                title:
+                    widget.page == 'artists'
+                        ? context.l10n!.artists
+                        : context.l10n!.albums,
+              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final innerWidth = constraints.maxWidth;
+                  final innerHeight = constraints.maxHeight;
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: innerHeight,
+                      maxWidth: innerWidth,
+                    ),
+                    child: Wrap(children: cardList),
+                  );
+                },
+              ),
+            ],
+          ),
         );
       },
     );
+  }
+
+  List<dynamic> _getEntityListData() {
+    final data = inputData;
+    return data;
   }
 
   void _buildCards(BuildContext context) {
@@ -201,10 +186,12 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
                   (context) =>
                       widget.page == 'artists'
                           ? ArtistPage(
+                            page: 'artist',
                             artistData: data,
                             navigatorObserver: widget.navigatorObserver,
                           )
                           : PlaylistPage(
+                            page: 'album',
                             playlistData: data,
                             navigatorObserver: widget.navigatorObserver,
                           ),
@@ -215,24 +202,8 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
     cardList.add(card);
   }
 
-  Future<dynamic> _getArtistsDetails() async {
-    final futures = <Future>[];
-    for (final artist in userLikedArtistsList) {
-      futures.add(getArtistDetailsById(artist['id']));
-    }
-    return futures.wait;
-  }
-
-  Future<dynamic> _getAlbumsDetails() async {
-    final futures = <Future>[];
-    for (final album in userLikedAlbumsList) {
-      futures.add(getAlbumDetailsById(album['id']));
-    }
-    return futures.wait;
-  }
-
   void _parseGenres(dynamic data) {
-    final genres = data['genres'] ?? data['musicbrainz']['genres'] ?? [];
+    final genres = data['genres'] ?? data['musicbrainz']?['genres'] ?? [];
     final Set<String> genreString = {};
     for (final genre in genres) {
       final count = genreList.where((e) => e['name'] == genre['name']).length;

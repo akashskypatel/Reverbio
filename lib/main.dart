@@ -48,7 +48,7 @@ import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-late ReverbioAudioHandler audioHandler;
+ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
 
 final logger = Logger();
 final appLinks = AppLinks();
@@ -58,26 +58,26 @@ bool isUpdateChecked = false;
 Map<String, dynamic> userGeolocation = {};
 
 const appLanguages = <String, String>{
-  'English-English': 'en',
-  'Arabic-العربية': 'ar',
-  'Bengali-বাংলা': 'bn',
-  'Chinese (Simplified)-简体中文': 'zh',
-  'Chinese (Traditional)-繁體中文': 'zh-Hant',
-  'Chinese (Taiwanese)-繁體中文 (臺灣)': 'zh-TW',
-  'Cantonese-廣東話': 'yue',
-  'French-Français': 'fr',
-  'German-Deutsch': 'de',
-  'Greek-Ελληνικά': 'el',
-  'Hindi-हिन्दी': 'hi',
-  'Indonesian-Bahasa Indonesia': 'id',
-  'Italian-Italiano': 'it',
-  'Japanese-日本語': 'ja',
-  'Korean-한국어': 'ko',
-  'Polish-Polski': 'pl',
-  'Portuguese-Português': 'pt',
-  'Russian-Русский': 'ru',
-  'Spanish-Español': 'es',
-  'Ukrainian-Українська': 'uk',
+  'English': 'en',
+  'العربية': 'ar',
+  'বাংলা': 'bn',
+  '简体中文': 'zh',
+  '繁體中文': 'zh-Hant',
+  '繁體中文 (臺灣)': 'zh-TW',
+  '廣東話': 'yue',
+  'Français': 'fr',
+  'Deutsch': 'de',
+  'Ελληνικά': 'el',
+  'हिन्दी': 'hi',
+  'Bahasa Indonesia': 'id',
+  'Italiano': 'it',
+  '日本語': 'ja',
+  '한국어': 'ko',
+  'Polski': 'pl',
+  'Português': 'pt',
+  'Русский': 'ru',
+  'Español': 'es',
+  'Українська': 'uk',
 };
 
 final List<Locale> appSupportedLocales =
@@ -236,6 +236,9 @@ Future<void> initialisation() async {
       await Hive.openBox(boxName);
     }
 
+    // Init router
+    NavigationManager.instance;
+
     audioHandler = await AudioService.init(
       builder: ReverbioAudioHandler.new,
       config: const AudioServiceConfig(
@@ -245,9 +248,6 @@ Future<void> initialisation() async {
         androidShowNotificationBadge: true,
       ),
     );
-
-    // Init router
-    NavigationManager.instance;
 
     // Init clients
     if (clientsSetting.value.isNotEmpty) {
@@ -261,14 +261,14 @@ Future<void> initialisation() async {
       userChosenClients = chosenClients;
     }
 
-    currentLikedPlaylistsLength = ValueNotifier<int>(userLikedPlaylists.length);
-    currentLikedSongsLength = ValueNotifier<int>(userLikedSongsList.length);
-    currentOfflineSongsLength = ValueNotifier<int>(userOfflineSongs.length);
-    currentRecentlyPlayedLength = ValueNotifier<int>(userRecentlyPlayed.length);
-    currentLikedAlbumsLength = ValueNotifier<int>(userLikedAlbumsList.length);
-    currentLikedArtistsLength = ValueNotifier<int>(userLikedArtistsList.length);
-    activeQueueLength = ValueNotifier<int>(audioHandler.queueSongBars.length);
-
+    currentLikedPlaylistsLength.value = userLikedPlaylists.length;
+    currentLikedSongsLength.value = userLikedSongsList.length;
+    currentOfflineSongsLength.value = userOfflineSongs.length;
+    currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
+    currentLikedAlbumsLength.value = userLikedAlbumsList.length;
+    currentLikedArtistsLength.value = userLikedArtistsList.length;
+    activeQueueLength.value = audioHandler.queueSongBars.length;
+    await PM.initialize();
     try {
       // Listen to incoming links while app is running
       appLinks.uriLinkStream.listen(

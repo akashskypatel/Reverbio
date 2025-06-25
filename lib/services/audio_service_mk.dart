@@ -546,7 +546,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         );
         mediaItem.add(preliminaryTag);
         await audioPlayer.queue(audioSource, songBar);
-        if (play) unawaited(audioPlayer.play());
+        if (play) {
+          logger.log('Playing: $songUrl', null, null);
+          unawaited(audioPlayer.play());
+        }
         final cacheKey =
             'song_${songBar.song['ytid']}_${settings.audioQualitySetting.value}_url';
         if (!isOffline) addOrUpdateData('cache', cacheKey, songUrl);

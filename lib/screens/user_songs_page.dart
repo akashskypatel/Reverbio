@@ -21,6 +21,7 @@
 
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -87,12 +88,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         title: Text(title), //offlineMode.value ? Text(title) : null,
         actions: [
           if (title == context.l10n!.queue)
-            Row(
-              children: [
-                _buildQueueActionsList(),
-                const SizedBox(width: 24, height: 24),
-              ],
-            ),
+            Row(children: [_buildQueueActionsList()]),
           if (title == context.l10n!.likedSongs)
             IconButton(
               onPressed: () {
@@ -109,7 +105,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                         : Theme.of(context).colorScheme.primary,
               ),
             ),
-          const SizedBox(width: 24, height: 24),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: _buildCustomScrollView(title, icon, songsList, length),

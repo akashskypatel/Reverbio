@@ -34,8 +34,11 @@ class SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        ClipRect(
-          child: SectionTitle(title, Theme.of(context).colorScheme.primary),
+        Flexible(
+          fit: FlexFit.tight,
+          child: ClipRect(
+            child: SectionTitle(title, Theme.of(context).colorScheme.primary),
+          ),
         ),
         if (actions != null)
           Padding(

@@ -237,3 +237,14 @@ dynamic tryDecode(data) {
     return null;
   }
 }
+
+DateTime tryParseDate(String date) {
+  try {
+    if (DateTime.tryParse(date) != null) return DateTime.parse(date);
+    if (int.tryParse(date) != null) return DateTime(int.parse(date));
+    return DateTime.now();
+  } catch (e) {
+    return DateTime.now();
+  }
+}
+

@@ -35,6 +35,7 @@
             "type": "dart",
             "flutterMode": "debug",
             "deviceId": "android",
+            "args": ["--no-enable-impeller"]
         }
     ]
 }

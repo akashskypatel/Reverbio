@@ -20,6 +20,7 @@
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
@@ -99,7 +100,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
             iconSize: pageHeaderIconSize,
           ),
           _clearFiltersButton(),
-          const SizedBox(width: 24, height: 24),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: Column(

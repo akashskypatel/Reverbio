@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/screens/search_page.dart';
@@ -243,7 +244,6 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
             return CustomBar(
               context.l10n!.originalRecommendations,
               FluentIcons.channel_share_24_regular,
-              borderRadius: commonCustomBarRadiusLast,
               trailing: Switch(
                 value: value,
                 onChanged:
@@ -252,7 +252,30 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
             );
           },
         ),
-
+        ValueListenableBuilder<bool>(
+          valueListenable: pluginsSupport,
+          builder: (_, value, __) {
+            return CustomBar(
+              context.l10n!.plugins,
+              value
+                  ? FluentIcons.plug_connected_24_regular
+                  : FluentIcons.plug_disconnected_24_regular,
+              borderRadius: commonCustomBarRadiusLast,
+              trailing: Switch(
+                value: value,
+                onChanged: (value) => _togglePluginsSupport(context, value),
+              ),
+              onTap:
+                  value
+                      ? () => _showPluginList(
+                        context,
+                        activatedColor,
+                        inactivatedColor,
+                      )
+                      : null,
+            );
+          },
+        ),
         _buildToolsSection(context),
         _buildSponsorSection(context, primaryColor),
       ],
@@ -424,7 +447,7 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
 
           return BottomSheetBar(
             mode.name,
-            () {
+            onTap: () {
               addOrUpdateData('settings', 'themeMode', mode.name);
               Reverbio.updateAppState(context, newThemeMode: mode);
               GoRouter.of(context).pop(context);
@@ -463,7 +486,7 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
 
               return BottomSheetBar(
                 client,
-                () {
+                onTap: () {
                   if (mounted)
                     setState(() {
                       if (isSelected) {
@@ -487,6 +510,397 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
       ),
     );
   }
+
+  void _showPluginList(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            width: MediaQuery.of(context).size.width * 0.75,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Column(
+                children: [
+                  SectionHeader(
+                    title: context.l10n!.plugins,
+                    actions: [
+                      IconButton(
+                        onPressed: () async {
+                          await _reloadPlugins(null);
+                          setState(() {});
+                        },
+                        icon: const Icon(FluentIcons.arrow_sync_24_filled),
+                        iconSize: listHeaderIconSize,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      IconButton(
+                        onPressed: _showAddPluginDialog,
+                        icon: const Icon(FluentIcons.add_24_regular),
+                        iconSize: listHeaderIconSize,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                  ValueListenableBuilder(
+                    valueListenable: PM.pluginsDataNotifier,
+                    builder: (_, value, ___) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const BouncingScrollPhysics(),
+                        padding: commonListViewBottmomPadding,
+                        itemCount: PM.pluginsData.length,
+                        itemBuilder: (savecontext, index) {
+                          return BottomSheetBar(
+                            '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']})',
+                            onTap:
+                                () => _showPluginSettings(
+                                  PM.pluginsData[index]['name'],
+                                ),
+                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                            borderRadius: getItemBorderRadius(
+                              index,
+                              PM.pluginsData.length,
+                            ),
+                            actions: [
+                              IconButton(
+                                onPressed: () async {
+                                  await _reloadPlugins(PM.pluginsData[index]);
+                                  setState(() {});
+                                  showToast(
+                                    context,
+                                    '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) updated!',
+                                  );
+                                },
+                                icon: const Icon(
+                                  FluentIcons.arrow_sync_24_filled,
+                                ),
+                                iconSize: listHeaderIconSize,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              IconButton(
+                                onPressed: () async {
+                                  await showDialog(
+                                    routeSettings: const RouteSettings(
+                                      name: '/confirmation',
+                                    ),
+                                    context: savecontext,
+                                    builder:
+                                        (
+                                          BuildContext confirmcontext,
+                                        ) => ConfirmationDialog(
+                                          title: context.l10n!.removePlugin,
+                                          message:
+                                              context.l10n!.confirmRemovePlugin,
+                                          confirmText: context.l10n!.confirm,
+                                          cancelText: context.l10n!.cancel,
+                                          onCancel:
+                                              () => GoRouter.of(
+                                                savecontext,
+                                              ).pop(confirmcontext),
+                                          onSubmit: () {
+                                            setState(() {
+                                              PM.removePlugin(
+                                                PM.pluginsData[index]['name'],
+                                              );
+                                            });
+                                            addOrUpdateData(
+                                              'settings',
+                                              'pluginsData',
+                                              PM.pluginsData,
+                                            );
+                                            showToast(
+                                              context,
+                                              context.l10n!.pluginRemoved,
+                                            );
+                                            GoRouter.of(context).pop(context);
+                                          },
+                                        ),
+                                  );
+                                },
+                                icon: const Icon(FluentIcons.delete_24_regular),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _reloadPlugins(Map? _plugin) async {
+    if (_plugin != null)
+      await PM.syncPlugin(_plugin);
+    else
+      await PM.syncPlugins();
+  }
+
+  void _showPluginSettings(String pluginName) => showDialog(
+    routeSettings: RouteSettings(name: '/plugins/$pluginName'),
+    context: context,
+    builder: (pluginContext) {
+      try {
+        return StatefulBuilder(
+          builder: (plugincontext, setState) {
+            return AlertDialog(
+              title: Text(pluginName),
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.6,
+                child: PM.getPluginSettingsWidgets(pluginName, pluginContext),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    PM.restSettings(pluginName);
+                    setState(() {});
+                  },
+                  child: Text(context.l10n!.defaults.toUpperCase()),
+                ),
+                TextButton(
+                  onPressed: () {
+                    GoRouter.of(plugincontext).pop(plugincontext);
+                  },
+                  child: Text(context.l10n!.cancel.toUpperCase()),
+                ),
+                TextButton(
+                  onPressed: () {
+                    PM.saveSettings(pluginName);
+                    GoRouter.of(plugincontext).pop(plugincontext);
+                  },
+                  child: Text(context.l10n!.save.toUpperCase()),
+                ),
+              ],
+            );
+          },
+        );
+      } catch (e, stackTrace) {
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()}:',
+          e,
+          stackTrace,
+        );
+        throw ErrorDescription('Error in _showPluginSettings');
+      }
+    },
+  );
+
+  void _showAddPluginDialog() => showDialog(
+    routeSettings: const RouteSettings(name: '/add-plugins'),
+    context: context,
+    builder: (savecontext) {
+      var isOnlineMode = true;
+      final isLoadedNotifier = ValueNotifier(false);
+      var isValid = false;
+      var pluginData = {};
+      final jsUrlNotifier = ValueNotifier('');
+      final urlInputController = TextEditingController();
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final theme = Theme.of(context);
+          final activeButtonBackground = theme.colorScheme.surfaceContainer;
+          final inactiveButtonBackground = theme.colorScheme.secondaryContainer;
+          final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
+
+          return AlertDialog(
+            backgroundColor: dialogBackgroundColor,
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.5,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            if (mounted)
+                              setState(() {
+                                isOnlineMode = true;
+                              });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isOnlineMode
+                                    ? inactiveButtonBackground
+                                    : activeButtonBackground,
+                          ),
+                          child: const Icon(FluentIcons.globe_add_24_filled),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (mounted)
+                              setState(() {
+                                isOnlineMode = false;
+                              });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isOnlineMode
+                                    ? activeButtonBackground
+                                    : inactiveButtonBackground,
+                          ),
+                          child: const Icon(FluentIcons.folder_add_24_filled),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    if (isOnlineMode) ...[
+                      Text(context.l10n!.onlinePlugin),
+                      const SizedBox(height: 7),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                labelText: context.l10n!.pluginURL,
+                              ),
+                              controller: urlInputController,
+                              onChanged: (value) {
+                                jsUrlNotifier.value = value;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          ValueListenableBuilder(
+                            valueListenable: jsUrlNotifier,
+                            builder: (_, value, __) {
+                              return ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: activeButtonBackground,
+                                ),
+                                onPressed:
+                                    value.isNotEmpty
+                                        ? () async {
+                                          pluginData = await PM.getOnlinePlugin(
+                                            value,
+                                          );
+                                          isValid = pluginData.isNotEmpty;
+                                          isLoadedNotifier.value =
+                                              pluginData.isNotEmpty;
+                                          if (isLoadedNotifier.value)
+                                            showToast(
+                                              context,
+                                              context.l10n!.pluginLoaded,
+                                            );
+                                          else
+                                            showToast(
+                                              context,
+                                              context.l10n!.pluginFailed,
+                                            );
+                                        }
+                                        : null,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      FluentIcons.arrow_download_24_regular,
+                                    ),
+                                    const SizedBox(width: 7),
+                                    Text(context.l10n!.download),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      Text(context.l10n!.localPlugin),
+                      const SizedBox(height: 7),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: activeButtonBackground,
+                        ),
+                        onPressed: () async {
+                          try {
+                            pluginData = await PM.getLocalPlugin();
+                            isValid = pluginData.isNotEmpty;
+                            isLoadedNotifier.value = pluginData.isNotEmpty;
+                            if (isLoadedNotifier.value)
+                              showToast(context, context.l10n!.pluginLoaded);
+                            else
+                              showToast(context, context.l10n!.pluginFailed);
+                          } catch (e) {
+                            showToast(context, 'Error: $e');
+                            isLoadedNotifier.value = false;
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(FluentIcons.folder_open_24_regular),
+                            const SizedBox(width: 7),
+                            Text(context.l10n!.browse),
+                          ],
+                        ),
+                      ),
+                    ],
+                    ...[
+                      const SizedBox(height: 7),
+                      ValueListenableBuilder(
+                        valueListenable: isLoadedNotifier,
+                        builder: (context, value, child) {
+                          return Visibility(
+                            visible: isValid,
+                            child: Text(
+                              '${pluginData['name']} (${pluginData['version']})',
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: <Widget>[
+              ValueListenableBuilder(
+                valueListenable: isLoadedNotifier,
+                builder: (context, value, child) {
+                  return TextButton(
+                    onPressed:
+                        value
+                            ? () {
+                              if (isValid) {
+                                setState(() {
+                                  PM.addPluginData(pluginData);
+                                  addOrUpdateData(
+                                    'settings',
+                                    'pluginsData',
+                                    PM.pluginsData,
+                                  );
+                                });
+                                GoRouter.of(context).pop(context);
+                                showToast(context, context.l10n!.pluginAdded);
+                              }
+                            }
+                            : null,
+                    child: Text(context.l10n!.add.toUpperCase()),
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 
   void _showLanguagePicker(
     BuildContext context,
@@ -523,7 +937,7 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
 
           return BottomSheetBar(
             language,
-            () {
+            onTap: () {
               addOrUpdateData('settings', 'language', newLocaleFullCode);
               Reverbio.updateAppState(context, newLocale: newLocale);
               showToast(context, context.l10n!.languageMsg);
@@ -563,7 +977,7 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
 
           return BottomSheetBar(
             quality,
-            () {
+            onTap: () {
               addOrUpdateData('settings', 'audioQuality', quality);
               audioQualitySetting.value = quality;
               showToast(context, context.l10n!.audioQualityMsg);
@@ -621,6 +1035,12 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
   void _toggleDefaultRecommendations(BuildContext context, bool value) {
     addOrUpdateData('settings', 'defaultRecommendations', value);
     defaultRecommendations.value = value;
+    showToast(context, context.l10n!.settingChangedMsg);
+  }
+
+  void _togglePluginsSupport(BuildContext context, bool value) {
+    addOrUpdateData('settings', 'pluginsSupport', value);
+    pluginsSupport.value = value;
     showToast(context, context.l10n!.settingChangedMsg);
   }
 

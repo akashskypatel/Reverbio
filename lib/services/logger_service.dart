@@ -19,6 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -38,8 +39,9 @@ class Logger {
 
     final logMessage =
         '[$timestamp] $errorLocation:$errorMessage\n$stackTraceMessage';
-
-    debugPrint(logMessage);
+    if(kDebugMode) {
+      debugPrint(logMessage);
+    }
     _logs += '$logMessage\n';
     _logCount++;
   }

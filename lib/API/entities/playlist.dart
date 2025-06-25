@@ -31,7 +31,7 @@ List onlinePlaylists = [];
 
 dynamic nextRecommendedSong;
 
-late final ValueNotifier<int> currentLikedPlaylistsLength;
+final ValueNotifier<int> currentLikedPlaylistsLength = ValueNotifier(userLikedPlaylists.length);
 
 /* Future<void> playPlaylistSong({
   Map<dynamic, dynamic>? playlist,

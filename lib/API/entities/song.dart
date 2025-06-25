@@ -25,6 +25,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -39,7 +40,6 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 List globalSongs = [];
 List userLikedSongsList = Hive.box('user').get('likedSongs', defaultValue: []);
@@ -47,10 +47,10 @@ List userOfflineSongs = Hive.box(
   'userNoBackup',
 ).get('offlineSongs', defaultValue: []);
 
-late final ValueNotifier<int> currentLikedSongsLength;
-late final ValueNotifier<int> currentOfflineSongsLength;
-late final ValueNotifier<int> currentRecentlyPlayedLength;
-late final ValueNotifier<int> activeQueueLength;
+final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(userLikedSongsList.length);
+final ValueNotifier<int> currentOfflineSongsLength = ValueNotifier<int>(userOfflineSongs.length);
+final ValueNotifier<int> currentRecentlyPlayedLength = ValueNotifier<int>(userRecentlyPlayed.length);
+final ValueNotifier<int> activeQueueLength = ValueNotifier<int>(audioHandler.queueSongBars.length);
 
 int activeSongId = 0;
 
@@ -120,6 +120,15 @@ Future<void> updateSongLikeStatus(dynamic songId, bool add) async {
     final song = await getSongDetails(userLikedSongsList.length, songId);
     userLikedSongsList.add(song);
     currentLikedSongsLength.value++;
+    song['song'] = song['title'];
+    for (final plugin in PM.plugins) {
+      final hook = PM.getHooks(plugin['name'])['onEntityLiked'];
+      PM.queueBackground(
+        pluginName: plugin['name'],
+        methodName: hook['onTrigger']['methodName'],
+        args: [song],
+      );
+    }
   } else {
     userLikedSongsList.removeWhere((song) => song['id'] == songId);
     currentLikedSongsLength.value--;
@@ -382,7 +391,75 @@ Future<AudioOnlyStreamInfo> getSongManifest(String songId) async {
 
 const Duration _cacheDuration = Duration(hours: 3);
 
-Future<String> getSongUrl(dynamic song) async {
+Future<void> getSongUrl(dynamic song) async {
+  const timeout = Duration(seconds: 5);
+  final allFutures = <Future>[];
+  void onSuccess(dynamic result) {
+    var songUrl = '';
+    //if (result['stream'] != null && result['stream']['error'] == null && result['stream']['liveMP4'] != null) {
+    //songUrl = result['stream']['liveMP4']['full'];
+    //} else if (result['songUrl'] is String) {
+    songUrl = result['songUrl'];
+    //}
+    song['songUrl'] = songUrl;
+    song['isError'] = songUrl.isEmpty;
+    song['error'] =
+        songUrl.isNotEmpty ? null : 'Could not find any streams for this song.';
+    //song['source'] = null;
+    for (final f in allFutures) {
+      f.ignore();
+    }
+  }
+
+  try {
+    song['song'] = song['title'];
+    if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
+      song['songUrl'] = null;
+      final pluginFutures =
+          PM.plugins.fold([], (returnValue, _plugin) {
+            final hook = PM.getHooks(_plugin['name'])['onGetSongUrl'];
+            if (hook.isNotEmpty) {
+              returnValue.add(
+                PM
+                    .executeMethodAsync(
+                      pluginName: _plugin['name'],
+                      methodName: hook['onTrigger']['methodName'],
+                      args: [song],
+                    )
+                    .timeout(
+                      timeout,
+                      onTimeout: () {
+                        getSongYoutubeUrl(song);
+                      },
+                    )
+                    .then((e) {
+                      if (e != null && e['songUrl'] is String && e['songUrl'].isNotEmpty) {
+                        e['source'] = _plugin['name'];
+                        onSuccess(e);
+                      }
+                    })
+                    .catchError((e, stackTrace) {
+                      logger.log('Error in $stackTrace:', e, stackTrace);
+                      return null;
+                    }),
+              );
+            }
+            return returnValue;
+          }).toList();
+      allFutures.addAll([...pluginFutures]);
+      await Future.wait(allFutures).whenComplete(() async {
+        if (song['songUrl'] == null || song['songUrl'].isEmpty) {
+          await getSongYoutubeUrl(song);
+        }
+      });
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    await getSongYoutubeUrl(song);
+  }
+}
+
+Future<String> getSongYoutubeUrl(dynamic song) async {
   try {
     if (song == null) return '';
     if (song['mbid'] == null) unawaited(findMBSong(song));

@@ -31,6 +31,7 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
@@ -508,7 +509,17 @@ class _SongBarState extends State<SongBar> {
             ],
           ),
         ),
+      ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((e) {
+        return e as PopupMenuItem<String>;
+      }),
     ];
+  }
+
+  dynamic _getSongData() {
+    widget.song['album'] = widget.song['album'];
+    widget.song['song'] = widget.song['title'];
+    final data = widget.song;
+    return data;
   }
 
   void _popupMenuItemAction(String value) {

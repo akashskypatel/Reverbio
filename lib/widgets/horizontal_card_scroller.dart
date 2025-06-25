@@ -29,6 +29,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -135,108 +136,100 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
     );
   }
 
-  void _buildCards(BuildContext context) {
-    for (final data in inputData) {
-      final dataType = _parseDataType(data);
-      final isArtist = data['isArtist'] = dataType == 'artist';
-      data['isPlaylist'] = dataType == 'playlist';
-      if ((data['id'] ?? data['ytid']) != null)
-        cards[data['id'] ?? data['ytid']] = BaseCard(
-          inputData: data,
-          icon: widget.icon,
-          size: playlistHeight,
-          showLabel: !isArtist,
-          showOverflowLabel: true,
-          showLike: true,
-          onPressed:
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  settings: RouteSettings(
-                    name: '$dataType?${data['id'] ?? 'yt=${data['ytid']}'}',
-                  ),
-                  builder: (context) {
-                    switch (dataType) {
-                      case 'artist':
-                        return ArtistPage(
-                          page: 'artist',
-                          artistData: data,
-                          navigatorObserver: widget.navigatorObserver,
-                        );
-                      default:
-                        return PlaylistPage(
-                          page: dataType ?? '',
-                          playlistData: data,
-                          navigatorObserver: widget.navigatorObserver,
-                        );
-                    }
-                  },
-                ),
+  BaseCard _buildCard(dynamic data) {
+    final dataType = _parseDataType(data);
+    final isArtist = data['isArtist'] = dataType == 'artist';
+    data['isPlaylist'] = dataType == 'playlist';
+    return BaseCard(
+      inputData: data,
+      icon: widget.icon,
+      size: playlistHeight,
+      showLabel: !isArtist,
+      showOverflowLabel: true,
+      showLike: true,
+      onPressed:
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: RouteSettings(
+                name: '$dataType?${data['id'] ?? 'yt=${data['ytid']}'}',
               ),
-        );
+              builder: (context) {
+                switch (dataType) {
+                  case 'artist':
+                    return ArtistPage(
+                      page: 'artist',
+                      artistData: data,
+                      navigatorObserver: widget.navigatorObserver,
+                    );
+                  default:
+                    return PlaylistPage(
+                      page: dataType ?? '',
+                      playlistData: data,
+                      navigatorObserver: widget.navigatorObserver,
+                    );
+                }
+              },
+            ),
+          ),
+    );
+  }
+
+  List<BaseCard> _buildCards(BuildContext context) {
+    cards.clear();
+    for (final data in inputData) {
+      if ((data['id'] ?? data['ytid']) != null)
+        cards[data['id'] ?? data['ytid']] = _buildCard(data);
     }
+    final cardValues =
+        cards.values.toList()..sort((a, b) {
+          if (a.inputData != null && b.inputData != null)
+            if (_parseDataType(a.inputData) == 'album' &&
+                _parseDataType(b.inputData) == 'album')
+              return (tryParseDate(
+                    a.inputData?['first-release-date'],
+                  ).millisecondsSinceEpoch) -
+                  (tryParseDate(
+                    b.inputData?['first-release-date'],
+                  ).millisecondsSinceEpoch);
+          return 0;
+        });
+    return cardValues;
   }
 
   Widget _buildLargeScreenScroller(BuildContext context) {
-    cards.clear();
-    _buildCards(context);
+    final cardValues = _buildCards(context);
     return ScrollConfiguration(
       behavior: CustomScrollBehavior(),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: cards.values.toList(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ListView(
+            scrollDirection: Axis.horizontal,
+            children: cardValues,
+          );
+          /*
+          return CarouselView.weighted(
+            flexWeights: const <int>[3, 2, 1],
+            itemSnapping: true,
+            onTap: (value) => cardValues[value].onPressed?.call(),
+            children: cardValues,
+          );
+          */
+        },
       ),
     );
   }
 
   Widget _buildSmallScreenScroller(BuildContext context) {
-    final itemsNumber =
-        inputData.length > recommendedCardsNumber
-            ? recommendedCardsNumber
-            : inputData.length;
-    return CarouselView.weighted(
-      flexWeights: const <int>[3, 2, 1],
-      itemSnapping: true,
-      children: List.generate(itemsNumber, (index) {
-        final dataType = _parseDataType(inputData[index]);
-        final isArtist = inputData[index]['isArtist'] = dataType == 'artist';
-        inputData[index]['isPlaylist'] = dataType == 'playlist';
-        return BaseCard(
-          inputData: inputData[index],
-          icon: widget.icon,
-          size: playlistHeight,
-          showLabel: !isArtist,
-          showLike: true,
-          showOverflowLabel: true,
-          onPressed:
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  settings: RouteSettings(
-                    name:
-                        '$dataType?${inputData[index]['id'] ?? 'yt=${inputData[index]['ytid']}'}',
-                  ),
-                  builder: (context) {
-                    final dataType = _parseDataType(inputData[index]);
-                    switch (dataType) {
-                      case 'artist':
-                        return ArtistPage(
-                          page: 'artist',
-                          artistData: inputData[index],
-                          navigatorObserver: widget.navigatorObserver,
-                        );
-                      default:
-                        return PlaylistPage(
-                          page: dataType ?? '',
-                          playlistData: inputData[index],
-                          navigatorObserver: widget.navigatorObserver,
-                        );
-                    }
-                  },
-                ),
-              ),
-        );
-      }),
+    final cardValues = _buildCards(context);
+    return ScrollConfiguration(
+      behavior: CustomScrollBehavior(),
+      child: CarouselView.weighted(
+        flexWeights: const <int>[3, 2, 1],
+        itemSnapping: true,
+        onTap: (value) => cardValues[value].onPressed?.call(),
+        children: cardValues,
+      ),
     );
   }
 }

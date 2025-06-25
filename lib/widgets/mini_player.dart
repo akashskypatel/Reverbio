@@ -217,7 +217,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                       try {
                         final artistData =
                             widget.metadata.extras?['artistId'] != null
-                                ? await getArtistDetailsById(
+                                ? await getArtistDetails(
                                   widget.metadata.extras?['artistId']!,
                                 )
                                 : await searchArtistDetails(

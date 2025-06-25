@@ -28,6 +28,7 @@ import 'package:reverbio/API/Reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 List userLikedArtistsList = Hive.box(
@@ -38,7 +39,7 @@ List cachedArtistsList = Hive.box(
   'cache',
 ).get('cachedArtists', defaultValue: []);
 
-late final ValueNotifier<int> currentLikedArtistsLength;
+final ValueNotifier<int> currentLikedArtistsLength = ValueNotifier<int>(userLikedArtistsList.length);
 
 /// Returns current liked status if successful.
 Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
@@ -52,6 +53,14 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
         'primary-type': 'artist',
       });
       currentLikedArtistsLength.value++;
+      for (final plugin in PM.plugins) {
+        final hook = PM.getHooks(plugin['name'])['onEntityLiked'];
+        PM.queueBackground(
+          pluginName: plugin['name'],
+          methodName: hook['onTrigger']['methodName'],
+          args: [artist],
+        );
+      }
     } else {
       userLikedArtistsList.removeWhere((value) => value['id'] == artist['id']);
       currentLikedArtistsLength.value--;
@@ -67,7 +76,7 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
 bool isArtistAlreadyLiked(artistIdToCheck) =>
     userLikedArtistsList.any((artist) => artist['id'] == artistIdToCheck);
 
-Future<dynamic> getArtistDetailsById(String id) async {
+Future<dynamic> getArtistDetails(String id) async {
   try {
     dynamic ids;
     if (id.contains(RegExp(r'(yt\=|mb\=|dc\=)'))) {
@@ -135,11 +144,11 @@ Future<dynamic> getRecommendedArtists(
   List<String> query,
   int itemsNumber,
 ) async {
-  await getArtistsDetails(query, limit: itemsNumber, paginated: true);
+  await searchArtistsDetails(query, limit: itemsNumber, paginated: true);
   return pickRandomItems(cachedArtistsList, itemsNumber);
 }
 
-Future<dynamic> getArtistsDetails(
+Future<dynamic> searchArtistsDetails(
   List<String> query, {
   bool exact = true,
   int limit = 100,
@@ -360,13 +369,14 @@ Future<dynamic> _getArtistDetailsMB(
   bool paginated = false,
 }) async {
   try {
+    final stopwatch = Stopwatch()..start();
     final res = await mb.artists.search(
       query,
       limit: limit,
       offset: offset,
       paginated: paginated,
     );
-
+    stopwatch.stop();
     final _results =
         exact
             ? List<dynamic>.from(res['artists']).where((e) => e['score'] == 100)
@@ -393,6 +403,7 @@ Future<dynamic> _getArtistDetailsMB(
       });
       final result =
           exact ? sorted.where((e) => e.score.isNearlyZero()) : sorted;
+
       final inc = [
         'release-groups',
         'aliases',
@@ -402,6 +413,9 @@ Future<dynamic> _getArtistDetailsMB(
         'release-group-rels',
         'url-rels',
       ];
+      stopwatch
+        ..reset()
+        ..start();
       if (result.isNotEmpty)
         if (exact) {
           final artistId =
@@ -409,12 +423,14 @@ Future<dynamic> _getArtistDetailsMB(
                 (e) => e['id'] == result.first.item['id'],
               )['id'];
           final finalResult = await mb.artists.get(artistId, inc: inc);
+          //TODO optimize
           return [finalResult];
         } else {
           final finalResult = [];
           for (final artist in result) {
             finalResult.add(await mb.artists.get(artist.item['id'], inc: inc));
           }
+          //TODO optimize
           return finalResult;
         }
     }

@@ -265,9 +265,7 @@ class _BaseCardState extends State<BaseCard> {
       valueListenable: isLikedNotifier,
       builder: (context, value, child) {
         final liked =
-            value
-                ? FluentIcons.heart_12_filled
-                : FluentIcons.heart_12_regular;
+            value ? FluentIcons.heart_12_filled : FluentIcons.heart_12_regular;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
           child: Align(
@@ -368,24 +366,54 @@ class _BaseCardState extends State<BaseCard> {
       constraints: BoxConstraints(minWidth: artistHeight, minHeight: 44),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        child: Text(
-          widget.inputData == null
-              ? ''
-              : widget.inputData?['title'] ??
-                  widget.inputData?['artist'] ??
-                  widget.inputData?['name'],
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.secondary,
-            fontSize: 13,
-            fontFamily: 'montserrat',
-            fontVariations: [const FontVariation('wght', 300)],
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
-          softWrap: true,
+        child: Column(
+          children: [
+            Text(
+              widget.inputData == null ? '' : _getCardTitle(),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontSize: 13,
+                fontFamily: 'montserrat',
+                fontVariations: [const FontVariation('wght', 300)],
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: _getCardSubTitle().isEmpty ? 2 : 1,
+              softWrap: true,
+            ),
+            if (_getCardSubTitle().isNotEmpty)
+              Text(
+                widget.inputData == null ? '' : _getCardSubTitle(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
+                  fontSize: 13,
+                  fontFamily: 'montserrat',
+                  fontVariations: [const FontVariation('wght', 300)],
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                softWrap: true,
+              ),
+          ],
         ),
       ),
     );
+  }
+
+  String _getCardTitle() {
+    return widget.inputData?['title'] ??
+        widget.inputData?['artist'] ??
+        widget.inputData?['name'];
+  }
+
+  String _getCardSubTitle() {
+    String title = '';
+    if (widget.inputData?['first-release-date'] != null)
+      title =
+          '(${tryParseDate(widget.inputData?['first-release-date']).year}${tryParseDate(widget.inputData?['first-release-date']).isAfter(DateTime.now()) ? ' upcoming)' : ')'}';
+    else
+      title = '';
+    return title;
   }
 }
