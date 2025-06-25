@@ -90,7 +90,7 @@ class _AboutPageState extends State<AboutPage> with RouteAware {
                   ),
                 ),
                 title: const Text(
-                  'Akashy Patel',
+                  'Akash Patel',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text('Software & Game Developer'),
