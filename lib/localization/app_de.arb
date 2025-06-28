@@ -165,5 +165,15 @@
   "defaults": "Standardeinstellungen",
   "openInYouTube": "In YouTube öffnen",
   "clearFilters": "Filter löschen",
-  "invalidPluginWidget": "Ungültiges Plugin-Widget"
+  "invalidPluginWidget": "Ungültiges Plugin-Widget",
+  "cannotSyncPlugin": "Plugin kann nicht synchronisiert werden, während Hintergrundjobs ausgeführt werden.",
+  "cannotRemovePlugin": "Plugin kann nicht entfernt werden, während Hintergrundjobs ausgeführt werden.",
+  "cannotRunAction": "Eine weitere Plugin-Aktion kann nicht ausgeführt werden, während Hintergrundjobs ausgeführt werden.",
+  "waitForJob": "Bitte warten Sie, bis die Jobs abgeschlossen sind, oder brechen Sie die Jobs ab.",
+  "runtimeError": "Es ist ein Laufzeitfehler aufgetreten.",
+  "jobError": "Fehler im Hintergrundjob",
+  "failed": "fehlgeschlagen",
+  "operationPerformed": "Eine Operation wurde durchgeführt",
+  "backgroundJobs": "Hintergrundjobs",
+  "nothingInQueue": "Nichts in der Warteschlange"
 }

@@ -165,5 +165,15 @@
   "defaults": "Ustawienia domyślne",
   "openInYouTube": "Otwórz w YouTube",
   "clearFilters": "Wyczyść filtry",
-  "invalidPluginWidget": "Nieprawidłowy widget wtyczki"
+  "invalidPluginWidget": "Nieprawidłowy widget wtyczki",
+  "cannotSyncPlugin": "Nie można synchronizować wtyczki podczas wykonywania zadań w tle.",
+  "cannotRemovePlugin": "Nie można usunąć wtyczki podczas wykonywania zadań w tle.",
+  "cannotRunAction": "Nie można uruchomić innej akcji wtyczki podczas wykonywania zadań w tle.",
+  "waitForJob": "Poczekaj na zakończenie zadań lub anuluj je.",
+  "runtimeError": "Wystąpił błąd wykonania.",
+  "jobError": "Błąd w zadaniu w tle",
+  "failed": "nieudane",
+  "operationPerformed": "Wykonano operację",
+  "backgroundJobs": "Zadania w tle",
+  "nothingInQueue": "Nic w kolejce"
 }

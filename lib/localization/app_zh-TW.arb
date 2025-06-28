@@ -165,5 +165,15 @@
   "defaults": "預設值",
   "openInYouTube": "在YouTube開啟",
   "clearFilters": "清除篩選條件",
-  "invalidPluginWidget": "無效外掛程式小工具"
+  "invalidPluginWidget": "無效外掛程式小工具",
+  "cannotSyncPlugin": "背景工作進行中無法同步插件。",
+  "cannotRemovePlugin": "背景工作進行中無法移除插件。",
+  "cannotRunAction": "背景工作進行中無法執行其他插件操作。",
+  "waitForJob": "請等待工作完成或取消工作。",
+  "runtimeError": "發生運行時錯誤。",
+  "jobError": "背景工作錯誤",
+  "failed": "失敗",
+  "operationPerformed": "執行了操作",
+  "backgroundJobs": "背景工作",
+  "nothingInQueue": "隊列中沒有內容"
 }

@@ -165,5 +165,15 @@
   "defaults": "Pengaturan Bawaan",
   "openInYouTube": "Buka di YouTube",
   "clearFilters": "Hapus filter",
-  "invalidPluginWidget": "Widget plugin tidak valid"
+  "invalidPluginWidget": "Widget plugin tidak valid",
+  "cannotSyncPlugin": "Tidak dapat menyinkronkan plugin saat pekerjaan latar belakang sedang berlangsung.",
+  "cannotRemovePlugin": "Tidak dapat menghapus plugin saat pekerjaan latar belakang sedang berlangsung.",
+  "cannotRunAction": "Tidak dapat menjalankan aksi plugin lain saat pekerjaan latar belakang sedang berlangsung.",
+  "waitForJob": "Harap tunggu hingga pekerjaan selesai atau batalkan pekerjaan.",
+  "runtimeError": "Terjadi kesalahan runtime.",
+  "jobError": "Kesalahan dalam pekerjaan latar belakang",
+  "failed": "gagal",
+  "operationPerformed": "Melakukan operasi",
+  "backgroundJobs": "Pekerjaan Latar Belakang",
+  "nothingInQueue": "Tidak ada dalam antrian"
 }

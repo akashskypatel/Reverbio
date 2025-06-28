@@ -165,5 +165,15 @@
   "defaults": "默认值",
   "openInYouTube": "在YouTube打开",
   "clearFilters": "清除筛选条件",
-  "invalidPluginWidget": "无效插件小工具"
+  "invalidPluginWidget": "无效插件小工具",
+  "cannotSyncPlugin": "后台任务进行时无法同步插件。",
+  "cannotRemovePlugin": "后台任务进行时无法移除插件。",
+  "cannotRunAction": "后台任务进行时无法执行其他插件操作。",
+  "waitForJob": "请等待任务完成或取消任务。",
+  "runtimeError": "发生运行时错误。",
+  "jobError": "后台任务错误",
+  "failed": "失败",
+  "operationPerformed": "执行了操作",
+  "backgroundJobs": "后台任务",
+  "nothingInQueue": "队列中无内容"
 }

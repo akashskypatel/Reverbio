@@ -165,5 +165,15 @@
   "defaults": "Valores predeterminados",
   "openInYouTube": "Abrir en YouTube",
   "clearFilters": "Borrar filtros",
-  "invalidPluginWidget": "Widget de plugin no válido"
+  "invalidPluginWidget": "Widget de plugin no válido",
+  "cannotSyncPlugin": "No se puede sincronizar el complemento mientras hay trabajos en segundo plano en progreso.",
+  "cannotRemovePlugin": "No se puede eliminar el complemento mientras hay trabajos en segundo plano en progreso.",
+  "cannotRunAction": "No se puede ejecutar otra acción del complemento mientras hay trabajos en segundo plano en progreso.",
+  "waitForJob": "Espere a que finalicen los trabajos o cancélelos.",
+  "runtimeError": "Se produjo un error en tiempo de ejecución.",
+  "jobError": "Error en el trabajo en segundo plano",
+  "failed": "fallido",
+  "operationPerformed": "Realizó una operación",
+  "backgroundJobs": "Trabajos en segundo plano",
+  "nothingInQueue": "Nada en cola"
 }

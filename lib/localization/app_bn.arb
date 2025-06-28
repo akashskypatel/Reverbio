@@ -165,5 +165,15 @@
   "defaults": "ডিফল্টসমূহ",
   "openInYouTube": "ইউটিউবে খুলুন",
   "clearFilters": "ফিল্টার সাফ করুন",
-  "invalidPluginWidget": "অবৈধ প্লাগইন উইজেট"
+  "invalidPluginWidget": "অবৈধ প্লাগইন উইজেট",
+  "cannotSyncPlugin": "পটভূমিতে কাজ চলাকালীন প্লাগইন সিঙ্ক করা যাবে না।",
+  "cannotRemovePlugin": "পটভূমিতে কাজ চলাকালীন প্লাগইন সরানো যাবে না।",
+  "cannotRunAction": "পটভূমিতে কাজ চলাকালীন অন্য প্লাগইন ক্রিয়া চালানো যাবে না।",
+  "waitForJob": "দয়া করে কাজ শেষ হওয়ার জন্য অপেক্ষা করুন বা কাজগুলি বাতিল করুন।",
+  "runtimeError": "রানটাইম ত্রুটি হয়েছে।",
+  "jobError": "পটভূমি কাজে ত্রুটি",
+  "failed": "ব্যর্থ",
+  "operationPerformed": "একটি অপারেশন সম্পাদিত হয়েছে",
+  "backgroundJobs": "পটভূমি কাজ",
+  "nothingInQueue": "কিউতে কিছু নেই"
 }

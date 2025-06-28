@@ -165,5 +165,15 @@
   "defaults": "Paramètres par défaut",
   "openInYouTube": "Ouvrir dans YouTube",
   "clearFilters": "Effacer les filtres",
-  "invalidPluginWidget": "Widget de plugin invalide"
+  "invalidPluginWidget": "Widget de plugin invalide",
+  "cannotSyncPlugin": "Impossible de synchroniser le plugin pendant que des tâches d'arrière-plan sont en cours.",
+  "cannotRemovePlugin": "Impossible de supprimer le plugin pendant que des tâches d'arrière-plan sont en cours.",
+  "cannotRunAction": "Impossible d'exécuter une autre action du plugin pendant que des tâches d'arrière-plan sont en cours.",
+  "waitForJob": "Veuillez attendre que les tâches se terminent ou les annuler.",
+  "runtimeError": "Une erreur d'exécution s'est produite.",
+  "jobError": "Erreur dans la tâche d'arrière-plan",
+  "failed": "échoué",
+  "operationPerformed": "A effectué une opération",
+  "backgroundJobs": "Tâches d'arrière-plan",
+  "nothingInQueue": "Rien dans la file d'attente"
 }

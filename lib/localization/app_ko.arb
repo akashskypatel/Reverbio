@@ -165,5 +165,15 @@
   "defaults": "기본 설정",
   "openInYouTube": "YouTube에서 열기",
   "clearFilters": "필터 지우기",
-  "invalidPluginWidget": "잘못된 플러그인 위젯"
+  "invalidPluginWidget": "잘못된 플러그인 위젯",
+  "cannotSyncPlugin": "백그라운드 작업이 진행 중일 때는 플러그인을 동기화할 수 없습니다.",
+  "cannotRemovePlugin": "백그라운드 작업이 진행 중일 때는 플러그인을 제거할 수 없습니다.",
+  "cannotRunAction": "백그라운드 작업이 진행 중일 때는 다른 플러그인 작업을 실행할 수 없습니다.",
+  "waitForJob": "작업이 완료될 때까지 기다리거나 작업을 취소하십시오.",
+  "runtimeError": "런타임 오류가 발생했습니다.",
+  "jobError": "백그라운드 작업 오류",
+  "failed": "실패",
+  "operationPerformed": "작업을 수행했습니다",
+  "backgroundJobs": "백그라운드 작업",
+  "nothingInQueue": "대기열에 아무것도 없음"
 }

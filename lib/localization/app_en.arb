@@ -165,5 +165,15 @@
   "defaults": "Defaults",
   "openInYouTube": "Open in YouTube",
   "clearFilters": "Clear filters",
-  "invalidPluginWidget": "Invalid plugin widget"
+  "invalidPluginWidget": "Invalid plugin widget",
+  "cannotSyncPlugin": "Cannot sync plugin while background jobs in progress.",
+  "cannotRemovePlugin": "Cannot remove plugin while background jobs in progress.",
+  "cannotRunAction": "Cannot run another plugin action while background jobs in progress.",
+  "waitForJob": "Please wait for jobs to finish or cancel the jobs.",
+  "runtimeError": "There was a runtime error.",
+  "jobError": "Error in background job",
+  "failed": "failed",
+  "operationPerformed": "Performed an operation",
+  "backgroundJobs": "Background Jobs",
+  "nothingInQueue": "Nothing in queue"
 }

@@ -165,5 +165,15 @@
   "defaults": "Predefiniti",
   "openInYouTube": "Apri in YouTube",
   "clearFilters": "Cancella filtri",
-  "invalidPluginWidget": "Widget plugin non valido"
+  "invalidPluginWidget": "Widget plugin non valido",
+  "cannotSyncPlugin": "Impossibile sincronizzare il plugin mentre sono in corso operazioni in background.",
+  "cannotRemovePlugin": "Impossibile rimuovere il plugin mentre sono in corso operazioni in background.",
+  "cannotRunAction": "Impossibile eseguire un'altra azione del plugin mentre sono in corso operazioni in background.",
+  "waitForJob": "Attendere il completamento dei lavori o annullarli.",
+  "runtimeError": "Si è verificato un errore di runtime.",
+  "jobError": "Errore nel lavoro in background",
+  "failed": "fallito",
+  "operationPerformed": "Eseguita un'operazione",
+  "backgroundJobs": "Lavori in background",
+  "nothingInQueue": "Niente in coda"
 }

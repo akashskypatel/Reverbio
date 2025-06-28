@@ -165,5 +165,15 @@
   "defaults": "デフォルト設定",
   "openInYouTube": "YouTubeで開く",
   "clearFilters": "フィルターをクリア",
-  "invalidPluginWidget": "無効なプラグインウィジェット"
+  "invalidPluginWidget": "無効なプラグインウィジェット",
+  "cannotSyncPlugin": "バックグラウンドジョブの実行中はプラグインを同期できません。",
+  "cannotRemovePlugin": "バックグラウンドジョブの実行中はプラグインを削除できません。",
+  "cannotRunAction": "バックグラウンドジョブの実行中は他のプラグインアクションを実行できません。",
+  "waitForJob": "ジョブが完了するまでお待ちください、またはジョブをキャンセルしてください。",
+  "runtimeError": "ランタイムエラーが発生しました。",
+  "jobError": "バックグラウンドジョブのエラー",
+  "failed": "失敗",
+  "operationPerformed": "操作を実行しました",
+  "backgroundJobs": "バックグラウンドジョブ",
+  "nothingInQueue": "キューに何もありません"
 }
