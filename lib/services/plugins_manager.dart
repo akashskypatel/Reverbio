@@ -30,9 +30,11 @@ import 'package:flutter_js/flutter_js.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/widget_factory.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -86,7 +88,7 @@ class PluginsManager {
       final context = NavigationManager().context;
       showToast(
         context,
-        'Cannot sync ${_plugin['name']} while background jobs in progress. Please wait for jobs to finish or cancel the jobs.', //TODO: localize
+        '${_plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
       return false;
     }
@@ -264,6 +266,7 @@ class PluginsManager {
 
   static Future<void> _executeBackground(String pluginName) async {
     try {
+      final context = NavigationManager().context;
       if (_futures[pluginName].isEmpty) {
         _activeJob[pluginName] = null;
         _isProcessingNotifiers[pluginName]!.value = false;
@@ -287,7 +290,7 @@ class PluginsManager {
           asyncResult = await jsRuntime.handlePromise(promise);
         } catch (e, stackTrace) {
           _activeJob[pluginName]['result'] = {
-            'message': 'There was a runtime error', //TODO: localize
+            'message': context.l10n!.runtimeError,
           };
           _activeJob[pluginName]['error'] = true;
           _activeJob[pluginName]['completed'] = DateTime.now();
@@ -313,7 +316,7 @@ class PluginsManager {
             final context = NavigationManager().context;
             showToast(
               context,
-              'Error in _executeBackground: ${asyncResult.stringResult}', //TODO: localize
+              '${context.l10n!.jobError}: ${asyncResult.stringResult}',
             );
           }
         }
@@ -481,7 +484,7 @@ class PluginsManager {
         final context = NavigationManager().context;
         showToast(
           context,
-          'Cannot remove plugin while background jobs in progress. Please wait for jobs to finish or cancel the jobs.', //TODO: localize
+          '${context.l10n!.cannotRemovePlugin} ${context.l10n!.waitForJob}',
         );
         return;
       }
@@ -549,7 +552,7 @@ class PluginsManager {
     try {
       final context = NavigationManager().context;
       if (result == null) {
-        showToast(context, '$pluginName: $message failed.'); //TODO: localize
+        showToast(context, '$pluginName: $message ${context.l10n!.failed}.');
         return;
       }
       final jsResult = tryDecode(result.stringResult);
@@ -557,7 +560,8 @@ class PluginsManager {
           jsResult == null
               ? '$pluginName: ${result.stringResult}'
               : jsResult['message'] == null
-              ? message ?? '$pluginName performed an operation' //TODO: localize
+              ? message ??
+                  '$pluginName ${context.l10n!.operationPerformed}'
               : '$pluginName: ${jsResult['message']}';
       showToast(context, text);
     } catch (e, stackTrace) {
@@ -671,7 +675,7 @@ class PluginsManager {
         builder:
             (context, constraints) => Column(
               children: [
-                const SectionHeader(title: 'Settings'), //TODO: localize
+                SectionHeader(title: context.l10n!.settings),
                 Flexible(
                   flex: 3,
                   child: SingleChildScrollView(
@@ -679,7 +683,7 @@ class PluginsManager {
                     child: WF.getAllSettingsWidgets(pluginName, widgets),
                   ),
                 ),
-                const SectionHeader(title: 'Background Jobs'), //TODO: localize
+                SectionHeader(title: context.l10n!.backgroundJobs),
                 Flexible(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -750,9 +754,11 @@ class PluginsManager {
                           children:
                               items.isEmpty
                                   ? [
-                                    const Card(
+                                    Card(
                                       child: ListTile(
-                                        title: Text('Nothing in queue'), //TODO: localize
+                                        title: Text(
+                                          context.l10n!.nothingInQueue,
+                                        ),
                                       ),
                                     ),
                                   ]
@@ -909,7 +915,7 @@ class PluginsManager {
         final context = NavigationManager().context;
         showToast(
           context,
-          'Cannot run another plugin action while background jobs in progress. Please wait for jobs to finish or cancel the jobs.', //TODO: localize
+          '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
         );
         return;
       }
@@ -942,7 +948,7 @@ class PluginsManager {
         final context = NavigationManager().context;
         showToast(
           context,
-          'Cannot run another plugin action while background jobs in progress. Please wait for jobs to finish or cancel the jobs.', //TODO: localize
+          '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
         );
         return;
       }
@@ -962,6 +968,94 @@ class PluginsManager {
         stackTrace,
       );
       return null;
+    }
+  }
+
+  static void onEntityLiked(dynamic entity) async {
+    if (!pluginsSupport.value || plugins.isEmpty) return;
+    for (final plugin in plugins) {
+      final hook = getHooks(plugin['name'])['onEntityLiked'];
+      queueBackground(
+        pluginName: plugin['name'],
+        methodName: hook['onTrigger']['methodName'],
+        args: [entity],
+      );
+    }
+  }
+
+  static Future<void> getSongUrl(dynamic song, Function fallback) async {
+    if (!pluginsSupport.value || plugins.isEmpty) return await fallback(song);
+    const timeout = Duration(seconds: 5);
+    final allFutures = <Future>[];
+    void onSuccess(dynamic result) {
+      var songUrl = '';
+      //if (result['stream'] != null && result['stream']['error'] == null && result['stream']['liveMP4'] != null) {
+      //songUrl = result['stream']['liveMP4']['full'];
+      //} else if (result['songUrl'] is String) {
+      songUrl = result['songUrl'];
+      //}
+      song['songUrl'] = songUrl;
+      song['isError'] = songUrl.isEmpty;
+      song['error'] =
+          songUrl.isNotEmpty
+              ? null
+              : 'Could not find any streams for this song.';
+      //song['source'] = null;
+      for (final f in allFutures) {
+        f.ignore();
+      }
+    }
+
+    try {
+      song['song'] = song['title'];
+      if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
+        song['songUrl'] = null;
+        final pluginFutures =
+            plugins.fold([], (returnValue, _plugin) {
+              final hook = getHooks(_plugin['name'])['onGetSongUrl'];
+              if (hook.isNotEmpty) {
+                returnValue.add(
+                  executeMethodAsync(
+                        pluginName: _plugin['name'],
+                        methodName: hook['onTrigger']['methodName'],
+                        args: [song],
+                      )
+                      .timeout(
+                        timeout,
+                        onTimeout: () {
+                          fallback(song);
+                        },
+                      )
+                      .then((e) {
+                        if (e != null &&
+                            e['songUrl'] is String &&
+                            e['songUrl'].isNotEmpty) {
+                          e['source'] = _plugin['name'];
+                          onSuccess(e);
+                        }
+                      })
+                      .catchError((e, stackTrace) {
+                        logger.log('Error in $stackTrace:', e, stackTrace);
+                        return null;
+                      }),
+                );
+              }
+              return returnValue;
+            }).toList();
+        allFutures.addAll([...pluginFutures]);
+        await Future.wait(allFutures).whenComplete(() async {
+          if (song['songUrl'] == null || song['songUrl'].isEmpty) {
+            await fallback(song);
+          }
+        });
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      await fallback(song);
     }
   }
 

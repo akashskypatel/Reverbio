@@ -78,7 +78,7 @@ Future<List<String>> getSearchSuggestions(String query) async {
   // }
 
   // Built-in implementation:
-
+  
   final suggestions = await yt.search.getQuerySuggestions(query);
 
   return suggestions;

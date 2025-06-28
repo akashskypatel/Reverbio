@@ -28,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
@@ -72,12 +73,22 @@ class SongBar extends StatefulWidget {
 
   ///Returns false if song cannot play
   Future<bool> queueSong({bool play = false}) async {
-    _isLoadingNotifier.value = true;
-    if (!isPrimed) unawaited(primeSong());
-    if (play) await _songFutureTracker.completer!.future;
-    if (!isError) await audioHandler.queueSong(songBar: this, play: play);
-    _isLoadingNotifier.value = false;
-    _isErrorNotifier.value = isError;
+    try {
+      _isLoadingNotifier.value = true;
+      if (!isPrimed) unawaited(primeSong());
+      if (play) await _songFutureTracker.completer!.future;
+      if (!isError) await audioHandler.queueSong(songBar: this, play: play);
+      _isLoadingNotifier.value = false;
+      _isErrorNotifier.value = isError;
+    } catch (e, stackTrace) {
+      _isLoadingNotifier.value = false;
+      _isErrorNotifier.value = true;
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
     return !isError;
   }
 
@@ -154,7 +165,9 @@ class _SongBarState extends State<SongBar> {
                 },
             child: Card(
               color: widget.backgroundColor,
-              shape: RoundedRectangleBorder(borderRadius: widget._borderRadiusNotifier.value),
+              shape: RoundedRectangleBorder(
+                borderRadius: widget._borderRadiusNotifier.value,
+              ),
               margin: const EdgeInsets.only(bottom: 3),
               child: Padding(
                 padding: commonBarContentPadding,

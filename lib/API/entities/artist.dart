@@ -39,7 +39,9 @@ List cachedArtistsList = Hive.box(
   'cache',
 ).get('cachedArtists', defaultValue: []);
 
-final ValueNotifier<int> currentLikedArtistsLength = ValueNotifier<int>(userLikedArtistsList.length);
+final ValueNotifier<int> currentLikedArtistsLength = ValueNotifier<int>(
+  userLikedArtistsList.length,
+);
 
 /// Returns current liked status if successful.
 Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
@@ -53,14 +55,7 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
         'primary-type': 'artist',
       });
       currentLikedArtistsLength.value++;
-      for (final plugin in PM.plugins) {
-        final hook = PM.getHooks(plugin['name'])['onEntityLiked'];
-        PM.queueBackground(
-          pluginName: plugin['name'],
-          methodName: hook['onTrigger']['methodName'],
-          args: [artist],
-        );
-      }
+      PM.onEntityLiked(artist);
     } else {
       userLikedArtistsList.removeWhere((value) => value['id'] == artist['id']);
       currentLikedArtistsLength.value--;

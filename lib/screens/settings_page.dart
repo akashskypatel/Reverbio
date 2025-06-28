@@ -19,6 +19,8 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -114,7 +116,6 @@ class _SettingsPageState extends State<SettingsPage> with RouteAware {
         CustomBar(
           context.l10n!.accentColor,
           FluentIcons.color_24_filled,
-          borderRadius: commonCustomBarRadiusFirst,
           onTap: () => _showAccentColorPicker(context),
         ),
         CustomBar(

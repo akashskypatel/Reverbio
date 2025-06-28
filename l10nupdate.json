@@ -1,11 +1,9 @@
-/* 
+/*
 {
     "translations": {
       "key": {
-        "languageCode": "translation",
-        ...
-      },
-      ...
+        "languageCode": "translation"
+      }
     }
 } 
 */

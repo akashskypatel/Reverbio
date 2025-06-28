@@ -47,10 +47,18 @@ List userOfflineSongs = Hive.box(
   'userNoBackup',
 ).get('offlineSongs', defaultValue: []);
 
-final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(userLikedSongsList.length);
-final ValueNotifier<int> currentOfflineSongsLength = ValueNotifier<int>(userOfflineSongs.length);
-final ValueNotifier<int> currentRecentlyPlayedLength = ValueNotifier<int>(userRecentlyPlayed.length);
-final ValueNotifier<int> activeQueueLength = ValueNotifier<int>(audioHandler.queueSongBars.length);
+final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(
+  userLikedSongsList.length,
+);
+final ValueNotifier<int> currentOfflineSongsLength = ValueNotifier<int>(
+  userOfflineSongs.length,
+);
+final ValueNotifier<int> currentRecentlyPlayedLength = ValueNotifier<int>(
+  userRecentlyPlayed.length,
+);
+final ValueNotifier<int> activeQueueLength = ValueNotifier<int>(
+  audioHandler.queueSongBars.length,
+);
 
 int activeSongId = 0;
 
@@ -121,14 +129,7 @@ Future<void> updateSongLikeStatus(dynamic songId, bool add) async {
     userLikedSongsList.add(song);
     currentLikedSongsLength.value++;
     song['song'] = song['title'];
-    for (final plugin in PM.plugins) {
-      final hook = PM.getHooks(plugin['name'])['onEntityLiked'];
-      PM.queueBackground(
-        pluginName: plugin['name'],
-        methodName: hook['onTrigger']['methodName'],
-        args: [song],
-      );
-    }
+    PM.onEntityLiked(song);
   } else {
     userLikedSongsList.removeWhere((song) => song['id'] == songId);
     currentLikedSongsLength.value--;
@@ -392,71 +393,7 @@ Future<AudioOnlyStreamInfo> getSongManifest(String songId) async {
 const Duration _cacheDuration = Duration(hours: 3);
 
 Future<void> getSongUrl(dynamic song) async {
-  const timeout = Duration(seconds: 5);
-  final allFutures = <Future>[];
-  void onSuccess(dynamic result) {
-    var songUrl = '';
-    //if (result['stream'] != null && result['stream']['error'] == null && result['stream']['liveMP4'] != null) {
-    //songUrl = result['stream']['liveMP4']['full'];
-    //} else if (result['songUrl'] is String) {
-    songUrl = result['songUrl'];
-    //}
-    song['songUrl'] = songUrl;
-    song['isError'] = songUrl.isEmpty;
-    song['error'] =
-        songUrl.isNotEmpty ? null : 'Could not find any streams for this song.';
-    //song['source'] = null;
-    for (final f in allFutures) {
-      f.ignore();
-    }
-  }
-
-  try {
-    song['song'] = song['title'];
-    if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
-      song['songUrl'] = null;
-      final pluginFutures =
-          PM.plugins.fold([], (returnValue, _plugin) {
-            final hook = PM.getHooks(_plugin['name'])['onGetSongUrl'];
-            if (hook.isNotEmpty) {
-              returnValue.add(
-                PM
-                    .executeMethodAsync(
-                      pluginName: _plugin['name'],
-                      methodName: hook['onTrigger']['methodName'],
-                      args: [song],
-                    )
-                    .timeout(
-                      timeout,
-                      onTimeout: () {
-                        getSongYoutubeUrl(song);
-                      },
-                    )
-                    .then((e) {
-                      if (e != null && e['songUrl'] is String && e['songUrl'].isNotEmpty) {
-                        e['source'] = _plugin['name'];
-                        onSuccess(e);
-                      }
-                    })
-                    .catchError((e, stackTrace) {
-                      logger.log('Error in $stackTrace:', e, stackTrace);
-                      return null;
-                    }),
-              );
-            }
-            return returnValue;
-          }).toList();
-      allFutures.addAll([...pluginFutures]);
-      await Future.wait(allFutures).whenComplete(() async {
-        if (song['songUrl'] == null || song['songUrl'].isEmpty) {
-          await getSongYoutubeUrl(song);
-        }
-      });
-    }
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    await getSongYoutubeUrl(song);
-  }
+  await PM.getSongUrl(song, getSongYoutubeUrl);
 }
 
 Future<String> getSongYoutubeUrl(dynamic song) async {
@@ -467,13 +404,14 @@ Future<String> getSongYoutubeUrl(dynamic song) async {
       song.addAll(Map<String, dynamic>.from(await findYTSong(song)));
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song['ytid']));
-      final songUrl = await getYouTubeAudioUrl(song['ytid']);
-      final uri = Uri.parse(songUrl);
-      final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-      song['songUrl'] = songUrl;
-      song['songUrlExpire'] = expires;
-      song['isError'] = false;
-      song['source'] = 'youtube';
+      song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
+      if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
+        final uri = Uri.parse(song['songUrl']);
+        final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+        song['songUrlExpire'] = expires;
+        song['isError'] = false;
+        song['source'] = 'youtube';
+      }
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
       song['error'] = 'Could not find YoutTube stream for this song.';
@@ -488,35 +426,41 @@ Future<String> getSongYoutubeUrl(dynamic song) async {
     }
     return song['songUrl'];
   } catch (e, stackTrace) {
+    song['error'] = 'Song url could not be resolved.';
+    song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return '';
   }
 }
 
-Future<String> getYouTubeAudioUrl(String songId) async {
-  final qualitySetting = audioQualitySetting.value;
-  final cacheKey = 'song_${songId}_${qualitySetting}_url';
+Future<String?> getYouTubeAudioUrl(String songId) async {
+  try {
+    final qualitySetting = audioQualitySetting.value;
+    final cacheKey = 'song_${songId}_${qualitySetting}_url';
 
-  final cachedUrl = await getData(
-    'cache',
-    cacheKey,
-    cachingDuration: _cacheDuration,
-  );
+    final cachedUrl = await getData(
+      'cache',
+      cacheKey,
+      cachingDuration: _cacheDuration,
+    );
 
-  if (cachedUrl != null) {
-    final uri = Uri.parse(cachedUrl);
-    final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    //add 5 second grace
-    if (expires > (now + 5))
-      if (await checkUrl(cachedUrl) < 400) return cachedUrl;
+    if (cachedUrl != null) {
+      final uri = Uri.parse(cachedUrl);
+      final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      //add 5 second grace
+      if (expires > (now + 5))
+        if (await checkUrl(cachedUrl) < 400) return cachedUrl;
+    }
+    final manifest = await yt.videos.streamsClient.getManifest(songId);
+    final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
+    final audioUrl = audioQuality.url.toString();
+
+    return audioUrl;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
   }
-
-  final manifest = await yt.videos.streamsClient.getManifest(songId);
-  final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
-  final audioUrl = audioQuality.url.toString();
-
-  return audioUrl;
 }
 
 Future<Map<String, dynamic>> getSongDetails(

@@ -38,7 +38,9 @@ List userLikedAlbumsList = Hive.box(
 
 List cachedAlbumsList = Hive.box('cache').get('cachedAlbums', defaultValue: []);
 
-final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(userLikedAlbumsList.length);
+final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(
+  userLikedAlbumsList.length,
+);
 
 dynamic _getCachedAlbum(String id) {
   try {
@@ -303,14 +305,7 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       });
       currentLikedAlbumsLength.value++;
       album['album'] = album['title'];
-      for (final plugin in PM.plugins) {
-        final hook = PM.getHooks(plugin['name'])['onEntityLiked'];
-        PM.queueBackground(
-          pluginName: plugin['name'],
-          methodName: hook['onTrigger']['methodName'],
-          args: [album],
-        );
-      }
+      PM.onEntityLiked(album);
     } else {
       userLikedAlbumsList.removeWhere((value) => value['id'] == album['id']);
       currentLikedAlbumsLength.value--;
