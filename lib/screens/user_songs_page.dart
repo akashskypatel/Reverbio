@@ -21,6 +21,7 @@
 
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -30,13 +31,11 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 
 class UserSongsPage extends StatefulWidget {
@@ -89,12 +88,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         title: Text(title), //offlineMode.value ? Text(title) : null,
         actions: [
           if (title == context.l10n!.queue)
-            Row(
-              children: [
-                _buildQueueActionsList(),
-                const SizedBox(width: 24, height: 24),
-              ],
-            ),
+            Row(children: [_buildQueueActionsList()]),
           if (title == context.l10n!.likedSongs)
             IconButton(
               onPressed: () {
@@ -111,6 +105,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                         : Theme.of(context).colorScheme.primary,
               ),
             ),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: _buildCustomScrollView(title, icon, songsList, length),
@@ -419,7 +414,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         SongList(
           page: widget.page,
           title: getTitle(widget.page, context),
-          isEditable: widget.page == 'queue',
+          isEditable: widget.page == 'queue' || _isEditEnabled,
           inputData: songsList,
         ),
       ],
@@ -545,63 +540,6 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
       inputData: {'title': '$title\n$songsLength Songs'},
       size: size,
       icon: icon,
-    );
-  }
-
-  Widget buildSongList(
-    String title,
-    List songsList,
-    ValueNotifier currentSongsLength,
-  ) {
-    return ValueListenableBuilder(
-      valueListenable: currentSongsLength,
-      builder: (_, value, __) {
-        if (title == context.l10n!.likedSongs) {
-          return SliverReorderableList(
-            itemCount: songsList.length,
-            itemBuilder: (context, index) {
-              final song = songsList[index];
-
-              final borderRadius = getItemBorderRadius(index, songsList.length);
-
-              return ReorderableDragStartListener(
-                enabled: _isEditEnabled,
-                key: Key(song['ytid'].toString()),
-                index: index,
-                child: SongBar(
-                  song,
-                  borderRadius: borderRadius,
-                  showMusicDuration: true,
-                ),
-              );
-            },
-            onReorder: (oldIndex, newIndex) {
-              if (mounted)
-                setState(() {
-                  if (oldIndex < newIndex) {
-                    newIndex -= 1;
-                  }
-                  moveLikedSong(oldIndex, newIndex);
-                });
-            },
-          );
-        } else {
-          return SliverList(
-            delegate: SliverChildBuilderDelegate((
-              BuildContext context,
-              int index,
-            ) {
-              final song = songsList[index];
-              song['isOffline'] = title == context.l10n!.offlineSongs;
-
-              final borderRadius = getItemBorderRadius(index, songsList.length);
-
-              return SongBar(song, borderRadius: borderRadius);
-              // ignore: require_trailing_commas
-            }, childCount: songsList.length),
-          );
-        }
-      },
     );
   }
 }

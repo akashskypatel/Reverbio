@@ -103,6 +103,7 @@ class PlaylistBar extends StatelessWidget {
                         ),
                         builder:
                             (context) => PlaylistPage(
+                              page: 'playlist',
                               playlistData:
                                   playlistData ??
                                   {'title': playlistTitle, 'ytid': playlistId},

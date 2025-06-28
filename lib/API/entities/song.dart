@@ -25,13 +25,14 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
-import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
@@ -46,10 +47,18 @@ List userOfflineSongs = Hive.box(
   'userNoBackup',
 ).get('offlineSongs', defaultValue: []);
 
-late final ValueNotifier<int> currentLikedSongsLength;
-late final ValueNotifier<int> currentOfflineSongsLength;
-late final ValueNotifier<int> currentRecentlyPlayedLength;
-late final ValueNotifier<int> activeQueueLength;
+final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(
+  userLikedSongsList.length,
+);
+final ValueNotifier<int> currentOfflineSongsLength = ValueNotifier<int>(
+  userOfflineSongs.length,
+);
+final ValueNotifier<int> currentRecentlyPlayedLength = ValueNotifier<int>(
+  userRecentlyPlayed.length,
+);
+final ValueNotifier<int> activeQueueLength = ValueNotifier<int>(
+  audioHandler.queueSongBars.length,
+);
 
 int activeSongId = 0;
 
@@ -119,6 +128,8 @@ Future<void> updateSongLikeStatus(dynamic songId, bool add) async {
     final song = await getSongDetails(userLikedSongsList.length, songId);
     userLikedSongsList.add(song);
     currentLikedSongsLength.value++;
+    song['song'] = song['title'];
+    PM.onEntityLiked(song);
   } else {
     userLikedSongsList.removeWhere((song) => song['id'] == songId);
     currentLikedSongsLength.value--;
@@ -154,27 +165,57 @@ void getSimilarSong(String songYtId) async {
   }
 }
 
-Future<dynamic> findYTSong(String songName, String artist) async {
+Future<dynamic> findYTSong(dynamic song) async {
   try {
-    final lcSongName = songName.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    final lcArtist = artist.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    final results = await getSongsList('"$lcArtist" "$lcSongName"');
+    final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
+    final lcSongName = (song['title'] ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(specialRegex, '');
+    final lcArtist = (song['artist'] ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(specialRegex, '');
+    final lcAlbum = (song['album'] ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(specialRegex, '');
+    final results = await getSongsList('"$lcArtist" "$lcSongName" "$lcAlbum"');
     results.sort((a, b) => b['views'].compareTo(a['views']));
     final result =
         results.where((value) {
-          final lcS = value['title'].toString().trim().toLowerCase().replaceAll(
-            RegExp(r'\s+'),
-            ' ',
-          );
-          final lcC = value['channelName']
+          final lcS = sanitizeSongTitle(value['title'] ?? '')
+              .trim()
+              .toLowerCase()
+              .replaceAll(lcArtist, '')
+              .replaceAll(lcAlbum, '')
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .replaceAll(specialRegex, '');
+          final lcC = (value['channelName'] ?? '')
               .toString()
               .trim()
               .toLowerCase()
-              .replaceAll(RegExp(r'\s+'), ' ');
-          final ex =
-              (lcS.contains(lcSongName) && (lcC.contains(lcArtist))) ||
-              (lcS.contains(lcSongName) && lcS.contains(lcArtist));
-          return ex;
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .replaceAll(specialRegex, '');
+          final lcA = (value['artist'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase()
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .replaceAll(specialRegex, '');
+          final isLive = isSongLive(lcArtist, lcAlbum, lcSongName, lcS);
+          final isDerivative = isSongDerivative(
+            lcArtist,
+            lcAlbum,
+            lcSongName,
+            lcS,
+          );
+          final isMatch =
+              (ratio(lcS, lcSongName) >= 90) &&
+              (ratio(lcC, lcArtist) >= 90 ||
+                  ratio(lcA, lcArtist) >= 90 ||
+                  lcS.contains(lcArtist));
+          return isMatch && !isLive && !isDerivative;
         }).toList();
 
     return result.isNotEmpty ? result.first : {};
@@ -214,7 +255,7 @@ Future<dynamic> findMBSong(dynamic song) async {
       RegExp('(official)|(visualizer)|(visualiser)', caseSensitive: false),
       '',
     );
-    final regex = RegExp(r'''[+\-&|!(){}[\]^"~*?:\\']''');
+    final regex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
     final artists = splitArtists(artist);
     Map artistInfo = {};
     String artistId = '';
@@ -351,26 +392,26 @@ Future<AudioOnlyStreamInfo> getSongManifest(String songId) async {
 
 const Duration _cacheDuration = Duration(hours: 3);
 
-Future<String> getSongUrl(dynamic song) async {
+Future<void> getSongUrl(dynamic song) async {
+  await PM.getSongUrl(song, getSongYoutubeUrl);
+}
+
+Future<String> getSongYoutubeUrl(dynamic song) async {
   try {
     if (song == null) return '';
     if (song['mbid'] == null) unawaited(findMBSong(song));
     if (song['ytid'] == null)
-      song.addAll(
-        Map<String, dynamic>.from(
-          await findYTSong(song['title'], song['artist']),
-        ),
-      );
+      song.addAll(Map<String, dynamic>.from(await findYTSong(song)));
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song['ytid']));
-      print('getYouTubeAudioUrl: ${getFormattedDateTimeNow()}');
-      final songUrl = await getYouTubeAudioUrl(song['ytid']);
-      print('getYouTubeAudioUrl: ${getFormattedDateTimeNow()}');
-      final uri = Uri.parse(songUrl);
-      final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-      song['songUrl'] = songUrl;
-      song['songUrlExpire'] = expires;
-      song['isError'] = false;
+      song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
+      if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
+        final uri = Uri.parse(song['songUrl']);
+        final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+        song['songUrlExpire'] = expires;
+        song['isError'] = false;
+        song['source'] = 'youtube';
+      }
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
       song['error'] = 'Could not find YoutTube stream for this song.';
@@ -385,43 +426,40 @@ Future<String> getSongUrl(dynamic song) async {
     }
     return song['songUrl'];
   } catch (e, stackTrace) {
+    song['error'] = 'Song url could not be resolved.';
+    song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return '';
   }
 }
 
-Future<String> getYouTubeAudioUrl(String songId) async {
-  final qualitySetting = audioQualitySetting.value;
-  final cacheKey = 'song_${songId}_${qualitySetting}_url';
-
-  final cachedUrl = await getData(
-    'cache',
-    cacheKey,
-    cachingDuration: _cacheDuration,
-  );
-
-  if (cachedUrl != null) {
-    final uri = Uri.parse(cachedUrl);
-    final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    //add 5 second grace
-    if (expires > (now + 5))
-      if (await checkUrl(cachedUrl) < 400) return cachedUrl;
-  }
-
-  final manifest = await yt.videos.streamsClient.getManifest(songId);
-  final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
-  final audioUrl = audioQuality.url.toString();
-
-  return audioUrl;
-}
-
-Future<int> checkUrl(String url) async {
+Future<String?> getYouTubeAudioUrl(String songId) async {
   try {
-    final response = await http.head(Uri.parse(url));
-    return response.statusCode;
-  } catch (e) {
-    rethrow;
+    final qualitySetting = audioQualitySetting.value;
+    final cacheKey = 'song_${songId}_${qualitySetting}_url';
+
+    final cachedUrl = await getData(
+      'cache',
+      cacheKey,
+      cachingDuration: _cacheDuration,
+    );
+
+    if (cachedUrl != null) {
+      final uri = Uri.parse(cachedUrl);
+      final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      //add 5 second grace
+      if (expires > (now + 5))
+        if (await checkUrl(cachedUrl) < 400) return cachedUrl;
+    }
+    final manifest = await yt.videos.streamsClient.getManifest(songId);
+    final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
+    final audioUrl = audioQuality.url.toString();
+
+    return audioUrl;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
   }
 }
 
@@ -581,4 +619,109 @@ Future<void> updateRecentlyPlayed(dynamic songId) async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
+}
+
+Future<Map<String, String>?> getYtSongAndArtist(String ytid) async {
+  String? songName;
+  String? artistName;
+
+  try {
+    final response = await http.get(
+      Uri.parse('https://www.youtube.com/watch?v=$ytid'),
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      },
+    );
+    final htmlContent = response.body;
+
+    final regex = RegExp(
+      r'(\{"metadataRowRenderer":.*?\})(?=,{"metadataRowRenderer")',
+    );
+    final matches = regex.allMatches(htmlContent);
+
+    final jsonObjects = [];
+    for (final match in matches) {
+      final jsonStr = match.group(1);
+      if (jsonStr != null &&
+          (jsonStr.contains('{"simpleText":"Song"}') ||
+              jsonStr.contains('{"simpleText":"Artist"}'))) {
+        try {
+          jsonObjects.add(json.decode(jsonStr));
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+
+    if (jsonObjects.length == 2) {
+      final songContents = jsonObjects[0]['metadataRowRenderer']['contents'][0];
+      final artistContents =
+          jsonObjects[1]['metadataRowRenderer']['contents'][0];
+
+      songName =
+          songContents.containsKey('runs')
+              ? songContents['runs'][0]['text']
+              : songContents['simpleText'];
+
+      artistName =
+          artistContents.containsKey('runs')
+              ? artistContents['runs'][0]['text']
+              : artistContents['simpleText'];
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
+  }
+  if (songName != null && artistName != null)
+    return {'title': songName, 'artist': artistName};
+
+  return null;
+}
+
+bool isSongLive(String? artist, String? album, String? title, String value) {
+  // Convert to lowercase and remove title/artist
+  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
+  final replaced =
+      value
+          .toLowerCase()
+          .replaceAll(title?.toLowerCase() ?? '', '')
+          .replaceAll(album?.toLowerCase() ?? '', '')
+          .replaceAll(artist?.toLowerCase() ?? '', '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll(specialRegex, '')
+          .trim();
+
+  // Live detection regex
+  final liveRegex = RegExp(
+    r'(\blive\b\s*(?:\bat\b|\@|\bfrom\b|\bin\b|\bon\b|\bperformance\b|\b))|(\bstage\b|\bshow\b|\bconcert\b|\btour\b|\bcover\b|\bperform(?:ance\b|ed\b))',
+    caseSensitive: false,
+  );
+
+  return liveRegex.hasMatch(replaced);
+}
+
+bool isSongDerivative(
+  String? artist,
+  String? album,
+  String? title,
+  String value,
+) {
+  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
+  final replaced =
+      value
+          .toLowerCase()
+          .replaceAll(title?.toLowerCase() ?? '', '')
+          .replaceAll(album?.toLowerCase() ?? '', '')
+          .replaceAll(artist?.toLowerCase() ?? '', '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll(specialRegex, '')
+          .trim();
+
+  final regex = RegExp(
+    r'(\bversion\b|\bacoustic\b|\binstrumental\b|\bre\s?mix(?:\b|es\b|ed\b)|\bcover(?:\b|s\b|ed\b)|\bperform(?:ance\b|ed\b)|\bmashup\b|\bparod(?:y\b|ies\b|ied\b)|\bedit(?:\b|s\b|ed\b))',
+    caseSensitive: false,
+  );
+
+  return regex.hasMatch(replaced);
 }

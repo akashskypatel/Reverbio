@@ -1,4 +1,4 @@
-package com.example.reverbio
+package com.akashskypatel.reverbio
 
 import io.flutter.embedding.android.FlutterActivity
 

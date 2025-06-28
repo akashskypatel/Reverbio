@@ -26,13 +26,15 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/song.dart';
-import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -247,8 +249,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   ReverbioAudioHandler() {
     _setupEventSubscriptions();
     _updatePlaybackState();
-
-    _initialize();
   }
 
   final AudioPlayerService audioPlayer = AudioPlayerService();
@@ -354,12 +354,28 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void _positionDataNotify(PositionData value) {
     positionDataNotifier.value = value;
-    if (positionDataNotifier.value.duration.inSeconds ==
-            positionDataNotifier.value.position.inSeconds &&
-        positionDataNotifier.value.duration.inSeconds !=
-            Duration.zero.inSeconds &&
-        positionDataNotifier.value.position.inSeconds !=
-            Duration.zero.inSeconds)
+    if (positionDataNotifier.value.duration.inMicroseconds ==
+            positionDataNotifier.value.position.inMicroseconds &&
+        positionDataNotifier.value.duration.inMicroseconds !=
+            Duration.zero.inMicroseconds &&
+        positionDataNotifier.value.position.inMicroseconds !=
+            Duration.zero.inMicroseconds) {
+      final song = audioPlayer.songValueNotifier.value?.song;
+      if (song != null && song['skipSegments'].isNotEmpty) {
+        final checkSegment =
+            (song['skipSegments'] as List)
+                .where(
+                  (e) =>
+                      e['start'] <=
+                          positionDataNotifier.value.position.inMicroseconds &&
+                      e['end'] >
+                          positionDataNotifier.value.position.inMicroseconds,
+                )
+                .toList();
+        if (checkSegment.isNotEmpty) {
+          audioPlayer.pause();
+        }
+      }
       switch (repeatNotifier.value) {
         case AudioServiceRepeatMode.one:
           queueSong(songBar: audioPlayer.songValueNotifier.value, play: true);
@@ -368,6 +384,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           skipToNext();
           break;
       }
+    }
   }
 
   void _updatePlaybackState() {
@@ -405,40 +422,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         queueIndex: audioPlayer.currentIndex,
       ),
     );
-  }
-
-  Future<void> _initialize() async {
-    /* final session = await AudioSession.instance;
-    try {
-      await session.configure(const AudioSessionConfiguration.music());
-      session.interruptionEventStream.listen((event) async {
-        if (event.begin) {
-          wasPlayingBeforeCall = audioPlayer.playing;
-          switch (event.type) {
-            case AudioInterruptionType.duck:
-              await audioPlayer.setVolume(0.5);
-              break;
-            case AudioInterruptionType.pause:
-            case AudioInterruptionType.unknown:
-              await audioPlayer.pause();
-              break;
-          }
-        } else {
-          switch (event.type) {
-            case AudioInterruptionType.duck:
-              await audioPlayer.setVolume(1);
-              break;
-            case AudioInterruptionType.pause:
-              if (wasPlayingBeforeCall) await audioPlayer.play();
-              break;
-            case AudioInterruptionType.unknown:
-              break;
-          }
-        }
-      });
-    } catch (e, stackTrace) {
-      logger.log('Error initializing audio session', e, stackTrace);
-    } */
   }
 
   @override
@@ -519,7 +502,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       songBar = queueSongBars[index];
       final isError =
           songBar.song.containsKey('isError') ? songBar.song['isError'] : false;
-      ;
       /* if (index < queueSongBars.length) {
         isError = !(await queueSongBars[index].queueSong(play: play));
       } */
@@ -544,30 +526,43 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         );
       final isOffline = songBar.song['isOffline'] ?? false;
       final preliminaryTag = mapToMediaItem(songBar.song);
-      if (songBar.song['songUrl'] == null && !songBar.isPrimed && !songBar.isLoading)
+      if (songBar.song['songUrl'] == null &&
+          !songBar.isPrimed &&
+          !songBar.isLoading)
         await songBar.primeSong(shouldWait: true);
+
+      if (songBar.song['songUrl'] == null ||
+          await checkUrl(songBar.song['songUrl']) >= 400) {
+        songBar.song['songUrl'] = null;
+        songBar.song['isError'] = true;
+        songBar.song['error'] = 'Song URL could not be resolved.';
+      }
       final songUrl = songBar.song['songUrl'];
-      if (songUrl == null) return !isError;
-      final audioSource = await buildAudioSource(
-        songBar.song,
-        songUrl,
-        isOffline,
-      );
-      mediaItem.add(preliminaryTag);
-      await audioPlayer.queue(audioSource, songBar);
-      if (play) unawaited(audioPlayer.play());
-      final cacheKey =
-          'song_${songBar.song['ytid']}_${settings.audioQualitySetting.value}_url';
-      if (!isOffline) addOrUpdateData('cache', cacheKey, songUrl);
-      return !isError;
+      if (songUrl != null) {
+        final audioSource = await buildAudioSource(
+          songBar.song,
+          songUrl,
+          isOffline,
+        );
+        mediaItem.add(preliminaryTag);
+        await audioPlayer.queue(audioSource, songBar);
+        if (play) {
+          logger.log('Playing: $songUrl', null, null);
+          unawaited(audioPlayer.play());
+        }
+        final cacheKey =
+            'song_${songBar.song['ytid']}_${settings.audioQualitySetting.value}_url';
+        if (!isOffline) addOrUpdateData('cache', cacheKey, songUrl);
+        return !isError;
+      }
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
-      return false;
     }
+    return false;
   }
 
   Future<Media> buildAudioSource(
@@ -590,24 +585,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       return audioSource;
     }
 
-    final spbAudioSource = await checkIfSponsorBlockIsAvailable(
-      audioSource,
-      song['ytid'],
-    );
-    return spbAudioSource ?? audioSource;
-  }
-
-  //TODO: to implement sponsor clipping
-  Future<Media?> checkIfSponsorBlockIsAvailable(
-    Media media,
-    String songId,
-  ) async {
-    try {
-      return null;
-    } catch (e, stackTrace) {
-      logger.log('Error checking sponsor block', e, stackTrace);
-    }
-    return null;
+    if (song['source'] == 'youtube')
+      song['skipSegments'] = await getSkipSegments(song['ytid']);
+    return audioSource;
   }
 
   Future<void> playAgain() async {

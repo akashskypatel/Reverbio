@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 
@@ -51,9 +55,10 @@ String getFormattedDateTimeNow() {
   return '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}T${DateTime.now().hour}:${DateTime.now().minute}:${DateTime.now().second}';
 }
 
-String formatSongTitle(String title) {
+String sanitizeSongTitle(String title) {
   final wordsPatternForSongTitle = RegExp(
-    r'\b(?:official(?:\s(?:music|lyrics?|audio|visuali[sz]er|vizuali[sz]er|hd|4k)?\s*(?:video|audio|visuali[sz]er|vizuali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
+    //r'\b(?:official(?:\s(?:music|lyrics?|dtmf|audio|vi[sz]uali[sz]er|hd|4k)?\s*(?:video|dtmf|audio|vi[sz]uali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
+    r'(\bofficial\b|\bmusic\b|\blyrics?\b|\bdtmf\b|\bvideo\b|\baudio\b|\bvi[sz]uali[sz]er?\b|\bhd\b|\b4k\b|\bhigh\b|\bquality\b)+?',
     caseSensitive: false,
   );
 
@@ -66,6 +71,9 @@ String formatSongTitle(String title) {
     '&amp;': '&',
     '&#039;': "'",
     '&quot;': '"',
+    '  ': '-',
+    '—': '-',
+    '–': '-',
   };
   final pattern = RegExp(
     replacementsForSongTitle.keys.map(RegExp.escape).join('|'),
@@ -81,7 +89,7 @@ String formatSongTitle(String title) {
 
   finalTitle = finalTitle.replaceAll(wordsPatternForSongTitle, '');
 
-  return finalTitle;
+  return finalTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
 List<String> splitArtists(String input) {
@@ -97,8 +105,8 @@ List<String> splitArtists(String input) {
 }
 
 Map<String, String> tryParseTitleAndArtist(String title) {
-  final formattedTitle = formatSongTitle(title);
-  final strings = formatSongTitle(formattedTitle).split('-');
+  final formattedTitle = sanitizeSongTitle(title);
+  final strings = sanitizeSongTitle(formattedTitle).split(RegExp('-|—|–'));
   final artists = splitArtists(formattedTitle);
   if (strings.length > 2) {
     strings.removeWhere((value) => int.tryParse(value.trim()) != null);
@@ -191,3 +199,52 @@ T pickRandomItem<T>(List<T> list) {
   final random = Random();
   return list[random.nextInt(list.length)];
 }
+
+bool isFilePath(String path) {
+  return isAbsolute(path) || isRelative(path);
+}
+
+Future<bool> doesFileExist(String path) async {
+  try {
+    final file = File(path);
+    return await file.exists();
+  } catch (e) {
+    return false; // Invalid path or permissions issue
+  }
+}
+
+Future<int> checkUrl(String url) async {
+  try {
+    final response = await http.head(Uri.parse(url));
+    return response.statusCode;
+  } catch (e) {
+    rethrow;
+  }
+}
+
+String? tryEncode(data) {
+  try {
+    return jsonEncode(data);
+  } catch (e) {
+    return null;
+  }
+}
+
+dynamic tryDecode(data) {
+  try {
+    return jsonDecode(data);
+  } catch (e) {
+    return null;
+  }
+}
+
+DateTime tryParseDate(String date) {
+  try {
+    if (DateTime.tryParse(date) != null) return DateTime.parse(date);
+    if (int.tryParse(date) != null) return DateTime(int.parse(date));
+    return DateTime.now();
+  } catch (e) {
+    return DateTime.now();
+  }
+}
+

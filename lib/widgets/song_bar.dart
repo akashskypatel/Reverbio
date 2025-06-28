@@ -28,12 +28,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -58,6 +61,9 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isPrimedNotifier = ValueNotifier(false);
+  late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
+    this.borderRadius,
+  );
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
   bool get isPrimed => _isPrimedNotifier.value;
@@ -67,12 +73,22 @@ class SongBar extends StatefulWidget {
 
   ///Returns false if song cannot play
   Future<bool> queueSong({bool play = false}) async {
-    _isLoadingNotifier.value = true;
-    if (!isPrimed) unawaited(primeSong());
-    if (play) await _songFutureTracker.completer!.future;
-    if (!isError) await audioHandler.queueSong(songBar: this, play: play);
-    _isLoadingNotifier.value = false;
-    _isErrorNotifier.value = isError;
+    try {
+      _isLoadingNotifier.value = true;
+      if (!isPrimed) unawaited(primeSong());
+      if (play) await _songFutureTracker.completer!.future;
+      if (!isError) await audioHandler.queueSong(songBar: this, play: play);
+      _isLoadingNotifier.value = false;
+      _isErrorNotifier.value = isError;
+    } catch (e, stackTrace) {
+      _isLoadingNotifier.value = false;
+      _isErrorNotifier.value = true;
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
     return !isError;
   }
 
@@ -91,6 +107,10 @@ class SongBar extends StatefulWidget {
       await _songFutureTracker.runFuture(_primeSong());
     else
       unawaited(_songFutureTracker.runFuture(_primeSong()));
+  }
+
+  void setBorder({BorderRadius borderRadius = BorderRadius.zero}) {
+    _borderRadiusNotifier.value = borderRadius;
   }
 }
 
@@ -145,7 +165,9 @@ class _SongBarState extends State<SongBar> {
                 },
             child: Card(
               color: widget.backgroundColor,
-              shape: RoundedRectangleBorder(borderRadius: widget.borderRadius),
+              shape: RoundedRectangleBorder(
+                borderRadius: widget._borderRadiusNotifier.value,
+              ),
               margin: const EdgeInsets.only(bottom: 3),
               child: Padding(
                 padding: commonBarContentPadding,
@@ -486,7 +508,31 @@ class _SongBarState extends State<SongBar> {
           },
         ),
       ),
+      if (widget.song['ytid'] != null)
+        PopupMenuItem<String>(
+          value: 'youtube',
+          child: Row(
+            children: [
+              Icon(
+                FluentIcons.link_24_regular,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(context.l10n!.openInYouTube),
+            ],
+          ),
+        ),
+      ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((e) {
+        return e as PopupMenuItem<String>;
+      }),
     ];
+  }
+
+  dynamic _getSongData() {
+    widget.song['album'] = widget.song['album'];
+    widget.song['song'] = widget.song['title'];
+    final data = widget.song;
+    return data;
   }
 
   void _popupMenuItemAction(String value) {
@@ -520,6 +566,13 @@ class _SongBarState extends State<SongBar> {
         }
         songOfflineStatus.value = !songOfflineStatus.value;
         break;
+      case 'youtube':
+        if (widget.song['ytid'] != null) {
+          final uri = Uri.parse(
+            'https://www.youtube.com/watch?v=${widget.song['ytid']}',
+          );
+          launchURL(uri);
+        }
     }
   }
 

@@ -80,6 +80,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> with RouteAware {
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_downward),
+          iconSize: pageHeaderIconSize,
           splashColor: Colors.transparent,
           onPressed: () {
             GoRouter.of(context).pop(context);
@@ -421,13 +422,13 @@ class PositionSlider extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Slider(
-                value: positionData.position.inSeconds.toDouble(),
+                value: positionData.position.inMilliseconds.toDouble(),
                 max: max(
-                  positionData.position.inSeconds.toDouble(),
-                  positionData.duration.inSeconds.toDouble(),
+                  positionData.position.inMilliseconds.toDouble(),
+                  positionData.duration.inMilliseconds.toDouble(),
                 ),
                 onChanged: (value) {
-                  audioHandler.seek(Duration(seconds: value.toInt()));
+                  audioHandler.seek(Duration(milliseconds: value.toInt()));
                 },
               ),
               _buildPositionRow(context, primaryColor, positionData),

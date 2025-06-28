@@ -25,16 +25,17 @@ import 'package:reverbio/utilities/common_variables.dart';
 class BottomSheetBar extends StatelessWidget {
   const BottomSheetBar(
     this.title,
-    this.onTap,
     this.backgroundColor, {
+      this.onTap,
     this.borderRadius = BorderRadius.zero,
+    this.actions,
     super.key,
   });
   final String title;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color backgroundColor;
   final BorderRadius borderRadius;
-
+  final List<Widget>? actions;
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -45,9 +46,16 @@ class BottomSheetBar extends StatelessWidget {
         padding: commonBarContentPadding,
         child: InkWell(
           splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
+          highlightColor: onTap == null ? Colors.transparent : null,
           onTap: onTap,
-          child: ListTile(minTileHeight: 45, title: Text(title)),
+          child: ListTile(
+            minTileHeight: 45,
+            title: Text(title),
+            trailing:
+                actions != null
+                    ? Row(mainAxisSize: MainAxisSize.min, children: actions!)
+                    : null,
+          ),
         ),
       ),
     );

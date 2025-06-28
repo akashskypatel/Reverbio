@@ -20,6 +20,7 @@
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
@@ -33,6 +34,7 @@ import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key, required this.navigatorObserver});
@@ -95,9 +97,10 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             onPressed: _showAddPlaylistDialog,
             icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+            iconSize: pageHeaderIconSize,
           ),
           _clearFiltersButton(),
-          const SizedBox(width: 24, height: 24),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: Column(
@@ -182,6 +185,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
               padding: const EdgeInsets.only(right: 5),
               onPressed: _showAddPlaylistDialog,
               icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+              iconSize: pageHeaderIconSize,
             ),
           ],
         ),
@@ -209,6 +213,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                         FluentIcons.add_24_filled,
                         color: primaryColor,
                       ),
+                      iconSize: pageHeaderIconSize,
                     ),
                   ],
                 ),
@@ -217,7 +222,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                     future: getUserPlaylists(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(child: Spinner());
                       } else if (snapshot.hasError) {
                         return Center(child: Text('Error: ${snapshot.error}'));
                       } else if (snapshot.hasData &&
@@ -254,6 +259,7 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                   }
                   : null,
           icon: const Icon(FluentIcons.filter_dismiss_24_filled, size: 30),
+          iconSize: pageHeaderIconSize,
           color: Theme.of(context).colorScheme.primary,
           disabledColor: Theme.of(context).colorScheme.primaryContainer,
         );

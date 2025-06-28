@@ -5,6 +5,7 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/DB/albums.db.dart';
 import 'package:reverbio/DB/playlists.db.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
@@ -30,7 +31,7 @@ List onlinePlaylists = [];
 
 dynamic nextRecommendedSong;
 
-late final ValueNotifier<int> currentLikedPlaylistsLength;
+final ValueNotifier<int> currentLikedPlaylistsLength = ValueNotifier(userLikedPlaylists.length);
 
 /* Future<void> playPlaylistSong({
   Map<dynamic, dynamic>? playlist,
@@ -256,6 +257,8 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
         userLikedPlaylists.addOrUpdate('id', playlist['id'], {
           'id': playlist['id'],
           'title': playlist['title'],
+          'artist': playlist['artist'],
+          'image': playlist['image'],
         });
       } else {
         final playlistInfo = await getPlaylistInfoForWidget(playlist);
@@ -475,7 +478,7 @@ Future<Map?> getPlaylistInfoForWidget(
         e,
         stackTrace,
       );
-      return null;
+      return {};
     }
   }
   // If the playlist exists but its song list is empty, fetch and cache the songs.
@@ -509,6 +512,7 @@ Future<Map?> getPlaylistInfoForWidget(
       dbPlaylists.add(playlist);
     }
   }
-
+  if (playlistData['isAlbum'] != null && playlistData['isAlbum'])
+    playlist['album'] = playlist['title'];
   return playlist;
 }

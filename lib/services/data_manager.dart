@@ -24,6 +24,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 

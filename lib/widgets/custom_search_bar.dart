@@ -97,7 +97,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
             )
           else
             IconButton(
-              icon: const Icon(FluentIcons.search_20_regular),
+              icon: Icon(FluentIcons.search_20_regular, color: Theme.of(context).colorScheme.primary,),
               onPressed: () {
                 widget.onSubmitted(widget.controller.text);
                 widget.focusNode.unfocus();

@@ -20,6 +20,7 @@
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -80,7 +81,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reverbio'),
-        actions: [_buildSyncButton()],
+        actions: [_buildSyncButton(), if (kDebugMode) const SizedBox(width: 24, height: 24,),],
       ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
@@ -151,7 +152,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_sync_24_filled),
-      iconSize: 26,
+      iconSize: pageHeaderIconSize,
       onPressed: () {
         setState(() {
           _recommendedPlaylistsFuture = getPlaylists(

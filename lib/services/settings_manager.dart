@@ -22,7 +22,10 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:reverbio/services/plugins_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
+
+typedef PM = PluginsManager;
 
 // Preferences
 
@@ -56,6 +59,10 @@ final defaultRecommendations = ValueNotifier<bool>(
 
 final audioQualitySetting = ValueNotifier<String>(
   Hive.box('settings').get('audioQuality', defaultValue: 'high'),
+);
+
+final pluginsSupport = ValueNotifier<bool>(
+  Hive.box('settings').get('pluginsSupport', defaultValue: false),
 );
 
 final clientsSetting = ValueNotifier<List>(

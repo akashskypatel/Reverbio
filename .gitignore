@@ -49,3 +49,4 @@ android/app/.cxx/
 lib/localization/app_*.dart
 l10nupdate.json
 .env
+.out

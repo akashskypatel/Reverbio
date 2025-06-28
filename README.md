@@ -1,4 +1,7 @@
+
 <div align="center">
+
+<img src="https://github.com/akashskypatel/Reverbio/blob/master/assets/images/ic_launcher_foreground.png?raw=true"/>
 
 # Reverbio
 
@@ -18,7 +21,7 @@ Unlock the full potential of music: Stream effortlessly with one app!
 
 <center>
 
-Online song search with suggestions <br/>
+Online song, artist and playlist search with suggestions <br/>
 Offline listening support <br/>
 Import & export your data and never lose it <br/>
 Add custom playlists with link <br/>
@@ -27,10 +30,11 @@ SponsorBlock support <br/>
 Lyrics support <br/>
 No ads <br/>
 No subscriptions <br/>
-Inbuilt updater <br/>
-14 supported languages <br/>
+20 supported languages <br/>
 Material UI & accent colors & dynamic colors (Android 12+) <br/>
-Android and Window Support <br/>
+Android and Windows Support <br/>
+Custom plugin support <br/>
+Like Songs, Albums, Artists and Playlists <br/>
 
 </center>
 

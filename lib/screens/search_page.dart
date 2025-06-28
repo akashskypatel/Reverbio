@@ -112,7 +112,7 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
   void _setFutures(String query) {
     try {
       _stillSearching = 4;
-      _artistSearchFuture = getArtistsDetails(
+      _artistSearchFuture = searchArtistsDetails(
         [query],
         exact: false,
         limit: itemsNumber,

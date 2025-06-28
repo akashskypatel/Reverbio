@@ -22,6 +22,7 @@
 //import 'dart:math';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,8 @@ import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
@@ -45,8 +48,9 @@ class PlaylistPage extends StatefulWidget {
     this.cardIcon = FluentIcons.music_note_1_24_regular,
     this.isArtist = false,
     required this.navigatorObserver,
+    required this.page,
   });
-
+  final String page;
   final dynamic playlistData;
   final IconData cardIcon;
   final bool isArtist;
@@ -119,7 +123,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
                             'album'
                         ? await getAlbumDetailsById(widget.playlistData['id'])
                         : null)));
-
+    
     if (_playlist != null) {
       _loadMore();
     }
@@ -190,6 +194,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
+        iconSize: pageHeaderIconSize,
         onPressed:
             () => GoRouter.of(context).pop(
               context,
@@ -204,6 +209,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
           if (_playlist['source'] == 'user-created')
             IconButton(
               icon: const Icon(FluentIcons.share_24_regular),
+              iconSize: pageHeaderIconSize,
               onPressed: () async {
                 final encodedPlaylist = PlaylistSharingService.encodePlaylist(
                   _playlist,
@@ -213,14 +219,25 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
                 await Clipboard.setData(ClipboardData(text: url));
               },
             ),
-          const SizedBox(width: 10),
-        ],
-        if (_playlist != null && _playlist['source'] == 'user-created') ...[
-          _buildEditButton(),
-          const SizedBox(width: 10),
+          ...PM.getWidgetsByType(
+            _getPlaylistData,
+            widget.page == 'album' ? 'AlbumPageHeader' : 'PlaylistPageHeader',
+            context,
+          ),
+          if (_playlist != null && _playlist['source'] == 'user-created')
+            _buildEditButton(),
+          if (kDebugMode) const SizedBox(width: 24, height: 24,),
         ],
       ],
     );
+  }
+
+  dynamic _getPlaylistData() {
+    final data =
+        widget.page == 'album' || _playlist['isAlbum']
+            ? {...(_playlist as Map), 'album': _playlist['title'], 'title': null}
+            : _songsList;
+    return data;
   }
 
   Widget _buildPlaylistImage() {
@@ -239,7 +256,9 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
 
     return PlaylistHeader(
       _buildPlaylistImage(),
-      _playlist['title'],
+      widget.page == 'album'
+          ? '${_playlist['artist']} - ${_playlist['title']}'
+          : _playlist['title'],
       _songsLength,
     );
   }
@@ -255,7 +274,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
               value
                   ? const Icon(FluentIcons.heart_24_filled)
                   : const Icon(FluentIcons.heart_24_regular),
-          iconSize: 26,
+          iconSize: pageHeaderIconSize,
           onPressed: () {
             playlistLikeStatus.value = !playlistLikeStatus.value;
             updatePlaylistLikeStatus(
@@ -273,7 +292,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_sync_24_filled),
-      iconSize: 26,
+      iconSize: pageHeaderIconSize,
       onPressed: _handleSyncPlaylist,
     );
   }
@@ -283,7 +302,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.edit_24_filled),
-      iconSize: 26,
+      iconSize: pageHeaderIconSize,
       onPressed:
           () => showDialog(
             context: context,

@@ -24,9 +24,11 @@ import 'dart:math';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
@@ -87,14 +89,24 @@ class _SongListState extends State<SongList> {
         SliverToBoxAdapter(
           child: Padding(
             padding: commonSingleChildScrollViewPadding,
-            child: SectionHeader(
-              title: widget.title,
-              actions: [
-                _buildSortSongActionButton(),
-                _buildShuffleSongActionButton(),
-                _buildPlayActionButton(),
-                if (widget.page != 'queue') _buildAddToQueueActionButton(),
-              ],
+            child: ValueListenableBuilder(
+              valueListenable: PM.pluginsDataNotifier,
+              builder: (_, value, __) {
+                return SectionHeader(
+                  title: widget.title,
+                  actions: [
+                    _buildSortSongActionButton(),
+                    _buildShuffleSongActionButton(),
+                    _buildPlayActionButton(),
+                    if (widget.page != 'queue') _buildAddToQueueActionButton(),
+                    ...PM.getWidgetsByType(
+                      _getSongListData,
+                      'SongListHeader',
+                      context,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -126,6 +138,16 @@ class _SongListState extends State<SongList> {
     );
   }
 
+  dynamic _getSongListData() {
+    final data =
+        _songsList.map((e) {
+          e['album'] = e['album'];
+          e['song'] = e['title'];
+          return e;
+        }).toList();
+    return data;
+  }
+
   Widget _buildShuffleSongActionButton() {
     return IconButton(
       tooltip: context.l10n!.shuffle,
@@ -133,7 +155,7 @@ class _SongListState extends State<SongList> {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
-      iconSize: 30,
+      iconSize: listHeaderIconSize,
       onPressed: () {
         _songsList.shuffledWith(widget.songBars);
         if (mounted) setState(() {});
@@ -203,7 +225,7 @@ class _SongListState extends State<SongList> {
       icon: Icon(
         FluentIcons.filter_16_filled,
         color: Theme.of(context).colorScheme.primary,
-        size: 30,
+        size: listHeaderIconSize,
       ),
       onSelected: _sortMenuItemAction,
       itemBuilder: _buildSortMenuItems,
@@ -230,7 +252,7 @@ class _SongListState extends State<SongList> {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.add_circle_24_filled),
-      iconSize: 30,
+      iconSize: listHeaderIconSize,
       onPressed: () {
         if (widget.page != 'queue') {
           addSongsToQueue(widget.songBars);
@@ -261,7 +283,7 @@ class _SongListState extends State<SongList> {
       icon: Icon(
         FluentIcons.play_circle_24_filled,
         color: Theme.of(context).colorScheme.primary,
-        size: 30,
+        size: listHeaderIconSize,
       ),
     );
   }
@@ -330,6 +352,9 @@ class _SongListState extends State<SongList> {
     final song = _songsList.removeAt(oldIndex);
 
     widget.songBars.insert(newIndex, songBar);
+    songBar.setBorder(
+      borderRadius: getItemBorderRadius(newIndex, widget.songBars.length),
+    );
     _songsList.insert(newIndex, song);
 
     setState(() {});
@@ -345,6 +370,13 @@ class _SongListState extends State<SongList> {
           itemCount: value,
           itemBuilder: (context, index) {
             final song = widget.songBars[index].song;
+            final songBar =
+                widget.songBars[index]..setBorder(
+                  borderRadius: getItemBorderRadius(
+                    index,
+                    widget.songBars.length,
+                  ),
+                );
             final key = Key(
               song['id'] ?? '${song['artist']} - ${song['title']}',
             );
@@ -352,10 +384,7 @@ class _SongListState extends State<SongList> {
               key: key,
               enabled: widget.isEditable,
               index: index,
-              child: Padding(
-                padding: commonBarPadding,
-                child: widget.songBars[index],
-              ),
+              child: Padding(padding: commonBarPadding, child: songBar),
             );
           },
           onReorder: (oldIndex, newIndex) {

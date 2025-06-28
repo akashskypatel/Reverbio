@@ -25,9 +25,10 @@ import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
-import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/utils.dart';
 
 class BaseCard extends StatefulWidget {
   BaseCard({
@@ -72,7 +73,7 @@ class BaseCard extends StatefulWidget {
 }
 
 class _BaseCardState extends State<BaseCard> {
-  bool isLiked = false;
+  late ValueNotifier<bool> isLikedNotifier = ValueNotifier(_getLikeStatus());
   String? dataType;
   final borderRadius = 13.0;
   late final likeSize =
@@ -83,61 +84,16 @@ class _BaseCardState extends State<BaseCard> {
   void initState() {
     super.initState();
     dataType = _parseDataType();
-    isLiked = _getLikeStatus();
-    _setupListeners();
   }
 
   @override
   void dispose() {
-    _removeListeners();
     super.dispose();
-  }
-
-  void _setupListeners() {
-    switch (dataType) {
-      case 'playlist':
-        currentLikedPlaylistsLength.addListener(_listener);
-        break;
-      case 'song':
-        currentLikedSongsLength.addListener(_listener);
-        break;
-      case 'album':
-        currentLikedAlbumsLength.addListener(_listener);
-        break;
-      case 'artist':
-        currentLikedArtistsLength.addListener(_listener);
-        break;
-      default:
-        break;
-    }
-  }
-
-  void _removeListeners() {
-    switch (dataType) {
-      case 'playlist':
-        currentLikedPlaylistsLength.removeListener(_listener);
-        break;
-      case 'song':
-        currentLikedSongsLength.removeListener(_listener);
-        break;
-      case 'album':
-        currentLikedAlbumsLength.removeListener(_listener);
-        break;
-      case 'artist':
-        currentLikedArtistsLength.removeListener(_listener);
-        break;
-      default:
-        break;
-    }
-  }
-
-  void _listener() {
-    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    isLiked = _getLikeStatus();
+    isLikedNotifier.value = _getLikeStatus();
     final colorScheme = Theme.of(context).colorScheme;
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,
@@ -168,8 +124,8 @@ class _BaseCardState extends State<BaseCard> {
                             child: Stack(
                               children: [
                                 _buildImage(context),
-                                if (widget.showLabel) _buildLabel(context),
-                                if (widget.showLike) _buildLiked(context),
+                                if (widget.showLabel) _buildLabel(),
+                                if (widget.showLike) _buildLiked(),
                               ],
                             ),
                           ),
@@ -194,25 +150,27 @@ class _BaseCardState extends State<BaseCard> {
   }
 
   String _parseImageLink() {
-    if (widget.inputData == null) return '';
+    String link = '';
+    if (widget.inputData == null) return link;
     try {
-      if (widget.inputData?['image'] != null) return widget.inputData?['image'];
-      if (widget.inputData?['images'] != null) {
+      if (widget.inputData?['image'] != null) link = widget.inputData?['image'];
+      if (widget.inputData?['images'] != null && link.isEmpty) {
         final front =
             widget.inputData!['images']
                 .where((e) => e['front'] == true)
                 .toList();
-        if (front.isNotEmpty) {
+        if (front.isNotEmpty && link.isEmpty) {
           widget.inputData?['image'] = front.first['image'];
-          return front.first['image'];
+          link = front.first['image'];
         }
         widget.inputData?['image'] = widget.inputData?['images'][0]['image'];
-        return widget.inputData?['images'][0]['image'];
+        link = widget.inputData?['images'][0]['image'];
       }
-      if (dataType == 'artist') {
-        return _getPrimaryImageUrl(widget.inputData);
+      if (dataType == 'artist' && link.isEmpty) {
+        widget.inputData?['image'] = _getPrimaryImageUrl(widget.inputData);
+        link = widget.inputData?['image'];
       }
-      return '';
+      return link;
     } catch (e, stackTrace) {
       logger.log('error in _parseImageLink', e, stackTrace);
       return '';
@@ -240,7 +198,17 @@ class _BaseCardState extends State<BaseCard> {
   Widget _buildImage(BuildContext context) {
     final imageLink = _parseImageLink();
     if (widget.inputData != null && imageLink.isNotEmpty) {
-      return _buildArtworkCard(imageLink);
+      return FutureBuilder(
+        future: checkUrl(imageLink),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting ||
+              snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data! >= 400)
+            return _buildNoArtworkCard();
+          return _buildArtworkCard(imageLink);
+        },
+      );
     } else
       return _buildNoArtworkCard();
   }
@@ -276,7 +244,9 @@ class _BaseCardState extends State<BaseCard> {
             Padding(
               padding: EdgeInsets.all(widget.paddingValue),
               child: Text(
-                widget.inputData?['artist'] ?? widget.inputData?['title'],
+                widget.inputData?['artist'] ??
+                    widget.inputData?['title'] ??
+                    widget.inputData?['name'],
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSecondary,
@@ -290,43 +260,52 @@ class _BaseCardState extends State<BaseCard> {
     );
   }
 
-  Widget _buildLiked(BuildContext context) {
-    final liked =
-        _getLikeStatus()
-            ? FluentIcons.heart_12_filled
-            : FluentIcons.heart_12_regular;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
-      child: Align(
-        alignment: Alignment.topRight,
-        child: IconButton(
-          onPressed: () => _toggleLike(context),
-          icon: Icon(liked, size: likeSize),
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
+  Widget _buildLiked() {
+    return ValueListenableBuilder(
+      valueListenable: isLikedNotifier,
+      builder: (context, value, child) {
+        final liked =
+            value ? FluentIcons.heart_12_filled : FluentIcons.heart_12_regular;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
+          child: Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              onPressed: () => _toggleLike(context),
+              icon: Icon(liked, size: likeSize),
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        );
+      },
     );
   }
 
   void _toggleLike(BuildContext context) async {
     final liked = await _updateLikeStatus();
-    if (mounted)
-      setState(() {
-        isLiked = liked;
-      });
+    isLikedNotifier.value = liked;
   }
 
   Future<bool> _updateLikeStatus() async {
     switch (dataType) {
       case 'playlist':
-        return updatePlaylistLikeStatus(widget.inputData, !isLiked);
+        return updatePlaylistLikeStatus(
+          widget.inputData,
+          !isLikedNotifier.value,
+        );
       case 'album':
         if (widget.inputData?['source'] == 'youtube')
-          return updatePlaylistLikeStatus(widget.inputData, !isLiked);
+          return updatePlaylistLikeStatus(
+            widget.inputData,
+            !isLikedNotifier.value,
+          );
         else
-          return updateAlbumLikeStatus(widget.inputData, !isLiked);
+          return updateAlbumLikeStatus(
+            widget.inputData,
+            !isLikedNotifier.value,
+          );
       case 'artist':
-        return updateArtistLikeStatus(widget.inputData, !isLiked);
+        return updateArtistLikeStatus(widget.inputData, !isLikedNotifier.value);
       default:
         return false;
     }
@@ -350,7 +329,7 @@ class _BaseCardState extends State<BaseCard> {
     return liked;
   }
 
-  Widget _buildLabel(BuildContext context) {
+  Widget _buildLabel() {
     const double paddingValue = 4;
     const double typeLabelOffset = 10;
     final colorScheme = Theme.of(context).colorScheme;
@@ -387,24 +366,54 @@ class _BaseCardState extends State<BaseCard> {
       constraints: BoxConstraints(minWidth: artistHeight, minHeight: 44),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        child: Text(
-          widget.inputData == null
-              ? ''
-              : widget.inputData?['title'] ??
-                  widget.inputData?['artist'] ??
-                  widget.inputData?['name'],
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.secondary,
-            fontSize: 13,
-            fontFamily: 'montserrat',
-            fontVariations: [const FontVariation('wght', 300)],
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
-          softWrap: true,
+        child: Column(
+          children: [
+            Text(
+              widget.inputData == null ? '' : _getCardTitle(),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontSize: 13,
+                fontFamily: 'montserrat',
+                fontVariations: [const FontVariation('wght', 300)],
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: _getCardSubTitle().isEmpty ? 2 : 1,
+              softWrap: true,
+            ),
+            if (_getCardSubTitle().isNotEmpty)
+              Text(
+                widget.inputData == null ? '' : _getCardSubTitle(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
+                  fontSize: 13,
+                  fontFamily: 'montserrat',
+                  fontVariations: [const FontVariation('wght', 300)],
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                softWrap: true,
+              ),
+          ],
         ),
       ),
     );
+  }
+
+  String _getCardTitle() {
+    return widget.inputData?['title'] ??
+        widget.inputData?['artist'] ??
+        widget.inputData?['name'];
+  }
+
+  String _getCardSubTitle() {
+    String title = '';
+    if (widget.inputData?['first-release-date'] != null)
+      title =
+          '(${tryParseDate(widget.inputData?['first-release-date']).year}${tryParseDate(widget.inputData?['first-release-date']).isAfter(DateTime.now()) ? ' upcoming)' : ')'}';
+    else
+      title = '';
+    return title;
   }
 }
