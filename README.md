@@ -43,8 +43,29 @@ Like Songs, Albums, Artists and Playlists <br/>
 
 ## Screenshots
 
+<details>
+<summary>Mobile</summary>
+
+### Android
+
 | ![Screenshot 1](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot1.png?raw=true) | ![Screenshot 2](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot2.png?raw=true) | ![Screenshot 3](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot3.png?raw=true) | ![Screenshot 4](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot4.png?raw=true) | ![Screenshot 5](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot5.png?raw=true) |
 |----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+</details>
+
+<details>
+<summary>Desktop</summary>
+
+### Desktop
+
+| ![Screenshot 1](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/desktop_screenshot1.png?raw=true) | ![Screenshot 2](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/desktop_screenshot2.png?raw=true) |
+|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+
+ ![Screenshot 3](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/desktop_screenshot3.png?raw=true) | ![Screenshot 4](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/desktop_screenshot4.png?raw=true) |
+|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+
+ ![Screenshot 5](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/desktop_screenshot5.png?raw=true) | ![Screenshot 6](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/desktop_screenshot6.png?raw=true) |
+|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+</details>
 
 ---
 
