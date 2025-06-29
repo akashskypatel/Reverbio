@@ -247,6 +247,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
       inputData: _playlist,
       size: isLandscape ? 300 : screenWidth / 2.5,
       icon: widget.cardIcon,
+      showLike: true,
     );
   }
 
