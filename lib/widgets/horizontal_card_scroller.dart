@@ -56,8 +56,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   dynamic inputData;
   bool isProcessing = true;
   final borderRadius = 13.0;
-  late double playlistHeight =
-      MediaQuery.sizeOf(context).height * 0.25 / 1.1;
+  late double playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late bool isLargeScreen = MediaQuery.of(context).size.width > 480;
   int itemsNumber = recommendedCardsNumber;
   final Map<String, BaseCard> cards = {};
@@ -77,8 +76,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   @override
   Widget build(BuildContext context) {
     isLargeScreen = MediaQuery.of(context).size.width > 480;
-    playlistHeight =
-      MediaQuery.sizeOf(context).height * 0.25 / 1.1;
+    playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
     return Column(
       children: [
         SectionHeader(title: widget.title),

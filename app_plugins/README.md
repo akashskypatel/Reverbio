@@ -1,5 +1,4 @@
 <a id="readme-top"></a>
-<link rel="stylesheet" href="https://cdn.fluenticon.com/icon.min.css" /> 
 
 # Reverbio Plugin Development Documentation
 
@@ -131,48 +130,216 @@ Available icons
 
 <table>
 <tr><th>Icon Name</th><th>Icon</th></tr>
-<tr><th>access_time</th><th><i class="vf-ic_fluent_access_time_24_filled"></i> </th></tr>
-<tr><th>add</th><th><i class="vf-ic_fluent_add_24_filled"></i> </th></tr>
-<tr><th>alert</th><th><i class="vf-ic_fluent_alert_24_filled"></i> </th></tr>
-<tr><th>arrow_left</th><th><i class="vf-ic_fluent_arrow_left_24_filled"></i> </th></tr>
-<tr><th>arrow_right</th><th><i class="vf-ic_fluent_arrow_right_24_filled"></i> </th></tr>
-<tr><th>calendar</th><th><i class="vf-ic_fluent_calendar_24_filled"></i>  </th></tr>
-<tr><th>checkmark</th><th><i class="vf-ic_fluent_checkmark_24_filled"></i> </th></tr>
-<tr><th>chevron_down</th><th><i class="vf-ic_fluent_chevron_down_24_filled"></i> </th></tr>
-<tr><th>close</th><th><i class="vf-ic_fluent_dismiss_24_filled"></i> </th></tr>
-<tr><th>cloud</th><th><i class="vf-ic_fluent_cloud_24_filled"></i> </th></tr>
-<tr><th>cloud_off</th><th><i class="vf-ic_fluent_cloud_off_24_filled"></i> </th></tr>
-<tr><th>cloud_down</th><th><i class="vf-ic_fluent_cloud_arrow_down_24_filled"></i> </th></tr>
-<tr><th>cloud_up</th><th><i class="vf-ic_fluent_cloud_arrow_up_24_filled"></i> </th></tr>
-<tr><th>cloud_check</th><th><i class="vf-ic_fluent_cloud_checkmark_24_filled"></i> </th></tr>
-<tr><th>cloud_dismiss</th><th><i class="vf-ic_fluent_cloud_dismiss_24_filled"></i> </th></tr>
-<tr><th>cloud_sync</th><th><i class="vf-ic_fluent_cloud_sync_24_filled"></i> </th></tr>
-<tr><th>cog</th><th><i class="vf-ic_fluent_settings_24_filled"></i> </th></tr>
-<tr><th>delete</th><th><i class="vf-ic_fluent_delete_24_filled"></i> </th></tr>
-<tr><th>download</th><th><i class="vf-ic_fluent_arrow_download_24_filled"></i> </th></tr>
-<tr><th>edit</th><th><i class="vf-ic_fluent_edit_24_filled"></i> </th></tr>
-<tr><th>email</th><th><i class="vf-ic_fluent_mail_24_filled"></i> </th></tr>
-<tr><th>error</th><th><i class="vf-ic_fluent_error_circle_24_filled"></i> </th></tr>
-<tr><th>eye</th><th><i class="vf-ic_fluent_eye_24_filled"></i> </th></tr>
-<tr><th>eye_off</th><th><i class="vf-ic_fluent_eye_off_24_filled"></i> </th></tr>
-<tr><th>filter</th><th><i class="vf-ic_fluent_filter_24_filled"></i> </th></tr>
-<tr><th>folder</th><th><i class="vf-ic_fluent_folder_24_filled"></i> </th></tr>
-<tr><th>folder_link</th><th><i class="vf-ic_fluent_folder_link_24_filled"></i> </th></tr>
-<tr><th>headphones_wave</th><th><i class="vf-ic_fluent_headphones_sound_wave_24_filled"></i> </th></tr>
-<tr><th>heart</th><th><i class="vf-ic_fluent_heart_24_filled"></i> </th></tr>
-<tr><th>home</th><th><i class="vf-ic_fluent_home_24_filled"></i> </th></tr>
-<tr><th>info</th><th><i class="vf-ic_fluent_info_24_filled"></i> </th></tr>
-<tr><th>key</th><th><i class="vf-ic_fluent_key_24_filled"></i> </th></tr>
-<tr><th>menu</th><th><i class="vf-ic_fluent_line_horizontal_3_24_filled"></i> </th></tr>
-<tr><th>more</th><th><i class="vf-ic_fluent_more_vertical_24_filled"></i> </th></tr>
-<tr><th>notification</th><th><i class="vf-ic_fluent_alert_24_filled"></i> </th></tr>
-<tr><th>person</th><th><i class="vf-ic_fluent_person_24_filled"></i> </th></tr>
-<tr><th>search</th><th><i class="vf-ic_fluent_search_24_filled"></i> </th></tr>
-<tr><th>send</th><th><i class="vf-ic_fluent_send_24_filled"></i> </th></tr>
-<tr><th>share</th><th><i class="vf-ic_fluent_share_24_filled"></i> </th></tr>
-<tr><th>star</th><th><i class="vf-ic_fluent_star_24_filled"></i> </th></tr>
-<tr><th>upload</th><th><i class="vf-ic_fluent_arrow_upload_24_filled"></i> </th></tr>
-<tr><th>warning</th><th><i class="vf-ic_fluent_warning_24_filled"></i> </th></tr>
+<tr><th>access_time</th><th> 
+
+![access_time_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?raw=true) 
+
+</th></tr>
+<tr><th>add</th><th>
+
+![add_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Add/SVG/ic_fluent_add_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>alert</th><th>
+
+![alert_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Alert/SVG/ic_fluent_alert_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>arrow_left</th><th>
+
+![arrow_left_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Arrow%20Left/SVG/ic_fluent_arrow_left_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>arrow_right</th><th>
+
+![arrow_right_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Arrow%20Right/SVG/ic_fluent_arrow_right_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>calendar</th><th>
+
+![calendar_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Calendar/SVG/ic_fluent_calendar_24_filled.svg?raw=true) 
+
+</th></tr>
+<tr><th>checkmark</th><th>
+
+![checkmark_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Checkmark/SVG/ic_fluent_checkmark_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>chevron_down</th><th>
+
+![chevron_down_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Chevron%20Down/SVG/ic_fluent_chevron_down_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>close</th><th>
+
+![dismiss_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Dismiss/SVG/ic_fluent_dismiss_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cloud</th><th>
+
+![cloud_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Cloud/SVG/ic_fluent_cloud_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cloud_off</th><th>
+
+![cloud_off_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Cloud%20Off/SVG/ic_fluent_cloud_off_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cloud_down</th><th>
+
+![cloud_arrow_down_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Cloud%20Arrow%20Down/SVG/ic_fluent_cloud_arrow_down_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cloud_up</th><th>
+
+![cloud_arrow_up_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Cloud%20Arrow%20Up/SVG/ic_fluent_cloud_arrow_up_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cloud_check</th><th>
+
+![cloud_checkmark_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Cloud%20Checkmark/SVG/ic_fluent_cloud_checkmark_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cloud_dismiss</th><th>
+
+![cloud_dismiss_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Cloud%20Dismiss/SVG/ic_fluent_cloud_dismiss_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cloud_sync</th><th>
+
+![cloud_sync_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Cloud%20Sync/SVG/ic_fluent_cloud_sync_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>cog</th><th>
+
+![settings_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Settings/SVG/ic_fluent_settings_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>delete</th><th>
+
+![delete_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Delete/SVG/ic_fluent_delete_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>download</th><th>
+
+![arrow_download_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Arrow%20Download/SVG/ic_fluent_arrow_download_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>edit</th><th>
+
+![edit_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Edit/SVG/ic_fluent_edit_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>email</th><th>
+
+![mail_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Mail/SVG/ic_fluent_mail_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>error</th><th>
+
+![error_circle_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Error%20Circle/SVG/ic_fluent_error_circle_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>eye</th><th>
+
+![eye_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Eye/SVG/ic_fluent_eye_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>eye_off</th><th>
+
+![eye_off_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Eye%20Off/SVG/ic_fluent_eye_off_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>filter</th><th>
+
+![filter_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Filter/SVG/ic_fluent_filter_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>folder</th><th>
+
+![folder_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Folder/SVG/ic_fluent_folder_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>folder_link</th><th>
+
+![folder_link_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Folder%20Link/SVG/ic_fluent_folder_link_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>headphones_wave</th><th>
+
+![headphones_sound_wave_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Headphones%20Sound%20Wave/SVG/ic_fluent_headphones_sound_wave_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>heart</th><th>
+
+![heart_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Heart/SVG/ic_fluent_heart_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>home</th><th>
+
+![home_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Home/SVG/ic_fluent_home_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>info</th><th>
+
+![info_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Info/SVG/ic_fluent_info_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>key</th><th>
+
+![key_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Key/SVG/ic_fluent_key_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>menu</th><th>
+
+![line_horizontal_3_24_filled](https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Line%20Horizontal%203/SVG/ic_fluent_line_horizontal_3_48_regular.svg?raw=true)
+
+</th></tr>
+<tr><th>more</th><th>
+
+![more_vertical_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/More%20Vertical/SVG/ic_fluent_more_vertical_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>notification</th><th>
+
+![alert_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Alert/SVG/ic_fluent_alert_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>person</th><th>
+
+![person_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Person/SVG/ic_fluent_person_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>search</th><th>
+
+![search_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Search/SVG/ic_fluent_search_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>send</th><th>
+
+![send_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Send/SVG/ic_fluent_send_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>share</th><th>
+
+![share_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Share/SVG/ic_fluent_share_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>star</th><th>
+
+![star_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Star/SVG/ic_fluent_star_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>upload</th><th>
+
+![arrow_upload_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Arrow%20Upload/SVG/ic_fluent_arrow_upload_24_filled.svg?raw=true)
+
+</th></tr>
+<tr><th>warning</th><th>
+
+![warning_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Warning/SVG/ic_fluent_warning_24_filled.svg?raw=true)
+
+</th></tr>
 </table>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

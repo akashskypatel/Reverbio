@@ -401,14 +401,14 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
     String title,
     IconData icon,
     List songsList,
-    ValueNotifier length,
+    ValueNotifier<int> length,
   ) {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: buildPlaylistHeader(title, icon, songsList.length),
+            child: buildPlaylistHeader(title, icon, length),
           ),
         ),
         SongList(
@@ -461,11 +461,11 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         currentLikedSongsLength;
   }
 
-  Widget buildPlaylistHeader(String title, IconData icon, int songsLength) {
+  Widget buildPlaylistHeader(String title, IconData icon, ValueNotifier<int> length) {
     return PlaylistHeader(
-      _buildPlaylistImage(title, icon, songsLength),
+      _buildPlaylistImage(title, icon, length),
       title,
-      songsLength,
+      length.value,
       customWidget: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
@@ -534,12 +534,17 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
     );
   }
 
-  Widget _buildPlaylistImage(String title, IconData icon, int songsLength) {
+  Widget _buildPlaylistImage(String title, IconData icon, ValueNotifier<int> length) {
     final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
-    return BaseCard(
-      inputData: {'title': '$title\n$songsLength Songs'},
-      size: size,
-      icon: icon,
+    return ValueListenableBuilder(
+      valueListenable: length,
+      builder: (context, value, child) {
+        return BaseCard(
+          inputData: {'title': '$title\n${length.value} Songs'},
+          size: size,
+          icon: icon,
+        );
+      },
     );
   }
 }
