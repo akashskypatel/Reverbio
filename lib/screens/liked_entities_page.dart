@@ -14,13 +14,7 @@ import 'package:reverbio/widgets/genre_list.dart';
 import 'package:reverbio/widgets/section_header.dart';
 
 class LikedCardsPage extends StatefulWidget {
-  const LikedCardsPage({
-    super.key,
-    required this.navigatorObserver,
-    required this.title,
-    required this.page,
-  });
-  final RouteObserver<PageRoute> navigatorObserver;
+  const LikedCardsPage({super.key, required this.title, required this.page});
   final String page;
   final String title;
 
@@ -28,7 +22,7 @@ class LikedCardsPage extends StatefulWidget {
   _LikedCardsPageState createState() => _LikedCardsPageState();
 }
 
-class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
+class _LikedCardsPageState extends State<LikedCardsPage> {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
   late final double cardHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
@@ -58,19 +52,8 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
 
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     cardList.clear();
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   @override
@@ -82,10 +65,10 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
           _clearFiltersButton(),
           ...PM.getWidgetsByType(
             _getEntityListData,
-            dataMap[widget.page]?['widgetContext'] as String, 
+            dataMap[widget.page]?['widgetContext'] as String,
             context,
           ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24,),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: _buildBody(context),
@@ -185,16 +168,8 @@ class _LikedCardsPageState extends State<LikedCardsPage> with RouteAware {
               builder:
                   (context) =>
                       widget.page == 'artists'
-                          ? ArtistPage(
-                            page: 'artist',
-                            artistData: data,
-                            navigatorObserver: widget.navigatorObserver,
-                          )
-                          : PlaylistPage(
-                            page: 'album',
-                            playlistData: data,
-                            navigatorObserver: widget.navigatorObserver,
-                          ),
+                          ? ArtistPage(page: 'artist', artistData: data)
+                          : PlaylistPage(page: 'album', playlistData: data),
               settings: RouteSettings(name: 'artist?${data['id']}'),
             ),
           ),

@@ -54,8 +54,7 @@ void showCustomBottomSheet(BuildContext context, Widget content) {
                     width: 60,
                     height: 8,
                     decoration: BoxDecoration(
-                      color:
-                          Theme.of(context).colorScheme.onSecondaryContainer,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),

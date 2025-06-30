@@ -42,18 +42,16 @@ class ArtistPage extends StatefulWidget {
     required this.page,
     this.artistData,
     this.cardIcon = FluentIcons.mic_sparkle_24_regular,
-    required this.navigatorObserver,
   });
   final String page;
   final dynamic artistData;
   final IconData cardIcon;
-  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _ArtistPageState createState() => _ArtistPageState();
 }
 
-class _ArtistPageState extends State<ArtistPage> with RouteAware {
+class _ArtistPageState extends State<ArtistPage> {
   late final double playlistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final isLargeScreen = MediaQuery.of(context).size.width > 480;
@@ -70,18 +68,7 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
 
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   @override
@@ -95,7 +82,7 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
         ),
         actions: [
           ...PM.getWidgetsByType(_getArtistData, 'ArtistPageHeader', context),
-          if (kDebugMode) const SizedBox(width: 24, height: 24,),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: _buildBody(),
@@ -279,7 +266,6 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
               future: getAlbumsCoverArt(albums),
               icon: FluentIcons.cd_16_filled,
               title: context.l10n!.albums,
-              navigatorObserver: widget.navigatorObserver,
             ),
           ),
         //Others
@@ -289,7 +275,6 @@ class _ArtistPageState extends State<ArtistPage> with RouteAware {
               future: getAlbumsCoverArt(others),
               icon: FluentIcons.cd_16_filled,
               title: context.l10n!.others,
-              navigatorObserver: widget.navigatorObserver,
             ),
           ),
         //Singles

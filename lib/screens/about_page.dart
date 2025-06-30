@@ -27,27 +27,15 @@ import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 
 class AboutPage extends StatefulWidget {
-  const AboutPage({super.key, required this.navigatorObserver});
-  final RouteObserver<PageRoute> navigatorObserver;
+  const AboutPage({super.key});
 
   @override
   _AboutPageState createState() => _AboutPageState();
 }
 
-class _AboutPageState extends State<AboutPage> with RouteAware {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
-  }
-
+class _AboutPageState extends State<AboutPage> {
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 

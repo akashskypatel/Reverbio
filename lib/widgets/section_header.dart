@@ -18,36 +18,85 @@
  *     For more information about Reverbio, including how to contribute,
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
+import 'dart:async';
 
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/widgets/section_title.dart';
 
-class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, required this.title, this.actions});
+class SectionHeader extends StatefulWidget {
+  const SectionHeader({
+    super.key,
+    required this.title,
+    this.actions,
+    this.autoCloseSeconds = 5,
+  });
+
   final String title;
   final List<Widget>? actions;
+  final int autoCloseSeconds;
+  @override
+  State<SectionHeader> createState() => _SectionHeaderState();
+}
+
+class _SectionHeaderState extends State<SectionHeader>
+    with TickerProviderStateMixin {
+  bool _expanded = false;
+  Timer? _closeTimer;
+
+  void _toggleExpanded() {
+    setState(() {
+      _expanded = !_expanded;
+    });
+
+    _closeTimer?.cancel();
+
+    if (_expanded) {
+      _closeTimer = Timer(Duration(seconds: widget.autoCloseSeconds), () {
+        if (mounted) {
+          setState(() {
+            _expanded = false;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    //TODO: fix clipped if too small
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Flexible(
           fit: FlexFit.tight,
           child: ClipRect(
-            child: SectionTitle(title, Theme.of(context).colorScheme.primary),
-          ),
-        ),
-        if (actions != null)
-          Padding(
-            padding: commonSingleChildScrollViewPadding,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: actions!,
+            child: SectionTitle(
+              widget.title,
+              Theme.of(context).colorScheme.primary,
             ),
           ),
+        ),
+        if (widget.actions != null && widget.actions!.isNotEmpty)
+          Padding(
+            padding: commonSingleChildScrollViewPadding,
+            child: IconButton(
+              icon: Icon(
+                _expanded
+                    ? FluentIcons.dismiss_24_regular
+                    : FluentIcons.more_horizontal_28_filled,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: _toggleExpanded,
+            ),
+          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child:
+              _expanded && widget.actions != null
+                  ? Row(children: widget.actions!)
+                  : const SizedBox.shrink(),
+        ),
       ],
     );
   }

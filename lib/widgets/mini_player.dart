@@ -36,15 +36,9 @@ import 'package:reverbio/widgets/song_artwork.dart';
 const double playerHeight = 120;
 
 class MiniPlayer extends StatefulWidget {
-  MiniPlayer({
-    super.key,
-    required this.metadata,
-    required this.closeButton,
-    required this.navigatorObserver,
-  });
+  MiniPlayer({super.key, required this.metadata, required this.closeButton});
   final MediaItem metadata;
   final Widget closeButton;
-  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _MiniPlayerState createState() => _MiniPlayerState();

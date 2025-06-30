@@ -354,26 +354,24 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void _positionDataNotify(PositionData value) {
     positionDataNotifier.value = value;
-    if (positionDataNotifier.value.duration.inMicroseconds ==
-            positionDataNotifier.value.position.inMicroseconds &&
-        positionDataNotifier.value.duration.inMicroseconds !=
-            Duration.zero.inMicroseconds &&
-        positionDataNotifier.value.position.inMicroseconds !=
-            Duration.zero.inMicroseconds) {
+    if (positionDataNotifier.value.duration !=
+            positionDataNotifier.value.position &&
+        positionDataNotifier.value.duration != Duration.zero &&
+        positionDataNotifier.value.position != Duration.zero) {
       final song = audioPlayer.songValueNotifier.value?.song;
       if (song != null && song['skipSegments'].isNotEmpty) {
         final checkSegment =
-            (song['skipSegments'] as List)
+            (song['skipSegments'] as List<Map<String, Duration>>)
                 .where(
                   (e) =>
-                      e['start'] <=
-                          positionDataNotifier.value.position.inMicroseconds &&
-                      e['end'] >
-                          positionDataNotifier.value.position.inMicroseconds,
+                      e['start']! <= positionDataNotifier.value.position &&
+                      e['end']! > positionDataNotifier.value.position,
                 )
                 .toList();
         if (checkSegment.isNotEmpty) {
-          audioPlayer.pause();
+          final seekTo = checkSegment.first['end'];
+          if (seekTo != null)
+            audioPlayer.seek(seekTo);
         }
       }
       switch (repeatNotifier.value) {

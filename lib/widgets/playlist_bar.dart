@@ -19,7 +19,6 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -41,7 +40,6 @@ class PlaylistBar extends StatelessWidget {
     this.showBuildActions = true,
     this.isAlbum = false,
     this.borderRadius = BorderRadius.zero,
-    required this.navigatorObserver,
   }) : playlistLikeStatus = ValueNotifier<bool>(
          isPlaylistAlreadyLiked(playlistId),
        );
@@ -56,7 +54,6 @@ class PlaylistBar extends StatelessWidget {
   final bool? isAlbum;
   final bool showBuildActions;
   final BorderRadius borderRadius;
-  final RouteObserver<PageRoute> navigatorObserver;
 
   static const double artworkSize = 60;
   static const double iconSize = 27;
@@ -107,7 +104,6 @@ class PlaylistBar extends StatelessWidget {
                               playlistData:
                                   playlistData ??
                                   {'title': playlistTitle, 'ytid': playlistId},
-                              navigatorObserver: navigatorObserver,
                             ),
                       ),
                     );
@@ -149,30 +145,12 @@ class PlaylistBar extends StatelessWidget {
   }
 
   Widget _buildAlbumArt() {
-    return playlistArtwork != null
-        ? CachedNetworkImage(
-          key: Key(playlistArtwork.toString()),
-          height: artworkSize,
-          width: artworkSize,
-          imageUrl: playlistArtwork.toString(),
-          fit: BoxFit.cover,
-          imageBuilder:
-              (context, imageProvider) => SizedBox(
-                width: artworkSize,
-                height: artworkSize,
-                child: ClipRRect(
-                  borderRadius: commonBarRadius,
-                  child: Image(image: imageProvider),
-                ),
-              ),
-          errorWidget:
-              (context, url, error) => BaseCard(
-                icon: cardIcon,
-                iconSize: iconSize,
-                size: artworkSize,
-              ),
-        )
-        : BaseCard(icon: cardIcon, iconSize: iconSize, size: artworkSize);
+    return BaseCard(
+      icon: cardIcon,
+      iconSize: iconSize,
+      size: artworkSize,
+      imageUrl: playlistArtwork,
+    );
   }
 
   Widget _buildActionButtons(BuildContext context, Color primaryColor) {

@@ -120,7 +120,10 @@ Future<void> checkAppUpdates() async {
             FilledButton(
               onPressed: () {
                 getDownloadUrl(map).then(
-                  (url) => {launchURL(Uri.parse(url)), GoRouter.of(context).pop(context)},
+                  (url) => {
+                    launchURL(Uri.parse(url)),
+                    GoRouter.of(context).pop(context),
+                  },
                 );
               },
               child: Text(context.l10n!.download.toUpperCase()),

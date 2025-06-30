@@ -23,6 +23,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
@@ -30,21 +31,15 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 
 class BottomNavigationPage extends StatefulWidget {
-  const BottomNavigationPage({
-    super.key,
-    required this.child,
-    required this.navigatorObserver,
-  });
+  const BottomNavigationPage({super.key, required this.child});
 
   final StatefulNavigationShell child;
-  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   State<BottomNavigationPage> createState() => _BottomNavigationPageState();
 }
 
-class _BottomNavigationPageState extends State<BottomNavigationPage>
-    with RouteAware {
+class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
   bool showMiniPlayer = false;
   @override
@@ -70,18 +65,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage>
 
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   Map<String, NavigationDestination> _getNavigationDestinations(
@@ -148,46 +132,61 @@ class _BottomNavigationPageState extends State<BottomNavigationPage>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isLargeScreen = _isLargeScreen(context);
-        return Scaffold(
-          body: Row(
-            children: [
-              if (isLargeScreen)
-                NavigationRail(
-                  labelType: NavigationRailLabelType.selected,
-                  destinations:
-                      _getNavigationDestinations(context).values
-                          .map(
-                            (destination) => NavigationRailDestination(
-                              icon: destination.icon,
-                              selectedIcon: destination.selectedIcon,
-                              label: Text(destination.label),
-                            ),
-                          )
-                          .toList(),
-                  selectedIndex: _selectedIndex.value,
-                  onDestinationSelected: (index) {
-                    /* widget.child.goBranch(
+    try {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final isLargeScreen = _isLargeScreen(context);
+          return Scaffold(
+            body: Row(
+              children: [
+                if (isLargeScreen)
+                  NavigationRail(
+                    labelType: NavigationRailLabelType.selected,
+                    destinations:
+                        _getNavigationDestinations(context).values
+                            .map(
+                              (destination) => NavigationRailDestination(
+                                icon: destination.icon,
+                                selectedIcon: destination.selectedIcon,
+                                label: Text(destination.label),
+                              ),
+                            )
+                            .toList(),
+                    selectedIndex: _selectedIndex.value,
+                    onDestinationSelected: (index) {
+                      /* widget.child.goBranch(
                       index,
                       initialLocation: index == widget.child.currentIndex,
                     ); */
-                    _onDestinationSelected(index, context);
-                    if (mounted)
-                      setState(() {
-                        _selectedIndex.value = index;
-                      });
-                  },
-                ),
-              Expanded(
-                child: Column(
-                  children: [
-                    Expanded(child: widget.child),
-                    if (showMiniPlayer)
-                      StreamBuilder<MediaItem?>(
-                        stream: audioHandler.mediaItem,
-                        builder: (context, snapshot) {
+                      _onDestinationSelected(index, context);
+                      if (mounted)
+                        setState(() {
+                          _selectedIndex.value = index;
+                        });
+                    },
+                  ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(child: widget.child),
+                      if (showMiniPlayer)
+                        StreamBuilder<MediaItem?>(
+                          stream: audioHandler.mediaItem,
+                          builder:
+                              (context, snapshot) =>
+                                  snapshot.hasData &&
+                                          !snapshot.hasError &&
+                                          snapshot.data != null
+                                      ? MiniPlayer(
+                                        metadata: snapshot.data!,
+                                        closeButton:
+                                            _buildMiniPlayerCloseButton(
+                                              context,
+                                            ),
+                                      )
+                                      : const SizedBox.shrink(),
+                          /*
+                        {
                           final metadata = snapshot.data;
                           if (metadata == null) {
                             return const SizedBox.shrink();
@@ -199,39 +198,48 @@ class _BottomNavigationPageState extends State<BottomNavigationPage>
                             );
                           }
                         },
-                      ),
-                  ],
+                        */
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          bottomNavigationBar:
-              !isLargeScreen
-                  ? NavigationBar(
-                    selectedIndex: _selectedIndex.value,
-                    labelBehavior:
-                        languageSetting == const Locale('en', '')
-                            ? NavigationDestinationLabelBehavior
-                                .onlyShowSelected
-                            : NavigationDestinationLabelBehavior.alwaysHide,
-                    onDestinationSelected: (index) {
-                      /* widget.child.goBranch(
+              ],
+            ),
+            bottomNavigationBar:
+                !isLargeScreen
+                    ? NavigationBar(
+                      selectedIndex: _selectedIndex.value,
+                      labelBehavior:
+                          languageSetting == const Locale('en', '')
+                              ? NavigationDestinationLabelBehavior
+                                  .onlyShowSelected
+                              : NavigationDestinationLabelBehavior.alwaysHide,
+                      onDestinationSelected: (index) {
+                        /* widget.child.goBranch(
                         index,
                         initialLocation: index == widget.child.currentIndex,
                       ); */
-                      _onDestinationSelected(index, context);
-                      if (mounted)
-                        setState(() {
-                          _selectedIndex.value = index;
-                        });
-                    },
-                    destinations:
-                        _getNavigationDestinations(context).values.toList(),
-                  )
-                  : null,
-        );
-      },
-    );
+                        _onDestinationSelected(index, context);
+                        if (mounted)
+                          setState(() {
+                            _selectedIndex.value = index;
+                          });
+                      },
+                      destinations:
+                          _getNavigationDestinations(context).values.toList(),
+                    )
+                    : null,
+          );
+        },
+      );
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      throw ErrorDescription('There was an error');
+    }
   }
 
   void _onDestinationSelected(int index, BuildContext context) {

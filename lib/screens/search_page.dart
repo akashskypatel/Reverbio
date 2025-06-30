@@ -40,8 +40,7 @@ import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key, required this.navigatorObserver});
-  final RouteObserver<PageRoute> navigatorObserver;
+  const SearchPage({super.key});
 
   @override
   _SearchPageState createState() => _SearchPageState();
@@ -49,7 +48,7 @@ class SearchPage extends StatefulWidget {
 
 List searchHistory = Hive.box('user').get('searchHistory', defaultValue: []);
 
-class _SearchPageState extends State<SearchPage> with RouteAware {
+class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
   final ValueNotifier<bool> _fetching = ValueNotifier(false);
@@ -69,23 +68,12 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
     _songsSearchFuture?.ignore();
     _albumsSearchFuture?.ignore();
     _playlistsSearchFuture?.ignore();
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   Future<void> search() async {
@@ -253,7 +241,6 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
         icon: FluentIcons.mic_sparkle_24_filled,
         title: context.l10n!.artist,
         future: Future.value(snapshot.data),
-        navigatorObserver: widget.navigatorObserver,
       );
     if (snapshot.connectionState == ConnectionState.waiting)
       return Column(
@@ -354,7 +341,6 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
                 cardIcon: FluentIcons.cd_16_filled,
                 isAlbum: true,
                 borderRadius: borderRadius,
-                navigatorObserver: widget.navigatorObserver,
               );
             },
           ),
@@ -401,7 +387,6 @@ class _SearchPageState extends State<SearchPage> with RouteAware {
                 playlistId: playlist['ytid'],
                 playlistArtwork: playlist['image'],
                 cardIcon: FluentIcons.apps_list_24_filled,
-                navigatorObserver: widget.navigatorObserver,
               );
             },
           ),

@@ -26,7 +26,7 @@ class BottomSheetBar extends StatelessWidget {
   const BottomSheetBar(
     this.title,
     this.backgroundColor, {
-      this.onTap,
+    this.onTap,
     this.borderRadius = BorderRadius.zero,
     this.actions,
     super.key,

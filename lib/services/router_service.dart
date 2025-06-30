@@ -51,10 +51,7 @@ class NavigationManager {
           StatefulNavigationShell navigationShell,
         ) {
           return getPage(
-            child: BottomNavigationPage(
-              navigatorObserver: navigatorObserver,
-              child: navigationShell,
-            ),
+            child: BottomNavigationPage(child: navigationShell),
             state: state,
           );
         },
@@ -105,22 +102,15 @@ class NavigationManager {
   static const String libraryPath = '/library';
   static const String queuePath = '/queue';
 
-  static HomePage homePage = HomePage(
-    navigatorObserver: navigatorObserver,
-  ); //key: homeTabNavigatorKey);
-  static LibraryPage libraryPage = LibraryPage(
-    navigatorObserver: navigatorObserver,
-  ); //key: libraryTabNavigatorKey);
-  static SearchPage searchPage = SearchPage(
-    navigatorObserver: navigatorObserver,
-  ); //key: searchTabNavigatorKey);
+  static HomePage homePage = HomePage(); //key: homeTabNavigatorKey);
+  static LibraryPage libraryPage =
+      LibraryPage(); //key: libraryTabNavigatorKey);
+  static SearchPage searchPage = SearchPage(); //key: searchTabNavigatorKey);
   static UserSongsPage queuePage = UserSongsPage(
     page: 'queue',
-    navigatorObserver: navigatorObserver,
   ); //key: queueTabNavigatorKey,page: 'queue',);
-  static SettingsPage settingsPage = SettingsPage(
-    navigatorObserver: navigatorObserver,
-  ); //key: settingsTabNavigatorKey);
+  static SettingsPage settingsPage =
+      SettingsPage(); //key: settingsTabNavigatorKey);
 
   List<StatefulShellBranch> _onlineRoutes() {
     return [
@@ -145,11 +135,7 @@ class NavigationManager {
               // Extract passed data (if any)
               final artistData = state.extra as dynamic;
               return getPage(
-                child: ArtistPage(
-                  page: 'artist',
-                  artistData: artistData,
-                  navigatorObserver: navigatorObserver,
-                ),
+                child: ArtistPage(page: 'artist', artistData: artistData),
                 state: state,
               );
             },
@@ -158,10 +144,7 @@ class NavigationManager {
             path: '/nowPlaying',
             pageBuilder: (context, GoRouterState state) {
               // Extract passed data (if any)
-              return getPage(
-                child: NowPlayingPage(navigatorObserver: navigatorObserver),
-                state: state,
-              );
+              return getPage(child: NowPlayingPage(), state: state);
             },
           ),
         ],
@@ -195,21 +178,18 @@ class NavigationManager {
                     case 'offline':
                       return UserSongsPage(
                         page: state.pathParameters['page'] ?? '',
-                        navigatorObserver: navigatorObserver,
                       );
                     case 'artists':
                       return LikedCardsPage(
                         title: context.l10n!.likedArtists,
                         page: state.pathParameters['page'] ?? 'artists',
                         key: ValueKey(DateTime.now()),
-                        navigatorObserver: navigatorObserver,
                       );
                     case 'albums':
                       return LikedCardsPage(
                         title: context.l10n!.likedAlbums,
                         page: state.pathParameters['page'] ?? 'albums',
                         key: ValueKey(DateTime.now()),
-                        navigatorObserver: navigatorObserver,
                       );
                     default:
                       return homePage;
@@ -248,12 +228,7 @@ class NavigationManager {
                       applicationVersion: appVersion,
                     ),
               ),
-              GoRoute(
-                path: 'about',
-                builder:
-                    (context, state) =>
-                        AboutPage(navigatorObserver: navigatorObserver),
-              ),
+              GoRoute(path: 'about', builder: (context, state) => AboutPage()),
             ],
           ),
         ],
@@ -270,10 +245,7 @@ class NavigationManager {
             path: homePath,
             pageBuilder: (context, GoRouterState state) {
               return getPage(
-                child: UserSongsPage(
-                  page: 'offline',
-                  navigatorObserver: navigatorObserver,
-                ),
+                child: UserSongsPage(page: 'offline'),
                 state: state,
               );
             },
@@ -297,12 +269,7 @@ class NavigationManager {
                       applicationVersion: appVersion,
                     ),
               ),
-              GoRoute(
-                path: 'about',
-                builder:
-                    (context, state) =>
-                        AboutPage(navigatorObserver: navigatorObserver),
-              ),
+              GoRoute(path: 'about', builder: (context, state) => AboutPage()),
             ],
           ),
         ],

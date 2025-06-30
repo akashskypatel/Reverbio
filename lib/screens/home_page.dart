@@ -33,14 +33,13 @@ import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_list.dart';
 
 class HomePage extends StatefulWidget {
-  HomePage({super.key, required this.navigatorObserver});
-  final RouteObserver<PageRoute> navigatorObserver;
+  HomePage({super.key});
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with RouteAware {
+class _HomePageState extends State<HomePage> {
   Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
     playlistsNum: recommendedCardsNumber,
   );
@@ -62,18 +61,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   @override
@@ -81,7 +69,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reverbio'),
-        actions: [_buildSyncButton(), if (kDebugMode) const SizedBox(width: 24, height: 24,),],
+        actions: [
+          _buildSyncButton(),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
+        ],
       ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
@@ -114,7 +105,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                   return HorizontalCardScroller(
                     title: context.l10n!.suggestedPlaylists,
                     future: _recommendedPlaylistsFuture,
-                    navigatorObserver: widget.navigatorObserver,
                   );
                 },
               ),
@@ -130,7 +120,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                     return HorizontalCardScroller(
                       title: context.l10n!.suggestedArtists,
                       future: _recommendedArtistsFuture,
-                      navigatorObserver: widget.navigatorObserver,
                       icon: FluentIcons.mic_sparkle_24_filled,
                     );
                   },
@@ -158,7 +147,15 @@ class _HomePageState extends State<HomePage> with RouteAware {
           _recommendedPlaylistsFuture = getPlaylists(
             playlistsNum: recommendedCardsNumber,
           );
-          _recommendedSongsFuture = getRecommendedSongs();
+          _recommendedSongsFuture =
+              getRecommendedSongs()..then((songs) {
+                if (mounted) {
+                  setState(() {
+                    _recommendedSongs = songs;
+                  });
+                  _parseArtistList(_recommendedSongs);
+                }
+              });
         });
       },
     );

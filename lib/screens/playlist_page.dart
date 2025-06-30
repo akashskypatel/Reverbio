@@ -47,20 +47,18 @@ class PlaylistPage extends StatefulWidget {
     this.playlistData,
     this.cardIcon = FluentIcons.music_note_1_24_regular,
     this.isArtist = false,
-    required this.navigatorObserver,
     required this.page,
   });
   final String page;
   final dynamic playlistData;
   final IconData cardIcon;
   final bool isArtist;
-  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   _PlaylistPageState createState() => _PlaylistPageState();
 }
 
-class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
+class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   dynamic _playlist;
 
@@ -80,18 +78,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
 
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   Future<void> _initializePlaylist() async {
@@ -123,7 +110,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
                             'album'
                         ? await getAlbumDetailsById(widget.playlistData['id'])
                         : null)));
-    
+
     if (_playlist != null) {
       _loadMore();
     }
@@ -226,7 +213,7 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
           ),
           if (_playlist != null && _playlist['source'] == 'user-created')
             _buildEditButton(),
-          if (kDebugMode) const SizedBox(width: 24, height: 24,),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ],
     );
@@ -235,7 +222,11 @@ class _PlaylistPageState extends State<PlaylistPage> with RouteAware {
   dynamic _getPlaylistData() {
     final data =
         widget.page == 'album' || _playlist['isAlbum']
-            ? {...(_playlist as Map), 'album': _playlist['title'], 'title': null}
+            ? {
+              ...(_playlist as Map),
+              'album': _playlist['title'],
+              'title': null,
+            }
             : _songsList;
     return data;
   }
