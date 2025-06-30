@@ -78,13 +78,13 @@ Future<List<String>> getSearchSuggestions(String query) async {
   // }
 
   // Built-in implementation:
-  
+
   final suggestions = await yt.search.getQuerySuggestions(query);
 
   return suggestions;
 }
 
-Future<List<Map<String, int>>> getSkipSegments(String id) async {
+Future<List<Map<String, Duration>>> getSkipSegments(String id) async {
   try {
     final res = await http.get(
       Uri(
@@ -106,15 +106,31 @@ Future<List<Map<String, int>>> getSkipSegments(String id) async {
       ),
     );
     if (res.body != 'Not Found') {
-      final data = jsonDecode(res.body);
+      final data = List.from(jsonDecode(res.body));
       final segments =
           data.map((obj) {
-            return Map.castFrom<String, dynamic, String, int>({
-              'start': obj['segment'].first.toInt(),
-              'end': obj['segment'].last.toInt(),
-            });
+            return {
+              'start': Duration(
+                microseconds:
+                    ((double.tryParse(
+                                  (obj['segment'] as List).first.toString(),
+                                ) ??
+                                0) *
+                            1e+6)
+                        .toInt(),
+              ),
+              'end': Duration(
+                microseconds:
+                    ((double.tryParse(
+                                  (obj['segment'] as List).last.toString(),
+                                ) ??
+                                0) *
+                            1e+6)
+                        .toInt(),
+              ),
+            };
           }).toList();
-      return List.castFrom<dynamic, Map<String, int>>(segments);
+      return List.from(segments);
     } else {
       return [];
     }

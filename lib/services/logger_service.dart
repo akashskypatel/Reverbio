@@ -39,7 +39,7 @@ class Logger {
 
     final logMessage =
         '[$timestamp] $errorLocation:$errorMessage\n$stackTraceMessage';
-    if(kDebugMode) {
+    if (kDebugMode) {
       debugPrint(logMessage);
     }
     _logs += '$logMessage\n';

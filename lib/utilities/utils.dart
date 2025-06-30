@@ -247,4 +247,3 @@ DateTime tryParseDate(String date) {
     return DateTime.now();
   }
 }
-

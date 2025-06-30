@@ -32,6 +32,7 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -88,6 +89,10 @@ class SongBar extends StatefulWidget {
         e,
         stackTrace,
       );
+    }
+    if (isError) {
+      final context = NavigationManager().context;
+      showToast(context, context.l10n!.errorCouldNotFindAStream);
     }
     return !isError;
   }
@@ -395,137 +400,157 @@ class _SongBarState extends State<SongBar> {
   }
 
   void _showContextMenu(BuildContext context, TapDownDetails details) async {
-    //TODO: fix positioning to account for navigation rail on large screen
-    final RenderBox tappedBox = context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromLTRB(
-      details.globalPosition.dx,
-      details.globalPosition.dy,
-      tappedBox.size.width - details.globalPosition.dx,
-      tappedBox.size.height - details.globalPosition.dy,
-    );
+    try {
+      //TODO: fix positioning to account for navigation rail on large screen
+      final RenderBox tappedBox = context.findRenderObject() as RenderBox;
+      final RelativeRect position = RelativeRect.fromLTRB(
+        details.globalPosition.dx,
+        details.globalPosition.dy,
+        tappedBox.size.width - details.globalPosition.dx,
+        tappedBox.size.height - details.globalPosition.dy,
+      );
 
-    final value = await showMenu(
-      context: context,
-      position: position,
-      color: Theme.of(context).colorScheme.surface,
-      items: _buildPopupMenuItems(context),
-    );
-    if (value != null) {
-      _popupMenuItemAction(value);
+      final value = await showMenu(
+        context: context,
+        position: position,
+        color: Theme.of(context).colorScheme.surface,
+        items: _buildPopupMenuItems(context),
+      );
+      if (value != null) {
+        _popupMenuItemAction(value);
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      throw ErrorDescription('There was an error');
     }
   }
 
   List<PopupMenuItem<String>> _buildPopupMenuItems(BuildContext context) {
-    final isInQueue = isSongInQueue(widget);
-    return [
-      PopupMenuItem<String>(
-        value: 'like',
-        child: ValueListenableBuilder<bool>(
-          valueListenable: songLikeStatus,
-          builder: (_, value, __) {
-            return Row(
+    try {
+      final isInQueue = isSongInQueue(widget);
+      return [
+        PopupMenuItem<String>(
+          value: 'like',
+          child: ValueListenableBuilder<bool>(
+            valueListenable: songLikeStatus,
+            builder: (_, value, __) {
+              return Row(
+                children: [
+                  Icon(
+                    likeStatusToIconMapper[value],
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    value
+                        ? context.l10n!.removeFromLikedSongs
+                        : context.l10n!.addToLikedSongs,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        if (widget.onRemove != null)
+          PopupMenuItem<String>(
+            value: 'remove',
+            child: Row(
               children: [
                 Icon(
-                  likeStatusToIconMapper[value],
+                  FluentIcons.delete_24_filled,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  value
-                      ? context.l10n!.removeFromLikedSongs
-                      : context.l10n!.addToLikedSongs,
-                ),
+                Text(context.l10n!.removeFromPlaylist),
               ],
-            );
-          },
-        ),
-      ),
-      if (widget.onRemove != null)
+            ),
+          ),
         PopupMenuItem<String>(
-          value: 'remove',
+          value: 'add_to_playlist',
           child: Row(
             children: [
               Icon(
-                FluentIcons.delete_24_filled,
+                FluentIcons.add_24_regular,
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(context.l10n!.removeFromPlaylist),
+              Text(context.l10n!.addToPlaylist),
             ],
           ),
         ),
-      PopupMenuItem<String>(
-        value: 'add_to_playlist',
-        child: Row(
-          children: [
-            Icon(
-              FluentIcons.add_24_regular,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(context.l10n!.addToPlaylist),
-          ],
+        PopupMenuItem<String>(
+          value: isInQueue ? 'remove_from_queue' : 'add_to_queue',
+          child: Row(
+            children: [
+              Icon(
+                isInQueue ? Icons.playlist_remove : Icons.playlist_add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isInQueue
+                    ? context.l10n!.removeSongFromQueue
+                    : context.l10n!.addSongToQueue,
+              ),
+            ],
+          ),
         ),
-      ),
-      PopupMenuItem<String>(
-        value: isInQueue ? 'remove_from_queue' : 'add_to_queue',
-        child: Row(
-          children: [
-            Icon(
-              isInQueue ? Icons.playlist_remove : Icons.playlist_add,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isInQueue
-                  ? context.l10n!.removeSongFromQueue
-                  : context.l10n!.addSongToQueue,
-            ),
-          ],
+        PopupMenuItem<String>(
+          value: 'offline',
+          child: ValueListenableBuilder<bool>(
+            valueListenable: songOfflineStatus,
+            builder: (_, value, __) {
+              return Row(
+                children: [
+                  Icon(
+                    value
+                        ? FluentIcons.cellular_off_24_regular
+                        : FluentIcons.cellular_data_1_24_regular,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    value
+                        ? context.l10n!.removeOffline
+                        : context.l10n!.makeOffline,
+                  ),
+                ],
+              );
+            },
+          ),
         ),
-      ),
-      PopupMenuItem<String>(
-        value: 'offline',
-        child: ValueListenableBuilder<bool>(
-          valueListenable: songOfflineStatus,
-          builder: (_, value, __) {
-            return Row(
+        if (widget.song['ytid'] != null)
+          PopupMenuItem<String>(
+            value: 'youtube',
+            child: Row(
               children: [
                 Icon(
-                  value
-                      ? FluentIcons.cellular_off_24_regular
-                      : FluentIcons.cellular_data_1_24_regular,
+                  FluentIcons.link_24_regular,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  value
-                      ? context.l10n!.removeOffline
-                      : context.l10n!.makeOffline,
-                ),
+                Text(context.l10n!.openInYouTube),
               ],
-            );
-          },
-        ),
-      ),
-      if (widget.song['ytid'] != null)
-        PopupMenuItem<String>(
-          value: 'youtube',
-          child: Row(
-            children: [
-              Icon(
-                FluentIcons.link_24_regular,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(context.l10n!.openInYouTube),
-            ],
+            ),
           ),
-        ),
-      ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((e) {
-        return e as PopupMenuItem<String>;
-      }),
-    ];
+        ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((
+          e,
+        ) {
+          return e as PopupMenuItem<String>;
+        }),
+      ];
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      throw ErrorDescription('There was an error');
+    }
   }
 
   dynamic _getSongData() {
@@ -580,7 +605,7 @@ class _SongBarState extends State<SongBar> {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).colorScheme.surface,
-      icon: Icon(FluentIcons.more_horizontal_24_filled, color: primaryColor),
+      icon: Icon(FluentIcons.more_vertical_24_filled, color: primaryColor),
       onSelected: _popupMenuItemAction,
       itemBuilder: _buildPopupMenuItems,
     );

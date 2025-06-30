@@ -37,6 +37,7 @@ class BaseCard extends StatefulWidget {
     this.size = 220,
     this.iconSize,
     this.image,
+    this.imageUrl,
     this.inputData,
     this.showLabel = false,
     this.showOverflowLabel = false,
@@ -50,6 +51,7 @@ class BaseCard extends StatefulWidget {
   final bool showLabel;
   final bool showOverflowLabel;
   final bool showLike;
+  final String? imageUrl;
   final CachedNetworkImage? image;
   final Map<dynamic, dynamic>? inputData;
   final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
@@ -197,19 +199,11 @@ class _BaseCardState extends State<BaseCard> {
 
   Widget _buildImage(BuildContext context) {
     final imageLink = _parseImageLink();
-    if (widget.inputData != null && imageLink.isNotEmpty) {
-      return FutureBuilder(
-        future: checkUrl(imageLink),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting ||
-              snapshot.hasError ||
-              !snapshot.hasData ||
-              snapshot.data! >= 400)
-            return _buildNoArtworkCard();
-          return _buildArtworkCard(imageLink);
-        },
-      );
-    } else
+    if (widget.imageUrl.isNotNullOrEmpty)
+      return _buildArtworkCard(widget.imageUrl!);
+    else if (widget.inputData != null && imageLink.isNotNullOrEmpty)
+      return _buildArtworkCard(imageLink);
+    else
       return _buildNoArtworkCard();
   }
 
@@ -220,12 +214,7 @@ class _BaseCardState extends State<BaseCard> {
       height: widget.size,
       width: widget.size,
       fit: BoxFit.cover,
-      errorWidget:
-          (context, url, error) => BaseCard(
-            icon: widget.icon,
-            iconSize: likeSize,
-            size: widget.size,
-          ),
+      errorWidget: (context, url, error) => _buildNoArtworkCard(),
     );
   }
 

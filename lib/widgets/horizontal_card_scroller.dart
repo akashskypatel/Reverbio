@@ -40,13 +40,11 @@ class HorizontalCardScroller extends StatefulWidget {
     this.title = '',
     this.icon = FluentIcons.music_note_1_24_regular,
     this.future,
-    required this.navigatorObserver,
   });
 
   final IconData icon;
   final String title;
   final Future<dynamic>? future;
-  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   State<HorizontalCardScroller> createState() => _HorizontalCardScrollerState();
@@ -158,16 +156,11 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
               builder: (context) {
                 switch (dataType) {
                   case 'artist':
-                    return ArtistPage(
-                      page: 'artist',
-                      artistData: data,
-                      navigatorObserver: widget.navigatorObserver,
-                    );
+                    return ArtistPage(page: 'artist', artistData: data);
                   default:
                     return PlaylistPage(
                       page: dataType ?? '',
                       playlistData: data,
-                      navigatorObserver: widget.navigatorObserver,
                     );
                 }
               },

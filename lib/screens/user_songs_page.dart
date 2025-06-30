@@ -30,6 +30,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
@@ -39,20 +40,15 @@ import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_list.dart';
 
 class UserSongsPage extends StatefulWidget {
-  const UserSongsPage({
-    super.key,
-    required this.page,
-    required this.navigatorObserver,
-  });
+  const UserSongsPage({super.key, required this.page});
 
   final String page;
-  final RouteObserver<PageRoute> navigatorObserver;
 
   @override
   State<UserSongsPage> createState() => _UserSongsPageState();
 }
 
-class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
+class _UserSongsPageState extends State<UserSongsPage> {
   bool _isEditEnabled = false;
 
   @override
@@ -62,18 +58,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
 
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   @override
@@ -91,6 +76,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
             Row(children: [_buildQueueActionsList()]),
           if (title == context.l10n!.likedSongs)
             IconButton(
+              iconSize: pageHeaderIconSize,
               onPressed: () {
                 if (mounted)
                   setState(() {
@@ -113,7 +99,6 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
   }
 
   Widget _buildQueueActionsList() {
-    const adjustedMiniIconSize = 20.0;
     return ValueListenableBuilder(
       valueListenable: activeQueueLength,
       builder: (_, value, __) {
@@ -130,7 +115,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                             : FluentIcons.arrow_repeat_1_24_filled,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      iconSize: adjustedMiniIconSize,
+                      iconSize: pageHeaderIconSize,
                       onPressed: () {
                         repeatNotifier.value =
                             repeatMode == AudioServiceRepeatMode.all
@@ -145,7 +130,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
                         FluentIcons.arrow_repeat_all_off_24_filled,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      iconSize: adjustedMiniIconSize,
+                      iconSize: pageHeaderIconSize,
                       onPressed: () {
                         final _isSingleSongPlaying =
                             audioHandler.queueSongBars.length == 1;
@@ -161,6 +146,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
               },
             ),
             IconButton(
+              iconSize: pageHeaderIconSize,
               tooltip: context.l10n!.addToPlaylist,
               onPressed: value == 0 ? null : _showExistingPlaylists,
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
@@ -168,6 +154,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
               icon: const Icon(Icons.playlist_add),
             ),
             IconButton(
+              iconSize: pageHeaderIconSize,
               tooltip: context.l10n!.saveAsPlayList,
               onPressed: value == 0 ? null : _showSaveAsPlaylistDialog,
               disabledColor: Theme.of(context).colorScheme.inversePrimary,
@@ -175,6 +162,7 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
               icon: const Icon(FluentIcons.add_24_filled),
             ),
             IconButton(
+              iconSize: pageHeaderIconSize,
               tooltip: context.l10n!.clearQueue,
               onPressed:
                   value == 0
@@ -461,7 +449,11 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
         currentLikedSongsLength;
   }
 
-  Widget buildPlaylistHeader(String title, IconData icon, ValueNotifier<int> length) {
+  Widget buildPlaylistHeader(
+    String title,
+    IconData icon,
+    ValueNotifier<int> length,
+  ) {
     return PlaylistHeader(
       _buildPlaylistImage(title, icon, length),
       title,
@@ -534,7 +526,11 @@ class _UserSongsPageState extends State<UserSongsPage> with RouteAware {
     );
   }
 
-  Widget _buildPlaylistImage(String title, IconData icon, ValueNotifier<int> length) {
+  Widget _buildPlaylistImage(
+    String title,
+    IconData icon,
+    ValueNotifier<int> length,
+  ) {
     final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
     return ValueListenableBuilder(
       valueListenable: length,

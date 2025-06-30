@@ -37,14 +37,13 @@ import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key, required this.navigatorObserver});
-  final RouteObserver<PageRoute> navigatorObserver;
+  const LibraryPage({super.key});
 
   @override
   _LibraryPageState createState() => _LibraryPageState();
 }
 
-class _LibraryPageState extends State<LibraryPage> with RouteAware {
+class _LibraryPageState extends State<LibraryPage> {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
   ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
@@ -57,7 +56,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
     currentOfflineSongsLength.removeListener(_listener);
     currentRecentlyPlayedLength.removeListener(_listener);
     currentLikedAlbumsLength.removeListener(_listener);
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -69,16 +67,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
     currentOfflineSongsLength.addListener(_listener);
     currentRecentlyPlayedLength.addListener(_listener);
     currentLikedAlbumsLength.addListener(_listener);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
   }
 
   void _listener() {
@@ -134,7 +122,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
           cardIcon: FluentIcons.history_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.likedSongs,
@@ -142,7 +129,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
               () => NavigationManager.router.go('/library/userSongs/liked'),
           cardIcon: FluentIcons.music_note_2_24_regular,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.likedArtists,
@@ -154,7 +140,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                   ? commonCustomBarRadiusLast
                   : BorderRadius.zero,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.likedAlbums,
@@ -166,7 +151,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                   ? commonCustomBarRadiusLast
                   : BorderRadius.zero,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver,
         ),
         PlaylistBar(
           context.l10n!.offlineSongs,
@@ -175,7 +159,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
           cardIcon: FluentIcons.cellular_off_24_filled,
           borderRadius: commonCustomBarRadiusLast,
           showBuildActions: false,
-          navigatorObserver: widget.navigatorObserver,
         ),
         _buildSearchBar(),
         SectionHeader(
@@ -330,7 +313,6 @@ class _LibraryPageState extends State<LibraryPage> with RouteAware {
                       playlist['source'] == 'user-youtube'
                   ? () => _showRemovePlaylistDialog(playlist)
                   : null,
-          navigatorObserver: widget.navigatorObserver,
         ),
       );
     }

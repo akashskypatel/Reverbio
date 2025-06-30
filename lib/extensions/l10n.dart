@@ -25,4 +25,3 @@ import 'package:reverbio/localization/app_localizations.dart';
 extension ContextX on BuildContext {
   AppLocalizations? get l10n => AppLocalizations.of(this);
 }
-

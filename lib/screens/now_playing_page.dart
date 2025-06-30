@@ -44,27 +44,15 @@ import 'package:reverbio/widgets/spinner.dart';
 final _lyricsController = FlipCardController();
 
 class NowPlayingPage extends StatefulWidget {
-  const NowPlayingPage({super.key, required this.navigatorObserver});
-  final RouteObserver<PageRoute> navigatorObserver;
+  const NowPlayingPage({super.key});
 
   @override
   _NowPlayingPageState createState() => _NowPlayingPageState();
 }
 
-class _NowPlayingPageState extends State<NowPlayingPage> with RouteAware {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
-  }
-
+class _NowPlayingPageState extends State<NowPlayingPage> {
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 

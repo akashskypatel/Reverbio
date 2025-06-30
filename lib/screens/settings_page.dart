@@ -47,27 +47,15 @@ import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key, required this.navigatorObserver});
-  final RouteObserver<PageRoute> navigatorObserver;
+  const SettingsPage({super.key});
 
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> with RouteAware {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to the RouteObserver
-    final route = ModalRoute.of(context);
-    if (route != null) {
-      widget.navigatorObserver.subscribe(this, route as PageRoute);
-    }
-  }
-
+class _SettingsPageState extends State<SettingsPage> {
   @override
   void dispose() {
-    widget.navigatorObserver.unsubscribe(this);
     super.dispose();
   }
 

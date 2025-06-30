@@ -80,17 +80,18 @@ class PlaylistHeader extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(6),
-      child: 
-      MediaQuery.of(context).size.width > 480 ?
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: _widgetList(),
-      ) : Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: _widgetList(),
-      ),
+      child:
+          MediaQuery.of(context).size.width > 480
+              ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: _widgetList(),
+              )
+              : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: _widgetList(),
+              ),
     );
   }
 }
