@@ -125,22 +125,74 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
     },
   ],
   hooks: {
+    onQueueSong: {
+      //This hook is always executed asynchronously in the background
+      id: "queue_song",
+      onTrigger: {
+        methodName: "exampleFunction",
+      },
+    },
     onEntityLiked: {
+      //This hook is always executed asynchronously in the background
       id: "cache_liked",
       onTrigger: {
         methodName: "exampleFunction",
-        //changing these values will not make a difference. This hook is always executed asynchronously in the background
-        isAsync: true,
-        isBackground: true,
+      },
+    },
+    onPlaylistPlay: {
+      //This hook is always executed asynchronously in the background
+      id: "playlist_play",
+      onTrigger: {
+        methodName: "exampleFunction",
+      },
+    },
+    onPlaylistSongAdd: {
+      //This hook is always executed asynchronously in the background
+      id: "playlist_song_add",
+      onTrigger: {
+        methodName: "exampleFunction",
+      },
+    },
+    onPlaylistAdd: {
+      //This hook is always executed asynchronously in the background
+      id: "playlist_add",
+      onTrigger: {
+        methodName: "exampleFunction",
       },
     },
     onGetSongUrl: {
+      //This hook is always executed asynchronously in the foreground
       id: "get_song_url",
       onTrigger: {
         methodName: "exampleFunction",
-        //changing these values will not make a difference. This hook is always executed asynchronously in the foreground
-        isAsync: true,
-        isBackground: false,
+      },
+    },
+    onGetArtistInfo: {
+      //This hook is always executed asynchronously in the foreground
+      id: "get_artist_info",
+      onTrigger: {
+        methodName: "exampleFunction",
+      },
+    },
+    onGetSongInfo: {
+      //This hook is always executed asynchronously in the foreground
+      id: "get_song_info",
+      onTrigger: {
+        methodName: "exampleFunction",
+      },
+    },
+    onGetAlbumInfo: {
+      //This hook is always executed asynchronously in the foreground
+      id: "get_album_info",
+      onTrigger: {
+        methodName: "exampleFunction",
+      },
+    },
+    onSearch: {
+      //This hook is always executed asynchronously in the foreground
+      id: "search_query",
+      onTrigger: {
+        methodName: "exampleFunction",
       },
     },
   },

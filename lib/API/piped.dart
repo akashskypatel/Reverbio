@@ -48,7 +48,10 @@ class PipedVideo {
       final uri = Uri.https(account.instance.apiUrl, '/login');
       final response = await http.post(uri, body: payload);
       final result = Map<String, dynamic>.from(jsonDecode(response.body));
-      if (result['token'] == null) throw ErrorDescription('Could not log in to ${account.instance.apiUrl}.');
+      if (result['token'] == null)
+        throw ErrorDescription(
+          'Could not log in to ${account.instance.apiUrl}.',
+        );
       account.token = result['token'];
       return result['token'];
     } catch (e, stackTrace) {

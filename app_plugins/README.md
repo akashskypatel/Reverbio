@@ -577,8 +577,35 @@ hooks: {
 
 ### Available Hooks:
 
-- `onEntityLiked`: Triggered when a artist/song/album is liked
-- `onGetSongUrl`: Triggered when a song URL is requested before playing
+- `onEntityLiked`: Triggered when a artist/song/album is liked. App will pass a JSON object as string containing, depending on requested object, artist name, album name, annd song name.
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz id for requested object
+  "artist": "artist name", //cannot be null
+  "album": "album name", //can be null
+  "song": "song name", //can be null
+}
+```
+
+- `onGetSongUrl`: Triggered when a song URL is requested before playing. App will pass a JSON object as string containing, at a minimum, artist name, song name, and album name (if available and relevant).
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz id for requested object.
+  "artist": "artist name", //cannot be null
+  "album": "album name", //can be null
+  "song": "song name", //cannot be null
+}
+```
+
+- `onQueueSong`: Triggered when user adds a song to the queue
+- `onPlaylistPlay`: Triggered when user plays a playlist
+- `onPlaylistSongAdd`: Triggered when user adds a song to a playlist
+- `onPlaylistAdd`: Triggered when user adds a new playlist
+- `onGetArtistInfo`: Triggered when the app querues artist info
+- `onGetSongInfo`: Triggered when the app querues song info
+- `onGetAlbumInfo`: Triggered when the app querues album info
+- `onSearch`: Triggered when the user executes a search query on the search page
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Plugin Lifecycle

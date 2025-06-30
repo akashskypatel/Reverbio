@@ -560,8 +560,7 @@ class PluginsManager {
           jsResult == null
               ? '$pluginName: ${result.stringResult}'
               : jsResult['message'] == null
-              ? message ??
-                  '$pluginName ${context.l10n!.operationPerformed}'
+              ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
               : '$pluginName: ${jsResult['message']}';
       showToast(context, text);
     } catch (e, stackTrace) {
@@ -981,6 +980,46 @@ class PluginsManager {
         args: [entity],
       );
     }
+  }
+
+  static dynamic onGetArtistInfo(dynamic artist) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
+  }
+
+  static dynamic onGetSongInfo(dynamic song) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
+  }
+
+  static dynamic onGetAlbumInfo(dynamic album) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
+  }
+
+  static dynamic onSearch(String query) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
+  }
+
+  static dynamic onPlaylistPlay(dynamic playlist) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
+  }
+
+  static dynamic onPlaylistSongAdd(String query) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
+  }
+
+  static dynamic onPlaylistAdd(String query) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
+  }
+
+  static dynamic onQueueSong(String query) async {
+    //TODO implement
+    throw UnimplementedError('Not implemented');
   }
 
   static Future<void> getSongUrl(dynamic song, Function fallback) async {
