@@ -85,6 +85,10 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 
 ## Plugins
 
+[Purchase plugins at my Patreon](https://www.patreon.com/c/AkashSkyPatel/collections)
+
+OR
+
 [Create your own JavaScript Plugin!](https://github.com/akashskypatel/Reverbio/blob/master/app_plugins/README.md)
 
 ---
