@@ -186,10 +186,7 @@ String addSongInCustomPlaylist(
   if (customPlaylist != null) {
     final List<dynamic> playlistSongs = customPlaylist['list'];
     if (playlistSongs.any(
-      (playlistElement) =>
-          (playlistElement['id'] == song['id']) ||
-          ((playlistElement['title'] == song['title']) &&
-              (playlistElement['artist'] == song['artist'])),
+      (playlistElement) => checkSong(playlistElement, song),
     )) {
       return context.l10n!.songAlreadyInPlaylist;
     }
@@ -220,7 +217,7 @@ bool removeSongFromPlaylist(
       playlistSongs.removeAt(removeOneAtIndex);
     } else {
       final initialLength = playlistSongs.length;
-      playlistSongs.removeWhere((song) => song['id'] == songToRemove['id']);
+      playlistSongs.removeWhere((s) => checkSong(s, songToRemove));
       if (playlistSongs.length == initialLength) return false;
     }
 

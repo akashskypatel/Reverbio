@@ -41,6 +41,7 @@ import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/logger_service.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
+import 'package:reverbio/services/proxy_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
@@ -52,6 +53,7 @@ ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
 
 final logger = Logger();
 final appLinks = AppLinks();
+final pxm = ProxyManager();
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
@@ -268,7 +270,9 @@ Future<void> initialisation() async {
     currentLikedAlbumsLength.value = userLikedAlbumsList.length;
     currentLikedArtistsLength.value = userLikedArtistsList.length;
     activeQueueLength.value = audioHandler.queueSongBars.length;
+
     await PM.initialize();
+
     try {
       // Listen to incoming links while app is running
       appLinks.uriLinkStream.listen(

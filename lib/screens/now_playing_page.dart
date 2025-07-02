@@ -237,7 +237,9 @@ class NowPlayingArtwork extends StatelessWidget {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Spinner();
-            } else if (snapshot.hasError || snapshot.data == 'not found') {
+            } else if (snapshot.hasError ||
+                snapshot.data == 'not found' ||
+                snapshot.data == null) {
               return Center(
                 child: Text(
                   context.l10n!.lyricsNotAvailable,
@@ -780,7 +782,10 @@ class BottomActionsRow extends StatelessWidget {
           ),
           iconSize: iconSize,
           onPressed: () {
-            updateSongLikeStatus(audioId, !status.value);
+            updateSongLikeStatus(
+              audioHandler.audioPlayer.songValueNotifier.value?.song,
+              !status.value,
+            );
             status.value = !status.value;
           },
         );

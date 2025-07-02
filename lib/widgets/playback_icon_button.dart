@@ -35,7 +35,10 @@ Widget buildPlaybackIconButton(
   final processingState = playerState?.processingState;
   final isPlaying = playerState?.playing ?? false;
 
-  final iconDataAndAction = getIconFromState(processingState, isPlaying);
+  final iconDataAndAction = getIconFromProcessingState(
+    processingState,
+    isPlaying,
+  );
 
   return RawMaterialButton(
     elevation: elevation,
@@ -48,7 +51,7 @@ Widget buildPlaybackIconButton(
   );
 }
 
-_IconDataAndAction getIconFromState(
+_IconDataAndAction getIconFromProcessingState(
   AudioProcessingState? processingState,
   bool isPlaying,
 ) {
@@ -58,8 +61,22 @@ _IconDataAndAction getIconFromState(
       return _IconDataAndAction(iconData: FluentIcons.spinner_ios_16_filled);
     case AudioProcessingState.completed:
       return _IconDataAndAction(
-        iconData: FluentIcons.arrow_counterclockwise_24_filled,
-        onPressed: () => audioHandler.seek(Duration.zero),
+        iconData:
+            (audioHandler.duration - audioHandler.position).inMilliseconds <=
+                    100
+                ? FluentIcons.arrow_counterclockwise_24_filled
+                : isPlaying
+                ? FluentIcons.pause_24_filled
+                : FluentIcons.play_24_filled,
+        onPressed:
+            () =>
+                (audioHandler.duration - audioHandler.position)
+                            .inMilliseconds <=
+                        100
+                    ? audioHandler.seek(Duration.zero)
+                    : isPlaying
+                    ? audioHandler.pause()
+                    : audioHandler.play(),
       );
     default:
       return _IconDataAndAction(

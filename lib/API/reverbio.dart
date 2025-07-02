@@ -84,7 +84,7 @@ Future<List<String>> getSearchSuggestions(String query) async {
   return suggestions;
 }
 
-Future<List<Map<String, Duration>>> getSkipSegments(String id) async {
+Future<List<Map<String, int>>> getSkipSegments(String id) async {
   try {
     final res = await http.get(
       Uri(
@@ -110,24 +110,19 @@ Future<List<Map<String, Duration>>> getSkipSegments(String id) async {
       final segments =
           data.map((obj) {
             return {
-              'start': Duration(
-                microseconds:
-                    ((double.tryParse(
-                                  (obj['segment'] as List).first.toString(),
-                                ) ??
-                                0) *
-                            1e+6)
-                        .toInt(),
-              ),
-              'end': Duration(
-                microseconds:
-                    ((double.tryParse(
-                                  (obj['segment'] as List).last.toString(),
-                                ) ??
-                                0) *
-                            1e+6)
-                        .toInt(),
-              ),
+              'start':
+                  ((double.tryParse(
+                                (obj['segment'] as List).first.toString(),
+                              ) ??
+                              0) *
+                          1e+6)
+                      .toInt(),
+
+              'end':
+                  ((double.tryParse((obj['segment'] as List).last.toString()) ??
+                              0) *
+                          1e+6)
+                      .toInt(),
             };
           }).toList();
       return List.from(segments);

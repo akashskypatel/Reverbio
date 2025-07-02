@@ -119,7 +119,10 @@ class _MiniPlayerState extends State<MiniPlayer> {
   Widget _buildPlayPauseButton(BuildContext context) {
     final processingState = audioHandler.audioPlayer.state;
     final isPlaying = audioHandler.audioPlayer.playing;
-    final iconDataAndAction = getIconFromState(processingState, isPlaying);
+    final iconDataAndAction = getIconFromProcessingState(
+      processingState,
+      isPlaying,
+    );
     return IconButton(
       onPressed: iconDataAndAction.onPressed,
       icon: Icon(

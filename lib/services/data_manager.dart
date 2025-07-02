@@ -36,7 +36,11 @@ void addOrUpdateData(String category, String key, dynamic value) async {
       await _box.put('${key}_date', DateTime.now());
     }
   } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    logger.log(
+      'Error in ${stackTrace.getCurrentMethodName()} writing $category, $key:',
+      e,
+      stackTrace,
+    );
   }
 }
 
