@@ -196,9 +196,10 @@ packages:
   discogs_api_client:
     dependency: "direct main"
     description:
-      path: "../discogs_api_client"
-      relative: true
-    source: path
+      name: discogs_api_client
+      sha256: e9310b17e67e3530eac69d6046f419810a7856528ba663ec3173a3daa99277da
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.6"
   dynamic_color:
     dependency: "direct main"
@@ -288,10 +289,11 @@ packages:
   flutter_js:
     dependency: "direct main"
     description:
-      path: "../flutter_js"
-      relative: true
-    source: path
-    version: "0.8.2"
+      name: flutter_js
+      sha256: a04966b102967891ee4947d6e52b450676f16204876ba936e394008ca26db04b
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.5"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -566,9 +568,10 @@ packages:
   musicbrainz_api_client:
     dependency: "direct main"
     description:
-      path: "../musicbrainz_api_client"
-      relative: true
-    source: path
+      name: musicbrainz_api_client
+      sha256: "05d94ed5e1dab7a35b48ab15d02de5ad042f092d00e12a0208cfa18ffb37fc04"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.8"
   octo_image:
     dependency: transitive
