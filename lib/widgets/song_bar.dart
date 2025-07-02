@@ -117,6 +117,10 @@ class SongBar extends StatefulWidget {
   void setBorder({BorderRadius borderRadius = BorderRadius.zero}) {
     _borderRadiusNotifier.value = borderRadius;
   }
+
+  bool equals(SongBar other) {
+    return checkSong(song, other.song);
+  }
 }
 
 class _SongBarState extends State<SongBar> {
@@ -270,7 +274,7 @@ class _SongBarState extends State<SongBar> {
 
   void likeItem() {
     final isLiked = isSongAlreadyLiked(widget.song['id']);
-    updateSongLikeStatus(widget.song['id'], !isLiked);
+    updateSongLikeStatus(widget.song, !isLiked);
     songLikeStatus.value = !isLiked;
     _startLikeAnimationTimer();
   }
@@ -564,7 +568,7 @@ class _SongBarState extends State<SongBar> {
     switch (value) {
       case 'like':
         songLikeStatus.value = !songLikeStatus.value;
-        updateSongLikeStatus(widget.song['ytid'], songLikeStatus.value);
+        updateSongLikeStatus(widget.song, songLikeStatus.value);
         final likedSongsLength = currentLikedSongsLength.value;
         currentLikedSongsLength.value =
             songLikeStatus.value ? likedSongsLength + 1 : likedSongsLength - 1;

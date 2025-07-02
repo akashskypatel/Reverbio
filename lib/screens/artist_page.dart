@@ -281,7 +281,7 @@ class _ArtistPageState extends State<ArtistPage> {
         if (singles.isNotEmpty)
           SongList(
             page: 'singles',
-            title: context.l10n!.songs,
+            title: context.l10n!.singles,
             future: getSinglesTrackList(singles),
           ),
       ],

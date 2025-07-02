@@ -19,12 +19,12 @@ class FutureTracker<T> {
   bool isLoading = false;
   bool get isComplete => completer?.isCompleted ?? false;
 
-  Future<T> runFuture(Future<T> future) {
+  Future<T> runFuture(Future<T> future) async {
     if (!isLoading && !isComplete) {
       isLoading = true;
       completer = Completer<T>();
 
-      future
+      await future
           .then((result) {
             if (!completer!.isCompleted) {
               completer!.complete(result);

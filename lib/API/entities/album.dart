@@ -26,6 +26,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
@@ -137,28 +138,28 @@ Future<dynamic> getAlbumsCoverArt(List<dynamic> albums) async {
 
 Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
   try {
-    final tracklist = LinkedHashSet<String>();
     final tracks = [];
     for (final release in singlesReleases) {
-      final cached = _getCachedAlbum(release['id']);
-      if (cached != null && cached['list'] != null) {
-        tracks.addAll(cached['list']);
-      } else {
-        final fetched = await getTrackList(release);
-        if (fetched) {
-          for (final track in release['list']) {
-            if (tracklist.add(track['title'].toString().toLowerCase().trim()))
-              tracks.add({
-                'id': 'mb=${track['mbid']}',
-                'mdid': track['mbid'],
-                'album': release['title'],
-                'title': track['title'],
-                'artist': release['artist'],
-                'primary-type': 'song',
-                'image': track['image'],
-                'duration': track['duration'],
-              });
-          }
+      final cached = _getCachedAlbum(release['id']) ?? {};
+      release['list'] =
+          release['list'] is List
+              ? release['list']
+              : (cached['list'] is List
+                  ? cached['list']
+                  : await getTrackList(release));
+      if (release['list'] != null && release['list'].isNotEmpty) {
+        for (final track in release['list']) {
+          if (!tracks.any((e) => checkSong(e, track)))
+            tracks.add({
+              'id': 'mb=${track['mbid']}',
+              'mdid': track['mbid'],
+              'album': release['title'],
+              'title': track['title'],
+              'artist': release['artist'],
+              'primary-type': 'song',
+              'image': track['image'],
+              'duration': track['duration'],
+            });
         }
       }
     }
@@ -169,7 +170,7 @@ Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
   }
 }
 
-Future<bool> getTrackList(dynamic album) async {
+Future<List?> getTrackList(dynamic album) async {
   try {
     final countryCode =
         userGeolocation['countryCode'] ??
@@ -181,7 +182,7 @@ Future<bool> getTrackList(dynamic album) async {
         cached['list'] != null &&
         (cached['list'] as List).isNotEmpty) {
       album['list'] = cached['list'];
-      return true;
+      return album['list'];
     }
 
     final result = await mb.releases.browse(
@@ -191,7 +192,7 @@ Future<bool> getTrackList(dynamic album) async {
       paginated: false,
     );
 
-    if (result['error'] != null) return false;
+    if (result['error'] != null) return null;
 
     final sortedReleases =
         (result['releases'] as List)..sort(
@@ -284,10 +285,10 @@ Future<bool> getTrackList(dynamic album) async {
     }
     cachedAlbumsList.addOrUpdate('id', albumId, album);
     addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
-    return true;
+    return album['list'];
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return false;
+    return null;
   }
 }
 

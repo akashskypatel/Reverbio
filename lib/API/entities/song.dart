@@ -80,7 +80,12 @@ Future<List> getRecommendedSongs() async {
   try {
     if (defaultRecommendations.value && userRecentlyPlayed.isNotEmpty) {
       final recent = userRecentlyPlayed.take(3).toList();
-      //final recoms = _yt.search.searchContent('searchQuery', filter:TypeFilters.channel)
+      /*
+      final recoms = yt.search.searchContent(
+        'searchQuery',
+        filter: TypeFilters.channel,
+      );
+      */
       final futures =
           recent.map((songData) async {
             final song = await yt.videos.get(songData['ytid']);
@@ -123,15 +128,14 @@ Future<List> getRecommendedSongs() async {
   }
 }
 
-Future<void> updateSongLikeStatus(dynamic songId, bool add) async {
-  if (add && songId != null) {
-    final song = await getSongDetails(userLikedSongsList.length, songId);
+Future<void> updateSongLikeStatus(dynamic song, bool add) async {
+  if (add && song != null) {
     userLikedSongsList.add(song);
     currentLikedSongsLength.value++;
     song['song'] = song['title'];
     PM.onEntityLiked(song);
   } else {
-    userLikedSongsList.removeWhere((song) => song['id'] == songId);
+    userLikedSongsList.removeWhere((s) => checkSong(s, song));
     currentLikedSongsLength.value--;
   }
   addOrUpdateData('user', 'likedSongs', userLikedSongsList);
@@ -147,10 +151,10 @@ void moveLikedSong(int oldIndex, int newIndex) {
 }
 
 bool isSongAlreadyLiked(songIdToCheck) =>
-    userLikedSongsList.any((song) => song['id'] == songIdToCheck);
+    userLikedSongsList.any((song) => checkSongId(song['id'], songIdToCheck));
 
 bool isSongAlreadyOffline(songIdToCheck) =>
-    userOfflineSongs.any((song) => song['id'] == songIdToCheck);
+    userOfflineSongs.any((song) => checkSongId(song['id'], songIdToCheck));
 
 void getSimilarSong(String songYtId) async {
   try {
@@ -168,41 +172,53 @@ void getSimilarSong(String songYtId) async {
 Future<dynamic> findYTSong(dynamic song) async {
   try {
     final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
-    final lcSongName = (song['title'] ?? '')
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .replaceAll(specialRegex, '');
-    final lcArtist = (song['artist'] ?? '')
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .replaceAll(specialRegex, '');
-    final lcAlbum = (song['album'] ?? '')
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .replaceAll(specialRegex, '');
+    final lcSongName =
+        (song['title'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .replaceAll(specialRegex, '')
+            .trim();
+    final lcArtist =
+        (song['artist'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .replaceAll(specialRegex, '')
+            .trim();
+    final lcAlbum =
+        (song['album'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .replaceAll(specialRegex, '')
+            .trim();
     final results = await getSongsList('"$lcArtist" "$lcSongName" "$lcAlbum"');
     results.sort((a, b) => b['views'].compareTo(a['views']));
     final result =
         results.where((value) {
-          final lcS = sanitizeSongTitle(value['title'] ?? '')
-              .trim()
-              .toLowerCase()
-              .replaceAll(lcArtist, '')
-              .replaceAll(lcAlbum, '')
-              .replaceAll(RegExp(r'\s+'), ' ')
-              .replaceAll(specialRegex, '');
-          final lcC = (value['channelName'] ?? '')
-              .toString()
-              .trim()
-              .toLowerCase()
-              .replaceAll(RegExp(r'\s+'), ' ')
-              .replaceAll(specialRegex, '');
-          final lcA = (value['artist'] ?? '')
-              .toString()
-              .trim()
-              .toLowerCase()
-              .replaceAll(RegExp(r'\s+'), ' ')
-              .replaceAll(specialRegex, '');
+          final lcS =
+              sanitizeSongTitle(value['title'] ?? '')
+                  .toLowerCase()
+                  .replaceAll(lcArtist, '')
+                  .replaceAll(lcAlbum == lcSongName ? '' : lcAlbum, '')
+                  .replaceAll(RegExp(r'\s+'), ' ')
+                  .replaceAll(specialRegex, '')
+                  .trim();
+          final lcC =
+              (value['channelName'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .replaceAll(RegExp(r'\s+'), ' ')
+                  .replaceAll(specialRegex, '')
+                  .trim();
+          final lcA =
+              (value['artist'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .replaceAll(RegExp(r'\s+'), ' ')
+                  .replaceAll(specialRegex, '')
+                  .trim();
           final isLive = isSongLive(lcArtist, lcAlbum, lcSongName, lcS);
           final isDerivative = isSongDerivative(
             lcArtist,
@@ -376,14 +392,15 @@ Future<dynamic> findMBSong(dynamic song) async {
   }
 }
 
-Future<AudioOnlyStreamInfo> getSongManifest(String songId) async {
+Future<StreamManifest> getSongManifest(String songId) async {
   try {
-    final manifest = await yt.videos.streams.getManifest(
-      songId,
-      ytClients: userChosenClients,
-    );
-    final audioStream = manifest.audioOnly.withHighestBitrate();
-    return audioStream;
+    final manifest =
+        await pxm.getSongManifest(songId) ??
+        await yt.videos.streams.getManifest(
+          songId,
+          ytClients: userChosenClients,
+        );
+    return manifest;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow; // Rethrow the exception to allow the caller to handle it
@@ -396,14 +413,18 @@ Future<void> getSongUrl(dynamic song) async {
   await PM.getSongUrl(song, getSongYoutubeUrl);
 }
 
-Future<String> getSongYoutubeUrl(dynamic song) async {
+Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   try {
     if (song == null) return '';
-    if (song['mbid'] == null) unawaited(findMBSong(song));
+    if (song['mbid'] == null)
+      if (waitForMb)
+        await findMBSong(song);
+      else
+        unawaited(findMBSong(song));
     if (song['ytid'] == null)
       song.addAll(Map<String, dynamic>.from(await findYTSong(song)));
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
-      unawaited(updateRecentlyPlayed(song['ytid']));
+      unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
       if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
         final uri = Uri.parse(song['songUrl']);
@@ -452,7 +473,7 @@ Future<String?> getYouTubeAudioUrl(String songId) async {
       if (expires > (now + 5))
         if (await checkUrl(cachedUrl) < 400) return cachedUrl;
     }
-    final manifest = await yt.videos.streamsClient.getManifest(songId);
+    final manifest = await getSongManifest(songId);
     final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
     final audioUrl = audioQuality.url.toString();
 
@@ -463,22 +484,22 @@ Future<String?> getYouTubeAudioUrl(String songId) async {
   }
 }
 
-Future<Map<String, dynamic>> getSongDetails(
-  int songIndex,
-  String songId,
-) async {
+Future<Map<String, dynamic>> getYTSongDetails(dynamic song) async {
   try {
-    String id;
-    if (songId.contains('yt=')) {
-      id = Uri.parse('?$songId').queryParameters['yt'] ?? '';
+    final songIndex = (song['index'] ?? 0) as int;
+    String songId = parseSongId(song);
+    if (songId.contains('yt=') || song['ytid'] != null) {
+      songId =
+          Uri.parse('?$songId').queryParameters['yt'] ?? song['ytid'] ?? '';
     } else {
-      id = songId;
+      song = await getSongYoutubeUrl(song);
+      songId = song['ytid'];
     }
-    final song = await yt.videos.get(id);
-    return returnYtSongLayout(songIndex, song);
+    final ytSong = await yt.videos.get(songId);
+    return returnYtSongLayout(songIndex, ytSong);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return {};
   }
 }
 
@@ -515,7 +536,9 @@ Future<void> makeSongOffline(dynamic song) async {
 
     try {
       final audioManifest = await getSongManifest(id);
-      final stream = yt.videos.streamsClient.get(audioManifest);
+      final stream = yt.videos.streamsClient.get(
+        audioManifest.audioOnly.withHighestBitrate(),
+      );
       final fileStream = _audioFile.openWrite();
       await stream.pipe(fileStream);
       await fileStream.flush();
@@ -568,7 +591,7 @@ Future<void> removeSongFromOffline(dynamic songId) async {
   if (await _audioFile.exists()) await _audioFile.delete(recursive: true);
   if (await _artworkFile.exists()) await _artworkFile.delete(recursive: true);
 
-  userOfflineSongs.removeWhere((song) => song['id'] == songId);
+  userOfflineSongs.removeWhere((song) => checkSongId(song['id'], songId));
   currentOfflineSongsLength.value = userOfflineSongs.length;
   addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
 }
@@ -596,23 +619,19 @@ Future<File?> _downloadAndSaveArtworkFile(String url, String filePath) async {
 
 const recentlyPlayedSongsLimit = 50;
 
-Future<void> updateRecentlyPlayed(dynamic songId) async {
+Future<void> updateRecentlyPlayed(dynamic song) async {
   try {
-    if (userRecentlyPlayed.length == 1 && userRecentlyPlayed[0]['id'] == songId)
+    if (userRecentlyPlayed.length == 1 &&
+        checkSong(userRecentlyPlayed[0], song))
       return;
     if (userRecentlyPlayed.length >= recentlyPlayedSongsLimit) {
       userRecentlyPlayed.removeLast();
     }
 
-    userRecentlyPlayed.removeWhere((song) => song['id'] == songId);
+    userRecentlyPlayed.removeWhere((s) => checkSong(s, song));
     currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
 
-    final newSongDetails = await getSongDetails(
-      userRecentlyPlayed.length,
-      songId,
-    );
-
-    userRecentlyPlayed.insert(0, newSongDetails);
+    userRecentlyPlayed.insert(0, song);
     currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
     addOrUpdateData('user', 'recentlyPlayedSongs', userRecentlyPlayed);
   } catch (e, stackTrace) {
@@ -724,4 +743,40 @@ bool isSongDerivative(
   );
 
   return regex.hasMatch(replaced);
+}
+
+String parseSongId(dynamic song) {
+  dynamic ids;
+  String songId = song['id'] ?? song['ytid'] ?? song['mbid'] ?? '';
+  if (songId.contains('=')) {
+    ids = Uri.parse('?$songId').queryParameters;
+    songId = Uri(
+      host: '',
+      queryParameters: ids,
+    ).toString().replaceAll('?', '').replaceAll('//', '');
+  } else if (songId.length >= 36) {
+    songId = 'mb=$songId';
+  } else if (songId.isNotNullOrEmpty) {
+    songId = 'yt=$songId';
+  }
+  song['id'] = songId;
+  return songId;
+}
+
+bool checkSongId(String id, String otherId) {
+  if (id.contains('=') || id.contains('&')) {
+    final ids = Uri.parse('?$id').queryParameters;
+    return ids.values.any((i) => otherId.contains(i));
+  }
+  return id.contains(otherId) || otherId.contains(id);
+}
+
+bool checkSong(dynamic song, dynamic otherSong) {
+  parseSongId(song);
+  parseSongId(otherSong);
+  return checkSongId(song['id'], otherSong['id']) ||
+      (sanitizeSongTitle(otherSong['title']) ==
+              sanitizeSongTitle(song['title']) &&
+          otherSong['artist'].toString().toLowerCase() ==
+              song['artist'].toString().toLowerCase());
 }
