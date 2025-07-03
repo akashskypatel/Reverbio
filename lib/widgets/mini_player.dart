@@ -63,7 +63,11 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
     return GestureDetector(
       onTap: () async {
-        await context.push('/nowPlaying');
+        if (!nowPlayingOpen) {
+          nowPlayingOpen = !nowPlayingOpen;
+          await context.push('/nowPlaying');
+        }
+        ;
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18),

@@ -57,6 +57,7 @@ final pxm = ProxyManager();
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
+bool nowPlayingOpen = false;
 Map<String, dynamic> userGeolocation = {};
 
 const appLanguages = <String, String>{

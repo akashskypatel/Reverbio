@@ -25,6 +25,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -71,6 +72,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           iconSize: pageHeaderIconSize,
           splashColor: Colors.transparent,
           onPressed: () {
+            nowPlayingOpen = !nowPlayingOpen;
             GoRouter.of(context).pop(context);
           },
         ),
@@ -372,11 +374,37 @@ class NowPlayingControls extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 if (metadata.artist != null)
-                  MarqueeTextWidget(
-                    text: metadata.artist!,
-                    fontColor: Theme.of(context).colorScheme.secondary,
-                    fontSize: screenHeight * 0.017,
-                    fontWeight: FontWeight.w500,
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        final artistData =
+                            metadata.extras?['artistId'] != null
+                                ? await getArtistDetails(
+                                  metadata.extras?['artistId']!,
+                                )
+                                : await searchArtistDetails(
+                                  metadata.artist!,
+                                  limit: 10,
+                                  paginated: true,
+                                  exact: false,
+                                );
+                        if (artistData == null || artistData.isEmpty)
+                          throw Exception();
+                        await context.push('/artist', extra: artistData);
+                      } catch (e, stackTrace) {
+                        logger.log(
+                          'open artist page from miniplayer',
+                          e,
+                          stackTrace,
+                        );
+                      }
+                    },
+                    child: MarqueeTextWidget(
+                      text: metadata.artist!,
+                      fontColor: Theme.of(context).colorScheme.secondary,
+                      fontSize: screenHeight * 0.017,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
               ],
             ),

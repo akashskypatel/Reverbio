@@ -372,6 +372,7 @@ Future<dynamic> _getArtistDetailsMB(
       paginated: paginated,
     );
     stopwatch.stop();
+    if (res.isEmpty || res['artists'] == null || res['artists'].isEmpty) return null;
     final _results =
         exact
             ? List<dynamic>.from(res['artists']).where((e) => e['score'] == 100)
