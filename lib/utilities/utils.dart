@@ -5,7 +5,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 
@@ -200,8 +200,47 @@ T pickRandomItem<T>(List<T> list) {
   return list[random.nextInt(list.length)];
 }
 
-bool isFilePath(String path) {
-  return isAbsolute(path) || isRelative(path);
+bool isUrl(String input) {
+  try {
+    final uri = Uri.parse(input.trim());
+    return uri.hasScheme &&
+        (uri.scheme == 'http' ||
+            uri.scheme == 'https' ||
+            uri.scheme == 'ftp' ||
+            uri.scheme == 'ftps') &&
+        uri.host.isNotEmpty;
+  } catch (_) {
+    return false;
+  }
+}
+
+bool isFilePath(String input) {
+  final path = input.trim();
+
+  if (isUrl(input)) return false;
+
+  final windowsDriveLetter = RegExp(r'^[a-zA-Z]:\\');
+  if (windowsDriveLetter.hasMatch(path)) {
+    return true;
+  }
+
+  if (path.startsWith('/')) {
+    return true;
+  }
+
+  if (path.startsWith('file://')) {
+    return true;
+  }
+
+  if (path.contains(Platform.pathSeparator)) {
+    return true;
+  }
+
+  if (File(path).existsSync()) {
+    return true;
+  }
+
+  return false;
 }
 
 Future<bool> doesFileExist(String path) async {
@@ -215,9 +254,11 @@ Future<bool> doesFileExist(String path) async {
 
 Future<int> checkUrl(String url) async {
   try {
+    if (isFilePath(url)) return 400;
     final response = await http.head(Uri.parse(url));
     return response.statusCode;
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
     rethrow;
   }
 }

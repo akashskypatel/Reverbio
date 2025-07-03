@@ -29,9 +29,11 @@ import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
-import 'package:reverbio/widgets/song_artwork.dart';
+//import 'package:reverbio/widgets/song_artwork.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 const double playerHeight = 120;
 
@@ -183,11 +185,21 @@ class _MiniPlayerState extends State<MiniPlayer> {
       padding: const EdgeInsets.only(top: 7, bottom: 7, right: 15),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 55, maxWidth: 55),
-        child: SongArtworkWidget(
+        child: BaseCard(
+      icon: FluentIcons.music_note_2_24_filled,
+      size: 55,
+      paddingValue: 0,
+      loadingWidget: const Spinner(),
+      imageUrl: widget.metadata.extras?['artWorkPath'],
+      imageOverlayMask: true,
+    ),
+        /*
+        SongArtworkWidget(
           metadata: widget.metadata,
           size: 55,
           errorWidgetIconSize: 30,
         ),
+        */
       ),
     );
   }

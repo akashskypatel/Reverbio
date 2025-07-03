@@ -19,6 +19,8 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +31,7 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class BaseCard extends StatefulWidget {
   BaseCard({
@@ -44,6 +47,8 @@ class BaseCard extends StatefulWidget {
     this.showLike = false,
     this.onPressed,
     this.paddingValue = 8,
+    this.loadingWidget,
+    this.imageOverlayMask = false,
   });
   final IconData icon;
   final double? iconSize;
@@ -53,10 +58,12 @@ class BaseCard extends StatefulWidget {
   final bool showLike;
   final String? imageUrl;
   final CachedNetworkImage? image;
+  final bool imageOverlayMask;
   final Map<dynamic, dynamic>? inputData;
   final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
   final VoidCallback? onPressed;
   final double paddingValue;
+  final Widget? loadingWidget;
   static const double typeLabelOffset = 10;
   @override
   State<BaseCard> createState() => _BaseCardState();
@@ -82,6 +89,7 @@ class _BaseCardState extends State<BaseCard> {
       widget.iconSize == null ? (widget.size * 0.20) : widget.iconSize;
   late final double artistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
+  late final _theme = Theme.of(context);
   @override
   void initState() {
     super.initState();
@@ -96,7 +104,7 @@ class _BaseCardState extends State<BaseCard> {
   @override
   Widget build(BuildContext context) {
     isLikedNotifier.value = _getLikeStatus();
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = _theme.colorScheme;
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,
       builder:
@@ -125,7 +133,33 @@ class _BaseCardState extends State<BaseCard> {
                             ),
                             child: Stack(
                               children: [
-                                _buildImage(context),
+                                if (mounted)
+                                  FutureBuilder(
+                                    initialData:
+                                        widget.loadingWidget != null
+                                            ? SizedBox(
+                                              width: widget.size,
+                                              height: widget.size,
+                                              child: widget.loadingWidget,
+                                            )
+                                            : _buildNoArtworkCard(context),
+                                    future: _buildImage(context),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                              ConnectionState.none ||
+                                          snapshot.hasError ||
+                                          snapshot.data == null) {
+                                        if (widget.loadingWidget != null)
+                                          return SizedBox(
+                                            width: widget.size,
+                                            height: widget.size,
+                                            child: widget.loadingWidget,
+                                          );
+                                        return _buildNoArtworkCard(context);
+                                      }
+                                      return snapshot.data!;
+                                    },
+                                  ),
                                 if (widget.showLabel) _buildLabel(),
                                 if (widget.showLike) _buildLiked(),
                               ],
@@ -133,7 +167,6 @@ class _BaseCardState extends State<BaseCard> {
                           ),
                         ),
                       ),
-
                       if (widget.showOverflowLabel)
                         _buildOverflowLabel(context),
                     ],
@@ -192,33 +225,79 @@ class _BaseCardState extends State<BaseCard> {
       if (primaryImage.isEmpty) return '';
       return primaryImage.first['uri'] ?? '';
     } catch (e, stackTrace) {
-      logger.log('error in _parseImageLink', e, stackTrace);
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}',
+        e,
+        stackTrace,
+      );
       return '';
     }
   }
 
-  Widget _buildImage(BuildContext context) {
-    final imageLink = _parseImageLink();
-    if (widget.imageUrl.isNotNullOrEmpty)
-      return _buildArtworkCard(widget.imageUrl!);
-    else if (widget.inputData != null && imageLink.isNotNullOrEmpty)
-      return _buildArtworkCard(imageLink);
-    else
-      return _buildNoArtworkCard();
+  Future<Widget> _buildImage(BuildContext context) async {
+    try {
+      final path =
+          widget.imageUrl.isNotNullOrEmpty
+              ? widget.imageUrl!
+              : _parseImageLink();
+      if (path.isNullOrEmpty) return _buildNoArtworkCard(context);
+      if (isFilePath(path)) return _buildFileArtworkCard(path, context);
+      final imageUrl = Uri.parse(path);
+      if (await checkUrl(imageUrl.toString()) <= 300)
+        return _buildOnilneArtworkCard(imageUrl, context);
+      return _buildNoArtworkCard(context);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}',
+        e,
+        stackTrace,
+      );
+      return _buildNoArtworkCard(context);
+    }
   }
 
-  Widget _buildArtworkCard(String imageUrl) {
-    return CachedNetworkImage(
-      key: Key(imageUrl),
-      imageUrl: imageUrl,
-      height: widget.size,
+  Widget _buildFileArtworkCard(String path, BuildContext context) {
+    return SizedBox(
       width: widget.size,
-      fit: BoxFit.cover,
-      errorWidget: (context, url, error) => _buildNoArtworkCard(),
+      height: widget.size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Image.file(
+          File(path),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildNoArtworkCard(context),
+          color:
+              widget.imageOverlayMask
+                  ? _theme.colorScheme.primaryContainer
+                  : null,
+          colorBlendMode: widget.imageOverlayMask ? BlendMode.multiply : null,
+          opacity:
+              widget.imageOverlayMask
+                  ? const AlwaysStoppedAnimation(0.45)
+                  : null,
+        ),
+      ),
     );
   }
 
-  Widget _buildNoArtworkCard() {
+  Widget _buildOnilneArtworkCard(Uri imageUrl, BuildContext context) {
+    return CachedNetworkImage(
+      key: Key(imageUrl.toString()),
+      imageUrl: imageUrl.toString(),
+      height: widget.size,
+      width: widget.size,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => const Spinner(),
+      errorWidget: (context, url, error) => _buildNoArtworkCard(context),
+      color:
+          widget.imageOverlayMask
+              ? _theme.colorScheme.primaryContainer
+              : null,
+      colorBlendMode: widget.imageOverlayMask ? BlendMode.multiply : null,
+    );
+  }
+
+  Widget _buildNoArtworkCard(BuildContext context) {
     return Align(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -227,7 +306,7 @@ class _BaseCardState extends State<BaseCard> {
           Icon(
             widget.icon,
             size: likeSize,
-            color: Theme.of(context).colorScheme.onSecondary,
+            color: _theme.colorScheme.onSecondary,
           ),
           if (widget.inputData != null)
             Padding(
@@ -238,7 +317,7 @@ class _BaseCardState extends State<BaseCard> {
                     widget.inputData?['name'],
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSecondary,
+                  color: _theme.colorScheme.onSecondary,
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
@@ -262,7 +341,7 @@ class _BaseCardState extends State<BaseCard> {
             child: IconButton(
               onPressed: () => _toggleLike(context),
               icon: Icon(liked, size: likeSize),
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
           ),
         );
@@ -321,7 +400,7 @@ class _BaseCardState extends State<BaseCard> {
   Widget _buildLabel() {
     const double paddingValue = 4;
     const double typeLabelOffset = 10;
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = _theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: typeLabelOffset,
@@ -342,7 +421,7 @@ class _BaseCardState extends State<BaseCard> {
               : dataType == 'album'
               ? context.l10n!.album
               : dataType?.toTitleCase ?? 'Unknown',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          style: _theme.textTheme.labelSmall?.copyWith(
             color: colorScheme.onSecondaryContainer,
           ),
         ),
@@ -361,7 +440,7 @@ class _BaseCardState extends State<BaseCard> {
               widget.inputData == null ? '' : _getCardTitle(),
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.secondary,
+                color: _theme.colorScheme.secondary,
                 fontSize: 13,
                 fontFamily: 'montserrat',
                 fontVariations: [const FontVariation('wght', 300)],
@@ -375,7 +454,7 @@ class _BaseCardState extends State<BaseCard> {
                 widget.inputData == null ? '' : _getCardSubTitle(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.secondary,
+                  color: _theme.colorScheme.secondary,
                   fontSize: 13,
                   fontFamily: 'montserrat',
                   fontVariations: [const FontVariation('wght', 300)],

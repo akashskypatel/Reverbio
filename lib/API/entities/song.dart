@@ -527,7 +527,7 @@ Future<void> makeSongOffline(dynamic song) async {
     final _dir = await getApplicationSupportDirectory();
     final _audioDirPath = '${_dir.path}/tracks';
     final _artworkDirPath = '${_dir.path}/artworks';
-    final String id = song['id'];
+    final String id = song['ytid'];
     final _audioFile = File('$_audioDirPath/$id.m4a');
     final _artworkFile = File('$_artworkDirPath/$id.jpg');
 

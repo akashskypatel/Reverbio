@@ -22,7 +22,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -40,6 +39,7 @@ import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
+import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
@@ -329,6 +329,15 @@ class _SongBarState extends State<SongBar> {
         if (lowResImageUrl.isEmpty)
           _buildNoArtworkCard(size, isDurationAvailable)
         else
+          BaseCard(
+            icon: FluentIcons.music_note_2_24_filled,
+            size: size,
+            paddingValue: 0,
+            loadingWidget: const Spinner(),
+            imageUrl: lowResImageUrl,
+            imageOverlayMask: true,
+          ),
+        /*
           CachedNetworkImage(
             key: Key(widget.song['ytid'].toString()),
             width: size,
@@ -360,6 +369,7 @@ class _SongBarState extends State<SongBar> {
                 (context, url, error) =>
                     _buildNoArtworkCard(size, isDurationAvailable),
           ),
+          */
         if (isDurationAvailable)
           SizedBox(
             width: size - 10,

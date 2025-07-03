@@ -36,9 +36,10 @@ import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
+import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
-import 'package:reverbio/widgets/song_artwork.dart';
+//import 'package:reverbio/widgets/song_artwork.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -221,12 +222,21 @@ class NowPlayingArtwork extends StatelessWidget {
       rotateSide: RotateSide.right,
       onTapFlipping: !offlineMode.value,
       controller: _lyricsController,
-      frontWidget: SongArtworkWidget(
+      frontWidget: BaseCard(
+        icon: FluentIcons.music_note_2_24_filled,
+        size: imageSize,
+        paddingValue: 0,
+        loadingWidget: const Spinner(),
+        imageUrl: metadata.extras?['artWorkPath'],
+      ),
+      /*
+      SongArtworkWidget(
         metadata: metadata,
         size: imageSize,
         errorWidgetIconSize: size.width / 8,
         borderRadius: _radius,
       ),
+      */
       backWidget: Container(
         width: imageSize,
         height: imageSize,
