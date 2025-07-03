@@ -25,10 +25,15 @@ android {
 
     defaultConfig {
         applicationId = "com.akashskypatel.reverbio"
-        minSdk = flutter.minSdkVersion
+        //minSdk = flutter.minSdkVersion
+        minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
+        splits.abi.isEnable = false
+        splits.density.isEnable = false
+        splits.language.isEnable = false
     }
 
     buildTypes {
@@ -37,14 +42,20 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             //signingConfig = signingConfigs.getByName("debug")
             signingConfig = signingConfigs.create("release") {
-              val props = Properties()
-              props.load(File(rootDir, "key.properties").inputStream())
+                val props = Properties()
+                props.load(File(rootDir, "key.properties").inputStream())
 
-              storeFile = file(props["storeFile"] as String)
-              storePassword = props["storePassword"] as String
-              keyAlias = props["keyAlias"] as String
-              keyPassword = props["keyPassword"] as String
-          }
+                storeFile = file(props["storeFile"] as String)
+                storePassword = props["storePassword"] as String
+                keyAlias = props["keyAlias"] as String
+                keyPassword = props["keyPassword"] as String
+            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     applicationVariants.all {
@@ -63,4 +74,11 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("com.github.fast-development.android-js-runtimes:fastdev-jsruntimes-jsc:0.3.5")
+    implementation("androidx.multidex:multidex:2.0.1")
+    implementation("com.google.android.play:core:1.10.3")
+    implementation("com.google.android.play:core-ktx:1.8.1")
 }

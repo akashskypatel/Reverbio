@@ -1,0 +1,12 @@
+#Flutter Wrapper
+-keep class io.flutter.app.** { *; }
+-keep class io.flutter.plugin.**  { *; }
+-keep class io.flutter.util.**  { *; }
+-keep class io.flutter.view.**  { *; }
+-keep class io.flutter.**  { *; }
+-keep class io.flutter.plugins.**  { *; }
+-keep class de.prosiebensat1digital.** { *; }
+-keep class com.google.android.play.core.** { *; }
+-keep class com.google.android.play.core.install.** { *; }
+-keep class com.google.android.play.core.splitinstall.** { *; }
+-keep class com.google.android.play.core.tasks.** { *; }
