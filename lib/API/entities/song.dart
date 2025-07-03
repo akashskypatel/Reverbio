@@ -334,11 +334,13 @@ Future<dynamic> findMBSong(dynamic song) async {
                 : (artistQry.isNotEmpty
                     ? '"$sTitle"~0.75 AND (artist:"${artists.join('" & "')}" OR $artistQry)'
                     : '(("$sTitle"~0.75 AND artist:"$sArtist") OR ("$sArtist"~0.75 AND artist:"$sTitle"))')));
+    final wrksQry = await mb.works.search(qry);
     works = List<Map<String, dynamic>>.from(
-      (await mb.works.search(qry))['works'],
+      (wrksQry.isNullOrEmpty ? {} : wrksQry)['works'] ?? [],
     );
+    final rcdQry = await mb.recordings.search(qry);
     recordings = List<Map<String, dynamic>>.from(
-      (await mb.recordings.search(qry))['recordings'],
+      (rcdQry.isNullOrEmpty ? {} : rcdQry)['recordings'] ?? [],
     );
     if (recordings.isEmpty && works.isEmpty) return song;
 
@@ -427,8 +429,12 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         await findMBSong(song);
       else
         unawaited(findMBSong(song));
-    if (song['ytid'] == null)
-      song.addAll(Map<String, dynamic>.from(await findYTSong(song)));
+    if (song['ytid'] == null) {
+      final sngQry = await findYTSong(song);
+      song.addAll(
+        Map<String, dynamic>.from(sngQry.isNullOrEmpty ? {} : sngQry),
+      );
+    }
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);

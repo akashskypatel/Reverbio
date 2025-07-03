@@ -184,8 +184,29 @@ extension StringNullOrEmptyExtension on String? {
   bool get isNullOrEmpty {
     if (this == null) return true;
     final s = this!.trim();
-    if (s.isEmpty) return true;
-    return false;
+    return s.isEmpty;
+  }
+
+  bool get isNotNullOrEmpty {
+    return !this.isNullOrEmpty;
+  }
+}
+
+extension MapNullOrEmptyExtension on Map? {
+  bool get isNullOrEmpty {
+    if (this == null) return true;
+    return this!.isEmpty;
+  }
+
+  bool get isNotNullOrEmpty {
+    return !this.isNullOrEmpty;
+  }
+}
+
+extension ListNullOrEmptyExtension on List? {
+  bool get isNullOrEmpty {
+    if (this == null) return true;
+    return this!.isEmpty;
   }
 
   bool get isNotNullOrEmpty {

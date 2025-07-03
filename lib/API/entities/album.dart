@@ -81,14 +81,15 @@ Future<dynamic> getAlbumDetailsById(String id) async {
 
 Future<Map<String, dynamic>> findMBAlbum(String title, String artist) async {
   try {
+    final albQry = await mb.releaseGroups.search(
+      '("$title" AND artist:"$artist" AND type:"album") OR ("$artist" AND artist:"$title" AND type:"album")',
+    );
     final albums =
-        (await mb.releaseGroups.search(
-              '("$title" AND artist:"$artist" AND type:"album") OR ("$artist" AND artist:"$title" AND type:"album")',
-            ))['release-groups']
-            as List;
+        ((albQry.isNullOrEmpty ? {} : albQry)['release-groups'] ?? []) as List;
     if (albums.isEmpty) return {};
     final id = (albums.first['artist-credit'] as List).first['artist']['id'];
-    final artistInfo = Map.from(await getArtistDetails(id));
+    final artQry = await getArtistDetails(id);
+    final artistInfo = Map.from(artQry.isNullOrEmpty ? {} : artQry);
     if (artistInfo.isNotEmpty) {
       albums.first['artist-details'] = artistInfo;
       albums.first['artist'] = artistInfo['artist'];

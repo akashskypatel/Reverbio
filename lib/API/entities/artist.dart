@@ -428,7 +428,8 @@ Future<dynamic> _getArtistDetailsMB(
         } else {
           final finalResult = [];
           for (final artist in result) {
-            finalResult.add(await mb.artists.get(artist.item['id'], inc: inc));
+            final artQry = await mb.artists.get(artist.item['id'], inc: inc);
+            finalResult.add(artQry.isNullOrEmpty ? {} : artQry);
           }
           //TODO optimize
           return finalResult;
