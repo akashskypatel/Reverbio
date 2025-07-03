@@ -48,6 +48,7 @@ class _LibraryPageState extends State<LibraryPage> {
   final FocusNode _inputNode = FocusNode();
   ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
   final List<PlaylistBar> userPlaylistBars = [];
+  late final _theme = Theme.of(context);
 
   @override
   void dispose() {
@@ -75,7 +76,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final primaryColor = _theme.colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -243,8 +244,8 @@ class _LibraryPageState extends State<LibraryPage> {
                   : null,
           icon: const Icon(FluentIcons.filter_dismiss_24_filled, size: 30),
           iconSize: pageHeaderIconSize,
-          color: Theme.of(context).colorScheme.primary,
-          disabledColor: Theme.of(context).colorScheme.primaryContainer,
+          color: _theme.colorScheme.primary,
+          disabledColor: _theme.colorScheme.primaryContainer,
         );
       },
     );

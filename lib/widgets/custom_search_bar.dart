@@ -45,6 +45,7 @@ class CustomSearchBar extends StatefulWidget {
 }
 
 class _CustomSearchBarState extends State<CustomSearchBar> {
+  late final _theme = Theme.of(context);
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -99,7 +100,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
             IconButton(
               icon: Icon(
                 FluentIcons.search_20_regular,
-                color: Theme.of(context).colorScheme.primary,
+                color: _theme.colorScheme.primary,
               ),
               onPressed: () {
                 widget.onSubmitted(widget.controller.text);

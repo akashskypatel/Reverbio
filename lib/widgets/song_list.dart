@@ -60,6 +60,7 @@ class SongList extends StatefulWidget {
 }
 
 class _SongListState extends State<SongList> {
+  late final _theme = Theme.of(context);
   List<dynamic> _songsList = [];
   bool isProcessing = true;
   bool loopSongs = false;
@@ -151,7 +152,7 @@ class _SongListState extends State<SongList> {
   Widget _buildShuffleSongActionButton() {
     return IconButton(
       tooltip: context.l10n!.shuffle,
-      color: Theme.of(context).colorScheme.primary,
+      color: _theme.colorScheme.primary,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
@@ -171,7 +172,7 @@ class _SongListState extends State<SongList> {
           children: [
             Icon(
               FluentIcons.mic_sparkle_16_filled,
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(context.l10n!.artist),
@@ -184,7 +185,7 @@ class _SongListState extends State<SongList> {
           children: [
             Icon(
               FluentIcons.music_note_2_16_filled,
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(context.l10n!.name),
@@ -221,10 +222,10 @@ class _SongListState extends State<SongList> {
   Widget _buildSortSongActionButton() {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Theme.of(context).colorScheme.secondaryContainer,
+      color: _theme.colorScheme.secondaryContainer,
       icon: Icon(
         FluentIcons.filter_16_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: listHeaderIconSize,
       ),
       onSelected: _sortMenuItemAction,
@@ -248,7 +249,7 @@ class _SongListState extends State<SongList> {
   Widget _buildAddToQueueActionButton() {
     return IconButton(
       tooltip: context.l10n!.addSongsToQueue,
-      color: Theme.of(context).colorScheme.primary,
+      color: _theme.colorScheme.primary,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.add_circle_24_filled),
@@ -282,7 +283,7 @@ class _SongListState extends State<SongList> {
       },
       icon: Icon(
         FluentIcons.play_circle_24_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: listHeaderIconSize,
       ),
     );
@@ -308,7 +309,7 @@ class _SongListState extends State<SongList> {
         child: Text(
           errorText,
           style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
+            color: _theme.colorScheme.primary,
             fontSize: 18,
           ),
         ),

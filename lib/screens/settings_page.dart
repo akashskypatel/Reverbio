@@ -54,6 +54,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  late final _theme = Theme.of(context);
   @override
   void dispose() {
     super.dispose();
@@ -61,9 +62,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    final activatedColor = Theme.of(context).colorScheme.secondaryContainer;
-    final inactivatedColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final primaryColor = _theme.colorScheme.primary;
+    final activatedColor = _theme.colorScheme.secondaryContainer;
+    final inactivatedColor = _theme.colorScheme.surfaceContainerHigh;
 
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n!.settings)),
@@ -404,7 +405,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (isSelected)
                   Icon(
                     Icons.check,
-                    color: Theme.of(context).colorScheme.onPrimary,
+                    color: _theme.colorScheme.onPrimary,
                   ),
               ],
             ),
@@ -526,13 +527,13 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         icon: const Icon(FluentIcons.arrow_sync_24_filled),
                         iconSize: listHeaderIconSize,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                       ),
                       IconButton(
                         onPressed: _showAddPluginDialog,
                         icon: const Icon(FluentIcons.add_24_regular),
                         iconSize: listHeaderIconSize,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                       ),
                     ],
                   ),
@@ -551,7 +552,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 () => _showPluginSettings(
                                   PM.pluginsData[index]['name'],
                                 ),
-                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                            _theme.colorScheme.surfaceContainerHigh,
                             borderRadius: getItemBorderRadius(
                               index,
                               PM.pluginsData.length,
@@ -570,7 +571,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   FluentIcons.arrow_sync_24_filled,
                                 ),
                                 iconSize: listHeaderIconSize,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: _theme.colorScheme.primary,
                               ),
                               IconButton(
                                 onPressed: () async {

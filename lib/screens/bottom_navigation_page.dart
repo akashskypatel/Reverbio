@@ -41,6 +41,7 @@ class BottomNavigationPage extends StatefulWidget {
 
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
+  late final _theme = Theme.of(context);
   bool showMiniPlayer = false;
   @override
   void initState() {
@@ -259,10 +260,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
       },
       icon: Icon(
         FluentIcons.dismiss_24_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: 30,
       ),
-      disabledColor: Theme.of(context).colorScheme.secondaryContainer,
+      disabledColor: _theme.colorScheme.secondaryContainer,
     );
   }
 }

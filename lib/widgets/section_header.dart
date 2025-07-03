@@ -42,6 +42,7 @@ class SectionHeader extends StatefulWidget {
 
 class _SectionHeaderState extends State<SectionHeader>
     with TickerProviderStateMixin {
+  late final _theme = Theme.of(context);
   bool _expanded = false;
   Timer? _closeTimer;
 
@@ -72,7 +73,7 @@ class _SectionHeaderState extends State<SectionHeader>
           child: ClipRect(
             child: SectionTitle(
               widget.title,
-              Theme.of(context).colorScheme.primary,
+              _theme.colorScheme.primary,
             ),
           ),
         ),
@@ -84,7 +85,7 @@ class _SectionHeaderState extends State<SectionHeader>
                 _expanded
                     ? FluentIcons.dismiss_24_regular
                     : FluentIcons.more_horizontal_28_filled,
-                color: Theme.of(context).colorScheme.primary,
+                color: _theme.colorScheme.primary,
               ),
               onPressed: _toggleExpanded,
             ),

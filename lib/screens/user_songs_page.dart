@@ -49,6 +49,7 @@ class UserSongsPage extends StatefulWidget {
 }
 
 class _UserSongsPageState extends State<UserSongsPage> {
+  late final _theme = Theme.of(context);
   bool _isEditEnabled = false;
 
   @override
@@ -87,8 +88,8 @@ class _UserSongsPageState extends State<UserSongsPage> {
                 FluentIcons.re_order_24_filled,
                 color:
                     _isEditEnabled
-                        ? Theme.of(context).colorScheme.inversePrimary
-                        : Theme.of(context).colorScheme.primary,
+                        ? _theme.colorScheme.inversePrimary
+                        : _theme.colorScheme.primary,
               ),
             ),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
@@ -113,7 +114,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         repeatMode == AudioServiceRepeatMode.all
                             ? FluentIcons.arrow_repeat_all_24_filled
                             : FluentIcons.arrow_repeat_1_24_filled,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                       ),
                       iconSize: pageHeaderIconSize,
                       onPressed: () {
@@ -128,7 +129,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                     : IconButton(
                       icon: Icon(
                         FluentIcons.arrow_repeat_all_off_24_filled,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                       ),
                       iconSize: pageHeaderIconSize,
                       onPressed: () {
@@ -149,16 +150,16 @@ class _UserSongsPageState extends State<UserSongsPage> {
               iconSize: pageHeaderIconSize,
               tooltip: context.l10n!.addToPlaylist,
               onPressed: value == 0 ? null : _showExistingPlaylists,
-              disabledColor: Theme.of(context).colorScheme.inversePrimary,
-              color: Theme.of(context).colorScheme.primary,
+              disabledColor: _theme.colorScheme.inversePrimary,
+              color: _theme.colorScheme.primary,
               icon: const Icon(Icons.playlist_add),
             ),
             IconButton(
               iconSize: pageHeaderIconSize,
               tooltip: context.l10n!.saveAsPlayList,
               onPressed: value == 0 ? null : _showSaveAsPlaylistDialog,
-              disabledColor: Theme.of(context).colorScheme.inversePrimary,
-              color: Theme.of(context).colorScheme.primary,
+              disabledColor: _theme.colorScheme.inversePrimary,
+              color: _theme.colorScheme.primary,
               icon: const Icon(FluentIcons.add_24_filled),
             ),
             IconButton(
@@ -171,8 +172,8 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         clearSongQueue();
                         showToast(context, 'Queue cleared!');
                       },
-              disabledColor: Theme.of(context).colorScheme.inversePrimary,
-              color: Theme.of(context).colorScheme.primary,
+              disabledColor: _theme.colorScheme.inversePrimary,
+              color: _theme.colorScheme.primary,
               icon: const Icon(Icons.clear_all),
             ),
           ],
@@ -482,7 +483,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                           .value
                           ?.song['title'],
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -501,7 +502,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                               ?.song['artist'] ??
                           '',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.secondary,
+                        color: _theme.colorScheme.secondary,
                         fontSize: 14,
                         fontWeight: FontWeight.normal,
                       ),

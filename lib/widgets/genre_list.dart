@@ -25,6 +25,7 @@ class GenreList extends StatefulWidget {
 }
 
 class _GenreListState extends State<GenreList> {
+  late final _theme = Theme.of(context);
   @override
   void initState() {
     super.initState();
@@ -93,7 +94,7 @@ class _GenreListState extends State<GenreList> {
               sortAsc
                   ? FluentIcons.text_sort_ascending_16_filled
                   : FluentIcons.text_sort_descending_16_filled,
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(context.l10n!.name),
@@ -108,7 +109,7 @@ class _GenreListState extends State<GenreList> {
               sortAsc
                   ? FluentIcons.chevron_up_16_filled
                   : FluentIcons.chevron_down_16_filled,
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(context.l10n!.count),
@@ -149,10 +150,10 @@ class _GenreListState extends State<GenreList> {
   Widget _buildSortSongActionButton(BuildContext context) {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Theme.of(context).colorScheme.secondaryContainer,
+      color: _theme.colorScheme.secondaryContainer,
       icon: Icon(
         FluentIcons.filter_16_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
       ),
       iconSize: listHeaderIconSize,
       onSelected: _sortAction,

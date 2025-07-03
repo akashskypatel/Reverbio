@@ -56,6 +56,7 @@ class _ArtistPageState extends State<ArtistPage> {
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final isLargeScreen = MediaQuery.of(context).size.width > 480;
   late final screenWidth = MediaQuery.sizeOf(context).width;
+  late final _theme = Theme.of(context);
   dynamic albums;
   dynamic others;
   dynamic singles;
@@ -94,7 +95,7 @@ class _ArtistPageState extends State<ArtistPage> {
       child: Text(
         '${context.l10n!.error}!',
         style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
+          color: _theme.colorScheme.primary,
           fontSize: 18,
         ),
       ),

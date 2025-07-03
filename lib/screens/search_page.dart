@@ -52,6 +52,7 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
   final ValueNotifier<bool> _fetching = ValueNotifier(false);
+  late final _theme = Theme.of(context);
   int maxSongsInList = 15;
   Future<dynamic>? _artistSearchFuture;
   Future<dynamic>? _songsSearchFuture;
@@ -247,7 +248,7 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SectionTitle(
             context.l10n!.artist,
-            Theme.of(context).colorScheme.primary,
+            _theme.colorScheme.primary,
           ),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
@@ -265,7 +266,7 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SectionTitle(
             context.l10n!.songs,
-            Theme.of(context).colorScheme.primary,
+            _theme.colorScheme.primary,
           ),
           ListView.builder(
             shrinkWrap: true,
@@ -296,7 +297,7 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SectionTitle(
             context.l10n!.songs,
-            Theme.of(context).colorScheme.primary,
+            _theme.colorScheme.primary,
           ),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
@@ -314,7 +315,7 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SectionTitle(
             context.l10n!.albums,
-            Theme.of(context).colorScheme.primary,
+            _theme.colorScheme.primary,
           ),
           ListView.builder(
             shrinkWrap: true,
@@ -351,7 +352,7 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SectionTitle(
             context.l10n!.albums,
-            Theme.of(context).colorScheme.primary,
+            _theme.colorScheme.primary,
           ),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
@@ -369,7 +370,7 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SectionTitle(
             context.l10n!.playlists,
-            Theme.of(context).colorScheme.primary,
+            _theme.colorScheme.primary,
           ),
           ListView.builder(
             shrinkWrap: true,
@@ -397,7 +398,7 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SectionTitle(
             context.l10n!.playlist,
-            Theme.of(context).colorScheme.primary,
+            _theme.colorScheme.primary,
           ),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),

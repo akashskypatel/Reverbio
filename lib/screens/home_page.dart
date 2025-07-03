@@ -40,6 +40,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late final _theme = Theme.of(context);
   Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
     playlistsNum: recommendedCardsNumber,
   );
@@ -87,9 +88,9 @@ class _HomePageState extends State<HomePage> {
                   return AnnouncementBox(
                     message: context.l10n!.newAnnouncement,
                     backgroundColor:
-                        Theme.of(context).colorScheme.secondaryContainer,
+                        _theme.colorScheme.secondaryContainer,
                     textColor:
-                        Theme.of(context).colorScheme.onSecondaryContainer,
+                        _theme.colorScheme.onSecondaryContainer,
                     url: _url,
                   );
                 },

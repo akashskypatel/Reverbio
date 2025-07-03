@@ -34,6 +34,7 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
+  late final _theme = Theme.of(context);
   @override
   void dispose() {
     super.dispose();
@@ -52,7 +53,7 @@ class _AboutPageState extends State<AboutPage> {
               child: Text(
                 'Reverbio  | $appVersion',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _theme.colorScheme.primary,
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'paytoneOne',

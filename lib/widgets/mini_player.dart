@@ -47,6 +47,7 @@ class MiniPlayer extends StatefulWidget {
 }
 
 class _MiniPlayerState extends State<MiniPlayer> {
+  late final _theme = Theme.of(context);
   @override
   void initState() {
     super.initState();
@@ -61,7 +62,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = _theme.colorScheme;
 
     return GestureDetector(
       onTap: () async {
@@ -133,7 +134,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
       onPressed: iconDataAndAction.onPressed,
       icon: Icon(
         iconDataAndAction.iconData,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: 35,
       ),
     );
@@ -147,8 +148,8 @@ class _MiniPlayerState extends State<MiniPlayer> {
               ? () => audioHandler.seekToStart()
               : null,
       icon: const Icon(FluentIcons.stop_24_filled, size: 35),
-      color: Theme.of(context).colorScheme.primary,
-      disabledColor: Theme.of(context).colorScheme.secondaryContainer,
+      color: _theme.colorScheme.primary,
+      disabledColor: _theme.colorScheme.secondaryContainer,
     );
   }
 
@@ -158,7 +159,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
         onPressed: () => audioHandler.skipToNext(),
         icon: Icon(
           FluentIcons.next_24_filled,
-          color: Theme.of(context).colorScheme.primary,
+          color: _theme.colorScheme.primary,
           size: 25,
         ),
       );
@@ -172,7 +173,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
         onPressed: () => audioHandler.skipToPrevious(),
         icon: Icon(
           FluentIcons.previous_24_filled,
-          color: Theme.of(context).colorScheme.primary,
+          color: _theme.colorScheme.primary,
           size: 25,
         ),
       );

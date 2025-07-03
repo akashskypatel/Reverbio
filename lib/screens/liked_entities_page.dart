@@ -28,6 +28,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   late final double cardHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final Set<String> uniqueGenreList = {};
   late final List<dynamic> genreList = [];
+  late final _theme = Theme.of(context);
   final List<dynamic> inputData = [];
   final List<BaseCard> cardList = <BaseCard>[];
   GenreList? genresWidget;
@@ -91,8 +92,8 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
                   : null,
           icon: const Icon(FluentIcons.filter_dismiss_24_filled),
           iconSize: pageHeaderIconSize,
-          color: Theme.of(context).colorScheme.primary,
-          disabledColor: Theme.of(context).colorScheme.primaryContainer,
+          color: _theme.colorScheme.primary,
+          disabledColor: _theme.colorScheme.primaryContainer,
           tooltip: context.l10n!.clearFilters,
         );
       },

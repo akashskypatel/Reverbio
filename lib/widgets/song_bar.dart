@@ -124,6 +124,7 @@ class SongBar extends StatefulWidget {
 }
 
 class _SongBarState extends State<SongBar> {
+  late final _theme = Theme.of(context);
   dynamic loadedSong = false;
 
   TapDownDetails? doubleTapdetails;
@@ -153,7 +154,7 @@ class _SongBarState extends State<SongBar> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final primaryColor = _theme.colorScheme.primary;
     return Stack(
       children: [
         Padding(
@@ -202,7 +203,7 @@ class _SongBarState extends State<SongBar> {
                             style: TextStyle(
                               fontWeight: FontWeight.w400,
                               fontSize: 13,
-                              color: Theme.of(context).colorScheme.secondary,
+                              color: _theme.colorScheme.secondary,
                             ),
                           ),
                         ],
@@ -267,7 +268,7 @@ class _SongBarState extends State<SongBar> {
       message: context.l10n!.errorCouldNotFindAStream,
       child: Icon(
         FluentIcons.error_circle_24_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
       ),
     );
   }
@@ -352,7 +353,7 @@ class _SongBarState extends State<SongBar> {
                     child: Image(
                       color:
                           isDurationAvailable
-                              ? Theme.of(context).colorScheme.primaryContainer
+                              ? _theme.colorScheme.primaryContainer
                               : null,
                       colorBlendMode:
                           isDurationAvailable ? BlendMode.multiply : null,
@@ -393,7 +394,7 @@ class _SongBarState extends State<SongBar> {
       children: [
         Icon(
           FluentIcons.music_note_1_24_regular,
-          color: Theme.of(context).colorScheme.primary,
+          color: _theme.colorScheme.primary,
           size: size,
         ),
         if (isDurationAvailable)
@@ -427,7 +428,7 @@ class _SongBarState extends State<SongBar> {
       final value = await showMenu(
         context: context,
         position: position,
-        color: Theme.of(context).colorScheme.surface,
+        color: _theme.colorScheme.surface,
         items: _buildPopupMenuItems(context),
       );
       if (value != null) {
@@ -456,7 +457,7 @@ class _SongBarState extends State<SongBar> {
                 children: [
                   Icon(
                     likeStatusToIconMapper[value],
-                    color: Theme.of(context).colorScheme.primary,
+                    color: _theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -476,7 +477,7 @@ class _SongBarState extends State<SongBar> {
               children: [
                 Icon(
                   FluentIcons.delete_24_filled,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(context.l10n!.removeFromPlaylist),
@@ -489,7 +490,7 @@ class _SongBarState extends State<SongBar> {
             children: [
               Icon(
                 FluentIcons.add_24_regular,
-                color: Theme.of(context).colorScheme.primary,
+                color: _theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
               Text(context.l10n!.addToPlaylist),
@@ -502,7 +503,7 @@ class _SongBarState extends State<SongBar> {
             children: [
               Icon(
                 isInQueue ? Icons.playlist_remove : Icons.playlist_add,
-                color: Theme.of(context).colorScheme.primary,
+                color: _theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
               Text(
@@ -524,7 +525,7 @@ class _SongBarState extends State<SongBar> {
                     value
                         ? FluentIcons.cellular_off_24_regular
                         : FluentIcons.cellular_data_1_24_regular,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: _theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -544,7 +545,7 @@ class _SongBarState extends State<SongBar> {
               children: [
                 Icon(
                   FluentIcons.link_24_regular,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(context.l10n!.openInYouTube),
@@ -618,7 +619,7 @@ class _SongBarState extends State<SongBar> {
   Widget _buildActionButtons(BuildContext context, Color primaryColor) {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Theme.of(context).colorScheme.surface,
+      color: _theme.colorScheme.surface,
       icon: Icon(FluentIcons.more_vertical_24_filled, color: primaryColor),
       onSelected: _popupMenuItemAction,
       itemBuilder: _buildPopupMenuItems,

@@ -61,7 +61,7 @@ class PlaylistPage extends StatefulWidget {
 class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   dynamic _playlist;
-
+  late final _theme = Theme.of(context);
   bool _isLoading = true;
   //final int _itemsPerPage = 35;
   //var _currentPage = 0;
@@ -426,9 +426,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
   Widget _buildSortSongActionButton() {
     return DropdownButton<String>(
       borderRadius: BorderRadius.circular(5),
-      dropdownColor: Theme.of(context).colorScheme.secondaryContainer,
+      dropdownColor: _theme.colorScheme.secondaryContainer,
       underline: const SizedBox.shrink(),
-      iconEnabledColor: Theme.of(context).colorScheme.primary,
+      iconEnabledColor: _theme.colorScheme.primary,
       elevation: 0,
       iconSize: 30,
       icon: const Icon(FluentIcons.filter_16_filled),

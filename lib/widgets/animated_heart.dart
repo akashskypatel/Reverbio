@@ -14,6 +14,7 @@ class AnimatedHeart extends StatefulWidget {
 /// [TickerProviderStateMixin].
 class _AnimatedHeartState extends State<AnimatedHeart>
     with TickerProviderStateMixin {
+  late final _theme = Theme.of(context);
   late final AnimationController _fadeController = AnimationController(
     duration: Duration(
       microseconds: AnimatedHeart.duration.inMicroseconds ~/ 2,
@@ -61,7 +62,7 @@ class _AnimatedHeartState extends State<AnimatedHeart>
             child: Icon(
               widget.like ? Icons.favorite : Icons.heart_broken,
               size: 40,
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
           ),
         ),

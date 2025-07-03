@@ -201,6 +201,7 @@ class NowPlayingArtwork extends StatelessWidget {
   });
   final Size size;
   final MediaItem metadata;
+  
 
   @override
   Widget build(BuildContext context) {

@@ -56,6 +56,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   final borderRadius = 13.0;
   late double playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late bool isLargeScreen = MediaQuery.of(context).size.width > 480;
+  late final _theme = Theme.of(context);
   int itemsNumber = recommendedCardsNumber;
   final Map<String, BaseCard> cards = {};
 
@@ -128,7 +129,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
       child: Text(
         '${context.l10n!.error}!',
         style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
+          color: _theme.colorScheme.primary,
           fontSize: 18,
         ),
       ),
