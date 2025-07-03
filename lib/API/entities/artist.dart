@@ -69,7 +69,7 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
 }
 
 bool isArtistAlreadyLiked(artistIdToCheck) =>
-    userLikedArtistsList.any((artist) => artist['id'] == artistIdToCheck);
+    userLikedArtistsList.any((artist) => (artist['id'] != null && artistIdToCheck != null) && artist['id'] == (artistIdToCheck ?? ''));
 
 Future<dynamic> getArtistDetails(String id) async {
   try {

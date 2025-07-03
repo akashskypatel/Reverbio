@@ -320,4 +320,4 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
 }
 
 bool isAlbumAlreadyLiked(albumIdToCheck) =>
-    userLikedAlbumsList.any((album) => album['id'] == albumIdToCheck);
+    userLikedAlbumsList.any((album) => (album['id'] != null && albumIdToCheck != null) && album['id'] == albumIdToCheck);
