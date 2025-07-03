@@ -308,10 +308,7 @@ class _SongListState extends State<SongList> {
       child: Center(
         child: Text(
           errorText,
-          style: TextStyle(
-            color: _theme.colorScheme.primary,
-            fontSize: 18,
-          ),
+          style: TextStyle(color: _theme.colorScheme.primary, fontSize: 18),
         ),
       ),
     );

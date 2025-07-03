@@ -290,9 +290,7 @@ class _BaseCardState extends State<BaseCard> {
       placeholder: (context, url) => const Spinner(),
       errorWidget: (context, url, error) => _buildNoArtworkCard(context),
       color:
-          widget.imageOverlayMask
-              ? _theme.colorScheme.primaryContainer
-              : null,
+          widget.imageOverlayMask ? _theme.colorScheme.primaryContainer : null,
       colorBlendMode: widget.imageOverlayMask ? BlendMode.multiply : null,
     );
   }
@@ -316,9 +314,7 @@ class _BaseCardState extends State<BaseCard> {
                     widget.inputData?['title'] ??
                     widget.inputData?['name'],
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _theme.colorScheme.onSecondary,
-                ),
+                style: TextStyle(color: _theme.colorScheme.onSecondary),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
               ),

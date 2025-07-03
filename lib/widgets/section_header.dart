@@ -71,10 +71,7 @@ class _SectionHeaderState extends State<SectionHeader>
         Flexible(
           fit: FlexFit.tight,
           child: ClipRect(
-            child: SectionTitle(
-              widget.title,
-              _theme.colorScheme.primary,
-            ),
+            child: SectionTitle(widget.title, _theme.colorScheme.primary),
           ),
         ),
         if (widget.actions != null && widget.actions!.isNotEmpty)

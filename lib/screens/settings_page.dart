@@ -403,10 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           : color,
                 ),
                 if (isSelected)
-                  Icon(
-                    Icons.check,
-                    color: _theme.colorScheme.onPrimary,
-                  ),
+                  Icon(Icons.check, color: _theme.colorScheme.onPrimary),
               ],
             ),
           );

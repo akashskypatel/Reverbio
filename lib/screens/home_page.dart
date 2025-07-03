@@ -87,10 +87,8 @@ class _HomePageState extends State<HomePage> {
                   if (_url == null) return const SizedBox.shrink();
                   return AnnouncementBox(
                     message: context.l10n!.newAnnouncement,
-                    backgroundColor:
-                        _theme.colorScheme.secondaryContainer,
-                    textColor:
-                        _theme.colorScheme.onSecondaryContainer,
+                    backgroundColor: _theme.colorScheme.secondaryContainer,
+                    textColor: _theme.colorScheme.onSecondaryContainer,
                     url: _url,
                   );
                 },

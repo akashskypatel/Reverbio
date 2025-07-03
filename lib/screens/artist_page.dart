@@ -94,10 +94,7 @@ class _ArtistPageState extends State<ArtistPage> {
     return Center(
       child: Text(
         '${context.l10n!.error}!',
-        style: TextStyle(
-          color: _theme.colorScheme.primary,
-          fontSize: 18,
-        ),
+        style: TextStyle(color: _theme.colorScheme.primary, fontSize: 18),
       ),
     );
   }

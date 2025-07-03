@@ -68,8 +68,11 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
   }
 }
 
-bool isArtistAlreadyLiked(artistIdToCheck) =>
-    userLikedArtistsList.any((artist) => (artist['id'] != null && artistIdToCheck != null) && artist['id'] == (artistIdToCheck ?? ''));
+bool isArtistAlreadyLiked(artistIdToCheck) => userLikedArtistsList.any(
+  (artist) =>
+      (artist['id'] != null && artistIdToCheck != null) &&
+      artist['id'] == (artistIdToCheck ?? ''),
+);
 
 Future<dynamic> getArtistDetails(String id) async {
   try {
@@ -372,7 +375,8 @@ Future<dynamic> _getArtistDetailsMB(
       paginated: paginated,
     );
     stopwatch.stop();
-    if (res.isEmpty || res['artists'] == null || res['artists'].isEmpty) return null;
+    if (res.isEmpty || res['artists'] == null || res['artists'].isEmpty)
+      return null;
     final _results =
         exact
             ? List<dynamic>.from(res['artists']).where((e) => e['score'] == 100)

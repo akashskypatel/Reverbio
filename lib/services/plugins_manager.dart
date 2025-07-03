@@ -560,8 +560,7 @@ class PluginsManager {
           jsResult == null
               ? '$pluginName: ${result.stringResult}'
               : jsResult['message'] == null
-              ? message ??
-                  '$pluginName ${context.l10n!.operationPerformed}'
+              ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
               : '$pluginName: ${jsResult['message']}';
       showToast(context, text);
     } catch (e, stackTrace) {

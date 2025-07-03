@@ -279,8 +279,11 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
   }
 }
 
-bool isPlaylistAlreadyLiked(playlistIdToCheck) =>
-    userLikedPlaylists.any((playlist) => (playlist['id'] != null && playlistIdToCheck != null) && playlist['id'] == (playlistIdToCheck ?? ''));
+bool isPlaylistAlreadyLiked(playlistIdToCheck) => userLikedPlaylists.any(
+  (playlist) =>
+      (playlist['id'] != null && playlistIdToCheck != null) &&
+      playlist['id'] == (playlistIdToCheck ?? ''),
+);
 
 Future<List> getPlaylists({
   String? query,

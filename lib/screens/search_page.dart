@@ -246,10 +246,7 @@ class _SearchPageState extends State<SearchPage> {
     if (snapshot.connectionState == ConnectionState.waiting)
       return Column(
         children: [
-          SectionTitle(
-            context.l10n!.artist,
-            _theme.colorScheme.primary,
-          ),
+          SectionTitle(context.l10n!.artist, _theme.colorScheme.primary),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
           ),
@@ -264,10 +261,7 @@ class _SearchPageState extends State<SearchPage> {
         snapshot.data.isNotEmpty)
       return Column(
         children: [
-          SectionTitle(
-            context.l10n!.songs,
-            _theme.colorScheme.primary,
-          ),
+          SectionTitle(context.l10n!.songs, _theme.colorScheme.primary),
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -295,10 +289,7 @@ class _SearchPageState extends State<SearchPage> {
     if (snapshot.connectionState == ConnectionState.waiting)
       return Column(
         children: [
-          SectionTitle(
-            context.l10n!.songs,
-            _theme.colorScheme.primary,
-          ),
+          SectionTitle(context.l10n!.songs, _theme.colorScheme.primary),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
           ),
@@ -313,10 +304,7 @@ class _SearchPageState extends State<SearchPage> {
         snapshot.data.isNotEmpty)
       return Column(
         children: [
-          SectionTitle(
-            context.l10n!.albums,
-            _theme.colorScheme.primary,
-          ),
+          SectionTitle(context.l10n!.albums, _theme.colorScheme.primary),
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -350,10 +338,7 @@ class _SearchPageState extends State<SearchPage> {
     if (snapshot.connectionState == ConnectionState.waiting)
       return Column(
         children: [
-          SectionTitle(
-            context.l10n!.albums,
-            _theme.colorScheme.primary,
-          ),
+          SectionTitle(context.l10n!.albums, _theme.colorScheme.primary),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
           ),
@@ -368,10 +353,7 @@ class _SearchPageState extends State<SearchPage> {
         snapshot.data.isNotEmpty)
       return Column(
         children: [
-          SectionTitle(
-            context.l10n!.playlists,
-            _theme.colorScheme.primary,
-          ),
+          SectionTitle(context.l10n!.playlists, _theme.colorScheme.primary),
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -396,10 +378,7 @@ class _SearchPageState extends State<SearchPage> {
     if (snapshot.connectionState == ConnectionState.waiting)
       return Column(
         children: [
-          SectionTitle(
-            context.l10n!.playlist,
-            _theme.colorScheme.primary,
-          ),
+          SectionTitle(context.l10n!.playlist, _theme.colorScheme.primary),
           const Center(
             child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
           ),

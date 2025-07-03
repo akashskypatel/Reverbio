@@ -187,13 +187,13 @@ class _MiniPlayerState extends State<MiniPlayer> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 55, maxWidth: 55),
         child: BaseCard(
-      icon: FluentIcons.music_note_2_24_filled,
-      size: 55,
-      paddingValue: 0,
-      loadingWidget: const Spinner(),
-      imageUrl: widget.metadata.extras?['artWorkPath'],
-      imageOverlayMask: true,
-    ),
+          icon: FluentIcons.music_note_2_24_filled,
+          size: 55,
+          paddingValue: 0,
+          loadingWidget: const Spinner(),
+          imageUrl: widget.metadata.extras?['artWorkPath'],
+          imageOverlayMask: true,
+        ),
         /*
         SongArtworkWidget(
           metadata: widget.metadata,

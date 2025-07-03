@@ -150,11 +150,17 @@ void moveLikedSong(int oldIndex, int newIndex) {
   addOrUpdateData('user', 'likedSongs', userLikedSongsList);
 }
 
-bool isSongAlreadyLiked(songIdToCheck) =>
-    userLikedSongsList.any((song) => (song['id'] != null && songIdToCheck != null) && checkSongId(song['id'], songIdToCheck ?? ''));
+bool isSongAlreadyLiked(songIdToCheck) => userLikedSongsList.any(
+  (song) =>
+      (song['id'] != null && songIdToCheck != null) &&
+      checkSongId(song['id'], songIdToCheck ?? ''),
+);
 
-bool isSongAlreadyOffline(songIdToCheck) =>
-    userOfflineSongs.any((song) => (song['id'] != null && songIdToCheck != null) && checkSongId(song['id'], songIdToCheck ?? ''));
+bool isSongAlreadyOffline(songIdToCheck) => userOfflineSongs.any(
+  (song) =>
+      (song['id'] != null && songIdToCheck != null) &&
+      checkSongId(song['id'], songIdToCheck ?? ''),
+);
 
 void getSimilarSong(String songYtId) async {
   try {
