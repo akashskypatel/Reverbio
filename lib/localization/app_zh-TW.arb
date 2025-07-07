@@ -175,5 +175,9 @@
   "failed": "失敗",
   "operationPerformed": "執行了操作",
   "backgroundJobs": "背景工作",
-  "nothingInQueue": "隊列中沒有內容"
+  "nothingInQueue": "隊列中沒有內容",
+  "history": "歷史",
+  "suggestions": "建議",
+  "sponsorBlock": "跳過贊助段落",
+  "nonMusicBlock": "跳過非音樂部分 (開場白, 結尾等)"
 }

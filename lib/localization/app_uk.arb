@@ -175,5 +175,9 @@
   "failed": "не вдалося",
   "operationPerformed": "Виконано операцію",
   "backgroundJobs": "Фонові завдання",
-  "nothingInQueue": "Нічого в черзі"
+  "nothingInQueue": "Нічого в черзі",
+  "history": "Історія",
+  "suggestions": "Пропозиції",
+  "sponsorBlock": "Пропустити спонсорські блоки",
+  "nonMusicBlock": "Пропустити немузичні частини (Інтро, Аутро тощо)"
 }

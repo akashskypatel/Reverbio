@@ -175,5 +175,9 @@
   "failed": "失敗",
   "operationPerformed": "操作を実行しました",
   "backgroundJobs": "バックグラウンドジョブ",
-  "nothingInQueue": "キューに何もありません"
+  "nothingInQueue": "キューに何もありません",
+  "history": "履歴",
+  "suggestions": "提案",
+  "sponsorBlock": "スポンサー部分をスキップ",
+  "nonMusicBlock": "非音楽部分をスキップ (イントロ, アウトロなど)"
 }

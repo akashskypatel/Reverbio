@@ -175,5 +175,9 @@
   "failed": "فشل",
   "operationPerformed": "تم تنفيذ عملية",
   "backgroundJobs": "وظائف الخلفية",
-  "nothingInQueue": "لا شيء في قائمة الانتظار"
+  "nothingInQueue": "لا شيء في قائمة الانتظار",
+  "history": "التاريخ",
+  "suggestions": "اقتراحات",
+  "sponsorBlock": "تخطي أجزاء الرعاية",
+  "nonMusicBlock": "تخطي الأجزاء غير الموسيقية (المقدمة، الخاتمة، إلخ)"
 }

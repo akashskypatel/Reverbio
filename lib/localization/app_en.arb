@@ -175,5 +175,9 @@
   "failed": "failed",
   "operationPerformed": "Performed an operation",
   "backgroundJobs": "Background Jobs",
-  "nothingInQueue": "Nothing in queue"
+  "nothingInQueue": "Nothing in queue",
+  "history": "History",
+  "suggestions": "Suggestions",
+  "sponsorBlock": "Skip Sponsor Segments",
+  "nonMusicBlock": "Skip Non-Music Segments (Intro, Outro, etc)"
 }

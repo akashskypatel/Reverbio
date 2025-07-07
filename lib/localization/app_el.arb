@@ -175,5 +175,9 @@
   "failed": "απέτυχε",
   "operationPerformed": "Εκτελέστηκε μια λειτουργία",
   "backgroundJobs": "Εργασίες παρασκηνίου",
-  "nothingInQueue": "Τίποτα στην ουρά"
+  "nothingInQueue": "Τίποτα στην ουρά",
+  "history": "Ιστορικό",
+  "suggestions": "Προτάσεις",
+  "sponsorBlock": "Παράλειψη χορηγούμενων τμημάτων",
+  "nonMusicBlock": "Παράλειψη μη μουσικών τμημάτων (Εισαγωγή, Έξοδος κλπ)"
 }

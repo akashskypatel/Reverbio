@@ -175,5 +175,9 @@
   "failed": "не удалось",
   "operationPerformed": "Выполнена операция",
   "backgroundJobs": "Фоновые задания",
-  "nothingInQueue": "Очередь пуста"
+  "nothingInQueue": "Очередь пуста",
+  "history": "История",
+  "suggestions": "Предложения",
+  "sponsorBlock": "Пропустить рекламные блоки",
+  "nonMusicBlock": "Пропустить немусыкальные части (Интро, Аутро и т.д.)"
 }

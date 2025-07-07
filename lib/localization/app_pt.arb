@@ -175,5 +175,9 @@
   "failed": "falhou",
   "operationPerformed": "Realizou uma operação",
   "backgroundJobs": "Trabalhos em segundo plano",
-  "nothingInQueue": "Nada na fila"
+  "nothingInQueue": "Nada na fila",
+  "history": "Histórico",
+  "suggestions": "Sugestões",
+  "sponsorBlock": "Pular segmentos patrocinados",
+  "nonMusicBlock": "Pular partes não musicais (Intro, Outro etc.)"
 }

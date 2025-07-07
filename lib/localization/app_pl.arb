@@ -175,5 +175,9 @@
   "failed": "nieudane",
   "operationPerformed": "Wykonano operację",
   "backgroundJobs": "Zadania w tle",
-  "nothingInQueue": "Nic w kolejce"
+  "nothingInQueue": "Nic w kolejce",
+  "history": "Historia",
+  "suggestions": "Sugestie",
+  "sponsorBlock": "Pomiń fragmenty sponsorowane",
+  "nonMusicBlock": "Pomiń fragmenty bez muzyki (Intro, Outro itp.)"
 }

@@ -175,5 +175,9 @@
   "failed": "ব্যর্থ",
   "operationPerformed": "একটি অপারেশন সম্পাদিত হয়েছে",
   "backgroundJobs": "পটভূমি কাজ",
-  "nothingInQueue": "কিউতে কিছু নেই"
+  "nothingInQueue": "কিউতে কিছু নেই",
+  "history": "ইতিহাস",
+  "suggestions": "পরামর্শ",
+  "sponsorBlock": "স্পনসর অংশগুলি স্কিপ করুন",
+  "nonMusicBlock": "নন-মিউজিক অংশ স্কিপ করুন (ইন্ট্রো, আউট্রো ইত্যাদি)"
 }

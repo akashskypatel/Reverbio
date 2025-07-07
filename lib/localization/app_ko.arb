@@ -175,5 +175,9 @@
   "failed": "실패",
   "operationPerformed": "작업을 수행했습니다",
   "backgroundJobs": "백그라운드 작업",
-  "nothingInQueue": "대기열에 아무것도 없음"
+  "nothingInQueue": "대기열에 아무것도 없음",
+  "history": "기록",
+  "suggestions": "제안",
+  "sponsorBlock": "스폰서 구간 건너뛰기",
+  "nonMusicBlock": "음악이 아닌 부분 건너뛰기 (인트로, 아웃트로 등)"
 }

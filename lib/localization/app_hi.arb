@@ -175,5 +175,9 @@
   "failed": "विफल",
   "operationPerformed": "एक ऑपरेशन किया गया",
   "backgroundJobs": "पृष्ठभूमि नौकरियां",
-  "nothingInQueue": "कतार में कुछ नहीं"
+  "nothingInQueue": "कतार में कुछ नहीं",
+  "history": "इतिहास",
+  "suggestions": "सुझाव",
+  "sponsorBlock": "प्रायोजित भाग छोड़ें",
+  "nonMusicBlock": "गैर-संगीत वाले भाग छोड़ें (इंट्रो, आउट्रो आदि)"
 }

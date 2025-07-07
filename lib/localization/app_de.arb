@@ -175,5 +175,9 @@
   "failed": "fehlgeschlagen",
   "operationPerformed": "Eine Operation wurde durchgeführt",
   "backgroundJobs": "Hintergrundjobs",
-  "nothingInQueue": "Nichts in der Warteschlange"
+  "nothingInQueue": "Nichts in der Warteschlange",
+  "history": "Verlauf",
+  "suggestions": "Vorschläge",
+  "sponsorBlock": "Werbesegmente überspringen",
+  "nonMusicBlock": "Nicht-Musik-Teile überspringen (Intro, Outro usw.)"
 }

@@ -175,5 +175,9 @@
   "failed": "gagal",
   "operationPerformed": "Melakukan operasi",
   "backgroundJobs": "Pekerjaan Latar Belakang",
-  "nothingInQueue": "Tidak ada dalam antrian"
+  "nothingInQueue": "Tidak ada dalam antrian",
+  "history": "Riwayat",
+  "suggestions": "Saran",
+  "sponsorBlock": "Lewati Segmen Sponsor",
+  "nonMusicBlock": "Lewati Bagian Non-Musik (Intro, Outro, dll)"
 }
