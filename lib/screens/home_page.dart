@@ -102,6 +102,7 @@ class _HomePageState extends State<HomePage> {
               child: ValueListenableBuilder<int>(
                 valueListenable: currentLikedPlaylistsLength,
                 builder: (_, value, __) {
+                  //TODO: add pagination
                   return HorizontalCardScroller(
                     title: context.l10n!.suggestedPlaylists,
                     future: _recommendedPlaylistsFuture,
@@ -117,6 +118,7 @@ class _HomePageState extends State<HomePage> {
                 child: FutureBuilder(
                   future: _recommendedSongsFuture,
                   builder: (context, snapshot) {
+                    //TODO: add pagination
                     return HorizontalCardScroller(
                       title: context.l10n!.suggestedArtists,
                       future: _recommendedArtistsFuture,
@@ -126,6 +128,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+          //TODO: add pagination
           SongList(
             page: 'recommended',
             title: context.l10n!.recommendedForYou,

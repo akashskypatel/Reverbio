@@ -329,7 +329,6 @@ class _SearchPageState extends State<SearchPage> {
         'getLiked': isPlaylistAlreadyLiked,
       },
     };
-    //TODO: add pagination
     return CustomScrollView(
       shrinkWrap: true,
       slivers: [
