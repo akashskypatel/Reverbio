@@ -54,6 +54,7 @@ ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
 final logger = Logger();
 final appLinks = AppLinks();
 final pxm = ProxyManager();
+ThemeData? theme;
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
@@ -138,6 +139,7 @@ class _ReverbioState extends State<Reverbio> {
           }
           primaryColorSetting = newAccentColor;
         }
+        theme = Theme.of(context);
       });
   }
 

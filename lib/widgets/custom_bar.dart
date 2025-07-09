@@ -26,6 +26,7 @@ class CustomBar extends StatelessWidget {
   CustomBar(
     this.tileName,
     this.tileIcon, {
+    super.key,
     this.onTap,
     this.onLongPress,
     this.trailing,
@@ -33,9 +34,8 @@ class CustomBar extends StatelessWidget {
     this.iconColor,
     this.textColor,
     this.borderRadius = BorderRadius.zero,
-    super.key,
   });
-
+  final ValueNotifier<bool> _isLoadingNotifieir = ValueNotifier(false);
   final String tileName;
   final IconData tileIcon;
   final VoidCallback? onTap;
@@ -45,6 +45,11 @@ class CustomBar extends StatelessWidget {
   final Color? iconColor;
   final Color? textColor;
   final BorderRadius borderRadius;
+
+  bool isLoading(bool isLoading) {
+    _isLoadingNotifieir.value = isLoading;
+    return isLoading;
+  }
 
   @override
   Widget build(BuildContext context) {

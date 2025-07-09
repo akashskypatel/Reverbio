@@ -61,13 +61,13 @@ class PlaylistPage extends StatefulWidget {
 class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   dynamic _playlist;
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   bool _isLoading = true;
   //final int _itemsPerPage = 35;
   //var _currentPage = 0;
   var _currentLastLoadedId = 0;
   late final playlistLikeStatus = ValueNotifier<bool>(
-    isPlaylistAlreadyLiked(widget.playlistData['ytid']),
+    isPlaylistAlreadyLiked(widget.playlistData),
   );
 
   @override
@@ -147,6 +147,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: _buildNavigationBar(),
       body:
@@ -249,7 +250,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
     return PlaylistHeader(
       _buildPlaylistImage(),
       widget.page == 'album'
-          ? '${_playlist['artist']} - ${_playlist['title']}'
+          ? _playlist['artist'] != null
+              ? '${_playlist['artist']} - ${_playlist['title']}'
+              : _playlist['title']
           : _playlist['title'],
       _songsLength,
     );
@@ -391,7 +394,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       final updatedPlaylist = await getPlaylistInfoForWidget(
         widget.playlistData,
       );
-      if (updatedPlaylist != null) {
+      if (updatedPlaylist.isNotEmpty) {
         if (mounted)
           setState(() {
             _songsList = updatedPlaylist['list'];

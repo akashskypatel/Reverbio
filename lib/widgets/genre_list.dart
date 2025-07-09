@@ -25,7 +25,7 @@ class GenreList extends StatefulWidget {
 }
 
 class _GenreListState extends State<GenreList> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   @override
   void initState() {
     super.initState();
@@ -42,6 +42,7 @@ class _GenreListState extends State<GenreList> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     return Column(
       children: [

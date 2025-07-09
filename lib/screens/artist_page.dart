@@ -56,7 +56,7 @@ class _ArtistPageState extends State<ArtistPage> {
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final isLargeScreen = MediaQuery.of(context).size.width > 480;
   late final screenWidth = MediaQuery.sizeOf(context).width;
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   dynamic albums;
   dynamic others;
   dynamic singles;
@@ -74,6 +74,7 @@ class _ArtistPageState extends State<ArtistPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -82,6 +83,7 @@ class _ArtistPageState extends State<ArtistPage> {
           iconSize: pageHeaderIconSize,
         ),
         actions: [
+          _buildSyncButton(),
           ...PM.getWidgetsByType(_getArtistData, 'ArtistPageHeader', context),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
@@ -99,8 +101,23 @@ class _ArtistPageState extends State<ArtistPage> {
     );
   }
 
+  Widget _buildSyncButton() {
+    return IconButton(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      icon: const Icon(FluentIcons.arrow_sync_24_filled),
+      iconSize: pageHeaderIconSize,
+      onPressed: () async {
+        final data = await getArtistDetails(widget.artistData, refresh: true);
+        setState(() {
+          widget.artistData.addAll(data);
+        });
+      },
+    );
+  }
+
   Widget _buildBody() {
-    if (widget.artistData['musicbrainz'] == null)
+    if (widget.artistData?['musicbrainz'] == null)
       return FutureBuilder(
         future: _setupData(),
         builder: (context, snapshot) {
@@ -165,7 +182,7 @@ class _ArtistPageState extends State<ArtistPage> {
   Widget buildArtistHeader() {
     return ArtistHeader(
       _buildArtistImage(),
-      widget.artistData['artist'] ?? widget.artistData['name'],
+      widget.artistData?['artist'] ?? widget.artistData?['name'] ?? widget.artistData?['title'] ?? widget.artistData?['value'] ?? '',
     );
   }
 
@@ -181,25 +198,25 @@ class _ArtistPageState extends State<ArtistPage> {
   }
 
   Future<dynamic> _setupData() async {
-    if (widget.artistData['musicbrainz'] == null)
+    if (widget.artistData?['musicbrainz'] == null)
       widget.artistData.addAll(
         Map<String, dynamic>.from(
-          await getArtistDetails(widget.artistData['id']),
+          await getArtistDetails(widget.artistData?['id']),
         ),
       );
 
     albums =
-        widget.artistData['musicbrainz']['release-groups'] == null
+        widget.artistData?['musicbrainz']?['release-groups'] == null
             ? []
-            : List.from(widget.artistData['musicbrainz']['release-groups'])
+            : List.from(widget.artistData?['musicbrainz']['release-groups'])
                 .where(
                   (value) =>
                       value['primary-type'].toString().toLowerCase() == 'album',
                 )
                 .map((ele) {
                   ele['source'] = 'musicbrainz';
-                  ele['artist'] = widget.artistData['artist'];
-                  ele['artistId'] = widget.artistData['id'];
+                  ele['artist'] = widget.artistData?['artist'];
+                  ele['artistId'] = widget.artistData?['id'];
                   ele['isAlbum'] = true;
                   ele['ytid'] = null;
                   return ele;
@@ -207,9 +224,9 @@ class _ArtistPageState extends State<ArtistPage> {
                 .toList();
 
     others =
-        widget.artistData['musicbrainz']['release-groups'] == null
+        widget.artistData?['musicbrainz']?['release-groups'] == null
             ? []
-            : List.from(widget.artistData['musicbrainz']['release-groups'])
+            : List.from(widget.artistData?['musicbrainz']?['release-groups'])
                 .where(
                   (value) =>
                       value['primary-type'].toString().toLowerCase() !=
@@ -220,17 +237,17 @@ class _ArtistPageState extends State<ArtistPage> {
                 .map((ele) {
                   ele['source'] = 'musicbrainz';
                   ele['primary-type'] = ele['primary-type'] ?? 'unknown';
-                  ele['artist'] = widget.artistData['artist'];
-                  ele['artistId'] = widget.artistData['id'];
+                  ele['artist'] = widget.artistData?['artist'];
+                  ele['artistId'] = widget.artistData?['id'];
                   ele['isAlbum'] = false;
                   ele['ytid'] = null;
                   return ele;
                 })
                 .toList();
     singles =
-        widget.artistData['musicbrainz']['release-groups'] == null
+        widget.artistData?['musicbrainz']?['release-groups'] == null
             ? []
-            : List.from(widget.artistData['musicbrainz']['release-groups'])
+            : List.from(widget.artistData?['musicbrainz']?['release-groups'])
                 .where(
                   (value) =>
                       value['primary-type'].toString().toLowerCase() ==
@@ -238,15 +255,15 @@ class _ArtistPageState extends State<ArtistPage> {
                 )
                 .map((ele) {
                   ele['source'] = 'musicbrainz';
-                  ele['artist'] = widget.artistData['artist'];
-                  ele['artistId'] = widget.artistData['id'];
+                  ele['artist'] = widget.artistData?['artist'];
+                  ele['artistId'] = widget.artistData?['id'];
                   ele['isAlbum'] = false;
                   ele['isSong'] = true;
                   ele['ytid'] = null;
                   ele['image'] =
                       pickRandomItem(
-                        widget.artistData['discogs']['images'] as List,
-                      )['uri150'];
+                        widget.artistData?['discogs']?['images'] ?? [],
+                      )?['uri150'];
                   return ele;
                 })
                 .toList();

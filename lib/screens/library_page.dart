@@ -48,7 +48,7 @@ class _LibraryPageState extends State<LibraryPage> {
   final FocusNode _inputNode = FocusNode();
   ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
   final List<PlaylistBar> userPlaylistBars = [];
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
 
   @override
   void dispose() {
@@ -76,8 +76,8 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     final primaryColor = _theme.colorScheme.primary;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n!.library),

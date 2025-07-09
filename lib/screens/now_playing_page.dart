@@ -18,6 +18,7 @@
  *     For more information about Reverbio, including how to contribute,
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
+import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
@@ -25,21 +26,19 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
+import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
-import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
-//import 'package:reverbio/widgets/song_artwork.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -227,7 +226,7 @@ class NowPlayingArtwork extends StatelessWidget {
         size: imageSize,
         paddingValue: 0,
         loadingWidget: const Spinner(),
-        imageUrl: metadata.extras?['artWorkPath'],
+        inputData: audioHandler.audioPlayer.songValueNotifier.value?.song,
       ),
       /*
       SongArtworkWidget(
@@ -344,7 +343,7 @@ class MarqueeTextWidget extends StatelessWidget {
   }
 }
 
-class NowPlayingControls extends StatelessWidget {
+class NowPlayingControls extends StatefulWidget {
   const NowPlayingControls({
     super.key,
     required this.context,
@@ -362,74 +361,114 @@ class NowPlayingControls extends StatelessWidget {
   final MediaItem metadata;
 
   @override
-  Widget build(BuildContext context) {
-    final screenWidth = size.width;
-    final screenHeight = size.height;
+  _NowPlayingControlsState createState() => _NowPlayingControlsState();
+}
 
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Spacer(),
-          SizedBox(
-            width: screenWidth * 0.85,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                MarqueeTextWidget(
-                  text: metadata.title,
-                  fontColor: Theme.of(context).colorScheme.primary,
-                  fontSize: screenHeight * 0.028,
-                  fontWeight: FontWeight.w600,
+class _NowPlayingControlsState extends State<NowPlayingControls> {
+  late ThemeData _theme;
+  @override
+  Widget build(BuildContext context) {
+    _theme = Theme.of(context);
+    final screenWidth = widget.size.width;
+    final screenHeight = widget.size.height;
+    return ValueListenableBuilder(
+      valueListenable: audioHandler.audioPlayer.songValueNotifier,
+      builder: (context, value, child) {
+        final song = audioHandler.audioPlayer.songValueNotifier.value!.song;
+        final artistData = (song['artist-credit'] ?? []) as List;
+        int index = 1;
+        final artistLabels = artistData.fold(<Widget>[], (v, e) {
+          v.add(_buildArtistLabel(e['artist']));
+          if (index != artistData.length)
+            v.add(
+              Text(
+                ', ',
+                style: TextStyle(
+                  color: _theme.colorScheme.secondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
                 ),
-                const SizedBox(height: 10),
-                if (metadata.artist != null)
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        final artistData =
-                            metadata.extras?['artistId'] != null
-                                ? await getArtistDetails(
-                                  metadata.extras?['artistId']!,
-                                )
-                                : await searchArtistDetails(
-                                  metadata.artist!,
-                                  limit: 10,
-                                  paginated: true,
-                                  exact: false,
-                                );
-                        if (artistData == null || artistData.isEmpty)
-                          throw Exception();
-                        await context.push('/artist', extra: artistData);
-                      } catch (e, stackTrace) {
-                        logger.log(
-                          'open artist page from miniplayer',
-                          e,
-                          stackTrace,
-                        );
-                      }
-                    },
-                    child: MarqueeTextWidget(
-                      text: metadata.artist!,
-                      fontColor: Theme.of(context).colorScheme.secondary,
-                      fontSize: screenHeight * 0.017,
-                      fontWeight: FontWeight.w500,
+              ),
+            );
+          index++;
+          return v;
+        });
+        return Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(),
+              SizedBox(
+                width: screenWidth * 0.85,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    MarqueeTextWidget(
+                      text: widget.metadata.title,
+                      fontColor: Theme.of(context).colorScheme.primary,
+                      fontSize: screenHeight * 0.028,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (audioHandler
+                                .audioPlayer
+                                .songValueNotifier
+                                .value
+                                ?.song !=
+                            null)
+                          ...artistLabels,
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              const PositionSlider(),
+              const Spacer(),
+              PlayerControlButtons(
+                context: context,
+                metadata: widget.metadata,
+                iconSize: widget.adjustedIconSize,
+                miniIconSize: widget.adjustedMiniIconSize,
+              ),
+              const Spacer(flex: 2),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildArtistLabel(dynamic artistData) {
+    final screenHeight = widget.size.height;
+    return GestureDetector(
+      onTap: () async {
+        try {
+          if (!mounted || artistData == null || artistData.isEmpty)
+            throw Exception();
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) =>
+                      ArtistPage(page: '/artist', artistData: artistData),
+              settings: RouteSettings(name: '/artist?${artistData['id']}'),
             ),
-          ),
-          const Spacer(),
-          const PositionSlider(),
-          const Spacer(),
-          PlayerControlButtons(
-            context: context,
-            metadata: metadata,
-            iconSize: adjustedIconSize,
-            miniIconSize: adjustedMiniIconSize,
-          ),
-          const Spacer(flex: 2),
-        ],
+          );
+        } catch (_) {}
+      },
+      child: MarqueeTextWidget(
+        text:
+            artistData['name'] ??
+            artistData['artist'] ??
+            artistData['title'] ??
+            '',
+        fontColor: Theme.of(context).colorScheme.secondary,
+        fontSize: screenHeight * 0.017,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
@@ -697,9 +736,15 @@ class BottomActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final songLikeStatus = ValueNotifier<bool>(isSongAlreadyLiked(audioId));
+    final songLikeStatus = ValueNotifier<bool>(
+      isSongAlreadyLiked(
+        audioHandler.audioPlayer.songValueNotifier.value?.song,
+      ),
+    );
     final songOfflineStatus = ValueNotifier<bool>(
-      isSongAlreadyOffline(audioId),
+      isSongAlreadyOffline(
+        audioHandler.audioPlayer.songValueNotifier.value?.song,
+      ),
     );
     final _primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -734,9 +779,15 @@ class BottomActionsRow extends StatelessWidget {
           iconSize: iconSize,
           onPressed: () {
             if (value) {
-              removeSongFromOffline(audioId);
+              unawaited(
+                removeSongFromOffline(
+                  audioHandler.audioPlayer.songValueNotifier.value?.song,
+                ),
+              );
             } else {
-              makeSongOffline(mediaItemToMap(metadata));
+              makeSongOffline(
+                audioHandler.audioPlayer.songValueNotifier.value?.song,
+              );
             }
             status.value = !status.value;
           },
@@ -750,7 +801,10 @@ class BottomActionsRow extends StatelessWidget {
       icon: Icon(Icons.add, color: primaryColor),
       iconSize: iconSize,
       onPressed: () {
-        showAddToPlaylistDialog(context, mediaItemToMap(metadata));
+        showAddToPlaylistDialog(
+          context,
+          audioHandler.audioPlayer.songValueNotifier.value?.song,
+        );
       },
     );
   }

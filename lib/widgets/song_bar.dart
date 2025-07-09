@@ -76,7 +76,7 @@ class SongBar extends StatefulWidget {
   Future<bool> queueSong({bool play = false}) async {
     try {
       _isLoadingNotifier.value = true;
-      if (!isPrimed) unawaited(primeSong());
+      if (!isPrimed) unawaited(prepareSong());
       if (play) await _songFutureTracker.completer!.future;
       if (!isError) await audioHandler.queueSong(songBar: this, play: play);
       _isLoadingNotifier.value = false;
@@ -97,7 +97,7 @@ class SongBar extends StatefulWidget {
     return !isError;
   }
 
-  Future<bool> _primeSong() async {
+  Future<bool> _prepareSong() async {
     _isLoadingNotifier.value = true;
     if (!isPrimed) await getSongUrl(song);
     _isPrimedNotifier.value = true;
@@ -107,11 +107,11 @@ class SongBar extends StatefulWidget {
     return !isError;
   }
 
-  Future<void> primeSong({bool shouldWait = false}) async {
+  Future<void> prepareSong({bool shouldWait = false}) async {
     if (shouldWait)
-      await _songFutureTracker.runFuture(_primeSong());
+      await _songFutureTracker.runFuture(_prepareSong());
     else
-      unawaited(_songFutureTracker.runFuture(_primeSong()));
+      unawaited(_songFutureTracker.runFuture(_prepareSong()));
   }
 
   void setBorder({BorderRadius borderRadius = BorderRadius.zero}) {
@@ -124,16 +124,16 @@ class SongBar extends StatefulWidget {
 }
 
 class _SongBarState extends State<SongBar> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   dynamic loadedSong = false;
 
   TapDownDetails? doubleTapdetails;
 
   late final songLikeStatus = ValueNotifier<bool>(
-    isSongAlreadyLiked(widget.song['ytid']),
+    isSongAlreadyLiked(widget.song),
   );
   late final songOfflineStatus = ValueNotifier<bool>(
-    isSongAlreadyOffline(widget.song['ytid']),
+    isSongAlreadyOffline(widget.song),
   );
   final ValueNotifier<bool> isLikedAnimationPlaying = ValueNotifier(false);
 
@@ -154,6 +154,7 @@ class _SongBarState extends State<SongBar> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     final primaryColor = _theme.colorScheme.primary;
     return Stack(
       children: [
@@ -170,8 +171,8 @@ class _SongBarState extends State<SongBar> {
             },
             onTap:
                 widget.onPlay ??
-                () {
-                  widget.queueSong(play: true);
+                () async {
+                  await widget.queueSong(play: true);
                 },
             child: Card(
               color: widget.backgroundColor,
@@ -274,7 +275,7 @@ class _SongBarState extends State<SongBar> {
   }
 
   void likeItem() {
-    final isLiked = isSongAlreadyLiked(widget.song['id']);
+    final isLiked = isSongAlreadyLiked(widget.song);
     updateSongLikeStatus(widget.song, !isLiked);
     songLikeStatus.value = !isLiked;
     _startLikeAnimationTimer();
@@ -295,7 +296,7 @@ class _SongBarState extends State<SongBar> {
     final isDurationAvailable =
         widget.showMusicDuration && widget.song['duration'] != null;
 
-    if (isOffline && artworkPath != null) {
+    if (isOffline && artworkPath != null && isFilePath(artworkPath)) {
       return _buildOfflineArtwork(artworkPath, size);
     }
 
@@ -338,39 +339,6 @@ class _SongBarState extends State<SongBar> {
             imageUrl: lowResImageUrl,
             imageOverlayMask: true,
           ),
-        /*
-          CachedNetworkImage(
-            key: Key(widget.song['ytid'].toString()),
-            width: size,
-            height: size,
-            imageUrl: lowResImageUrl,
-            imageBuilder:
-                (context, imageProvider) => SizedBox(
-                  width: size,
-                  height: size,
-                  child: ClipRRect(
-                    borderRadius: commonBarRadius,
-                    child: Image(
-                      color:
-                          isDurationAvailable
-                              ? _theme.colorScheme.primaryContainer
-                              : null,
-                      colorBlendMode:
-                          isDurationAvailable ? BlendMode.multiply : null,
-                      opacity:
-                          isDurationAvailable
-                              ? const AlwaysStoppedAnimation(0.45)
-                              : null,
-                      image: imageProvider,
-                      centerSlice: const Rect.fromLTRB(1, 1, 1, 1),
-                    ),
-                  ),
-                ),
-            errorWidget:
-                (context, url, error) =>
-                    _buildNoArtworkCard(size, isDurationAvailable),
-          ),
-          */
         if (isDurationAvailable)
           SizedBox(
             width: size - 10,
@@ -392,10 +360,16 @@ class _SongBarState extends State<SongBar> {
   Widget _buildNoArtworkCard(double size, bool isDurationAvailable) {
     return Stack(
       children: [
-        Icon(
-          FluentIcons.music_note_1_24_regular,
-          color: _theme.colorScheme.primary,
-          size: size,
+        SizedBox(
+          width: size,
+          height: size,
+          child: BaseCard(
+            icon: FluentIcons.music_note_2_24_filled,
+            size: 24,
+            paddingValue: 0,
+            loadingWidget: const Spinner(),
+            imageOverlayMask: true,
+          ),
         ),
         if (isDurationAvailable)
           SizedBox(
@@ -598,7 +572,7 @@ class _SongBarState extends State<SongBar> {
         break;
       case 'offline':
         if (songOfflineStatus.value) {
-          removeSongFromOffline(widget.song['ytid']);
+          unawaited(removeSongFromOffline(widget.song));
           showToast(context, context.l10n!.songRemovedFromOffline);
         } else {
           makeSongOffline(widget.song);

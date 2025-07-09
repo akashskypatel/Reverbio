@@ -25,10 +25,11 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
+import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
@@ -47,7 +48,7 @@ class MiniPlayer extends StatefulWidget {
 }
 
 class _MiniPlayerState extends State<MiniPlayer> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   @override
   void initState() {
     super.initState();
@@ -62,6 +63,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     final colorScheme = _theme.colorScheme;
 
     return GestureDetector(
@@ -70,7 +72,6 @@ class _MiniPlayerState extends State<MiniPlayer> {
           nowPlayingOpen = !nowPlayingOpen;
           await context.push('/nowPlaying');
         }
-        ;
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -81,41 +82,77 @@ class _MiniPlayerState extends State<MiniPlayer> {
               closeButton: widget.closeButton,
               positionDataNotifier: audioHandler.positionDataNotifier,
             ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            if (isLargeScreen(context)) _buildLargeScreenControls(),
+            if (!isLargeScreen(context)) _buildSmallScreenControls(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLargeScreenControls() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          children: [
+            _buildArtwork(),
+            _buildMetadata(),
+            Row(
               children: [
-                Row(
-                  children: [
-                    _buildArtwork(),
-                    _buildMetadata(colorScheme.primary, colorScheme.secondary),
-                    Row(
-                      children: [
-                        _buildPreviousButton(context),
-                        if (audioHandler.hasPrevious) const SizedBox(width: 10),
-                        StreamBuilder<Duration>(
-                          stream: audioHandler.audioPlayer.positionStream,
-                          builder: (context, snapshot) {
-                            return _buildStopButton(context);
-                          },
-                        ),
-                        const SizedBox(width: 10),
-                        StreamBuilder<PlaybackState>(
-                          stream: audioHandler.playbackState,
-                          builder: (context, snapshot) {
-                            return _buildPlayPauseButton(context);
-                          },
-                        ),
-                        if (audioHandler.hasNext) const SizedBox(width: 10),
-                        _buildNextButton(context),
-                      ],
-                    ),
-                  ],
+                _buildPreviousButton(context),
+                if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                StreamBuilder<Duration>(
+                  stream: audioHandler.audioPlayer.positionStream,
+                  builder: (context, snapshot) {
+                    return _buildStopButton(context);
+                  },
                 ),
+                const SizedBox(width: 10),
+                StreamBuilder<PlaybackState>(
+                  stream: audioHandler.playbackState,
+                  builder: (context, snapshot) {
+                    return _buildPlayPauseButton(context);
+                  },
+                ),
+                if (audioHandler.hasNext) const SizedBox(width: 10),
+                _buildNextButton(context),
               ],
             ),
           ],
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildSmallScreenControls() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(children: [_buildArtwork(), _buildMetadata()]),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildPreviousButton(context),
+            if (audioHandler.hasPrevious) const SizedBox(width: 10),
+            StreamBuilder<Duration>(
+              stream: audioHandler.audioPlayer.positionStream,
+              builder: (context, snapshot) {
+                return _buildStopButton(context);
+              },
+            ),
+            const SizedBox(width: 10),
+            StreamBuilder<PlaybackState>(
+              stream: audioHandler.playbackState,
+              builder: (context, snapshot) {
+                return _buildPlayPauseButton(context);
+              },
+            ),
+            if (audioHandler.hasNext) const SizedBox(width: 10),
+            _buildNextButton(context),
+          ],
+        ),
+      ],
     );
   }
 
@@ -191,80 +228,99 @@ class _MiniPlayerState extends State<MiniPlayer> {
           size: 55,
           paddingValue: 0,
           loadingWidget: const Spinner(),
-          imageUrl: widget.metadata.extras?['artWorkPath'],
-          imageOverlayMask: true,
+          inputData: audioHandler.audioPlayer.songValueNotifier.value?.song,
         ),
-        /*
-        SongArtworkWidget(
-          metadata: widget.metadata,
-          size: 55,
-          errorWidgetIconSize: 30,
-        ),
-        */
       ),
     );
   }
 
-  Widget _buildMetadata(Color titleColor, Color artistColor) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: MarqueeWidget(
-            manualScrollEnabled: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  widget.metadata.title,
-                  style: TextStyle(
-                    color: titleColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+  Widget _buildMetadata() {
+    final titleColor = _theme.colorScheme.primary;
+    return ValueListenableBuilder(
+      valueListenable: audioHandler.audioPlayer.songValueNotifier,
+      builder: (context, value, child) {
+        final song = audioHandler.audioPlayer.songValueNotifier.value!.song;
+        final artistData = (song['artist-credit'] ?? []) as List;
+        int index = 1;
+        final artistLabels = artistData.fold(<Widget>[], (v, e) {
+          v.add(_buildArtistLabel(e['artist']));
+          if (index != artistData.length)
+            v.add(
+              Text(
+                ', ',
+                style: TextStyle(
+                  color: _theme.colorScheme.secondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
                 ),
-                if (widget.metadata.artist != null)
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        final artistData =
-                            widget.metadata.extras?['artistId'] != null
-                                ? await getArtistDetails(
-                                  widget.metadata.extras?['artistId']!,
-                                )
-                                : await searchArtistDetails(
-                                  widget.metadata.artist!,
-                                  limit: 10,
-                                  paginated: true,
-                                  exact: false,
-                                );
-                        if (!mounted ||
-                            artistData == null ||
-                            artistData.isEmpty)
-                          throw Exception();
-                        await context.push('/artist', extra: artistData);
-                      } catch (e, stackTrace) {
-                        logger.log(
-                          'open artist page from miniplayer',
-                          e,
-                          stackTrace,
-                        );
-                      }
-                    },
-                    child: Text(
-                      widget.metadata.artist!,
+              ),
+            );
+          index++;
+          return v;
+        });
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MarqueeWidget(
+                manualScrollEnabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.metadata.title,
                       style: TextStyle(
-                        color: artistColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
+                        color: titleColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-              ],
+                    Row(
+                      children: [
+                        if (audioHandler
+                                .audioPlayer
+                                .songValueNotifier
+                                .value
+                                ?.song !=
+                            null)
+                          ...artistLabels,
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildArtistLabel(dynamic artistData) {
+    return GestureDetector(
+      onTap: () async {
+        try {
+          if (!mounted || artistData == null || artistData.isEmpty)
+            throw Exception();
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) =>
+                      ArtistPage(page: '/artist', artistData: artistData),
+              settings: RouteSettings(name: '/artist?${artistData['id']}'),
+            ),
+          );
+        } catch (_) {}
+      },
+      child: Text(
+        artistData['name'] ?? artistData['artist'] ?? artistData['title'] ?? '',
+        style: TextStyle(
+          color: _theme.colorScheme.secondary,
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
         ),
       ),
     );

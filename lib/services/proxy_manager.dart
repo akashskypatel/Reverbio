@@ -37,7 +37,7 @@ class Proxy {
 
 class ProxyManager {
   ProxyManager() {
-    unawaited(_fetchProxiesIsolate());
+    unawaited(_fetchProxies());
   }
 
   Future<void>? _fetchingList;
@@ -503,16 +503,21 @@ class ProxyManager {
       if (manifest != null) return manifest;
       if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
         await _fetchProxies();
-      final receivePort = ReceivePort();
-      await Isolate.spawn(_cycleProxiesIsolate, {
-        'sendPort': receivePort.sendPort,
-        'songId': songId,
-      });
-      manifest = await receivePort.first as StreamManifest?;
+      manifest = await _cycleProxies(songId);
       return manifest;
     } catch (_) {
       return null;
     }
+  }
+
+  Future<StreamManifest?> _cycleProxies(String songId) async {
+    StreamManifest? manifest;
+    do {
+      final proxy = await _randomProxy();
+      if (proxy == null) break;
+      manifest = await _validateProxy(proxy, songId, 5);
+    } while (manifest == null);
+    return manifest;
   }
 
   void _cycleProxiesIsolate(dynamic params) async {

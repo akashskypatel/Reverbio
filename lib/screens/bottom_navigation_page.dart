@@ -41,7 +41,7 @@ class BottomNavigationPage extends StatefulWidget {
 
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   bool showMiniPlayer = false;
   @override
   void initState() {
@@ -133,6 +133,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     try {
       return LayoutBuilder(
         builder: (context, constraints) {

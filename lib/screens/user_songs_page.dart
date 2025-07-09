@@ -49,7 +49,7 @@ class UserSongsPage extends StatefulWidget {
 }
 
 class _UserSongsPageState extends State<UserSongsPage> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   bool _isEditEnabled = false;
 
   @override
@@ -64,6 +64,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     final title = getTitle(widget.page, context);
     final icon = getIcon(widget.page);
     final songsList = getSongsList(widget.page);

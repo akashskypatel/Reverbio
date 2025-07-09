@@ -54,7 +54,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   @override
   void dispose() {
     super.dispose();
@@ -62,6 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     final primaryColor = _theme.colorScheme.primary;
     final activatedColor = _theme.colorScheme.secondaryContainer;
     final inactivatedColor = _theme.colorScheme.surfaceContainerHigh;
@@ -203,11 +204,24 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: sponsorBlockSupport,
           builder: (_, value, __) {
             return CustomBar(
-              'SponsorBlock',
+              context.l10n!.sponsorBlock,
               FluentIcons.presence_blocked_24_regular,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _toggleSponsorBlock(context, value),
+              ),
+            );
+          },
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: skipNonMusic,
+          builder: (_, value, __) {
+            return CustomBar(
+              context.l10n!.nonMusicBlock,
+              FluentIcons.skip_forward_tab_24_regular,
+              trailing: Switch(
+                value: value,
+                onChanged: (value) => _toggleSkipNonMusic(context, value),
               ),
             );
           },
@@ -313,7 +327,7 @@ class _SettingsPageState extends State<SettingsPage> {
             context.l10n!.downloadAppUpdate,
             FluentIcons.arrow_download_24_filled,
             borderRadius: commonCustomBarRadiusLast,
-            onTap: checkAppUpdates,
+            onTap: () => checkAppUpdates,
           ),
       ],
     );
@@ -1016,6 +1030,12 @@ class _SettingsPageState extends State<SettingsPage> {
   void _toggleSponsorBlock(BuildContext context, bool value) {
     addOrUpdateData('settings', 'sponsorBlockSupport', value);
     sponsorBlockSupport.value = value;
+    showToast(context, context.l10n!.settingChangedMsg);
+  }
+
+  void _toggleSkipNonMusic(BuildContext context, bool value) {
+    addOrUpdateData('settings', 'skipNonMusic', value);
+    skipNonMusic.value = value;
     showToast(context, context.l10n!.settingChangedMsg);
   }
 

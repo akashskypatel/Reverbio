@@ -192,9 +192,9 @@ List<T> pickRandomItems<T>(List<T> items, int n, {int? seed}) {
   return (List<T>.from(items)..shuffle(random)).take(n).toList();
 }
 
-T pickRandomItem<T>(List<T> list) {
+T? pickRandomItem<T>(List<T> list) {
   if (list.isEmpty) {
-    throw ArgumentError('List must not be empty');
+    return null;
   }
   final random = Random();
   return list[random.nextInt(list.length)];
@@ -254,7 +254,7 @@ Future<bool> doesFileExist(String path) async {
 
 Future<int> checkUrl(String url) async {
   try {
-    if (isFilePath(url)) return 400;
+    if (isFilePath(url)) return (await doesFileExist(url)) ? 200 : 400;
     final response = await http.head(Uri.parse(url));
     return response.statusCode;
   } catch (e, stackTrace) {

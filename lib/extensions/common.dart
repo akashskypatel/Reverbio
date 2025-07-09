@@ -113,15 +113,6 @@ class CustomScrollBehavior extends MaterialScrollBehavior {
   };
 
   @override
-  Widget buildScrollbar(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) {
-    return super.buildScrollbar(context, child, details);
-  }
-
-  @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
     return const BouncingScrollPhysics();
   }
@@ -177,39 +168,5 @@ extension StringParenthesesExtension on String {
       }
     }
     return stack.isEmpty;
-  }
-}
-
-extension StringNullOrEmptyExtension on String? {
-  bool get isNullOrEmpty {
-    if (this == null) return true;
-    final s = this!.trim();
-    return s.isEmpty;
-  }
-
-  bool get isNotNullOrEmpty {
-    return !this.isNullOrEmpty;
-  }
-}
-
-extension MapNullOrEmptyExtension on Map? {
-  bool get isNullOrEmpty {
-    if (this == null) return true;
-    return this!.isEmpty;
-  }
-
-  bool get isNotNullOrEmpty {
-    return !this.isNullOrEmpty;
-  }
-}
-
-extension ListNullOrEmptyExtension on List? {
-  bool get isNullOrEmpty {
-    if (this == null) return true;
-    return this!.isEmpty;
-  }
-
-  bool get isNotNullOrEmpty {
-    return !this.isNullOrEmpty;
   }
 }

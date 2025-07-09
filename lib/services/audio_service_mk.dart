@@ -230,6 +230,7 @@ class AudioPlayerService {
     songValueNotifier.value = songBar;
     await _player.open(media);
     await player.seek(Duration.zero);
+    songBar.song['duration'] = _player.state.duration.inMilliseconds;
     return _player.pause();
   }
 
@@ -423,9 +424,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         value.duration != Duration.zero &&
         value.position != Duration.zero) {
       final song = audioPlayer.songValueNotifier.value?.song;
-      if (song != null && song['skipSegments'].isNotEmpty) {
+      if (song != null &&
+          song['skipSegments'] != null &&
+          song['skipSegments'].isNotEmpty) {
         final checkSegment =
-            (song['skipSegments'] as List<Map<String, int>>)
+            (song['skipSegments'] as List<Map<String, dynamic>>)
                 .where(
                   (e) =>
                       e['start']! <= value.position.inMicroseconds &&
@@ -434,7 +437,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
                 .toList();
         if (checkSegment.isNotEmpty) {
           final seekTo = checkSegment.first['end'];
-          if (seekTo != null) audioPlayer.seek(Duration(microseconds: seekTo));
+          final category = checkSegment.first['category'];
+          if ((category == 'sponsor' && sponsorBlockSupport.value) ||
+              (category != 'sponsor' && skipNonMusic.value))
+            if (seekTo != null)
+              audioPlayer.seek(Duration(microseconds: seekTo));
         }
       }
     }
@@ -524,7 +531,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           queueSongBars.length > 1 &&
           newIndex != index &&
           newIndex < queueSongBars.length)
-        unawaited(queueSongBars[newIndex].primeSong());
+        unawaited(queueSongBars[newIndex].prepareSong());
 
       if (play &&
           isError &&
@@ -541,7 +548,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       if (songBar.song['songUrl'] == null &&
           !songBar.isPrimed &&
           !songBar.isLoading)
-        await songBar.primeSong(shouldWait: true);
+        await songBar.prepareSong(shouldWait: true);
 
       if (songBar.song['songUrl'] == null ||
           await checkUrl(songBar.song['songUrl']) >= 400) {
@@ -556,8 +563,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           songUrl,
           isOffline,
         );
-        mediaItem.add(preliminaryTag);
         if (play) {
+          mediaItem.add(preliminaryTag);
           logger.log('Playing: $songUrl', null, null);
           await audioPlayer.queue(audioSource, songBar);
           unawaited(audioPlayer.play());

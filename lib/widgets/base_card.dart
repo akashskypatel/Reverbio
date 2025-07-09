@@ -83,17 +83,20 @@ class BaseCard extends StatefulWidget {
 
 class _BaseCardState extends State<BaseCard> {
   late ValueNotifier<bool> isLikedNotifier = ValueNotifier(_getLikeStatus());
+  late Future _fetchingDataFuture;
+
   String? dataType;
   final borderRadius = 13.0;
   late final likeSize =
       widget.iconSize == null ? (widget.size * 0.20) : widget.iconSize;
   late final double artistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   @override
   void initState() {
     super.initState();
     dataType = _parseDataType();
+    _fetchingDataFuture = _getUpdatedDate();
   }
 
   @override
@@ -101,80 +104,111 @@ class _BaseCardState extends State<BaseCard> {
     super.dispose();
   }
 
+  Future<dynamic> _getUpdatedDate() async {
+    if ((widget.inputData?['id'] != null &&
+            (widget.inputData?['title'] ??
+                    widget.inputData?['name'] ??
+                    widget.inputData?['artist']) ==
+                null) ||
+        (['artist', 'album'].contains(widget.inputData?['primary-type']) &&
+            widget.inputData?['musicbrainz'] == null))
+      switch (dataType) {
+        case 'playlist':
+          widget.inputData?.addAll(
+            await getPlaylistInfoForWidget(widget.inputData),
+          );
+        case 'album':
+          widget.inputData?.addAll(await getAlbumDetailsById(widget.inputData));
+        case 'artist':
+          widget.inputData?.addAll(await getArtistDetails(widget.inputData));
+        default:
+          return widget.inputData;
+      }
+    return widget.inputData;
+  }
+
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     isLikedNotifier.value = _getLikeStatus();
     final colorScheme = _theme.colorScheme;
-    return ValueListenableBuilder<bool>(
-      valueListenable: widget.hideNotifier,
-      builder:
-          (_, value, __) => Visibility(
-            visible: value,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
-              child: GestureDetector(
-                onTap: widget.onPressed,
-                child: SizedBox(
-                  width: widget.size,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(borderRadius),
-                        clipBehavior: Clip.antiAlias,
-                        child: SizedBox(
-                          width: widget.size,
-                          height: widget.size,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: colorScheme.secondary,
-                            ),
-                            child: Stack(
-                              children: [
-                                if (mounted)
-                                  FutureBuilder(
-                                    initialData:
-                                        widget.loadingWidget != null
-                                            ? SizedBox(
-                                              width: widget.size,
-                                              height: widget.size,
-                                              child: widget.loadingWidget,
-                                            )
-                                            : _buildNoArtworkCard(context),
-                                    future: _buildImage(context),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                              ConnectionState.none ||
-                                          snapshot.hasError ||
-                                          snapshot.data == null) {
-                                        if (widget.loadingWidget != null)
-                                          return SizedBox(
-                                            width: widget.size,
-                                            height: widget.size,
-                                            child: widget.loadingWidget,
-                                          );
-                                        return _buildNoArtworkCard(context);
-                                      }
-                                      return snapshot.data!;
-                                    },
-                                  ),
-                                if (widget.showLabel) _buildLabel(),
-                                if (widget.showLike) _buildLiked(),
-                              ],
+    return FutureBuilder(
+      future: _fetchingDataFuture,
+      builder: (context, snapshot) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: widget.hideNotifier,
+          builder:
+              (_, value, __) => Visibility(
+                visible: value,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: widget.paddingValue,
+                  ),
+                  child: GestureDetector(
+                    onTap: widget.onPressed,
+                    child: SizedBox(
+                      width: widget.size,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(borderRadius),
+                            clipBehavior: Clip.antiAlias,
+                            child: SizedBox(
+                              width: widget.size,
+                              height: widget.size,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: colorScheme.secondary,
+                                ),
+                                child: Stack(
+                                  children: [
+                                    if (mounted)
+                                      FutureBuilder(
+                                        initialData:
+                                            widget.loadingWidget != null
+                                                ? SizedBox(
+                                                  width: widget.size,
+                                                  height: widget.size,
+                                                  child: widget.loadingWidget,
+                                                )
+                                                : _buildNoArtworkCard(context),
+                                        future: _buildImage(context),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState ==
+                                                  ConnectionState.none ||
+                                              snapshot.hasError ||
+                                              snapshot.data == null) {
+                                            if (widget.loadingWidget != null)
+                                              return SizedBox(
+                                                width: widget.size,
+                                                height: widget.size,
+                                                child: widget.loadingWidget,
+                                              );
+                                            return _buildNoArtworkCard(context);
+                                          }
+                                          return snapshot.data!;
+                                        },
+                                      ),
+                                    if (widget.showLabel) _buildLabel(),
+                                    if (widget.showLike) _buildLiked(),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          if (widget.showOverflowLabel)
+                            _buildOverflowLabel(context),
+                        ],
                       ),
-                      if (widget.showOverflowLabel)
-                        _buildOverflowLabel(context),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+        );
+      },
     );
   }
 
@@ -203,7 +237,11 @@ class _BaseCardState extends State<BaseCard> {
       }
       if (dataType == 'artist' && link.isEmpty) {
         widget.inputData?['image'] = _getPrimaryImageUrl(widget.inputData);
-        link = widget.inputData?['image'];
+        link =
+            widget.inputData?['image'] ??
+            widget.inputData?['youtube']?['logoUrl'] ??
+            widget.inputData?['youtube']?['bannerUrl'] ??
+            '';
       }
       return link;
     } catch (e, stackTrace) {
@@ -212,35 +250,35 @@ class _BaseCardState extends State<BaseCard> {
     }
   }
 
-  String _getPrimaryImageUrl(dynamic artistData) {
+  String? _getPrimaryImageUrl(dynamic artistData) {
     if (artistData == null ||
         artistData['discogs'] == null ||
         artistData['discogs']['images'] == null)
-      return '';
+      return null;
     try {
       final images = List<Map<dynamic, dynamic>>.from(
         artistData['discogs']['images'],
       );
       final primaryImage = images.where((e) => e['type'] == 'primary');
       if (primaryImage.isEmpty) return '';
-      return primaryImage.first['uri'] ?? '';
+      return primaryImage.first['uri'];
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}',
         e,
         stackTrace,
       );
-      return '';
+      return null;
     }
   }
 
   Future<Widget> _buildImage(BuildContext context) async {
     try {
       final path =
-          widget.imageUrl.isNotNullOrEmpty
+          (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
               ? widget.imageUrl!
               : _parseImageLink();
-      if (path.isNullOrEmpty) return _buildNoArtworkCard(context);
+      if (path.isEmpty) return _buildNoArtworkCard(context);
       if (isFilePath(path)) return _buildFileArtworkCard(path, context);
       final imageUrl = Uri.parse(path);
       if (await checkUrl(imageUrl.toString()) <= 300)
@@ -301,18 +339,16 @@ class _BaseCardState extends State<BaseCard> {
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(
-            widget.icon,
-            size: likeSize,
-            color: _theme.colorScheme.onSecondary,
-          ),
+          Icon(widget.icon, size: 24, color: _theme.colorScheme.onSecondary),
           if (widget.inputData != null)
             Padding(
               padding: EdgeInsets.all(widget.paddingValue),
               child: Text(
                 widget.inputData?['artist'] ??
                     widget.inputData?['title'] ??
-                    widget.inputData?['name'],
+                    widget.inputData?['name'] ??
+                    widget.inputData?['value'] ??
+                    '',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _theme.colorScheme.onSecondary),
                 overflow: TextOverflow.ellipsis,
@@ -334,10 +370,23 @@ class _BaseCardState extends State<BaseCard> {
           padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
           child: Align(
             alignment: Alignment.topRight,
-            child: IconButton(
-              onPressed: () => _toggleLike(context),
-              icon: Icon(liked, size: likeSize),
-              color: _theme.colorScheme.primary,
+            child: Stack(
+              children: [
+                Transform.translate(
+                  offset: const Offset(5.5, 6.5),
+                  child: Icon(
+                    liked,
+                    size: likeSize,
+                    color: _theme.colorScheme.surface,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _toggleLike(context),
+                  icon: Icon(liked, size: likeSize),
+                  color: _theme.colorScheme.primary,
+                  hoverColor: _theme.colorScheme.surface.withAlpha(128),
+                ),
+              ],
             ),
           ),
         );
@@ -379,14 +428,14 @@ class _BaseCardState extends State<BaseCard> {
     var liked = false;
     switch (dataType) {
       case 'playlist':
-        liked = isPlaylistAlreadyLiked(widget.inputData?['id']);
+        liked = isPlaylistAlreadyLiked(widget.inputData);
       case 'album':
         if (widget.inputData?['source'] == 'youtube')
-          liked = isPlaylistAlreadyLiked(widget.inputData?['id']);
+          liked = isPlaylistAlreadyLiked(widget.inputData);
         else
-          liked = isAlbumAlreadyLiked(widget.inputData?['id']);
+          liked = isAlbumAlreadyLiked(widget.inputData);
       case 'artist':
-        liked = isArtistAlreadyLiked(widget.inputData?['id']);
+        liked = isArtistAlreadyLiked(widget.inputData);
       default:
         liked = false;
     }
@@ -468,7 +517,9 @@ class _BaseCardState extends State<BaseCard> {
   String _getCardTitle() {
     return widget.inputData?['title'] ??
         widget.inputData?['artist'] ??
-        widget.inputData?['name'];
+        widget.inputData?['name'] ??
+        widget.inputData?['value'] ??
+        '';
   }
 
   String _getCardSubTitle() {

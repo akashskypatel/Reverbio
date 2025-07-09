@@ -1105,37 +1105,42 @@ class PluginsManager {
     List<dynamic>? args,
   }) {
     try {
-      if (methodName.isNullOrEmpty) return (null, null);
+      if (methodName == null || methodName.isEmpty) return (null, null);
       late final JavascriptRuntime jsRuntime;
       // if only [script] provided
-      if (script.isNotNullOrEmpty &&
-          pluginName.isNullOrEmpty &&
+      if (script != null &&
+          script.isNotEmpty &&
+          (pluginName == null || pluginName.isEmpty) &&
           runtime == null) {
-        jsRuntime = getJavascriptRuntime()..evaluate(script!);
+        jsRuntime = getJavascriptRuntime()..evaluate(script);
       } else
       // if only [pluginName] provided
-      if (script.isNullOrEmpty &&
-          pluginName.isNotNullOrEmpty &&
+      if ((script == null || script.isEmpty) &&
+          pluginName != null &&
+          pluginName.isNotEmpty &&
           runtime == null) {
         final _plugin = _plugins.firstWhere(
-          (value) => value['name'].toLowerCase() == pluginName!.toLowerCase(),
+          (value) => value['name'].toLowerCase() == pluginName.toLowerCase(),
           orElse: () => {},
         );
         if (_plugin.isEmpty) return (null, null);
         jsRuntime = _plugin['runtime'] as JavascriptRuntime;
       } else
       // if only [runtime] provided
-      if (script.isNullOrEmpty && pluginName.isNullOrEmpty && runtime != null) {
+      if ((script == null || script.isEmpty) &&
+          (pluginName == null || pluginName.isEmpty) &&
+          runtime != null) {
         jsRuntime = runtime;
       } else
       // if [script] and [runtime] provided
-      if (script.isNotNullOrEmpty &&
-          pluginName.isNullOrEmpty &&
+      if (script != null &&
+          script.isNotEmpty &&
+          (pluginName == null || pluginName.isEmpty) &&
           runtime != null) {
-        jsRuntime = runtime..evaluate(script!);
+        jsRuntime = runtime..evaluate(script);
       }
 
-      methodName = methodName!.trim();
+      methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
 
       if (methodCall.isEmpty) return (null, null);

@@ -42,7 +42,7 @@ class SectionHeader extends StatefulWidget {
 
 class _SectionHeaderState extends State<SectionHeader>
     with TickerProviderStateMixin {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   bool _expanded = false;
   Timer? _closeTimer;
 
@@ -66,6 +66,7 @@ class _SectionHeaderState extends State<SectionHeader>
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Row(
       children: [
         Flexible(

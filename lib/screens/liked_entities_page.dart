@@ -28,7 +28,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   late final double cardHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final Set<String> uniqueGenreList = {};
   late final List<dynamic> genreList = [];
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   final List<dynamic> inputData = [];
   final List<BaseCard> cardList = <BaseCard>[];
   GenreList? genresWidget;
@@ -59,6 +59,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -169,9 +170,9 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
               builder:
                   (context) =>
                       widget.page == 'artists'
-                          ? ArtistPage(page: 'artist', artistData: data)
-                          : PlaylistPage(page: 'album', playlistData: data),
-              settings: RouteSettings(name: 'artist?${data['id']}'),
+                          ? ArtistPage(page: '/artist', artistData: data)
+                          : PlaylistPage(page: '/album', playlistData: data),
+              settings: RouteSettings(name: '/artist?${data['id']}'),
             ),
           ),
     );

@@ -45,7 +45,8 @@ final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(
 
 dynamic _getCachedAlbum(String id) {
   try {
-    final cached = cachedAlbumsList.where((e) => e['id'].contains(id)).toList();
+    final cached =
+        cachedAlbumsList.where((e) => e['id']?.contains(id) ?? false).toList();
     if (cached.isEmpty) return null;
     return cached.first;
   } catch (e, stackTrace) {
@@ -54,19 +55,24 @@ dynamic _getCachedAlbum(String id) {
   }
 }
 
-Future<dynamic> getAlbumDetailsById(String id) async {
+Future<dynamic> getAlbumDetailsById(dynamic albumData) async {
   try {
+    final id = parseEntityId(albumData);
+    final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
     final cached = _getCachedAlbum(id);
-    if (cached != null)
+    if (cached != null) {
+      await getAlbumCoverArt(cached);
       if (cached['list'] == null || cached['list'].isEmpty)
         await getTrackList(cached);
       else
         return cached;
+    }
+    if (ids['mb'] == null) return {};
     final album = await mb.releaseGroups.get(
-      id,
+      ids['mb']!,
       inc: ['artists', 'releases', 'annotation', 'tags', 'genres', 'ratings'],
     );
-    album['artist'] = album['artist'] ?? album['artist-credit'].first['name'];
+    album['artist'] = album['artist'] ?? combineArtists(album);
     album['album'] = album['title'];
     await getAlbumCoverArt(album);
     await getTrackList(album);
@@ -79,17 +85,22 @@ Future<dynamic> getAlbumDetailsById(String id) async {
   }
 }
 
-Future<Map<String, dynamic>> findMBAlbum(String title, String artist) async {
+Future<Map<String, dynamic>> findMBAlbum(
+  String title, {
+  String? artist,
+  int? limit,
+}) async {
   try {
-    final albQry = await mb.releaseGroups.search(
-      '("$title" AND artist:"$artist" AND type:"album") OR ("$artist" AND artist:"$title" AND type:"album")',
-    );
-    final albums =
-        ((albQry.isNullOrEmpty ? {} : albQry)['release-groups'] ?? []) as List;
+    final query =
+        artist == null
+            ? '(\'$title\' AND type:\'album\')'
+            : '(\'$title\' AND artist:\'$artist\' AND type:\'album\') OR (\'$artist\' AND artist:\'$title\' AND type:\'album\')';
+    final albQry = await mb.releaseGroups.search(query, limit: limit ?? 25);
+    final albums = ((albQry ?? {})['release-groups'] ?? []) as List;
     if (albums.isEmpty) return {};
     final id = (albums.first['artist-credit'] as List).first['artist']['id'];
     final artQry = await getArtistDetails(id);
-    final artistInfo = Map.from(artQry.isNullOrEmpty ? {} : artQry);
+    final artistInfo = Map.from(artQry ?? {});
     if (artistInfo.isNotEmpty) {
       albums.first['artist-details'] = artistInfo;
       albums.first['artist'] = artistInfo['artist'];
@@ -109,10 +120,13 @@ Future<Map<String, dynamic>> findMBAlbum(String title, String artist) async {
 Future<dynamic> getAlbumCoverArt(dynamic album) async {
   if (album.isEmpty) return album;
   try {
-    final result = await mb.coverArt.get(album['id'], 'release-group');
-    if (result['error'] == null) {
-      album['images'] = result['images'];
-      album['release'] = result['release'];
+    final ids = Uri.parse('?${parseEntityId(album)}').queryParameters;
+    if (ids['mb'] != null) {
+      final result = await mb.coverArt.get(ids['mb']!, 'release-group');
+      if (result['error'] == null) {
+        album['images'] = result['images'];
+        album['release'] = result['release'];
+      }
     }
     return album;
   } catch (e, stackTrace) {
@@ -249,13 +263,10 @@ Future<List?> getTrackList(dynamic album) async {
       release['media']?.forEach((media) {
         media['tracks']?.forEach((track) {
           if (tracklist.add(track['title'])) {
-            final artist = (track['artist-credit'] as List)
-                .map((value) {
-                  return value['name'];
-                })
-                .join(', ');
+            final artist = combineArtists(track);
             album['list'].add({
               'index': i++,
+              'id': 'mb=${track['id']}',
               'mbid': track['id'],
               'mbidType': 'track',
               'ytid': null,
@@ -263,7 +274,11 @@ Future<List?> getTrackList(dynamic album) async {
               'album': album['title'],
               'source': null,
               'artist': artist,
-              'artist-credit': track['artist-credit'],
+              'artist-credit':
+                  track['artist-credit'] ??
+                  media['artist-credit'] ??
+                  release['artist-credit'] ??
+                  album['artist-credit'],
               'image':
                   (album['image'] ?? '').toLowerCase() == 'null'
                       ? null
@@ -297,6 +312,11 @@ Future<List?> getTrackList(dynamic album) async {
 Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
   try {
     if (add) {
+      album['id'] = parseEntityId(album);
+      if (album['id']?.isEmpty) throw Exception('ID is null or empty');
+      if (album['id'] != null &&
+          (album['image'] == null || album['image'].isEmpty))
+        unawaited(getAlbumCoverArt(album));
       userLikedAlbumsList.addOrUpdate('id', album['id'], {
         'id': album['id'],
         'artist': album['artist'],
@@ -309,19 +329,36 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       album['album'] = album['title'];
       PM.onEntityLiked(album);
     } else {
-      userLikedAlbumsList.removeWhere((value) => value['id'] == album['id']);
+      userLikedAlbumsList.removeWhere((value) => checkAlbum(album, value));
       currentLikedAlbumsLength.value--;
     }
     addOrUpdateData('user', 'likedAlbums', userLikedAlbumsList);
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return !add;
   }
 }
 
-bool isAlbumAlreadyLiked(albumIdToCheck) => userLikedAlbumsList.any(
-  (album) =>
-      (album['id'] != null && albumIdToCheck != null) &&
-      album['id'] == albumIdToCheck,
-);
+bool isAlbumAlreadyLiked(albumToCheck) =>
+    albumToCheck is Map &&
+    userLikedAlbumsList.any(
+      (album) => album is Map && checkAlbum(album, albumToCheck),
+    );
+
+int? getAlbumHashCode(dynamic album) {
+  if (!(album is Map)) return null;
+  if ((album['title'] ?? album['song']) == null || album['artist'] == null)
+    return null;
+  return (album['title'] ?? album['album']).toLowerCase().hashCode ^
+      album['artist'].toLowerCase().hashCode;
+}
+
+bool checkAlbum(dynamic album, dynamic otherAlbum) {
+  if (album == null || otherAlbum == null) return false;
+  if (album['id'] == null || otherAlbum['id'] == null)
+    return getAlbumHashCode(album) == getAlbumHashCode(otherAlbum);
+  parseEntityId(album);
+  parseEntityId(otherAlbum);
+  return checkEntityId(album['id'], otherAlbum['id']);
+}

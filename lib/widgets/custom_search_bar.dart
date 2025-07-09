@@ -19,6 +19,8 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -32,6 +34,7 @@ class CustomSearchBar extends StatefulWidget {
     required this.labelText,
     this.onChanged,
     this.loadingProgressNotifier,
+    this.searchDelayMs = 500,
   });
   final Function(String) onSubmitted;
   final ValueNotifier<bool>? loadingProgressNotifier;
@@ -39,15 +42,37 @@ class CustomSearchBar extends StatefulWidget {
   final FocusNode focusNode;
   final String labelText;
   final Function(String)? onChanged;
+  final int searchDelayMs;
 
   @override
   _CustomSearchBarState createState() => _CustomSearchBarState();
 }
 
 class _CustomSearchBarState extends State<CustomSearchBar> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel(); // Cancel timer when widget is disposed
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(Function(String) searchFunction, String value) {
+    // Cancel previous timer if it exists
+    _debounceTimer?.cancel();
+
+    // Start a new timer that fires after 1 second of inactivity
+    _debounceTimer = Timer(Duration(milliseconds: widget.searchDelayMs), () {
+      searchFunction(value); // Your actual search function
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 3),
       child: SearchBar(
@@ -60,8 +85,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
         onChanged:
             widget.onChanged != null
                 ? (value) async {
-                  widget.onChanged!(value);
-
+                  _onSearchChanged(widget.onChanged!, value);
                   if (mounted) setState(() {});
                 }
                 : null,

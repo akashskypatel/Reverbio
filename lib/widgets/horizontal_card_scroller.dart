@@ -56,7 +56,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   final borderRadius = 13.0;
   late double playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late bool isLargeScreen = MediaQuery.of(context).size.width > 480;
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   int itemsNumber = recommendedCardsNumber;
   final Map<String, BaseCard> cards = {};
 
@@ -74,6 +74,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     isLargeScreen = MediaQuery.of(context).size.width > 480;
     playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
     return Column(
@@ -199,14 +200,6 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
             scrollDirection: Axis.horizontal,
             children: cardValues,
           );
-          /*
-          return CarouselView.weighted(
-            flexWeights: const <int>[3, 2, 1],
-            itemSnapping: true,
-            onTap: (value) => cardValues[value].onPressed?.call(),
-            children: cardValues,
-          );
-          */
         },
       ),
     );

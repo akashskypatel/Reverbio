@@ -14,7 +14,7 @@ class AnimatedHeart extends StatefulWidget {
 /// [TickerProviderStateMixin].
 class _AnimatedHeartState extends State<AnimatedHeart>
     with TickerProviderStateMixin {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   late final AnimationController _fadeController = AnimationController(
     duration: Duration(
       microseconds: AnimatedHeart.duration.inMicroseconds ~/ 2,
@@ -51,6 +51,7 @@ class _AnimatedHeartState extends State<AnimatedHeart>
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Positioned(
       left: widget.position.dx - (40 / 2),
       top: widget.position.dy - (40 / 2),

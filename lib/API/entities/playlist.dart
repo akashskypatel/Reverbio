@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:reverbio/API/entities/album.dart';
@@ -11,6 +13,8 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 List dbPlaylists = [...playlistsDB, ...albumsDB];
@@ -251,8 +255,10 @@ void removeUserCustomPlaylist(dynamic playlist) {
 
 Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
   try {
+    playlist['id'] = parseEntityId(playlist);
+    if (playlist['id']?.isEmpty) throw Exception('ID is null or empty');
     if (add) {
-      if (playlist.isNotEmpty) {
+      if (playlist != null && playlist.isNotEmpty) {
         userLikedPlaylists.addOrUpdate('id', playlist['id'], {
           'id': playlist['id'],
           'title': playlist['title'],
@@ -260,30 +266,29 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
           'image': playlist['image'],
         });
       } else {
-        final playlistInfo = await getPlaylistInfoForWidget(playlist);
-        if (playlistInfo != null) {
-          userLikedPlaylists.add(playlistInfo);
+        playlist = await getPlaylistInfoForWidget(playlist);
+        if (playlist != null || playlist.isNotEmpty) {
+          userLikedPlaylists.add(playlist);
         }
       }
       currentLikedPlaylistsLength.value++;
     } else {
-      userLikedPlaylists.removeWhere((value) => value['id'] == playlist['id']);
+      userLikedPlaylists.removeWhere((value) => checkPlaylist(playlist, value));
       currentLikedPlaylistsLength.value--;
     }
-
     addOrUpdateData('user', 'likedPlaylists', userLikedPlaylists);
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return !add;
   }
 }
 
-bool isPlaylistAlreadyLiked(playlistIdToCheck) => userLikedPlaylists.any(
-  (playlist) =>
-      (playlist['id'] != null && playlistIdToCheck != null) &&
-      playlist['id'] == (playlistIdToCheck ?? ''),
-);
+bool isPlaylistAlreadyLiked(playlistToCheck) =>
+    playlistToCheck is Map &&
+    userLikedPlaylists.any(
+      (playlist) => playlist is Map && checkPlaylist(playlist, playlistToCheck),
+    );
 
 Future<List> getPlaylists({
   String? query,
@@ -302,7 +307,7 @@ Future<List> getPlaylists({
     final lowercaseQuery = query.toLowerCase();
     final filteredPlaylists =
         dbPlaylists.where((playlist) {
-          final title = playlist['title'].toLowerCase();
+          final title = (playlist['title'] as String).toLowerCase();
           final matchesQuery = title.contains(lowercaseQuery);
           final matchesType =
               type == 'all' ||
@@ -389,6 +394,25 @@ Future<List> getPlaylists({
   return dbPlaylists;
 }
 
+Future<List<SongBar>> getSongBarsFromPlaylist(dynamic playlistData) async {
+  if (playlistData is String ||
+      playlistData['list'] == null ||
+      playlistData['list'].isEmpty)
+    playlistData = await getPlaylistInfoForWidget(playlistData);
+  if (playlistData['list'] == null || playlistData['list'].isEmpty) return [];
+  int index = 0;
+  final totalLength = (playlistData['list'] as List).length;
+  return (playlistData['list'] as List).map((e) {
+    final bar = SongBar(
+      e,
+      borderRadius: getItemBorderRadius(index, totalLength),
+      showMusicDuration: true,
+    );
+    index++;
+    return bar;
+  }).toList();
+}
+
 Future<List> getSongsFromPlaylist(dynamic playlistId) async {
   final songList = await getData('cache', 'playlistSongs$playlistId') ?? [];
   String id;
@@ -434,16 +458,19 @@ int findPlaylistIndexByYtId(String ytid) {
   await audioHandler.playSong(activeQueue['list'][activeSongId]);
 } */
 
-Future<Map?> getPlaylistInfoForWidget(
+Future<Map> getPlaylistInfoForWidget(
   dynamic playlistData, {
   bool isArtist = false,
 }) async {
-  final id = playlistData['ytid'] ?? playlistData['id'];
-  if (id == null) return {};
+  final id =
+      playlistData is String
+          ? Uri.parse('?${parseEntityId(playlistData)}').queryParameters['yt']
+          : playlistData['ytid'] as String? ?? playlistData['id'] as String?;
+  if (id == null || id.isEmpty) return {};
   if (isArtist) {
     return {'title': id, 'list': await getSongsList(id)};
   }
-
+  if (playlistData is String) playlistData = {'id': 'yt=$id', 'ytid': id};
   Map? playlist;
 
   // Check in local playlists.
@@ -493,7 +520,7 @@ Future<Map?> getPlaylistInfoForWidget(
             playlistData['artist'].toString().isEmpty)) {
       final strings = playlistData['title'].toString().split('-');
       final albumInfo = Map<String, dynamic>.from(
-        await findMBAlbum(strings.first.trim(), strings.last.trim()),
+        await findMBAlbum(strings.first.trim(), artist: strings.last.trim()),
       );
       if (albumInfo.isNotEmpty) {
         playlist = Map<String, dynamic>.from(playlist)..addAll(albumInfo);
@@ -517,4 +544,22 @@ Future<Map?> getPlaylistInfoForWidget(
   if (playlistData['isAlbum'] != null && playlistData['isAlbum'])
     playlist['album'] = playlist['title'];
   return playlist;
+}
+
+int? getPlaylistHashCode(dynamic playlist) {
+  if (!(playlist is Map)) return null;
+  if (playlist['title'] == null) return null;
+  if (playlist['artist'] == null)
+    return playlist['title'].toLowerCase().hashCode;
+  return playlist['title'].toLowerCase().hashCode ^
+      playlist['artist'].toLowerCase().hashCode;
+}
+
+bool checkPlaylist(dynamic playlist, dynamic otherPlaylist) {
+  if (playlist == null || otherPlaylist == null) return false;
+  if (playlist['id'] == null || otherPlaylist['id'] == null)
+    return getPlaylistHashCode(playlist) == getPlaylistHashCode(otherPlaylist);
+  parseEntityId(playlist);
+  parseEntityId(otherPlaylist);
+  return checkEntityId(playlist['id'], otherPlaylist['id']);
 }

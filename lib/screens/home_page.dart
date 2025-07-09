@@ -40,7 +40,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
     playlistsNum: recommendedCardsNumber,
   );
@@ -67,6 +67,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reverbio'),

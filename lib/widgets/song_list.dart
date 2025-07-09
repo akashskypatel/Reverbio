@@ -60,7 +60,7 @@ class SongList extends StatefulWidget {
 }
 
 class _SongListState extends State<SongList> {
-  late final _theme = Theme.of(context);
+  late ThemeData _theme;
   List<dynamic> _songsList = [];
   bool isProcessing = true;
   bool loopSongs = false;
@@ -84,6 +84,7 @@ class _SongListState extends State<SongList> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     _songsList = widget.inputData ?? activeQueue['list'] ?? _songsList;
     return SliverMainAxisGroup(
       slivers: [
@@ -277,7 +278,10 @@ class _SongListState extends State<SongList> {
             'title': widget.title,
             'list': _songsList,
           }, widget.songBars);
-          showToast(context, context.l10n!.queueReplacedByPlaylist);
+          showToast(
+            context,
+            '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
+          );
         }
         audioHandler.queueSong(play: true, skipOnError: true);
       },
