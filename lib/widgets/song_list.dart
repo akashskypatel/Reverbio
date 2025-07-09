@@ -44,6 +44,7 @@ class SongList extends StatefulWidget {
     this.icon = FluentIcons.music_note_1_24_regular,
     this.future,
     this.inputData,
+    this.expandedActions,
     this.isEditable = false,
   });
 
@@ -55,6 +56,7 @@ class SongList extends StatefulWidget {
   late final List<SongBar> songBars =
       page == 'queue' ? audioHandler.queueSongBars : <SongBar>[];
   final bool isEditable;
+  final List<Widget>? expandedActions;
   @override
   State<SongList> createState() => _SongListState();
 }
@@ -95,6 +97,7 @@ class _SongListState extends State<SongList> {
               valueListenable: PM.pluginsDataNotifier,
               builder: (_, value, __) {
                 return SectionHeader(
+                  expandedActions: widget.expandedActions,
                   title: widget.title,
                   actions: [
                     _buildSortSongActionButton(),

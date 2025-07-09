@@ -69,6 +69,8 @@ class SongBar extends StatefulWidget {
   bool get isLoading => _isLoadingNotifier.value;
   bool get isPrimed => _isPrimedNotifier.value;
   final FutureTracker<bool> _songFutureTracker = FutureTracker();
+  
+
   @override
   _SongBarState createState() => _SongBarState();
 
@@ -365,7 +367,7 @@ class _SongBarState extends State<SongBar> {
           height: size,
           child: BaseCard(
             icon: FluentIcons.music_note_2_24_filled,
-            size: 24,
+            size: size,
             paddingValue: 0,
             loadingWidget: const Spinner(),
             imageOverlayMask: true,

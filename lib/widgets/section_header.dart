@@ -31,11 +31,15 @@ class SectionHeader extends StatefulWidget {
     required this.title,
     this.actions,
     this.autoCloseSeconds = 5,
+    this.actionsExpanded = false,
+    this.expandedActions,
   });
 
   final String title;
   final List<Widget>? actions;
   final int autoCloseSeconds;
+  final bool actionsExpanded;
+  final List<Widget>? expandedActions;
   @override
   State<SectionHeader> createState() => _SectionHeaderState();
 }
@@ -75,7 +79,10 @@ class _SectionHeaderState extends State<SectionHeader>
             child: SectionTitle(widget.title, _theme.colorScheme.primary),
           ),
         ),
-        if (widget.actions != null && widget.actions!.isNotEmpty)
+
+        if (widget.actions != null &&
+            widget.actions!.isNotEmpty &&
+            !widget.actionsExpanded)
           Padding(
             padding: commonSingleChildScrollViewPadding,
             child: IconButton(
@@ -88,14 +95,19 @@ class _SectionHeaderState extends State<SectionHeader>
               onPressed: _toggleExpanded,
             ),
           ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child:
-              _expanded && widget.actions != null
-                  ? Row(children: widget.actions!)
-                  : const SizedBox.shrink(),
-        ),
+        if (widget.actionsExpanded && widget.actions != null)
+          Row(children: widget.actions!),
+        if (!widget.actionsExpanded && widget.actions != null)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child:
+                _expanded && widget.actions != null
+                    ? Row(children: widget.actions!)
+                    : const SizedBox.shrink(),
+          ),
+        if(widget.expandedActions != null && widget.expandedActions!.isNotEmpty)
+          Row(children: widget.expandedActions!),
       ],
     );
   }

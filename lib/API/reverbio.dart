@@ -113,29 +113,50 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
   bool minimal = true,
 }) async {
   entity = entity.trim().toLowerCase();
-  final entityFunction = {
-    'artist': mb.artists.search,
-    'artists': mb.artists.search,
-    'album': mb.releaseGroups.search,
-    'albums': mb.releaseGroups.search,
-    'release-group': mb.releaseGroups.search,
-    'release-groups': mb.releaseGroups.search,
-    'song': mb.releases.search,
-    'songs': mb.releases.search,
-    'release': mb.releases.search,
-    'releases': mb.releases.search,
-  };
-  final entityName = {
-    'artist': {'name': 'artists', 'type': null},
-    'artists': {'name': 'artists', 'type': null},
-    'album': {'name': 'release-groups', 'type': 'album'},
-    'albums': {'name': 'release-groups', 'type': 'album'},
-    'release-group': {'name': 'release-groups', 'type': 'album'},
-    'release-groups': {'name': 'release-groups', 'type': 'album'},
-    'song': {'name': 'releases', 'type': 'song'},
-    'songs': {'name': 'releases', 'type': 'song'},
-    'release': {'name': 'releases', 'type': 'song'},
-    'releases': {'name': 'releases', 'type': 'song'},
+  query = query.replaceAll(RegExp(r'\s+'), ' ').trim().replaceAll(' ', '|');
+  final entityName = <String, dynamic>{
+    'artist': {'function': mb.artists.search, 'name': 'artists', 'type': null},
+    'artists': {'function': mb.artists.search, 'name': 'artists', 'type': null},
+    'album': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'albums': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'release-group': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'release-groups': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'song': {
+      'function': mb.releases.search,
+      'name': 'releases',
+      'type': 'song',
+    },
+    'songs': {
+      'function': mb.releases.search,
+      'name': 'releases',
+      'type': 'song',
+    },
+    'release': {
+      'function': mb.releases.search,
+      'name': 'releases',
+      'type': 'song',
+    },
+    'releases': {
+      'function': mb.releases.search,
+      'name': 'releases',
+      'type': 'song',
+    },
   };
   int hashCode(Map<String, dynamic> e) {
     if (['artist', 'artists'].contains(e['entity']))
@@ -150,17 +171,20 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
     return hashCode(e1) == hashCode(e2);
   }
 
-  if (entityFunction[entity] == null)
+  if (entityName[entity]?['function'] == null)
     throw Exception('MusicBrainz returned no results.');
   try {
-    final params =
-        entityName[entity]?['type'] != null
-            ? {'primarytype': entityName[entity]?['type'] ?? ''}
-            : null;
-    final result = await entityFunction[entity]!(
-      query,
+    final params = Map<String, String>.from(
+      entityName[entity]?['type'] != null
+          ? {'primarytype': entityName[entity]?['type'] ?? ''}
+          : {},
+    );
+    final fn = (entityName[entity]?['function'] as Function?) ?? () {};
+    final result = await fn(
+      '$query OR artist:$query OR artistname:$query',
       limit: minimal ? 25 : 100,
       params: params,
+      offset: offset,
     );
     if (result == null || result[entityName[entity]?['name']] == null)
       throw Exception('MusicBrainz search failed.');
@@ -270,9 +294,21 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
   int offset = 0,
   int maxScore = 0,
   bool minimal = true,
+  String? entity,
 }) async {
   final futures = <Future>[];
-  if (!minimal) {
+  if (entity != null) {
+    futures.add(
+      getMBSearchSuggestions(
+        query,
+        entity,
+        limit: limit ?? 5,
+        minimal: minimal,
+        maxScore: maxScore,
+        offset: offset,
+      ),
+    );
+  } else if (!minimal) {
     futures
       ..add(
         getMBSearchSuggestions(
@@ -281,6 +317,7 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
           limit: limit ?? 5,
           minimal: minimal,
           maxScore: maxScore,
+          offset: offset,
         ),
       )
       ..add(
@@ -290,6 +327,7 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
           limit: limit ?? 5,
           minimal: minimal,
           maxScore: maxScore,
+          offset: offset,
         ),
       )
       ..add(
@@ -299,6 +337,7 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
           limit: limit ?? 5,
           minimal: minimal,
           maxScore: maxScore,
+          offset: offset,
         ),
       );
   } else {

@@ -20,6 +20,7 @@
  */
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +41,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
-import 'package:reverbio/widgets/section_title.dart';
+import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -62,6 +63,9 @@ class _SearchPageState extends State<SearchPage> {
   Future<dynamic>? _suggestionsFuture;
   final itemsNumber = recommendedCardsNumber;
   Map _suggestionList = {};
+  final _submitLimit = 10;
+  final _suggestionLimit = 10;
+
   @override
   void dispose() {
     _searchBar.dispose();
@@ -128,7 +132,7 @@ class _SearchPageState extends State<SearchPage> {
         case 'youtube':
           await _setSearchFuture(
             data['value'],
-            limit: 10,
+            limit: _submitLimit,
             minimal: false,
             maxScore: 50,
           );
@@ -139,7 +143,12 @@ class _SearchPageState extends State<SearchPage> {
         default:
       }
     } else {
-      await _setSearchFuture(data, limit: 10, minimal: false, maxScore: 50);
+      await _setSearchFuture(
+        data,
+        limit: _submitLimit,
+        minimal: false,
+        maxScore: 50,
+      );
       if (mounted)
         setState(() {
           _searchBar.text = data;
@@ -157,6 +166,7 @@ class _SearchPageState extends State<SearchPage> {
     int maxScore = 0,
     int offset = 0,
     bool minimal = true,
+    String? entity,
   }) async {
     _fetching.value = true;
     if (_suggestionsFuture != null) _suggestionsFuture?.ignore();
@@ -166,6 +176,7 @@ class _SearchPageState extends State<SearchPage> {
       offset: offset,
       minimal: minimal,
       maxScore: maxScore,
+      entity: entity,
     );
     await _suggestionsFuture?.whenComplete(() {
       if (mounted)
@@ -208,7 +219,11 @@ class _SearchPageState extends State<SearchPage> {
                 labelText: '${context.l10n!.search}...',
                 onChanged: (value) async {
                   if (value.isNotEmpty) {
-                    await _setSearchFuture(value, limit: 10, maxScore: 50);
+                    await _setSearchFuture(
+                      value,
+                      limit: _suggestionLimit,
+                      maxScore: 50,
+                    );
                   } else {
                     _fetching.value = false;
                     if (_suggestionsFuture != null)
@@ -329,6 +344,7 @@ class _SearchPageState extends State<SearchPage> {
                 '${entityName[header.toLowerCase()]!['localization']!} (${suggestionList['count']})',
             page: 'search',
             inputData: suggestionList['data'],
+            expandedActions: _buildPrevNextButtons(header, suggestionList),
           )
         else
           SliverMainAxisGroup(
@@ -337,9 +353,10 @@ class _SearchPageState extends State<SearchPage> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: commonSingleChildScrollViewPadding,
-                    child: SectionTitle(
-                      '${entityName[header.toLowerCase()]!['localization']!} (${suggestionList['count']})',
-                      _theme.colorScheme.primary,
+                    child: SectionHeader(
+                      title: entityName[header.toLowerCase()]!['localization']!,
+                      actions: _buildPrevNextButtons(header, suggestionList),
+                      actionsExpanded: true,
                     ),
                   ),
                 ),
@@ -348,6 +365,60 @@ class _SearchPageState extends State<SearchPage> {
           ),
       ],
     );
+  }
+
+  List<Widget> _buildPrevNextButtons(String header, dynamic suggestionList) {
+    return [
+      IconButton(
+        onPressed:
+            (suggestionList['offset'] ?? 0) > 0
+                ? () async {
+                  final offset = math.max(
+                    0,
+                    (suggestionList['offset'] ?? 0) - _submitLimit,
+                  );
+                  await _setSearchFuture(
+                    _searchBar.text,
+                    limit: _submitLimit,
+                    offset: offset,
+                    minimal: false,
+                    maxScore: 50,
+                    entity: suggestionList['entity'],
+                  );
+                }
+                : null,
+        icon: Icon(
+          FluentIcons.chevron_left_24_filled,
+          color:
+              (suggestionList['offset'] ?? 0) > 0
+                  ? _theme.colorScheme.primary
+                  : _theme.colorScheme.inversePrimary,
+        ),
+      ),
+      IconButton(
+        onPressed:
+            (suggestionList['data'] ?? []).isNotEmpty
+                ? () async {
+                  final offset = (suggestionList['offset'] ?? 0) + _submitLimit;
+                  await _setSearchFuture(
+                    _searchBar.text,
+                    limit: _submitLimit,
+                    offset: offset,
+                    minimal: false,
+                    maxScore: 50,
+                    entity: header.toLowerCase(),
+                  );
+                }
+                : null,
+        icon: Icon(
+          FluentIcons.chevron_right_24_filled,
+          color:
+              (suggestionList['data'] ?? []).isNotEmpty
+                  ? _theme.colorScheme.primary
+                  : _theme.colorScheme.inversePrimary,
+        ),
+      ),
+    ];
   }
 
   Future<dynamic> _queuePlaylist(dynamic element) async {
