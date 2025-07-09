@@ -135,7 +135,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     if (_playlist['list'] == null) return list;
     final _count = _playlist['list'].length as int;
     //final n = min(_itemsPerPage, _count - _currentPage * _itemsPerPage);
-    //TODO: restore pagination
+    //TODO: restore pagination to large playlists
     for (var i = 0; i < _count; i++) {
       list.add(_playlist['list'][_currentLastLoadedId]);
       _currentLastLoadedId++;

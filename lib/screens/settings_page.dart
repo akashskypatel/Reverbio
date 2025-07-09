@@ -391,12 +391,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
           return GestureDetector(
             onTap: () {
-              //TODO: migrate this
               addOrUpdateData(
                 'settings',
                 'accentColor',
-                // ignore: deprecated_member_use
-                color.value,
+                color.toARGB32(),
               );
               Reverbio.updateAppState(
                 context,
