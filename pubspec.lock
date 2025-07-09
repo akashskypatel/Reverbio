@@ -569,10 +569,10 @@ packages:
     dependency: "direct main"
     description:
       name: musicbrainz_api_client
-      sha256: c98639a3c7713dfe736aae5efd2ec5f0ddb33fb45ee62936332e7d6053a987d4
+      sha256: "23edf07f1ba88f97a3bb60281d3a1c9b565e10c81b2cfc1cb02fc28edd889c9b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.9"
+    version: "0.1.10"
   octo_image:
     dependency: transitive
     description:
