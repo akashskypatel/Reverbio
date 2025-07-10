@@ -226,6 +226,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
+        /*
         ValueListenableBuilder<bool>(
           valueListenable: playNextSongAutomatically,
           builder: (_, value, __) {
@@ -242,6 +243,8 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
+        */
+        /*
         ValueListenableBuilder<bool>(
           valueListenable: defaultRecommendations,
           builder: (_, value, __) {
@@ -256,6 +259,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
+        */
         ValueListenableBuilder<bool>(
           valueListenable: pluginsSupport,
           builder: (_, value, __) {
@@ -322,6 +326,7 @@ class _SettingsPageState extends State<SettingsPage> {
             showToast(context, response);
           },
         ),
+        /*
         if (!isFdroidBuild)
           CustomBar(
             context.l10n!.downloadAppUpdate,
@@ -329,6 +334,7 @@ class _SettingsPageState extends State<SettingsPage> {
             borderRadius: commonCustomBarRadiusLast,
             onTap: () => checkAppUpdates,
           ),
+        */
       ],
     );
   }
