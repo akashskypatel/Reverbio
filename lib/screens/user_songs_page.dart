@@ -86,11 +86,8 @@ class _UserSongsPageState extends State<UserSongsPage> {
                   });
               },
               icon: Icon(
-                FluentIcons.re_order_24_filled,
-                color:
-                    _isEditEnabled
-                        ? _theme.colorScheme.inversePrimary
-                        : _theme.colorScheme.primary,
+                _isEditEnabled ? FluentIcons.edit_off_24_filled : FluentIcons.edit_line_horizontal_3_24_filled,
+                color: _theme.colorScheme.primary,
               ),
             ),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
