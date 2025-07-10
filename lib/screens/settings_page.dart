@@ -226,6 +226,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
+      //TODO: Fix playNextSongAutomatically
         /*
         ValueListenableBuilder<bool>(
           valueListenable: playNextSongAutomatically,
@@ -244,6 +245,7 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         */
+        //TODO: Fix defaultRecommendations
         /*
         ValueListenableBuilder<bool>(
           valueListenable: defaultRecommendations,
@@ -326,6 +328,7 @@ class _SettingsPageState extends State<SettingsPage> {
             showToast(context, response);
           },
         ),
+        //TODO: Fix downloadAppUpdate
         /*
         if (!isFdroidBuild)
           CustomBar(
