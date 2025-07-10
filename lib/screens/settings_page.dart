@@ -33,7 +33,7 @@ import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
-import 'package:reverbio/services/update_manager.dart';
+//import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_colors.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/common_variables.dart';
