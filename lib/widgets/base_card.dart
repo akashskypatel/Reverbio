@@ -160,7 +160,7 @@ class _BaseCardState extends State<BaseCard> {
                               height: widget.size,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(borderRadius),
                                   color: colorScheme.secondary,
                                 ),
                                 child: Stack(
