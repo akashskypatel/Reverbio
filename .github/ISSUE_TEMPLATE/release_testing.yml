@@ -14,7 +14,7 @@ body:
       options:
         - label: Make sure the application launches without errors.
           required: false
-        - label: Verify cache data is created inn application directory.
+        - label: Verify cache data is created in application directory.
           required: false
 
   - type: checkboxes
