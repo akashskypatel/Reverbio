@@ -7,6 +7,17 @@ assignees:
 
 body:
   - type: checkboxes
+    id: application
+    attributes:
+      label: Application
+      description: Make sure the application launches without errors.
+      options:
+        - label: Make sure the application launches without errors.
+          required: false
+        - label: Verify cache data is created inn application diirectory.
+          required: false
+
+  - type: checkboxes
     id: homepage
     attributes:
       label: Home page
@@ -195,6 +206,8 @@ body:
           required: false
         - label: Confirm song playback controls work:- play, pause, stop, next, previous.
           required: false
+        - label: Confirm tapping on like button slikes the song.
+          required: false
         - label: Confirm closing mini-player works.
           required: false
         - label: Confirm tapping on mini-player artist name open artist page.
@@ -217,6 +230,8 @@ body:
         - label: Confirm tapping on artist name opens artist page.
           required: false
         - label: Confirm song controls work.
+          required: false
+        - label: Confirm tapping on like button slikes the song.
           required: false
 
   - type: checkboxes
