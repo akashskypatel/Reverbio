@@ -91,8 +91,6 @@ body:
           required: false
         - label: Confirm liked playlist from home page shows under liked playlists.
           required: false
-        - label: Confirm liked playlist from home page shows under liked playlists.
-          required: false
         - label: Search for playlist in library and clear searched filter.
           required: false
         - label: Remove liked playlist.
