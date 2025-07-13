@@ -1,7 +1,7 @@
 name: Release Testing Tasklist
 description: Testing checklist before new release
 title: '[RELEASE] vX.X.X <platform> Testing Checklist'
-labels: "type: release"
+labels: ["release"]
 assignees:
   - akashskypatel
 
