@@ -1,6 +1,6 @@
 name: Release Testing Tasklist
 description: Testing checklist before new release
-title: '[RELEASE] vX.X.X <platform> Testing Checklist'
+title: '[Release] vX.X.X <platform> Testing Checklist'
 labels: ["release"]
 assignees:
   - akashskypatel
@@ -235,7 +235,7 @@ body:
           required: false
 
   - type: checkboxes
-    id: Settings Page
+    id: settingspage
     attributes:
       label: Settings Page
       description: Complete or verify all features on Settings Page.
@@ -290,7 +290,7 @@ body:
           required: false
 
   - type: dropdown
-    id: android-version
+    id: platform
     attributes:
       label: Android Version You Use
       options:
@@ -300,6 +300,7 @@ body:
       required: true
 
   - type: textarea
+    id: additional-information
     attributes:
       label: Additional Information
       description: |
