@@ -164,3 +164,70 @@ body:
         - label: Confirm genre list can be sorted.
           required: false
 
+  - type: checkboxes
+    id: offlinesongs
+    attributes:
+      label: Offline Songs page
+      description: Complete or verify all features on Offline Songs Page.
+      options:
+        - label: Confirm offline songs show in the list.
+          required: false
+
+  - type: checkboxes
+    id: queuepage
+    attributes:
+      label: Song Queue page
+      description: Complete or verify all features on Song Queue Page.
+      options:
+        - label: Confirm queued songs show in the list.
+          required: false
+        - label: Confirm queued songs can be added to existing playlist.
+          required: false
+        - label: Confirm queued songs can be saved as new playlist.
+          required: false
+        - label: Confirm queued songs can be rearranged by dragging and dropping.
+          required: false
+        - label: Confirm queued songs can be sorted, shuffled, and played.
+          required: false
+        - label: Confirm queued songs can be cleared.
+          required: false
+
+  - type: checkboxes
+    id: miniplayer
+    attributes:
+      label: Mini-player
+      description: Complete or verify all features on Mini-player.
+      options:
+        - label: Confirm volume changes work.
+          required: false
+        - label: Confirm song playback slider works.
+          required: false
+        - label: Confirm song playback controls work:- play, pause, stop, next, previous.
+          required: false
+        - label: Confirm tapping on like button likes the song.
+          required: false
+        - label: Confirm closing mini-player works.
+          required: false
+        - label: Confirm tapping on mini-player artist name open artist page.
+          required: false
+        - label: Confirm tapping on mini-player blank space or song name opens Now Playing page.
+          required: false
+
+  - type: checkboxes
+    id: nowplaying
+    attributes:
+      label: Now Playing Page
+      description: Complete or verify all features on Now Playing Page.
+      options:
+        - label: Confirm now playing page shows artwork, controls, and queue (if on large screen mode).
+          required: false
+        - label: Confirm tapping on artwork shows lyrics (if available).
+          required: false
+        - label: Confirm tapping on artwork shows lyrics (if available for song).
+          required: false
+        - label: Confirm tapping on artist name opens artist page.
+          required: false
+        - label: Confirm song controls work.
+          required: false
+        - label: Confirm tapping on like button likes the song.
+          required: false
