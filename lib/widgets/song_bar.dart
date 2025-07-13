@@ -22,11 +22,13 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -36,6 +38,7 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
@@ -61,15 +64,19 @@ class SongBar extends StatefulWidget {
   final BorderRadius borderRadius;
   final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
-  final ValueNotifier<bool> _isPrimedNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
+  final ValueNotifier<MediaItem?> _metadataNotifier = ValueNotifier(null);
   late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
     this.borderRadius,
   );
+  final _metadataStreamController = StreamController<MediaItem>.broadcast();
+
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
-  bool get isPrimed => _isPrimedNotifier.value;
+  bool get isPrimed => _isPreparedNotifier.value;
+  Stream<MediaItem> get metadataStream => _metadataStreamController.stream;
+  MediaItem get metadata => _metadataNotifier.value ?? mapToMediaItem(song);
   final FutureTracker<bool> _songFutureTracker = FutureTracker();
-  
 
   @override
   _SongBarState createState() => _SongBarState();
@@ -102,7 +109,8 @@ class SongBar extends StatefulWidget {
   Future<bool> _prepareSong() async {
     _isLoadingNotifier.value = true;
     if (!isPrimed) await getSongUrl(song);
-    _isPrimedNotifier.value = true;
+    _updateMetaData(mapToMediaItem(song));
+    _isPreparedNotifier.value = true;
     _isErrorNotifier.value =
         song.containsKey('isError') ? song['isError'] : false;
     _isLoadingNotifier.value = false;
@@ -122,6 +130,11 @@ class SongBar extends StatefulWidget {
 
   bool equals(SongBar other) {
     return checkSong(song, other.song);
+  }
+
+  void _updateMetaData(MediaItem metadata) {
+    _metadataStreamController.add(metadata);
+    _metadataNotifier.value = metadata;
   }
 }
 
@@ -147,6 +160,7 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
+    widget._updateMetaData(mapToMediaItem(widget.song));
   }
 
   @override
@@ -201,7 +215,7 @@ class _SongBarState extends State<SongBar> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            widget.song['artist'].toString(),
+                            combineArtists(widget.song) ?? widget.song['artist'] ?? '',
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontWeight: FontWeight.w400,

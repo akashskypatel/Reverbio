@@ -288,3 +288,36 @@ DateTime tryParseDate(String date) {
     return DateTime.now();
   }
 }
+
+String removeDuplicates(String input, {int phraseLength = 1}) {
+  // Matches words + adjacent punctuation
+  final tokenPattern = RegExp(r"(([\p{L}\p{M}\w'-]+)([,.!?;:]|\s+)?)", unicode: true);
+  final tokens = tokenPattern.allMatches(input).map((m) => m.group(0)!).toList();
+  
+  final seenPhrases = <String>{};
+  final buffer = StringBuffer();
+  var i = 0;
+
+  while (i <= tokens.length - phraseLength) {
+    final phraseTokens = tokens.sublist(i, i + phraseLength);
+    final originalPhrase = phraseTokens.join();
+    final normalizedPhrase = phraseTokens.join()
+        .replaceAll(RegExp(r"[^\p{L}\p{M}\w'-]", unicode: true), '')
+        .toLowerCase();
+
+    if (normalizedPhrase.isNotEmpty && !seenPhrases.contains(normalizedPhrase)) {
+      seenPhrases.add(normalizedPhrase);
+      buffer.write(' $originalPhrase');
+    }
+
+    i += 1;
+  }
+
+  // Add remaining tokens
+  while (i < tokens.length) {
+    buffer.write(tokens[i]);
+    i++;
+  }
+
+  return buffer.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+}

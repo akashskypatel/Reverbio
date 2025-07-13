@@ -163,6 +163,7 @@ class _SongListState extends State<SongList> {
       iconSize: listHeaderIconSize,
       onPressed: () {
         _songsList.shuffledWith(widget.songBars);
+        if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
         if (mounted) setState(() {});
       },
     );
@@ -211,6 +212,7 @@ class _SongListState extends State<SongList> {
         final valueB = b.song[key].toString().toLowerCase();
         return valueA.compareTo(valueB);
       });
+      if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
     }
 
     switch (value) {
@@ -264,7 +266,7 @@ class _SongListState extends State<SongList> {
           showToast(context, context.l10n!.songAdded);
         }
         if (audioHandler.queueSongBars.isNotEmpty &&
-            audioHandler.audioPlayer.songValueNotifier.value == null &&
+            audioHandler.songValueNotifier.value == null &&
             widget.songBars.isNotEmpty) {
           audioHandler.queueSong(play: true, skipOnError: true);
         }
@@ -400,6 +402,8 @@ class _SongListState extends State<SongList> {
                 }
                 widget.songBars.rearrange(oldIndex, newIndex);
                 _songsList.rearrange(oldIndex, newIndex);
+                if (widget.page == 'queue')
+                  updateMediaItemQueue(widget.songBars);
               });
           },
         );

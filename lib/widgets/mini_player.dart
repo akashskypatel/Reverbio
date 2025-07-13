@@ -25,6 +25,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/screens/artist_page.dart';
@@ -52,13 +53,13 @@ class _MiniPlayerState extends State<MiniPlayer> {
   @override
   void initState() {
     super.initState();
-    audioHandler.audioPlayer.songValueNotifier.addListener(_songListener);
+    audioHandler.songValueNotifier.addListener(_songListener);
   }
 
   @override
   void dispose() {
     super.dispose();
-    audioHandler.audioPlayer.songValueNotifier.removeListener(_songListener);
+    audioHandler.songValueNotifier.removeListener(_songListener);
   }
 
   @override
@@ -76,15 +77,20 @@ class _MiniPlayerState extends State<MiniPlayer> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
-        child: Column(
-          children: [
-            PositionSlider(
-              closeButton: widget.closeButton,
-              positionDataNotifier: audioHandler.positionDataNotifier,
-            ),
-            if (isLargeScreen(context)) _buildLargeScreenControls(),
-            if (!isLargeScreen(context)) _buildSmallScreenControls(),
-          ],
+        child: ClipRRect(
+          child: Column(
+            children: [
+              if (!nowPlayingOpen)
+                PositionSlider(
+                  closeButton: widget.closeButton,
+                  positionDataNotifier: audioHandler.positionDataNotifier,
+                ),
+              if (!nowPlayingOpen)
+                if (isLargeScreen(context)) _buildLargeScreenControls(),
+              if (!nowPlayingOpen)
+                if (!isLargeScreen(context)) _buildSmallScreenControls(),
+            ],
+          ),
         ),
       ),
     );
@@ -100,10 +106,11 @@ class _MiniPlayerState extends State<MiniPlayer> {
             _buildMetadata(),
             Row(
               children: [
+                _buildLikeButton(),
                 _buildPreviousButton(context),
                 if (audioHandler.hasPrevious) const SizedBox(width: 10),
                 StreamBuilder<Duration>(
-                  stream: audioHandler.audioPlayer.positionStream,
+                  stream: audioHandler.positionStream,
                   builder: (context, snapshot) {
                     return _buildStopButton(context);
                   },
@@ -129,30 +136,79 @@ class _MiniPlayerState extends State<MiniPlayer> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(children: [_buildArtwork(), _buildMetadata()]),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildPreviousButton(context),
-            if (audioHandler.hasPrevious) const SizedBox(width: 10),
-            StreamBuilder<Duration>(
-              stream: audioHandler.audioPlayer.positionStream,
-              builder: (context, snapshot) {
-                return _buildStopButton(context);
-              },
+            _buildArtwork(),
+            _buildMetadata(),
+            Row(
+              children: [
+                if (isLargeScreen(context)) ...[
+                  _buildLikeButton(),
+                  _buildPreviousButton(context),
+                  if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                  StreamBuilder<Duration>(
+                    stream: audioHandler.positionStream,
+                    builder: (context, snapshot) {
+                      return _buildStopButton(context);
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  StreamBuilder<PlaybackState>(
+                    stream: audioHandler.playbackState,
+                    builder: (context, snapshot) {
+                      return _buildPlayPauseButton(context);
+                    },
+                  ),
+                  if (audioHandler.hasNext) const SizedBox(width: 10),
+                  _buildNextButton(context),
+                ] else ...[
+                  _buildLikeButton(),
+                  const SizedBox(width: 10),
+                  StreamBuilder<PlaybackState>(
+                    stream: audioHandler.playbackState,
+                    builder: (context, snapshot) {
+                      return _buildPlayPauseButton(context);
+                    },
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(width: 10),
-            StreamBuilder<PlaybackState>(
-              stream: audioHandler.playbackState,
-              builder: (context, snapshot) {
-                return _buildPlayPauseButton(context);
-              },
-            ),
-            if (audioHandler.hasNext) const SizedBox(width: 10),
-            _buildNextButton(context),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildLikeButton() {
+    final status = ValueNotifier<bool>(
+      isSongAlreadyLiked(
+        audioHandler.songValueNotifier.value?.song,
+      ),
+    );
+    final primaryColor = _theme.colorScheme.primary;
+    return ValueListenableBuilder<bool>(
+      valueListenable: status,
+      builder: (_, value, __) {
+        final icon = Icon(
+          value ? FluentIcons.heart_24_filled : FluentIcons.heart_24_regular,
+          color: primaryColor,
+        );
+        void onPressed() {
+          updateSongLikeStatus(
+            audioHandler.songValueNotifier.value?.song,
+            !status.value,
+          );
+          status.value = !status.value;
+        }
+
+        return IconButton(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          icon: icon,
+          iconSize: 35,
+          onPressed: onPressed,
+        );
+      },
     );
   }
 
@@ -161,8 +217,8 @@ class _MiniPlayerState extends State<MiniPlayer> {
   }
 
   Widget _buildPlayPauseButton(BuildContext context) {
-    final processingState = audioHandler.audioPlayer.state;
-    final isPlaying = audioHandler.audioPlayer.playing;
+    final processingState = audioHandler.state;
+    final isPlaying = audioHandler.playing;
     final iconDataAndAction = getIconFromProcessingState(
       processingState,
       isPlaying,
@@ -178,10 +234,10 @@ class _MiniPlayerState extends State<MiniPlayer> {
   }
 
   Widget _buildStopButton(BuildContext context) {
-    final isPlaying = audioHandler.audioPlayer.playing;
+    final isPlaying = audioHandler.playing;
     return IconButton(
       onPressed:
-          isPlaying || audioHandler.audioPlayer.position.inSeconds > 0
+          isPlaying || audioHandler.position.inSeconds > 0
               ? () => audioHandler.seekToStart()
               : null,
       icon: const Icon(FluentIcons.stop_24_filled, size: 35),
@@ -191,31 +247,41 @@ class _MiniPlayerState extends State<MiniPlayer> {
   }
 
   Widget _buildNextButton(BuildContext context) {
-    if (audioHandler.hasNext)
-      return IconButton(
-        onPressed: () => audioHandler.skipToNext(),
-        icon: Icon(
-          FluentIcons.next_24_filled,
-          color: _theme.colorScheme.primary,
-          size: 25,
-        ),
-      );
-    else
-      return const SizedBox.shrink();
+    return ValueListenableBuilder(
+      valueListenable: activeQueueLength,
+      builder: (_, value, __) {
+        if (audioHandler.hasNext)
+          return IconButton(
+            onPressed: () => audioHandler.skipToNext(),
+            icon: Icon(
+              FluentIcons.next_24_filled,
+              color: _theme.colorScheme.primary,
+              size: 25,
+            ),
+          );
+        else
+          return const SizedBox.shrink();
+      },
+    );
   }
 
   Widget _buildPreviousButton(BuildContext context) {
-    if (audioHandler.hasPrevious)
-      return IconButton(
-        onPressed: () => audioHandler.skipToPrevious(),
-        icon: Icon(
-          FluentIcons.previous_24_filled,
-          color: _theme.colorScheme.primary,
-          size: 25,
-        ),
-      );
-    else
-      return const SizedBox.shrink();
+    return ValueListenableBuilder(
+      valueListenable: activeQueueLength,
+      builder: (_, value, __) {
+        if (audioHandler.hasPrevious)
+          return IconButton(
+            onPressed: () => audioHandler.skipToPrevious(),
+            icon: Icon(
+              FluentIcons.previous_24_filled,
+              color: _theme.colorScheme.primary,
+              size: 25,
+            ),
+          );
+        else
+          return const SizedBox.shrink();
+      },
+    );
   }
 
   Widget _buildArtwork() {
@@ -228,7 +294,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
           size: 55,
           paddingValue: 0,
           loadingWidget: const Spinner(),
-          inputData: audioHandler.audioPlayer.songValueNotifier.value?.song,
+          inputData: audioHandler.songValueNotifier.value?.song,
         ),
       ),
     );
@@ -237,9 +303,9 @@ class _MiniPlayerState extends State<MiniPlayer> {
   Widget _buildMetadata() {
     final titleColor = _theme.colorScheme.primary;
     return ValueListenableBuilder(
-      valueListenable: audioHandler.audioPlayer.songValueNotifier,
+      valueListenable: audioHandler.songValueNotifier,
       builder: (context, value, child) {
-        final song = audioHandler.audioPlayer.songValueNotifier.value!.song;
+        final song = audioHandler.songValueNotifier.value!.song;
         final artistData = (song['artist-credit'] ?? []) as List;
         int index = 1;
         final artistLabels = artistData.fold(<Widget>[], (v, e) {
@@ -270,7 +336,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      widget.metadata.title,
+                      audioHandler.songValueNotifier.value?.song['title'],
                       style: TextStyle(
                         color: titleColor,
                         fontSize: 16,
@@ -417,7 +483,7 @@ class PositionSlider extends StatelessWidget {
   void _showVolumeSlider(BuildContext context) => showDialog(
     context: context,
     builder: (BuildContext savecontext) {
-      int _duelCommandment = audioHandler.audioPlayer.volume.toInt();
+      int _duelCommandment = audioHandler.volume.toInt();
       return StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
@@ -439,7 +505,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = 0;
                           });
-                          audioHandler.audioPlayer.setVolume(
+                          audioHandler.setVolume(
                             _duelCommandment.toDouble(),
                           );
                         },
@@ -457,7 +523,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = newValue.round();
                           });
-                          audioHandler.audioPlayer.setVolume(
+                          audioHandler.setVolume(
                             _duelCommandment.toDouble(),
                           );
                         },
@@ -472,7 +538,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = 100;
                           });
-                          audioHandler.audioPlayer.setVolume(
+                          audioHandler.setVolume(
                             _duelCommandment.toDouble(),
                           );
                         },

@@ -21,6 +21,7 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -72,8 +73,9 @@ Future<dynamic> getAlbumDetailsById(dynamic albumData) async {
       ids['mb']!,
       inc: ['artists', 'releases', 'annotation', 'tags', 'genres', 'ratings'],
     );
-    album['artist'] = album['artist'] ?? combineArtists(album);
+    album['artist'] = combineArtists(album) ?? album['artist'];
     album['album'] = album['title'];
+    album['cachedAt'] = DateTime.now().toString();
     await getAlbumCoverArt(album);
     await getTrackList(album);
     cachedAlbumsList.addOrUpdate('id', album['id'], album);
@@ -107,6 +109,9 @@ Future<Map<String, dynamic>> findMBAlbum(
       albums.first['artistId'] = artistInfo['id'];
     }
     albums.first['album'] = albums.first['title'];
+    albums.first['artist'] =
+        combineArtists(albums.first) ?? albums.first['artist'];
+    albums.first['cachedAt'] = DateTime.now().toString();
     await getAlbumCoverArt(albums.first);
     cachedAlbumsList.addOrUpdate('id', albums.first['id'], albums.first);
     addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
@@ -163,18 +168,32 @@ Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
                   ? cached['list']
                   : await getTrackList(release));
       if (release['list'] != null && release['list'].isNotEmpty) {
+        final coverArt = await mb.coverArt.get(release['id'], 'release');
         for (final track in release['list']) {
-          if (!tracks.any((e) => checkSong(e, track)))
+          if (!tracks.any((e) => checkSong(e, track))) {
+            if (coverArt['error'] == null) {
+              track['images'] = coverArt['images'];
+            }
+            final artist =
+                combineArtists(track) ?? combineArtists(release) ?? '';
             tracks.add({
               'id': 'mb=${track['mbid']}',
               'mdid': track['mbid'],
+              'reid': release['id'],
+              'mbidType': 'track',
               'album': release['title'],
               'title': track['title'],
-              'artist': release['artist'],
+              'artist': artist,
               'primary-type': 'song',
               'image': track['image'],
-              'duration': track['duration'],
+              'cachedAt': DateTime.now().toString(),
+              'duration': (track['length'] ?? 0) ~/ 1000,
             });
+            release['duration'] = max(
+              release['duration'] ?? 0,
+              (track['length'] ?? 0) ~/ 1000,
+            );
+          }
         }
       }
     }
@@ -260,10 +279,19 @@ Future<List?> getTrackList(dynamic album) async {
 
     var i = 0;
     for (final release in effectiveReleases) {
+      final coverArt = await mb.coverArt.get(release['id'], 'release');
+      if (coverArt['error'] == null) {
+        release['images'] = coverArt['images'];
+      }
       release['media']?.forEach((media) {
         media['tracks']?.forEach((track) {
           if (tracklist.add(track['title'])) {
-            final artist = combineArtists(track);
+            final artist =
+                combineArtists(track) ??
+                combineArtists(media) ??
+                combineArtists(release) ??
+                combineArtists(album) ??
+                '';
             album['list'].add({
               'index': i++,
               'id': 'mb=${track['id']}',

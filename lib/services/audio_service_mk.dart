@@ -67,6 +67,8 @@ class AudioPlayerService {
       StreamController<AudioPlayerState>.broadcast();
   final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
   final List<SongBar> _queueSongBars = [];
+  final _metadataStreamController = StreamController<MediaItem>.broadcast();
+  StreamSubscription<MediaItem>? _metadataSubscription;
 
   ValueNotifier<SongBar?> get songValueNotifier => _songValueNotifier;
   List<SongBar> get queueSongBars => _queueSongBars;
@@ -116,6 +118,7 @@ class AudioPlayerService {
       );
   Stream<int> get currentIndexStream => _indexController.stream;
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
+  Stream<MediaItem> get metadataStream => _metadataStreamController.stream;
   ValueNotifier<double> get volumeNotifier => _volumeNotifier;
 
   void _initialize() {
@@ -165,9 +168,11 @@ class AudioPlayerService {
         );
       }
     });
+    /*
     _player.stream.playlist.listen((playlist) {
       _indexController.add(playlist.index);
     });
+    */
     setVolume(_volume);
   }
 
@@ -187,7 +192,8 @@ class AudioPlayerService {
 
   Future<void> play() async {
     _updatePlayerState(AudioPlayerState.playing);
-    return _player.play();
+    await _player.play();
+    return;
   }
 
   Future<void> pause() async {
@@ -195,8 +201,16 @@ class AudioPlayerService {
     return _player.pause();
   }
 
+  Future<void> close() async {
+    _updatePlayerState(AudioPlayerState.initialized);
+    await player.stop();
+    _songValueNotifier.value = null;
+    return;
+  }
+
   Future<void> stop() async {
     _updatePlayerState(AudioPlayerState.stopped);
+    await _metadataSubscription?.cancel();
     await player.stop();
     return _player.stop();
   }
@@ -228,9 +242,11 @@ class AudioPlayerService {
   Future<void> queue(Media media, SongBar songBar) async {
     _updateProcessingState(AudioProcessingState.loading);
     songValueNotifier.value = songBar;
+    _metadataSubscription = songBar.metadataStream.listen(
+      _metadataStreamController.add,
+    );
     await _player.open(media);
     await player.seek(Duration.zero);
-    songBar.song['duration'] = _player.state.duration.inMilliseconds;
     return _player.pause();
   }
 
@@ -252,6 +268,14 @@ class AudioPlayerService {
   Future<void> setPlaylistMode(PlaylistMode mode) async {
     return _player.setPlaylistMode(mode);
   }
+
+  void skipToNext(int index) {
+    _indexController.add(index);
+  }
+
+  void skipToPrevious(int index) {
+    _indexController.add(index);
+  }
 }
 
 class ReverbioAudioHandler extends BaseAudioHandler {
@@ -272,6 +296,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   late final StreamSubscription<int?> _currentIndexSubscription;
   late final StreamSubscription<Playlist?> _sequenceStateSubscription;
   late final StreamSubscription<PositionData> _positionDataSubscription;
+  late final StreamSubscription<MediaItem?> _metadataSubscription;
 
   final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
     PositionData(Duration.zero, Duration.zero, Duration.zero),
@@ -279,7 +304,19 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   Duration get position => audioPlayer.position;
   Duration get duration => audioPlayer.duration;
+  bool get hasNext => audioPlayer.hasNext;
+  bool get hasPrevious => audioPlayer.hasPrevious;
+  ValueNotifier<SongBar?> get songValueNotifier =>
+      audioPlayer.songValueNotifier;
+  Stream<AudioPlayerState> get playerStateStream =>
+      audioPlayer.playerStateStream;
+  double get volume => audioPlayer.volume;
+  Stream<PositionData> get positionDataStream => audioPlayer.positionDataStream;
+  AudioProcessingState get state => audioPlayer.state;
+  bool get playing => audioPlayer.playing;
+  Stream<Duration> get positionStream => audioPlayer.positionStream;
 
+  @override
   @override
   Future<void> onTaskRemoved() async {
     await audioPlayer.stop().then((_) => audioPlayer.dispose());
@@ -290,12 +327,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _currentIndexSubscription.cancel();
     await _sequenceStateSubscription.cancel();
     await _positionDataSubscription.cancel();
+    await _metadataSubscription.cancel();
     await super.onTaskRemoved();
   }
-
-  bool get hasNext => audioPlayer.hasNext;
-
-  bool get hasPrevious => audioPlayer.hasPrevious;
 
   @override
   Future<void> play() => audioPlayer.play();
@@ -311,10 +345,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (!audioPlayer.hasNext && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value?.song == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
-    if (loopAllSongs && index == queueSongBars.length - 1)
+    if (loopAllSongs && index == queueSongBars.length - 1) {
       await queueSong(songBar: queueSongBars.first, play: play);
-    else if (index < queueSongBars.length - 1)
+      audioPlayer.skipToNext(0);
+    } else if (index < queueSongBars.length - 1) {
       await queueSong(songBar: queueSongBars[index + 1], play: play);
+      audioPlayer.skipToNext(index + 1);
+    }
     return;
   }
 
@@ -324,16 +361,29 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (!audioPlayer.hasPrevious && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
-    if (loopAllSongs && index == 0)
+    if (loopAllSongs && index == 0) {
       await queueSong(songBar: queueSongBars.last, play: play);
-    else if (index > 0)
+      audioPlayer.skipToPrevious(queueSongBars.length - 1);
+    } else if (index > 0) {
       await queueSong(songBar: queueSongBars[index - 1], play: play);
+      audioPlayer.skipToPrevious(index - 1);
+    }
     return;
   }
 
-  Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
+  @override
+  Future<void> skipToQueueItem(int index, {bool play = true}) async {
+    index = min(index, queueSongBars.length - 1);
+    await queueSong(songBar: queueSongBars[index], play: play);
+  }
 
-  Future<void> seekToStart() => audioPlayer.seekToStart();
+  Future<void> skipToRandom({bool play = true}) async {
+    final index = min(
+      Random().nextInt(queueSongBars.length - 1),
+      queueSongBars.length - 1,
+    );
+    await queueSong(songBar: queueSongBars[index], play: play);
+  }
 
   @override
   Future<void> fastForward() =>
@@ -342,6 +392,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> rewind() =>
       seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
+
+  Future<void> close() => audioPlayer.stop();
+  Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
+  Future<void> seekToStart() => audioPlayer.seekToStart();
 
   void _handlePlaybackEvent(bool playing) {
     try {
@@ -360,8 +414,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _updatePlaybackState();
   }
 
+  void _handleMetadataChange(MediaItem metadata) {
+    mediaItem.add(metadata);
+  }
+
   void _handleDurationChange(Duration? duration) {
     try {
+      /*
       final index = audioPlayer.currentIndex;
       if (queue.value.isNotEmpty) {
         final newQueue = List<MediaItem>.from(queue.value);
@@ -371,6 +430,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         queue.add(newQueue);
         mediaItem.add(newMediaItem);
       }
+      */
     } catch (e, stackTrace) {
       logger.log('Error handling duration change', e, stackTrace);
     }
@@ -379,10 +439,12 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void _handleCurrentSongIndexChanged(int? index) {
     try {
+      /*
       if (index != null && queue.value.isNotEmpty) {
         final playlist = queue.value;
         mediaItem.add(playlist[index]);
       }
+      */
     } catch (e, stackTrace) {
       logger.log('Error handling current song index change', e, stackTrace);
     }
@@ -391,15 +453,17 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void _handleSequenceStateChange(Playlist? playlist) {
     try {
+      /*
       final sequence = playlist?.medias;
       if (sequence != null && sequence.isNotEmpty) {
         final items =
             sequence
                 .map((source) => extrasToMediaItem(source.extras ?? {}))
                 .toList();
-        queue.add(items);
-        settings.shuffleNotifier.value = audioPlayer.shuffleModeEnabled;
+        queue.add(items); 
       }
+      */
+      settings.shuffleNotifier.value = audioPlayer.shuffleModeEnabled;
     } catch (e, stackTrace) {
       logger.log('Error handling sequence state change', e, stackTrace);
     }
@@ -416,7 +480,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           queueSong(songBar: audioPlayer.songValueNotifier.value, play: true);
           break;
         default:
-          skipToNext();
+          if (shuffleNotifier.value)
+            skipToRandom();
+          else
+            skipToNext();
           break;
       }
     }
@@ -466,6 +533,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     );
     _positionDataSubscription = audioPlayer.positionDataStream.listen(
       _positionDataNotify,
+    );
+    _metadataSubscription = audioPlayer.metadataStream.listen(
+      _handleMetadataChange,
     );
   }
 
@@ -687,6 +757,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 }
 
+void updateMediaItemQueue(List<SongBar> songBars) {
+  audioHandler.queue.add(songBars.map((e) => e.metadata).toList());
+}
+
 void addSongsToQueue(List<SongBar> songBars) {
   for (final songBar in songBars) {
     addSongToQueue(songBar);
@@ -698,6 +772,7 @@ void addSongToQueue(SongBar songBar) {
     activeQueue['list'].add(songBar.song);
     audioHandler.queueSongBars.add(songBar);
     activeQueueLength.value = audioHandler.queueSongBars.length;
+    audioHandler.queue.add(audioHandler.queue.value + [songBar.metadata]);
   }
 }
 
@@ -706,6 +781,7 @@ bool removeSongFromQueue(SongBar songBar) {
   audioHandler.queueSongBars.removeWhere((e) {
     return e.equals(songBar);
   });
+  updateMediaItemQueue(audioHandler.queueSongBars);
   activeQueueLength.value = audioHandler.queueSongBars.length;
   return val;
 }

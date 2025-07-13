@@ -33,21 +33,21 @@ Map mediaItemToMap(MediaItem mediaItem) => {
 };
 
 MediaItem mapToMediaItem(Map song) => MediaItem(
-  id: song['id'].toString(),
-  album: '',
-  artist: song['artist'].toString().trim(),
-  title: song['title'].toString(),
+  id: song['id'] ?? '',
+  album: song['album'] ?? '',
+  artist: song['artist'] ?? '',
+  title: song['title'] ?? '',
   artUri:
       song['isOffline'] ?? false
-          ? Uri.file(song['highResImage'].toString())
-          : Uri.parse(song['highResImage'].toString()),
+          ? Uri.file(song['highResImage'] ?? '')
+          : Uri.parse(song['highResImage'] ?? ''),
   extras: {
-    'artistId': song['artistId'],
-    'lowResImage': song['lowResImage'],
-    'ytid': song['ytid'],
-    'isLive': song['isLive'],
-    'isOffline': song['isOffline'],
-    'artWorkPath': song['highResImage'].toString(),
+    'artistId': song['artistId'] ?? '',
+    'lowResImage': song['lowResImage'] ?? '',
+    'ytid': song['ytid'] ?? '',
+    'isLive': song['isLive'] ?? false,
+    'isOffline': song['isOffline'] ?? false,
+    'artWorkPath': song['highResImage'] ?? '',
   },
 );
 

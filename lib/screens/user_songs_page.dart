@@ -462,7 +462,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ValueListenableBuilder(
-            valueListenable: audioHandler.audioPlayer.songValueNotifier,
+            valueListenable: audioHandler.songValueNotifier,
             builder: (context, value, _) {
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
