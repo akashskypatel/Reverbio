@@ -110,3 +110,57 @@ body:
       options:
         - label: Confirm recently played songs show in the list
           required: false
+
+  - type: checkboxes
+    id: likedsongs
+    attributes:
+      label: Liked Songs page
+      description: Complete or verify all features on Liked Songs Page.
+      options:
+        - label: Confirm liked songs show in the list.
+          required: false
+        - label: Confirm the list can be rearranged.
+          required: false
+
+  - type: checkboxes
+    id: likedartists
+    attributes:
+      label: Liked Artists page
+      description: Complete or verify all features on Liked Artists Page.
+      options:
+        - label: Confirm liked Artists show in the list.
+          required: false
+        - label: Confirm genres for liked artists show in the list.
+          required: false
+        - label: Confirm searching for genre filters genre list.
+          required: false
+        - label: Confirm searching for artist filters artist list.
+          required: false
+        - label: Confirm clicking on genre filters artist list.
+          required: false
+        - label: Confirm clearing filter clears both genres and artist filters.
+          required: false
+        - label: Confirm genre list can be sorted.
+          required: false
+
+  - type: checkboxes
+    id: likedalbums
+    attributes:
+      label: Liked Albums page
+      description: Complete or verify all features on Liked Albums Page.
+      options:
+        - label: Confirm liked Albums show in the list.
+          required: false
+        - label: Confirm genres for liked albums show in the list.
+          required: false
+        - label: Confirm searching for genre filters genre list.
+          required: false
+        - label: Confirm searching for albums filters albums list.
+          required: false
+        - label: Confirm clicking on genre filters albums list.
+          required: false
+        - label: Confirm clearing filter clears both genres and albums filters.
+          required: false
+        - label: Confirm genre list can be sorted.
+          required: false
+
