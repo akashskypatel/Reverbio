@@ -78,3 +78,28 @@ body:
           required: false
         - label: Double tapping a song likes/dislikes a song.
           required: false
+
+  - type: checkboxes
+    id: librarypage
+    attributes:
+      label: Library page
+      description: Complete or verify all features on Library Page.
+      options:
+        - label: Add a custom playlist using YouTube link.
+          required: false
+        - label: Add a local custom playlist.
+          required: false
+        - label: Confirm liked playlist from home page shows under liked playlists.
+          required: false
+        - label: Confirm liked playlist from home page shows under liked playlists.
+          required: false
+        - label: Search for playlist in library and clear searched filter.
+          required: false
+        - label: Remove liked playlist.
+          required: false
+        - label: Remove added playlist.
+          required: false
+        - label: Remove local playlist.
+          required: false
+        - label: Naviogate to each library page- Recently Played, Liked Songs, Liked Artists, Liked Albums, and Offline Songs.
+          required: false
