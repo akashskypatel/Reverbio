@@ -14,7 +14,7 @@ body:
       options:
         - label: Make sure the application launches without errors.
           required: false
-        - label: Verify cache data is created inn application diirectory.
+        - label: Verify cache data is created inn application directory.
           required: false
 
   - type: checkboxes
@@ -44,6 +44,37 @@ body:
         - label: A Recommended for you Song can be liked, added to playlist, added to queue, and added to offline successfully.
           required: false
         - label: A Recommended for you Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
+          required: false
+        - label: Double tapping a song likes/dislikes a song.
+          required: false
+
+  - type: checkboxes
+    id: searchpage
+    attributes:
+      label: Search page
+      description: Complete or verify all features on Search Page.
+      options:
+        - label: Suggested Playlists loads with Image and Labels successfully.
+          required: false
+        - label: Typing in search bar is successful and shows suggestions successfully.
+          required: false
+        - label: Submitting search query shows search results successfully.
+          required: false
+        - label: Clicking on search suggestions shows search results successfully.
+          required: false
+        - label: Search result pages can successfully be iterated up and down for all search entities.
+          required: false
+        - label: Search result entities can be liked/disliked successfully.
+          required: false
+        - label: Search result songs can be played successfully (if stream found).
+          required: false
+        - label: If song stream found, can be opened in youtube successfully.
+          required: false
+        - label: Song results can be queued, played, shuffled, and sorted successfully.
+          required: false
+        - label: A Song result can be liked, added to playlist, added to queue, and added to offline successfully.
+          required: false
+        - label: A Song result can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
           required: false
         - label: Double tapping a song likes/dislikes a song.
           required: false
