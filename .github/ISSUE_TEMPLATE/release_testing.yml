@@ -99,5 +99,14 @@ body:
           required: false
         - label: Remove local playlist.
           required: false
-        - label: Naviogate to each library page- Recently Played, Liked Songs, Liked Artists, Liked Albums, and Offline Songs.
+        - label: Navigate to each library page- Recently Played, Liked Songs, Liked Artists, Liked Albums, and Offline Songs.
+          required: false
+
+  - type: checkboxes
+    id: recentlyplayed
+    attributes:
+      label: Recently Played page
+      description: Complete or verify all features on Recently Played Page.
+      options:
+        - label: Confirm recently played songs show in the list
           required: false
