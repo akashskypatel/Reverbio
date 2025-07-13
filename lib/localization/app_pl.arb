@@ -179,5 +179,10 @@
   "history": "Historia",
   "suggestions": "Sugestie",
   "sponsorBlock": "Pomiń fragmenty sponsorowane",
-  "nonMusicBlock": "Pomiń fragmenty bez muzyki (Intro, Outro itp.)"
+  "nonMusicBlock": "Pomiń fragmenty bez muzyki (Intro, Outro itp.)",
+  "loop": "Zapętl",
+  "pause": "Pauza",
+  "next": "Następny",
+  "previous": "Poprzedni",
+  "repeat": "Powtórz"
 }

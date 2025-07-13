@@ -179,5 +179,10 @@
   "history": "Histórico",
   "suggestions": "Sugestões",
   "sponsorBlock": "Pular segmentos patrocinados",
-  "nonMusicBlock": "Pular partes não musicais (Intro, Outro etc.)"
+  "nonMusicBlock": "Pular partes não musicais (Intro, Outro etc.)",
+  "loop": "Repetir",
+  "pause": "Pausar",
+  "next": "Próximo",
+  "previous": "Anterior",
+  "repeat": "Repetir"
 }

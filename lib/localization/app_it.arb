@@ -179,5 +179,10 @@
   "history": "Cronologia",
   "suggestions": "Suggerimenti",
   "sponsorBlock": "Salta i segmenti sponsorizzati",
-  "nonMusicBlock": "Salta le parti non musicali (Intro, Outro, ecc.)"
+  "nonMusicBlock": "Salta le parti non musicali (Intro, Outro, ecc.)",
+  "loop": "Ripeti",
+  "pause": "Pausa",
+  "next": "Successivo",
+  "previous": "Precedente",
+  "repeat": "Ripeti"
 }

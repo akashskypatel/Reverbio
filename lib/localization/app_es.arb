@@ -179,5 +179,10 @@
   "history": "Historial",
   "suggestions": "Sugerencias",
   "sponsorBlock": "Saltar segmentos de patrocinadores",
-  "nonMusicBlock": "Saltar partes no musicales (Intro, Outro, etc.)"
+  "nonMusicBlock": "Saltar partes no musicales (Intro, Outro, etc.)",
+  "loop": "Repetir",
+  "pause": "Pausa",
+  "next": "Siguiente",
+  "previous": "Anterior",
+  "repeat": "Repetir"
 }

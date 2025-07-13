@@ -179,5 +179,10 @@
   "history": "Historique",
   "suggestions": "Suggestions",
   "sponsorBlock": "Passer les segments sponsorisés",
-  "nonMusicBlock": "Passer les parties non musicales (Intro, Outro, etc.)"
+  "nonMusicBlock": "Passer les parties non musicales (Intro, Outro, etc.)",
+  "loop": "Boucle",
+  "pause": "Pause",
+  "next": "Suivant",
+  "previous": "Précédent",
+  "repeat": "Répéter"
 }

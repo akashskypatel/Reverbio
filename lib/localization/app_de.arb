@@ -179,5 +179,10 @@
   "history": "Verlauf",
   "suggestions": "Vorschläge",
   "sponsorBlock": "Werbesegmente überspringen",
-  "nonMusicBlock": "Nicht-Musik-Teile überspringen (Intro, Outro usw.)"
+  "nonMusicBlock": "Nicht-Musik-Teile überspringen (Intro, Outro usw.)",
+  "loop": "Wiederholen",
+  "pause": "Pause",
+  "next": "Weiter",
+  "previous": "Zurück",
+  "repeat": "Wiederholen"
 }

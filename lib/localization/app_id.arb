@@ -179,5 +179,10 @@
   "history": "Riwayat",
   "suggestions": "Saran",
   "sponsorBlock": "Lewati Segmen Sponsor",
-  "nonMusicBlock": "Lewati Bagian Non-Musik (Intro, Outro, dll)"
+  "nonMusicBlock": "Lewati Bagian Non-Musik (Intro, Outro, dll)",
+  "loop": "Ulang",
+  "pause": "Jeda",
+  "next": "Berikutnya",
+  "previous": "Sebelumnya",
+  "repeat": "Ulangi"
 }

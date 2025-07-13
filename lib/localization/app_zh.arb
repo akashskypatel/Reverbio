@@ -179,5 +179,10 @@
   "history": "历史",
   "suggestions": "建议",
   "sponsorBlock": "跳过赞助片段",
-  "nonMusicBlock": "跳过非音乐部分 (开场, 结尾等)"
+  "nonMusicBlock": "跳过非音乐部分 (开场, 结尾等)",
+  "loop": "循环播放",
+  "pause": "暂停",
+  "next": "下一首",
+  "previous": "上一首",
+  "repeat": "重复播放"
 }

@@ -179,5 +179,10 @@
   "history": "履歴",
   "suggestions": "提案",
   "sponsorBlock": "スポンサー部分をスキップ",
-  "nonMusicBlock": "非音楽部分をスキップ (イントロ, アウトロなど)"
+  "nonMusicBlock": "非音楽部分をスキップ (イントロ, アウトロなど)",
+  "loop": "ループ",
+  "pause": "一時停止",
+  "next": "次へ",
+  "previous": "前へ",
+  "repeat": "リピート"
 }

@@ -179,5 +179,10 @@
   "history": "기록",
   "suggestions": "제안",
   "sponsorBlock": "스폰서 구간 건너뛰기",
-  "nonMusicBlock": "음악이 아닌 부분 건너뛰기 (인트로, 아웃트로 등)"
+  "nonMusicBlock": "음악이 아닌 부분 건너뛰기 (인트로, 아웃트로 등)",
+  "loop": "반복",
+  "pause": "일시정지",
+  "next": "다음",
+  "previous": "이전",
+  "repeat": "반복"
 }
