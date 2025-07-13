@@ -260,10 +260,6 @@ body:
           required: false
         - label: Confirm Skip non-music segment changes work.
           required: false
-#        - label: Confirm Automatic Song Picker changes work.
-#          required: false
-#        - label: Confirm Default Song Recommendation changes work.
-#          required: false
         - label: Confirm Clear Cache works.
           required: false
         - label: Confirm Clear Search History works.
@@ -274,8 +270,6 @@ body:
           required: false
         - label: Confirm Restore user data works.
           required: false
-#       - label: Confirm Download App Update works.
-#         required: false
         - label: Confirm Restore user data works.
           required: false
         - label: Confirm Sponsor the project works.
