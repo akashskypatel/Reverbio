@@ -67,8 +67,8 @@ class AudioPlayerService {
       StreamController<AudioPlayerState>.broadcast();
   final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
   final List<SongBar> _queueSongBars = [];
-  final _metadataStreamController = StreamController<MediaItem>.broadcast();
-  StreamSubscription<MediaItem>? _metadataSubscription;
+  final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
+  StreamSubscription<MediaItem>? _mediaItemSubscription;
 
   ValueNotifier<SongBar?> get songValueNotifier => _songValueNotifier;
   List<SongBar> get queueSongBars => _queueSongBars;
@@ -118,7 +118,7 @@ class AudioPlayerService {
       );
   Stream<int> get currentIndexStream => _indexController.stream;
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
-  Stream<MediaItem> get metadataStream => _metadataStreamController.stream;
+  Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
   ValueNotifier<double> get volumeNotifier => _volumeNotifier;
 
   void _initialize() {
@@ -210,7 +210,7 @@ class AudioPlayerService {
 
   Future<void> stop() async {
     _updatePlayerState(AudioPlayerState.stopped);
-    await _metadataSubscription?.cancel();
+    await _mediaItemSubscription?.cancel();
     await player.stop();
     return _player.stop();
   }
@@ -242,8 +242,8 @@ class AudioPlayerService {
   Future<void> queue(Media media, SongBar songBar) async {
     _updateProcessingState(AudioProcessingState.loading);
     songValueNotifier.value = songBar;
-    _metadataSubscription = songBar.metadataStream.listen(
-      _metadataStreamController.add,
+    _mediaItemSubscription = songBar.mediaItemStream.listen(
+      _mediaItemStreamController.add,
     );
     await _player.open(media);
     await player.seek(Duration.zero);
@@ -296,7 +296,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   late final StreamSubscription<int?> _currentIndexSubscription;
   late final StreamSubscription<Playlist?> _sequenceStateSubscription;
   late final StreamSubscription<PositionData> _positionDataSubscription;
-  late final StreamSubscription<MediaItem?> _metadataSubscription;
+  late final StreamSubscription<MediaItem?> _mediaItemSubscription;
 
   final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
     PositionData(Duration.zero, Duration.zero, Duration.zero),
@@ -327,7 +327,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _currentIndexSubscription.cancel();
     await _sequenceStateSubscription.cancel();
     await _positionDataSubscription.cancel();
-    await _metadataSubscription.cancel();
+    await _mediaItemSubscription.cancel();
     await super.onTaskRemoved();
   }
 
@@ -414,8 +414,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _updatePlaybackState();
   }
 
-  void _handleMetadataChange(MediaItem metadata) {
-    mediaItem.add(metadata);
+  void _handleMediaItemChange(MediaItem mediaitem) {
+    mediaItem.add(mediaitem);
   }
 
   void _handleDurationChange(Duration? duration) {
@@ -534,8 +534,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _positionDataSubscription = audioPlayer.positionDataStream.listen(
       _positionDataNotify,
     );
-    _metadataSubscription = audioPlayer.metadataStream.listen(
-      _handleMetadataChange,
+    _mediaItemSubscription = audioPlayer.mediaItemStream.listen(
+      _handleMediaItemChange,
     );
   }
 
@@ -758,7 +758,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 }
 
 void updateMediaItemQueue(List<SongBar> songBars) {
-  audioHandler.queue.add(songBars.map((e) => e.metadata).toList());
+  audioHandler.queue.add(songBars.map((e) => e.mediaItem).toList());
 }
 
 void addSongsToQueue(List<SongBar> songBars) {
@@ -772,7 +772,7 @@ void addSongToQueue(SongBar songBar) {
     activeQueue['list'].add(songBar.song);
     audioHandler.queueSongBars.add(songBar);
     activeQueueLength.value = audioHandler.queueSongBars.length;
-    audioHandler.queue.add(audioHandler.queue.value + [songBar.metadata]);
+    audioHandler.queue.add(audioHandler.queue.value + [songBar.mediaItem]);
   }
 }
 

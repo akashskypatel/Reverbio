@@ -65,17 +65,17 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
-  final ValueNotifier<MediaItem?> _metadataNotifier = ValueNotifier(null);
+  final ValueNotifier<MediaItem?> _mediaItemNotifier = ValueNotifier(null);
   late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
     this.borderRadius,
   );
-  final _metadataStreamController = StreamController<MediaItem>.broadcast();
+  final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
 
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
   bool get isPrimed => _isPreparedNotifier.value;
-  Stream<MediaItem> get metadataStream => _metadataStreamController.stream;
-  MediaItem get metadata => _metadataNotifier.value ?? mapToMediaItem(song);
+  Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
+  MediaItem get mediaItem => _mediaItemNotifier.value ?? mapToMediaItem(song);
   final FutureTracker<bool> _songFutureTracker = FutureTracker();
 
   @override
@@ -109,7 +109,7 @@ class SongBar extends StatefulWidget {
   Future<bool> _prepareSong() async {
     _isLoadingNotifier.value = true;
     if (!isPrimed) await getSongUrl(song);
-    _updateMetaData(mapToMediaItem(song));
+    _updateMediaItem(mapToMediaItem(song));
     _isPreparedNotifier.value = true;
     _isErrorNotifier.value =
         song.containsKey('isError') ? song['isError'] : false;
@@ -132,9 +132,9 @@ class SongBar extends StatefulWidget {
     return checkSong(song, other.song);
   }
 
-  void _updateMetaData(MediaItem metadata) {
-    _metadataStreamController.add(metadata);
-    _metadataNotifier.value = metadata;
+  void _updateMediaItem(MediaItem mediaItem) {
+    _mediaItemStreamController.add(mediaItem);
+    _mediaItemNotifier.value = mediaItem;
   }
 }
 
@@ -160,7 +160,7 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    widget._updateMetaData(mapToMediaItem(widget.song));
+    widget._updateMediaItem(mapToMediaItem(widget.song));
   }
 
   @override

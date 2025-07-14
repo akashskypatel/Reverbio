@@ -179,7 +179,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                               (context, value, child) =>
                                   value != null && !nowPlayingOpen
                                       ? MiniPlayer(
-                                        metadata: value.metadata,
+                                        mediaItem: value.mediaItem,
                                         closeButton:
                                             _buildMiniPlayerCloseButton(
                                               context,

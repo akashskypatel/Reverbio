@@ -40,8 +40,8 @@ import 'package:reverbio/widgets/spinner.dart';
 const double playerHeight = 120;
 
 class MiniPlayer extends StatefulWidget {
-  MiniPlayer({super.key, required this.metadata, required this.closeButton});
-  final MediaItem metadata;
+  MiniPlayer({super.key, required this.mediaItem, required this.closeButton});
+  final MediaItem mediaItem;
   final Widget closeButton;
 
   @override

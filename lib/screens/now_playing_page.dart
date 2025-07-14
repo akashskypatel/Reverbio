@@ -104,16 +104,16 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           if (snapshot.data == null || !snapshot.hasData) {
             return const SizedBox.shrink();
           } else {
-            final metadata = snapshot.data!;
+            final mediaItem = snapshot.data!;
             return _isLargeScreen
                 ? _DesktopLayout(
-                  metadata: metadata,
+                  mediaItem: mediaItem,
                   size: size,
                   adjustedIconSize: adjustedIconSize,
                   adjustedMiniIconSize: adjustedMiniIconSize,
                 )
                 : _MobileLayout(
-                  metadata: metadata,
+                  mediaItem: mediaItem,
                   size: size * .65,
                   adjustedIconSize: adjustedIconSize,
                   adjustedMiniIconSize: adjustedMiniIconSize,
@@ -575,12 +575,12 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
 class _DesktopLayout extends StatelessWidget {
   const _DesktopLayout({
-    required this.metadata,
+    required this.mediaItem,
     required this.size,
     required this.adjustedIconSize,
     required this.adjustedMiniIconSize,
   });
-  final MediaItem metadata;
+  final MediaItem mediaItem;
   final Size size;
   final double adjustedIconSize;
   final double adjustedMiniIconSize;
@@ -598,16 +598,16 @@ class _DesktopLayout extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               const SizedBox(height: 5),
-              NowPlayingArtwork(size: size, metadata: metadata),
+              NowPlayingArtwork(size: size, mediaItem: mediaItem),
               const SizedBox(height: 5),
-              if (!(metadata.extras?['isLive'] ?? false))
+              if (!(mediaItem.extras?['isLive'] ?? false))
                 NowPlayingControls(
                   context: context,
                   size: size,
-                  audioId: metadata.extras?['ytid'],
+                  audioId: mediaItem.extras?['ytid'],
                   adjustedIconSize: adjustedIconSize,
                   adjustedMiniIconSize: adjustedMiniIconSize,
-                  metadata: metadata,
+                  mediaItem: mediaItem,
                 ),
             ],
           ),
@@ -622,14 +622,14 @@ class _DesktopLayout extends StatelessWidget {
 
 class _MobileLayout extends StatelessWidget {
   const _MobileLayout({
-    required this.metadata,
+    required this.mediaItem,
     required this.size,
     required this.adjustedIconSize,
     required this.adjustedMiniIconSize,
     required this.isLargeScreen,
     required this.actions,
   });
-  final MediaItem metadata;
+  final MediaItem mediaItem;
   final Size size;
   final double adjustedIconSize;
   final double adjustedMiniIconSize;
@@ -643,23 +643,23 @@ class _MobileLayout extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         const SizedBox(height: 10),
-        NowPlayingArtwork(size: size, metadata: metadata),
+        NowPlayingArtwork(size: size, mediaItem: mediaItem),
         const SizedBox(height: 10),
-        if (!(metadata.extras?['isLive'] ?? false))
+        if (!(mediaItem.extras?['isLive'] ?? false))
           NowPlayingControls(
             context: context,
             size: size,
-            audioId: metadata.extras?['ytid'],
+            audioId: mediaItem.extras?['ytid'],
             adjustedIconSize: adjustedIconSize,
             adjustedMiniIconSize: adjustedMiniIconSize,
-            metadata: metadata,
+            mediaItem: mediaItem,
           ),
         if (!isLargeScreen) ...[
           const SizedBox(height: 10),
           BottomActionsRow(
             context: context,
-            audioId: metadata.extras?['ytid'],
-            metadata: metadata,
+            audioId: mediaItem.extras?['ytid'],
+            mediaItem: mediaItem,
             iconSize: adjustedMiniIconSize,
             isLargeScreen: isLargeScreen,
             actions: actions,
@@ -675,10 +675,10 @@ class NowPlayingArtwork extends StatelessWidget {
   const NowPlayingArtwork({
     super.key,
     required this.size,
-    required this.metadata,
+    required this.mediaItem,
   });
   final Size size;
-  final MediaItem metadata;
+  final MediaItem mediaItem;
 
   @override
   Widget build(BuildContext context) {
@@ -715,7 +715,7 @@ class NowPlayingArtwork extends StatelessWidget {
           borderRadius: BorderRadius.circular(_radius),
         ),
         child: FutureBuilder<String?>(
-          future: getSongLyrics(metadata.artist ?? '', metadata.title),
+          future: getSongLyrics(mediaItem.artist ?? '', mediaItem.title),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Spinner();
@@ -823,14 +823,14 @@ class NowPlayingControls extends StatefulWidget {
     required this.audioId,
     required this.adjustedIconSize,
     required this.adjustedMiniIconSize,
-    required this.metadata,
+    required this.mediaItem,
   });
   final BuildContext context;
   final Size size;
   final dynamic audioId;
   final double adjustedIconSize;
   final double adjustedMiniIconSize;
-  final MediaItem metadata;
+  final MediaItem mediaItem;
 
   @override
   _NowPlayingControlsState createState() => _NowPlayingControlsState();
@@ -877,7 +877,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
                 direction: Axis.vertical,
                 children: [
                   MarqueeTextWidget(
-                    text: widget.metadata.title,
+                    text: widget.mediaItem.title,
                     fontColor: Theme.of(context).colorScheme.primary,
                     fontSize: screenHeight * 0.028,
                     fontWeight: FontWeight.w600,
@@ -901,7 +901,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
             const PositionSlider(),
             PlayerControlButtons(
               context: context,
-              metadata: widget.metadata,
+              mediaItem: widget.mediaItem,
               iconSize: widget.adjustedIconSize,
               miniIconSize: widget.adjustedMiniIconSize,
             ),
@@ -1001,12 +1001,12 @@ class PlayerControlButtons extends StatelessWidget {
   const PlayerControlButtons({
     super.key,
     required this.context,
-    required this.metadata,
+    required this.mediaItem,
     required this.iconSize,
     required this.miniIconSize,
   });
   final BuildContext context;
-  final MediaItem metadata;
+  final MediaItem mediaItem;
   final double iconSize;
   final double miniIconSize;
 
@@ -1222,14 +1222,14 @@ class BottomActionsRow extends StatelessWidget {
     super.key,
     required this.context,
     required this.audioId,
-    required this.metadata,
+    required this.mediaItem,
     required this.iconSize,
     required this.isLargeScreen,
     required this.actions,
   });
   final BuildContext context;
   final dynamic audioId;
-  final MediaItem metadata;
+  final MediaItem mediaItem;
   final double iconSize;
   final bool isLargeScreen;
   final List<Widget> actions;
