@@ -213,6 +213,7 @@ class _SongListState extends State<SongList> {
         return valueA.compareTo(valueB);
       });
       if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
+      if (mounted) setState(() {});
     }
 
     switch (value) {
