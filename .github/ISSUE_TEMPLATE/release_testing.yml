@@ -285,14 +285,15 @@ body:
     validations:
       required: true
 
-  - type: checkboxes
+  - type: dropdown
     id: testspassed
     attributes:
-      label: Tests Passed
-      description: Did all tests pass? If not add more details below
+      label: Confirm whether or not all tests passed
       options:
-        - label: Confirm tests passed or not
-          required: false
+        - Passed
+        - Not passed
+    validations:
+      required: true
 
   - type: textarea
     id: additional-information
