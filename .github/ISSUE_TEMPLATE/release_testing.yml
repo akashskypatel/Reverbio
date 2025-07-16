@@ -219,8 +219,6 @@ body:
       options:
         - label: Confirm now playing page shows artwork, controls, and queue (if on large screen mode).
           required: false
-        - label: Confirm tapping on artwork shows lyrics (if available).
-          required: false
         - label: Confirm tapping on artwork shows lyrics (if available for song).
           required: false
         - label: Confirm tapping on artist name opens artist page.
