@@ -96,7 +96,8 @@ class PlaylistBar extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         settings: RouteSettings(
-                          name: 'playlist?yt=$playlistId',
+                          name:
+                              'playlist?yt=${playlistId ?? playlistData?['id']}',
                         ),
                         builder:
                             (context) => PlaylistPage(
@@ -161,13 +162,13 @@ class PlaylistBar extends StatelessWidget {
       onSelected: (String value) {
         switch (value) {
           case 'like':
-            if (playlistId != null) {
+            if ((playlistId ?? playlistData?['id']) != null) {
               final newValue = !playlistLikeStatus.value;
               playlistLikeStatus.value = newValue;
-              updatePlaylistLikeStatus({
-                'ytid': playlistId,
-                'title': playlistTitle,
-              }, newValue);
+              updatePlaylistLikeStatus(
+                playlistData ?? {'ytid': playlistId, 'title': playlistTitle},
+                newValue,
+              );
             }
             break;
           case 'remove':
