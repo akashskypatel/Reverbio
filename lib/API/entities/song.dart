@@ -37,6 +37,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -46,7 +47,7 @@ List userLikedSongsList = Hive.box('user').get('likedSongs', defaultValue: []);
 List userOfflineSongs = Hive.box(
   'userNoBackup',
 ).get('offlineSongs', defaultValue: []);
-final specialRegex = RegExp(r'''[+\-\—\–&,|!(){}[\]^"~*?:\\']''');
+
 List cachedSongsList = Hive.box('cache').get('cachedSongs', defaultValue: []);
 
 final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(

@@ -46,3 +46,4 @@ const commonBarContentPadding = EdgeInsets.symmetric(
   vertical: 12,
   horizontal: 10,
 );
+final specialRegex = RegExp(r'''[+\-\—\–&,|!(){}[\]^"~*?:\\']''');

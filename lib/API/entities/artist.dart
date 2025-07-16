@@ -20,6 +20,7 @@
  */
 
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
@@ -191,7 +192,7 @@ Future<dynamic> searchArtistDetails(
 }) async {
   try {
     final q = query.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final cached = _searchCachedArtists(q, exact: exact);
+    final cached = _searchCachedArtists(q);
     if (cached != null && cached.isNotEmpty) return cached.first;
     final res = await _callApis(
       q,
@@ -212,8 +213,7 @@ Future<dynamic> getRecommendedArtists(
   List<String> query,
   int itemsNumber,
 ) async {
-  await searchArtistsDetails(query, limit: itemsNumber, paginated: true);
-  return pickRandomItems(cachedArtistsList, itemsNumber);
+  return pickRandomItems(await searchArtistsDetails(query), itemsNumber);
 }
 
 Future<dynamic> searchArtistsDetails(
@@ -225,27 +225,30 @@ Future<dynamic> searchArtistsDetails(
 }) async {
   try {
     final queries =
-        query.map((e) => e.replaceAll(RegExp(r'\s+'), ' ').trim()).toList();
+        query
+            .map((e) => e.replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase())
+            .toList();
     final result = [];
     final uncached = <String>[];
     for (final q in queries) {
-      final cached = _searchCachedArtists(q, exact: exact);
+      final cached = _searchCachedArtists(q);
       if (cached != null && cached.isNotEmpty && exact) {
-        result.add(cached.first);
+        result.add(cached);
       } else
         uncached.add(q);
     }
-    for (final q in uncached) {
-      final res = await _callApis(
-        q,
-        exact: exact,
-        limit: limit,
-        offset: offset,
-        paginated: paginated,
-      );
-      if (res.isNotEmpty) result.addAll(res);
+    final qry = uncached.map((e) => '"${e.replaceAll(' ', '|')}"').join(' OR ');
+    final artistsSearch = await mb.artists.search(qry, limit: limit);
+    final artistList = LinkedHashSet<String>();
+    for (final artist in (artistsSearch?['artists'] ?? [])) {
+      if (artistList.add(artist['name'].toLowerCase())) {
+        if (uncached.contains(artist['name'].toLowerCase()) ||
+            uncached.contains(artist['sort-name'].toLowerCase())) {
+          artist['primary-type'] = 'artist';
+          result.add(artist);
+        }
+      }
     }
-
     return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -355,80 +358,14 @@ dynamic _getCachedArtist(String id) {
 }
 
 /// Score is automatically 0 if exact = true
-dynamic _searchCachedArtists(
-  String query, {
-  bool exact = true,
-  double score = 0.1,
-}) {
+dynamic _searchCachedArtists(String query) {
   try {
-    if (exact) score = 0.0;
-    final names =
-        cachedArtistsList
-            .map(
-              (e) => {
-                'id': e['id'],
-                'musicbrainzName': e['musicbrainzName'] ?? '',
-                'discogsName': e['discogsName'] ?? '',
-              },
-            )
-            .toList();
-    final List<WeightedKey<Map<String, dynamic>>> keys = [
-      WeightedKey(
-        name: 'musicbrainzName',
-        getter: (e) => e['musicbrainzName'] ?? '',
-        weight: 1,
-      ),
-      WeightedKey(
-        name: 'discogsName',
-        getter: (e) => e['discogsName'] ?? '',
-        weight: 1,
-      ),
-    ];
-    final fuzzy = Fuzzy(names, options: FuzzyOptions(threshold: 1, keys: keys));
-    final sorted =
-        fuzzy.search(query)
-          ..where((e) => e.score <= 0.2)
-          ..sort((a, b) {
-            final scorecomp = a.score.compareTo(b.score);
-            if (scorecomp != 0) {
-              return scorecomp;
-            }
-            for (var i = 0; i < a.matches.length; i++) {
-              final indexcomp = a.matches[i].arrayIndex.compareTo(
-                b.matches[i].arrayIndex,
-              );
-              if (indexcomp != 0) {
-                return indexcomp;
-              }
-            }
-            return 0;
-          });
-    if (exact) {
-      final filtered =
-          sorted.where((e) => e.score.isNearlyZero(tolerance: 0.0001)).toList();
-      if (filtered.isEmpty) {
-        return null;
-      }
-      final id = filtered.first.item['id'];
-      final result = cachedArtistsList.where((e) => e['id'] == id);
-      if (result.isEmpty) {
-        return null;
-      }
-      return [result.first];
-    } else {
-      final filtered = sorted.where((e) => e.score <= score);
-      final idSet = filtered.map((map) => map.item['id']).toSet();
-      final result = List<dynamic>.from(
-        cachedArtistsList.where((e) {
-          final id = e['id'];
-          return idSet.contains(id);
-        }).toList(),
-      );
-      return result;
-    }
+    final cached = cachedArtistsList.where((e) => checkArtist(e, query));
+    if (cached.isEmpty) return null;
+    return cached.first;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return null;
   }
 }
 
@@ -573,15 +510,26 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
 
 int? getArtistHashCode(dynamic artist) {
   if (!(artist is Map)) return null;
-  if ((artist['name'] ?? artist['artist']) == null) return null;
-  return (artist['name'] ?? artist['artist']).toLowerCase().hashCode;
+  if ((artist['name'] ?? artist['artist'] ?? artist['musicbrainzName']) == null)
+    return null;
+  return (artist['name'] ?? artist['artist'] ?? artist['musicbrainzName'])
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim()
+      .toLowerCase()
+      .hashCode;
 }
 
-bool checkArtist(dynamic artist, dynamic otherArtist) {
-  if (artist == null || otherArtist == null) return false;
-  if (artist['id'] == null || otherArtist['id'] == null)
-    return getArtistHashCode(artist) == getArtistHashCode(otherArtist);
-  parseEntityId(artist);
-  parseEntityId(otherArtist);
-  return checkEntityId(artist['id'], otherArtist['id']);
+bool checkArtist(dynamic artistA, dynamic artistB) {
+  if (artistA == null || artistB == null) return false;
+  if (artistA is String ||
+      artistB is String ||
+      (artistA is Map &&
+          artistB is Map &&
+          (artistA['id'] == null || artistB['id'] == null)))
+    return getArtistHashCode(artistA) == getArtistHashCode(artistB) &&
+        getArtistHashCode(artistA) != null &&
+        getArtistHashCode(artistB) != null;
+  parseEntityId(artistA);
+  parseEntityId(artistB);
+  return checkEntityId(artistA['id'], artistB['id']);
 }

@@ -28,6 +28,7 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/announcement_box.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_list.dart';
@@ -167,16 +168,31 @@ class _HomePageState extends State<HomePage> {
   void _parseArtistList(List<dynamic> data) {
     final artists =
         data
-            .where((e) => e['artist'] != null)
-            .map(
-              (e) =>
-                  e['artist']
-                      .toString()
-                      .split('~')[0]
-                      .replaceAll(RegExp(r'\s+'), ' ')
-                      .trim()
-                      .toLowerCase(),
-            )
+            .fold(<String>[], (v, e) {
+              if (e['artist'] != null && e['artist'].isNotEmpty) {
+                v.addAll(
+                  splitArtists(
+                    e['artist']
+                        .split('~')[0]
+                        .replaceAll(RegExp(r'\s+'), ' ')
+                        .trim()
+                        .toLowerCase(),
+                  ),
+                );
+              }
+              if (e['channelName'] != null && e['channelName'].isNotEmpty) {
+                v.addAll(
+                  splitArtists(
+                    e['channelName']
+                        .split('~')[0]
+                        .replaceAll(RegExp(r'\s+'), ' ')
+                        .trim()
+                        .toLowerCase(),
+                  ),
+                );
+              }
+              return v;
+            })
             .toSet()
             .toList();
     _recommendedArtistsFuture = getRecommendedArtists(artists, 8);

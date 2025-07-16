@@ -105,7 +105,13 @@ List<String> splitArtists(String input) {
   return input
       .split(artistSplitRegex)
       .where((artist) => artist.trim().isNotEmpty)
-      .map((artist) => artist.trim())
+      .map(
+        (artist) =>
+            artist
+                .replaceAll(specialRegex, '')
+                .replaceAll(RegExp(r'\s+'), ' ')
+                .trim(),
+      )
       .toList();
 }
 
