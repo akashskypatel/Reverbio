@@ -138,23 +138,23 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
       'type': 'album',
     },
     'song': {
-      'function': mb.releases.search,
-      'name': 'releases',
+      'function': mb.recordings.search,
+      'name': 'recordings',
       'type': 'song',
     },
     'songs': {
-      'function': mb.releases.search,
-      'name': 'releases',
+      'function': mb.recordings.search,
+      'name': 'recordings',
       'type': 'song',
     },
-    'release': {
-      'function': mb.releases.search,
-      'name': 'releases',
+    'recording': {
+      'function': mb.recordings.search,
+      'name': 'recordings',
       'type': 'song',
     },
-    'releases': {
-      'function': mb.releases.search,
-      'name': 'releases',
+    'recordings': {
+      'function': mb.recordings.search,
+      'name': 'recordings',
       'type': 'song',
     },
   };
@@ -198,9 +198,13 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
             'entity': entityName[entity]?['name'],
             'value': (e['title'] ?? e['name']) as String,
             'title': e['title'],
-            'artist-credits': e['artist-credits'],
+            'artist-credit': e['artist-credit'],
             'artist': combineArtists(e),
             'id': 'mb=${e['id']}',
+            'rid': e['id'],
+            'duration': (e['length'] ?? 0) ~/ 1000,
+            'mbidType': 'recording',
+            'releases': e['releases'],
             'score': e['score'],
           },
         ),

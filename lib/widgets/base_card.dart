@@ -49,6 +49,7 @@ class BaseCard extends StatefulWidget {
     this.paddingValue = 8,
     this.loadingWidget,
     this.imageOverlayMask = false,
+    this.showIconLabel = true,
   });
   final IconData icon;
   final double? iconSize;
@@ -56,6 +57,7 @@ class BaseCard extends StatefulWidget {
   final bool showLabel;
   final bool showOverflowLabel;
   final bool showLike;
+  final bool showIconLabel;
   final String? imageUrl;
   final CachedNetworkImage? image;
   final bool imageOverlayMask;
@@ -160,7 +162,9 @@ class _BaseCardState extends State<BaseCard> {
                               height: widget.size,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(borderRadius),
+                                  borderRadius: BorderRadius.circular(
+                                    borderRadius,
+                                  ),
                                   color: colorScheme.secondary,
                                 ),
                                 child: Stack(
@@ -334,29 +338,53 @@ class _BaseCardState extends State<BaseCard> {
   }
 
   Widget _buildNoArtworkCard(BuildContext context) {
-    return Align(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(widget.icon, size: 24, color: _theme.colorScheme.onSecondary),
-          if (widget.inputData != null)
-            Padding(
-              padding: EdgeInsets.all(widget.paddingValue),
-              child: Text(
-                widget.inputData?['artist'] ??
-                    widget.inputData?['title'] ??
-                    widget.inputData?['name'] ??
-                    widget.inputData?['value'] ??
-                    '',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: _theme.colorScheme.onSecondary),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
+    return Stack(
+      children: [
+        if (widget.imageOverlayMask)
+          SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: ClipRRect(
+              child: Container(
+                color: Colors.black.withValues(
+                  alpha: 0.8,
+                ), // Translucent overlay
               ),
             ),
-        ],
-      ),
+          ),
+        Align(
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            direction: Axis.vertical,
+            children: <Widget>[
+              Icon(
+                widget.icon,
+                size: widget.showIconLabel ? widget.size * .15 : widget.size * .45,
+                color: _theme.colorScheme.onSecondary,
+              ),
+              if (widget.inputData != null && widget.showIconLabel)
+                Padding(
+                  padding: EdgeInsets.all(widget.paddingValue),
+                  child: Text(
+                    widget.inputData?['artist'] ??
+                        widget.inputData?['title'] ??
+                        widget.inputData?['name'] ??
+                        widget.inputData?['value'] ??
+                        '',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _theme.colorScheme.onSecondary,
+                      fontSize: widget.size * .075,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

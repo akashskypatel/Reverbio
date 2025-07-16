@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class CancelledException implements Exception {
   @override
@@ -71,6 +72,10 @@ String sanitizeSongTitle(String title) {
     '&amp;': '&',
     '&#039;': "'",
     '&quot;': '"',
+    '“': '"',
+    '”': '"',
+    '‘': "'",
+    '’': "'",
     '  ': '-',
     '—': '-',
     '–': '-',
@@ -104,7 +109,8 @@ List<String> splitArtists(String input) {
       .toList();
 }
 
-Map<String, String> tryParseTitleAndArtist(String title) {
+Map<String, String> tryParseTitleAndArtist(dynamic song) {
+  final title = song is Video ? song.title : song;
   final formattedTitle = sanitizeSongTitle(title);
   final strings = sanitizeSongTitle(formattedTitle).split(RegExp('-|—|–'));
   final artists = splitArtists(formattedTitle);
@@ -112,6 +118,9 @@ Map<String, String> tryParseTitleAndArtist(String title) {
     strings.removeWhere((value) => int.tryParse(value.trim()) != null);
   }
   if (strings.length == 2) {
+    if (song is Video &&
+        strings.last.trim().contains(sanitizeSongTitle(song.author)))
+      return {'artist': strings.last.trim(), 'title': strings.first.trim()};
     return {'title': strings.last.trim(), 'artist': strings.first.trim()};
   } else {
     return {
@@ -291,9 +300,13 @@ DateTime tryParseDate(String date) {
 
 String removeDuplicates(String input, {int phraseLength = 1}) {
   // Matches words + adjacent punctuation
-  final tokenPattern = RegExp(r"(([\p{L}\p{M}\w'-]+)([,.!?;:]|\s+)?)", unicode: true);
-  final tokens = tokenPattern.allMatches(input).map((m) => m.group(0)!).toList();
-  
+  final tokenPattern = RegExp(
+    r"(([\p{L}\p{M}\w'-]+)([,.!?;:]|\s+)?)",
+    unicode: true,
+  );
+  final tokens =
+      tokenPattern.allMatches(input).map((m) => m.group(0)!).toList();
+
   final seenPhrases = <String>{};
   final buffer = StringBuffer();
   var i = 0;
@@ -301,11 +314,14 @@ String removeDuplicates(String input, {int phraseLength = 1}) {
   while (i <= tokens.length - phraseLength) {
     final phraseTokens = tokens.sublist(i, i + phraseLength);
     final originalPhrase = phraseTokens.join();
-    final normalizedPhrase = phraseTokens.join()
-        .replaceAll(RegExp(r"[^\p{L}\p{M}\w'-]", unicode: true), '')
-        .toLowerCase();
+    final normalizedPhrase =
+        phraseTokens
+            .join()
+            .replaceAll(RegExp(r"[^\p{L}\p{M}\w'-]", unicode: true), '')
+            .toLowerCase();
 
-    if (normalizedPhrase.isNotEmpty && !seenPhrases.contains(normalizedPhrase)) {
+    if (normalizedPhrase.isNotEmpty &&
+        !seenPhrases.contains(normalizedPhrase)) {
       seenPhrases.add(normalizedPhrase);
       buffer.write(' $originalPhrase');
     }

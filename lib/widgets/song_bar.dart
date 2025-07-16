@@ -20,12 +20,12 @@
  */
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -140,6 +140,7 @@ class SongBar extends StatefulWidget {
 
 class _SongBarState extends State<SongBar> {
   late ThemeData _theme;
+  Future<dynamic>? _songMetadataFuture;
   dynamic loadedSong = false;
 
   TapDownDetails? doubleTapdetails;
@@ -160,11 +161,30 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
+    final ids = Uri.parse('?${parseEntityId(widget.song)}').queryParameters;
+    if ((ids['mb'] == null || widget.song['mbid'] == null) &&
+        _songMetadataFuture == null) {
+          //TODO: streamline
+      widget.song['primary-type'] = widget.song['primary-type'] ?? 'song';
+      _songMetadataFuture =
+          widget.song['primary-type'].toLowerCase() != 'single'
+              ? findMBSong(widget.song)
+              : getSinglesDetails(widget.song);
+      unawaited(
+        _songMetadataFuture!.whenComplete(() {
+          if (mounted)
+            setState(() {
+              widget._updateMediaItem(mapToMediaItem(widget.song));
+            });
+        }),
+      );
+    }
     widget._updateMediaItem(mapToMediaItem(widget.song));
   }
 
   @override
   void dispose() {
+    _songMetadataFuture?.ignore();
     super.dispose();
   }
 
@@ -215,7 +235,9 @@ class _SongBarState extends State<SongBar> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            combineArtists(widget.song) ?? widget.song['artist'] ?? '',
+                            combineArtists(widget.song) ??
+                                widget.song['artist'] ??
+                                '',
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontWeight: FontWeight.w400,
@@ -304,26 +326,39 @@ class _SongBarState extends State<SongBar> {
   }
 
   Widget _buildAlbumArt(Color primaryColor) {
-    const size = 55.0;
-
-    final bool isOffline = widget.song['isOffline'] ?? false;
-    final String? artworkPath = widget.song['artworkPath'];
-    final lowResImageUrl = (widget.song['lowResImage'] ?? '').toString();
+    const size = 45.0;
     final isDurationAvailable =
         widget.showMusicDuration && widget.song['duration'] != null;
-
-    if (isOffline && artworkPath != null && isFilePath(artworkPath)) {
-      return _buildOfflineArtwork(artworkPath, size);
-    }
-
-    return _buildOnlineArtwork(
-      lowResImageUrl,
-      size,
-      isDurationAvailable,
-      primaryColor,
+    return Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        BaseCard(
+          inputData: widget.song,
+          icon: FluentIcons.music_note_2_24_filled,
+          size: size,
+          paddingValue: 0,
+          loadingWidget: const Spinner(),
+          imageOverlayMask: true,
+        ),
+        if (isDurationAvailable)
+          SizedBox(
+            width: size,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '(${formatDuration(widget.song['duration'])})',
+                style: TextStyle(
+                  color: primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
+  /*
   Widget _buildOfflineArtwork(String artworkPath, double size) {
     return SizedBox(
       width: size,
@@ -403,7 +438,7 @@ class _SongBarState extends State<SongBar> {
       ],
     );
   }
-
+*/
   void _showContextMenu(BuildContext context, TapDownDetails details) async {
     try {
       //TODO: fix positioning to account for navigation rail on large screen

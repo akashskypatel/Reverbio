@@ -297,7 +297,8 @@ class _ArtistPageState extends State<ArtistPage> {
           SongList(
             page: 'singles',
             title: context.l10n!.singles,
-            future: getSinglesTrackList(singles),
+            inputData: singles,
+            //future: getSinglesTrackList(singles),
           ),
       ],
     );

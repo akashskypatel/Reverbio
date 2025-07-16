@@ -88,10 +88,10 @@ class _SearchPageState extends State<SearchPage> {
       'albums': getAlbumDetailsById,
       'release-group': getAlbumDetailsById,
       'release-groups': getAlbumDetailsById,
-      'song': getSongByReleaseDetails,
-      'songs': getSongByReleaseDetails,
-      'release': getSongByReleaseDetails,
-      'releases': getSongByReleaseDetails,
+      //'song': getSongByReleaseDetails,
+      //'songs': getSongByReleaseDetails,
+      //'release': getSongByReleaseDetails,
+      //'releases': getSongByReleaseDetails,
       'playlist': getPlaylistInfoForWidget,
       'playlists': getPlaylistInfoForWidget,
     };
@@ -302,13 +302,13 @@ class _SearchPageState extends State<SearchPage> {
         'action': updateSongLikeStatus,
         'getLiked': isSongAlreadyLiked,
       },
-      'release': {
+      'recording': {
         'localization': context.l10n!.songs,
         'icon': FluentIcons.music_note_2_24_filled,
         'action': updateSongLikeStatus,
         'getLiked': isSongAlreadyLiked,
       },
-      'releases': {
+      'recordings': {
         'localization': context.l10n!.songs,
         'icon': FluentIcons.music_note_2_24_filled,
         'action': updateSongLikeStatus,
@@ -335,12 +335,11 @@ class _SearchPageState extends State<SearchPage> {
         if ([
           'song',
           'songs',
-          'release',
-          'releases',
+          'recording',
+          'recordings',
         ].contains(header.toLowerCase()))
           SongList(
-            title:
-                '${entityName[header.toLowerCase()]!['localization']!} (${suggestionList['count']})',
+            title: entityName[header.toLowerCase()]!['localization']!,
             page: 'search',
             inputData: suggestionList['data'],
             expandedActions: _buildPrevNextButtons(header, suggestionList),

@@ -20,7 +20,6 @@
  */
 
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -47,7 +46,7 @@ List userLikedSongsList = Hive.box('user').get('likedSongs', defaultValue: []);
 List userOfflineSongs = Hive.box(
   'userNoBackup',
 ).get('offlineSongs', defaultValue: []);
-
+final specialRegex = RegExp(r'''[+\-\—\–&,|!(){}[\]^"~*?:\\']''');
 List cachedSongsList = Hive.box('cache').get('cachedSongs', defaultValue: []);
 
 final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(
@@ -186,7 +185,6 @@ void getSimilarSong(String songYtId) async {
 
 Future<dynamic> findYTSong(dynamic song) async {
   try {
-    final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
     final lcSongName =
         (song['title'] ?? '')
             .toString()
@@ -287,132 +285,102 @@ Future<dynamic> findWDSong(String title, String artist) async {
   }
 }
 
-Future<dynamic> getSongByReleaseDetails(dynamic release) async {
-  final id = parseEntityId(release);
-  final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
-  final releaseId =
-      release['mbidType'] == 'track' ? release['reid'] : ids['mb'];
-  if (releaseId == null) return release;
+dynamic _getCachedSong(dynamic song) {
   try {
-    release = await mb.releases.get(
-      releaseId,
-      inc: [
-        'artists',
-        'collections',
-        'labels',
-        'recordings',
-        'release-groups',
-        'artist-credits',
-        'media',
-        'discids',
-        'isrcs',
-        'annotation',
-        'tags',
-        'genres',
-        'artist-rels',
-        'label-rels',
-        'recording-rels',
-        'release-group-rels',
-        'url-rels',
-      ],
-    );
-    release['artist'] = combineArtists(release);
-    final tracklist = LinkedHashSet<String>();
-    release['list'] = [];
-    final regex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
-    final sTitle =
-        sanitizeSongTitle(
-          release['title'],
-        ).replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-    final sArtist =
-        sanitizeSongTitle(
-          release['artist'],
-        ).replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-    for (final media in (release['media'] ?? [])) {
-      for (final track in (media['tracks'] ?? [])) {
-        if (tracklist.add(track['title'])) {
-          final artist =
-              combineArtists(track) ??
-              combineArtists(media) ??
-              combineArtists(release) ??
-              '';
-          final title = sanitizeSongTitle(track['title']).toLowerCase();
-          final titleCheck =
-              (release['title']?.length >= track['title']?.length
-                  ? release['title']?.contains(track['title'])
-                  : track['title']?.contains(release['title'])) ??
-              false;
-          final artistCheck =
-              ((release['artist']?.length >= release['artist']?.length
-                      ? release['artist']?.contains(release['artist'])
-                      : release['artist']?.contains(release['artist'])) ??
-                  false) ||
-              sTitle == sArtist;
-          final ratioCheck =
-              sTitle != sArtist
-                  ? weightedRatio(
-                        removeDuplicates('$sTitle $sArtist'),
-                        removeDuplicates('$title ${artist.toLowerCase()}'),
-                      ) >=
-                      90
-                  : weightedRatio(
-                        removeDuplicates(sTitle),
-                        removeDuplicates('$title ${artist.toLowerCase()}'),
-                      ) >=
-                      90;
-          if ((titleCheck && artistCheck) || ratioCheck) {
-            final coverArt = await mb.coverArt.get(release['id'], 'release');
-            if (coverArt['error'] == null) {
-              release['images'] = coverArt['images'];
-            }
-            release.addAll({
-              'id': 'mb=${track['id']}',
-              'title': track['title'],
-              'reid': release['id'],
-              'mbid': track['id'],
-              'mbidType': 'track',
-              'artist': artist,
-              'duration': (track['length'] ?? 0) ~/ 1000,
-              'primary-type': 'song',
-              'cachedAt': DateTime.now().toString(),
-              'list': [
-                {
-                  'id': 'mb=${track['id']}',
-                  'title': track['title'],
-                  'mbid': track['id'],
-                  'mbidType': 'track',
-                  'artist': artist,
-                  'duration': (track['length'] ?? 0) ~/ 1000,
-                  'primary-type': 'song',
-                  'artist-credit':
-                      track['artist-credit'] ??
-                      media['artist-credit'] ??
-                      release['artist-credit'],
-                },
-              ],
-            });
-          }
-        }
-      }
-    }
+    final cached = cachedSongsList.where((e) {
+      return checkSong(song, e) ||
+          (song['ytid'] != null &&
+              e['ytid'] != null &&
+              song['ytid'] == e['ytid']) ||
+          (song['originalTitle'] != null &&
+              song['originalArtist'] != null &&
+              song['originalTitle'] == e['originalTitle'] &&
+              song['originalArtist'] == e['originalArtist']);
+    });
+    if (cached.isEmpty) return null;
+    return cached.first;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
   }
-  return release;
+}
+
+Future<dynamic> getSongByRecordingDetails(
+  dynamic recording, {
+  bool getImage = true,
+}) async {
+  final id = parseEntityId(recording);
+  final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
+  final rcdId = recording['rid'] ?? ids['mb'];
+  if (rcdId == null) return recording;
+  final cached = _getCachedSong(recording);
+  if (cached != null) {
+    recording.addAll(Map<String, dynamic>.from(cached));
+    return recording;
+  } else
+    try {
+      recording = await mb.recordings.get(
+        rcdId,
+        inc: [
+          'artists',
+          'releases',
+          'release-groups',
+          'isrcs',
+          'url-rels',
+          'artist-credits',
+          'annotation',
+          'tags',
+          'genres',
+          'ratings',
+          'artist-rels',
+          'release-rels',
+          'release-group-rels',
+        ],
+      );
+      recording['artist'] = combineArtists(recording);
+      if (getImage)
+        for (final release in recording['releases']) {
+          final coverArt = await mb.coverArt.get(release['id'], 'release');
+          if (coverArt['error'] == null) {
+            //TODO: parse by image size
+            recording['images'] = coverArt['images'];
+            break;
+          }
+        }
+      recording.addAll({
+        'id': 'mb=${recording['id']}',
+        'rid': recording['id'],
+        'mbid': recording['id'],
+        'mbidType': 'recording',
+        'duration': (recording['length'] ?? 0) ~/ 1000,
+        'primary-type': 'song',
+        'cachedAt': DateTime.now().toString(),
+      });
+      cachedSongsList.addOrUpdate('id', recording['id'], recording);
+      addOrUpdateData('cache', 'cachedSongs', cachedSongsList);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  return recording;
 }
 
 Future<dynamic> findMBSong(dynamic song) async {
   try {
-    final countryCode =
-        (userGeolocation['countryCode'] ??
-                (await getIPGeolocation())['countryCode'] ??
-                '')
-            .toString()
-            .toLowerCase();
+    song['originalTitle'] = song['title'];
+    song['originalArtist'] = song['artist'];
+    final cached = _getCachedSong(song);
+    if (cached != null) {
+      song.addAll(Map<String, dynamic>.from(cached));
+      return song;
+    }
     song['id'] = parseEntityId(song);
     final ids = Uri.parse('?${song['id']}').queryParameters;
-    if (ids['mb'] != null) {
-      song.addAll(await getSongByReleaseDetails(song));
+    if (ids['mb'] != null && song['mbidType'] == 'recording') {
+      song.addAll(await getSongByRecordingDetails(song));
       return song;
     }
     final iArtist = song['artist'].toString();
@@ -420,18 +388,16 @@ Future<dynamic> findMBSong(dynamic song) async {
       RegExp('(official)|(visualizer)|(visualiser)', caseSensitive: false),
       '',
     );
-    final regex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
     final artists = splitArtists(iArtist);
     Map artistInfo = {};
     String artistId = '';
-    List releases = [];
     String artistQry = '';
     if (artists.length == 1) {
       artistInfo = Map.from(
         await searchArtistDetails(
           iArtist
               .trim()
-              .replaceAll(regex, ' ')
+              .replaceAll(specialRegex, ' ')
               .replaceAll(RegExp(r'\s+'), ' ')
               .trim(),
         ),
@@ -443,163 +409,42 @@ Future<dynamic> findMBSong(dynamic song) async {
       for (final artsts in artists) {
         artistQry =
             artistQry.isNotEmpty
-                ? '$artistQry OR artist:\'${artsts.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\''
-                : 'artist:\'${artsts.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\'';
+                ? '$artistQry OR artist:\'${artsts.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\''
+                : 'artist:\'${artsts.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\'';
       }
       artistQry = '($artistQry)';
     }
     final sTitle = removeDuplicates(
       sanitizeSongTitle(iTitle)
-          .replaceAll(regex, ' ')
+          .replaceAll(specialRegex, ' ')
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim()
           .toLowerCase(),
-    );
+    ).replaceAll(' ', '|');
     final sArtist = removeDuplicates(
       sanitizeSongTitle(iArtist)
-          .replaceAll(regex, ' ')
+          .replaceAll(specialRegex, ' ')
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim()
           .toLowerCase(),
-    );
-    final similar =
-        sTitle.toLowerCase().contains(sArtist.toLowerCase()) ||
-        sArtist.toLowerCase().contains(sTitle.toLowerCase());
-    final exact = sTitle.toLowerCase() == sArtist.toLowerCase();
-    final rA =
-        sTitle.toLowerCase() != sArtist.toLowerCase() &&
-                sTitle.toLowerCase().contains(sArtist.toLowerCase())
-            ? sTitle.toLowerCase().replaceAll(sArtist.toLowerCase(), '')
-            : sTitle.toLowerCase();
-    final rB =
-        sTitle.toLowerCase() != sArtist.toLowerCase() &&
-                sArtist.toLowerCase().contains(sTitle.toLowerCase())
-            ? sArtist.toLowerCase().replaceAll(sTitle.toLowerCase(), '')
-            : sArtist.toLowerCase();
+    ).replaceAll(' ', '|').replaceAll(sTitle, '');
+    final phrase = '$sTitle|$sArtist';
     final qry =
-        (artistId.isNotEmpty
-            ? (exact
-                ? '\'${sTitle.replaceAll(' ', '|')}\''
-                : '\'${sTitle.replaceAll(' ', '|')}\' AND arid:$artistId')
-            : exact
-            ? '\'${sTitle.replaceAll(' ', '|')}\' OR artist:\'${sTitle.replaceAll(' ', '|')}\' OR artistname:\'${sTitle.replaceAll(' ', '|')}\''
-            : (similar
-                ? '(\'$rA\' AND artist:\'$rB\') OR (\'$rB\' AND artist:\'$rA\')'
-                : (artistQry.isNotEmpty
-                    ? '\'${sTitle.replaceAll(' ', '|')}\' AND (artist:\'${artists.join('\' & \'')}\' OR $artistQry)'
-                    : '((\'${sTitle.replaceAll(' ', '|')}\' AND artist:\'${sArtist.replaceAll(' ', '|')}\') OR (\'${sArtist.replaceAll(' ', '|')}\' AND artist:\'${sTitle.replaceAll(' ', '|')}\'))')));
+        artistId.isNotEmpty
+            ? "('$sTitle' OR release:'$sTitle') AND arid:$artistId"
+            : sArtist.isNotEmpty
+            ? "('$sTitle' OR release:'$sTitle') AND (artist:'$sArtist' OR artistname:'$sArtist')"
+            : "'$phrase' OR release:'$phrase' OR artist:'$phrase' OR artistname:'$phrase'";
 
-    final releaseQry = await mb.releases.search(qry, limit: 100);
-    final filtered =
-        List<Map<String, dynamic>>.from((releaseQry ?? {})['releases'] ?? [])
-            .where(
-              (r) => [countryCode, 'xw'].contains(r['country']?.toLowerCase()),
-            )
-            .toList();
-    releases =
-        filtered.isEmpty
-            ? [
-              List<Map<String, dynamic>>.from(
-                (releaseQry ?? {})['releases'] ?? [],
-              ).first,
-            ]
-            : filtered;
-    for (final release in releases) {
-      release.addAll(
-        await mb.releases.get(
-          release['id'],
-          inc: [
-            'artists',
-            'collections',
-            'labels',
-            'recordings',
-            'release-groups',
-            'artist-credits',
-            'media',
-            'discids',
-            'isrcs',
-            'annotation',
-            'tags',
-            'genres',
-            'artist-rels',
-            'label-rels',
-            'recording-rels',
-            'release-group-rels',
-            'url-rels',
-          ],
-        ),
-      );
-      release['artist'] = combineArtists(release);
-      final tracklist = LinkedHashSet<String>();
-      release['list'] = [];
-      for (final media in (release['media'] ?? [])) {
-        for (final track in (media['tracks'] ?? [])) {
-          if (tracklist.add(track['title'])) {
-            final artist =
-                combineArtists(track) ??
-                combineArtists(media) ??
-                combineArtists(release) ??
-                '';
-            final title = sanitizeSongTitle(track['title']).toLowerCase();
-            final titleCheck =
-                (song['title']?.length >= track['title']?.length
-                    ? song['title']?.contains(track['title'])
-                    : track['title']?.contains(song['title'])) ??
-                false;
-            final artistCheck =
-                ((song['artist']?.length >= release['artist']?.length
-                        ? song['artist']?.contains(release['artist'])
-                        : release['artist']?.contains(song['artist'])) ??
-                    false) ||
-                sTitle == sArtist;
-            final ratioCheck =
-                sTitle != sArtist
-                    ? weightedRatio(
-                          removeDuplicates('$sTitle $sArtist'),
-                          removeDuplicates('$title ${artist.toLowerCase()}'),
-                        ) >=
-                        90
-                    : weightedRatio(
-                          removeDuplicates(sTitle),
-                          removeDuplicates('$title ${artist.toLowerCase()}'),
-                        ) >=
-                        90;
-            if ((titleCheck && artistCheck) || ratioCheck) {
-              final coverArt = await mb.coverArt.get(release['id'], 'release');
-              if (coverArt['error'] == null) {
-                release['images'] = coverArt['images'];
-              }
-              release.addAll({
-                'id': 'mb=${track['id']}',
-                'reid': release['id'],
-                'title': track['title'],
-                'mbid': track['id'],
-                'mbidType': 'track',
-                'artist': artist,
-                'duration': (track['length'] ?? 0) ~/ 1000,
-                'primary-type': 'song',
-                'cachedAt': DateTime.now().toString(),
-                'list': [
-                  {
-                    'id': 'mb=${track['id']}',
-                    'title': track['title'],
-                    'mbid': track['id'],
-                    'mbidType': 'track',
-                    'artist': artist,
-                    'duration': (track['length'] ?? 0) ~/ 1000,
-                    'primary-type': 'song',
-                    'artist-credit':
-                        track['artist-credit'] ??
-                        media['artist-credit'] ??
-                        release['artist-credit'],
-                  },
-                ],
-              });
-              song.addAll(release);
-              return song;
-            }
-          }
-        }
+    final qryResult =
+        (await mb.recordings.search(qry, limit: 100))?['recordings'] ?? [];
+    final recordings = List<Map<String, dynamic>>.from(qryResult);
+    for (dynamic recording in recordings) {
+      recording['artist'] = combineArtists(recording);
+      if (checkTitleAndArtist(song, recording)) {
+        recording = await getSongByRecordingDetails(recording);
+        song.addAll(recording);
+        return song;
       }
     }
   } catch (e, stackTrace) {
@@ -965,7 +810,6 @@ Future<Map<String, String>?> getYtSongAndArtist(String ytid) async {
 
 bool isSongLive(String? artist, String? album, String? title, String value) {
   // Convert to lowercase and remove title/artist
-  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
   final replaced =
       value
           .toLowerCase()
@@ -991,7 +835,6 @@ bool isSongDerivative(
   String? title,
   String value,
 ) {
-  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
   final replaced =
       value
           .toLowerCase()
@@ -1003,27 +846,32 @@ bool isSongDerivative(
           .trim();
 
   final regex = RegExp(
-    r'(\bversion\b|\bacoustic\b|\binstrumental\b|\bre\s?mix(?:\b|es\b|ed\b)|\bcover(?:\b|s\b|ed\b)|\bperform(?:ance\b|ed\b)|\bmashup\b|\bparod(?:y\b|ies\b|ied\b)|\bedit(?:\b|s\b|ed\b))',
+    r'(\bversion\b|\bacapella\b|\bacoustic\b|\binstrumental\b|\bre\s?mix(?:\b|es\b|ed\b)|\bcover(?:\b|s\b|ed\b)|\bperform(?:ance\b|ed\b)|\bmashup\b|\bparod(?:y\b|ies\b|ied\b)|\bedit(?:\b|s\b|ed\b))',
     caseSensitive: false,
   );
 
   return regex.hasMatch(replaced);
 }
 
-bool checkSong(dynamic song, dynamic otherSong) {
-  song['id'] = parseEntityId(song);
-  otherSong['id'] = parseEntityId(otherSong);
-  if (song is String && otherSong is String)
-    return checkEntityId(song, otherSong) || checkEntityId(otherSong, song);
-  if (song is String && !(otherSong is String))
-    return checkEntityId(song, otherSong['id']) ||
-        checkEntityId(otherSong['id'], song);
-  if (otherSong is String && !(song is String))
-    return checkEntityId(otherSong, song['id']) ||
-        checkEntityId(song['id'], otherSong);
-  return checkEntityId(song['id'], otherSong['id']) ||
-      checkEntityId(otherSong['id'], song['id']) ||
-      (getSongHashCode(song) == getSongHashCode(otherSong));
+bool checkSong(dynamic songA, dynamic songB) {
+  songA['id'] = parseEntityId(songA);
+  songB['id'] = parseEntityId(songB);
+  if (songA is String && songB is String)
+    return checkEntityId(songA, songB) || checkEntityId(songB, songA);
+  if (songA is String && !(songB is String))
+    return checkEntityId(songA, songB['id']) ||
+        checkEntityId(songB['id'], songA);
+  if (songB is String && !(songA is String))
+    return checkEntityId(songB, songA['id']) ||
+        checkEntityId(songA['id'], songB);
+  if (songA['id'] == null ||
+      songB['id'] == null ||
+      songA['id']?.isEmpty ||
+      songB['id']?.isEmpty)
+    return checkTitleAndArtist(songA, songB);
+  return checkEntityId(songA['id'], songB['id']) ||
+      checkEntityId(songB['id'], songA['id']) ||
+      (getSongHashCode(songA) == getSongHashCode(songB));
 }
 
 int? getSongHashCode(dynamic song) {
@@ -1034,4 +882,93 @@ int? getSongHashCode(dynamic song) {
         song['title'] ?? song['song'],
       ).toLowerCase().hashCode ^
       song['artist'].toLowerCase().hashCode;
+}
+
+bool checkTitleAndArtist(dynamic songA, dynamic songB) {
+  final extrasRegex = RegExp(
+    r'[\(\[\{\<](?:[^)\]\}\>]*\b(official|music|lyrics?|dtmf|video|audio|vi[sz]uali[sz]er?|hd|4k|high|quality|version|acoustic|instrumental|acapella|remix|acoustic|re(?:\s?|-)mix(?:|es|ed)|cover(?:|s|ed)|perform(?:ance|ed)|mashup|parod(?:y|ies|ied)|edit(?:|s|ed)|(live\s*(?:at|\@|from|in|on|performance|))|(?:stage|show|concert|tour|cover|perform(?:ance|ed)))\b[^)\]\}\>]*)[\)\]\}\>]',
+    caseSensitive: false,
+  );
+  songA['artist'] = songA['artist'] ?? combineArtists(songA) ?? '';
+  songB['artist'] = songB['artist'] ?? combineArtists(songB) ?? '';
+  final aTitle = removeDuplicates(
+    sanitizeSongTitle(songA['title'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final aArtist = removeDuplicates(
+    sanitizeSongTitle(songA['artist'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final bTitle = removeDuplicates(
+    sanitizeSongTitle(songB['title'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final bArtist = removeDuplicates(
+    sanitizeSongTitle(songB['artist'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final titleCheck =
+      aTitle.length >= bTitle.length
+          ? aTitle.contains(bTitle)
+          : bTitle.contains(aTitle);
+  final artistCheck =
+      (aArtist.length >= bArtist.length
+          ? aArtist.contains(bArtist)
+          : bArtist.contains(aArtist)) ||
+      aTitle == aArtist ||
+      bTitle == bArtist;
+  final aExtras =
+      extrasRegex
+          .firstMatch(songA['title'])?[0]
+          ?.replaceAll(specialRegex, ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim()
+          .toLowerCase();
+  final bExtras =
+      extrasRegex
+          .firstMatch(songB['title'])?[0]
+          ?.replaceAll(specialRegex, ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim()
+          .toLowerCase();
+  final extraCheck =
+      (aExtras == null && bExtras == null) ||
+      (aExtras != null &&
+          bExtras != null &&
+          weightedRatio(aExtras, bExtras) >= 90);
+  final ratioCheck =
+      aTitle != aArtist && bTitle != bArtist
+          ? weightedRatio(
+                removeDuplicates('$aTitle $aArtist'),
+                removeDuplicates('$bTitle $bArtist'),
+              ) >=
+              90
+          : weightedRatio(
+                    removeDuplicates(aTitle),
+                    removeDuplicates('$bTitle $bArtist'),
+                  ) >=
+                  90 ||
+              weightedRatio(
+                    removeDuplicates(bTitle),
+                    removeDuplicates('$aTitle $aArtist'),
+                  ) >=
+                  90 ||
+              weightedRatio(
+                    removeDuplicates(bTitle),
+                    removeDuplicates(aTitle),
+                  ) >=
+                  90;
+  return ((titleCheck && artistCheck) || ratioCheck) && extraCheck;
 }
