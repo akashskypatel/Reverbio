@@ -863,7 +863,7 @@ int? getSongHashCode(dynamic song) {
 
 bool checkTitleAndArtist(dynamic songA, dynamic songB) {
   final extrasRegex = RegExp(
-    r'[\(\[\{\<](?:[^)\]\}\>]*\b(official|music|lyrics?|dtmf|video|audio|vi[sz]uali[sz]er?|hd|4k|high|quality|version|acoustic|instrumental|acapella|remix|acoustic|re(?:\s?|-)mix(?:|es|ed)|cover(?:|s|ed)|perform(?:ance|ed)|mashup|parod(?:y|ies|ied)|edit(?:|s|ed)|(live\s*(?:at|\@|from|in|on|performance|))|(?:stage|show|concert|tour|cover|perform(?:ance|ed)))\b[^)\]\}\>]*)[\)\]\}\>]',
+    r'[\(\[\{\<](?:[^)\]\}\>]*\b(official|music|lyrics?|video|audio|vi[sz]uali[sz]er?|hd|4k|high|quality|version|acoustic|instrumental|acapella|remix|acoustic|re(?:\s?|-)mix(?:|es|ed)|cover(?:|s|ed)|perform(?:ance|ed)|mashup|parod(?:y|ies|ied)|edit(?:|s|ed)|(live\s*(?:at|\@|from|in|on|performance|))|(?:stage|show|concert|tour|cover|perform(?:ance|ed)))\b[^)\]\}\>]*)[\)\]\}\>]',
     caseSensitive: false,
   );
   songA['artist'] = songA['artist'] ?? combineArtists(songA) ?? '';
