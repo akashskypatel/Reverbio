@@ -58,8 +58,8 @@ String getFormattedDateTimeNow() {
 
 String sanitizeSongTitle(String title) {
   final wordsPatternForSongTitle = RegExp(
-    //r'\b(?:official(?:\s(?:music|lyrics?|dtmf|audio|vi[sz]uali[sz]er|hd|4k)?\s*(?:video|dtmf|audio|vi[sz]uali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
-    r'(\bofficial\b|\bmusic\b|\blyrics?\b|\bdtmf\b|\bvideo\b|\baudio\b|\bvi[sz]uali[sz]er?\b|\bhd\b|\b4k\b|\bhigh\b|\bquality\b)+?',
+    //r'\b(?:official(?:\s(?:music|lyrics?|audio|vi[sz]uali[sz]er|hd|4k)?\s*(?:video|audio|vi[sz]uali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
+    r'(\bofficial\b|\bmusic\b|\blyrics?\b|\bvideo\b|\baudio\b|\bvi[sz]uali[sz]er?\b|\bhd\b|\b4k\b|\bhigh\b|\bquality\b)+?',
     caseSensitive: false,
   );
 
