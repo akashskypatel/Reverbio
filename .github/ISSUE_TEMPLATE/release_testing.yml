@@ -54,8 +54,6 @@ body:
       label: Search page
       description: Complete or verify all features on Search Page.
       options:
-        - label: Suggested Playlists loads with Image and Labels successfully.
-          required: false
         - label: Typing in search bar is successful and shows suggestions successfully.
           required: false
         - label: Submitting search query shows search results successfully.
