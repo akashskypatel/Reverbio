@@ -51,7 +51,7 @@ final ValueNotifier<int> currentLikedPlaylistsLength = ValueNotifier(
   }
 } */
 
-Future<List<dynamic>> getUserPlaylists() async {
+Future<List<dynamic>> getUserYTPlaylists() async {
   final playlistsByUser = [];
   for (final playlistID in userPlaylists.value) {
     try {
@@ -60,8 +60,11 @@ Future<List<dynamic>> getUserPlaylists() async {
         'id': 'yt=${plist.id}',
         'ytid': plist.id.toString(),
         'title': plist.title,
-        'image': null,
+        'image': plist.thumbnails.standardResUrl,
+        'lowResImage': plist.thumbnails.lowResUrl,
+        'highResImage': plist.thumbnails.maxResUrl,
         'source': 'user-youtube',
+        'primary-type': 'playlist',
         'list': [],
       });
     } catch (e, stackTrace) {
@@ -76,6 +79,7 @@ Future<List<dynamic>> getUserPlaylists() async {
         'title': 'Failed playlist',
         'image': null,
         'source': 'user-youtube',
+        'primary-type': 'playlist',
         'list': [],
       });
       logger.log('Error occurred while fetching the playlist:', e, stackTrace);
@@ -148,8 +152,10 @@ String createCustomPlaylist(
   List<dynamic>? songList,
 }) {
   final customPlaylist = {
+    'id': playlistName,
     'title': playlistName,
     'source': 'user-created',
+    'primary-type': 'playlist',
     if (image != null) 'image': image,
     'list': songList ?? [],
   };
@@ -478,7 +484,7 @@ Future<Map> getPlaylistInfoForWidget(
 
   // Check in user playlists if not found.
   if (playlist == null) {
-    final userPl = await getUserPlaylists();
+    final userPl = await getUserYTPlaylists();
     playlist = userPl.firstWhere((p) => p['ytid'] == id, orElse: () => null);
   }
 

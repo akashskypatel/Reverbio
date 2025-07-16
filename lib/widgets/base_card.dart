@@ -358,7 +358,7 @@ class _BaseCardState extends State<BaseCard> {
                 widget.icon,
                 size:
                     widget.showIconLabel
-                        ? widget.size * .15
+                        ? widget.size * .25
                         : widget.size * .45,
                 color: _theme.colorScheme.onSecondary,
               ),
@@ -374,7 +374,7 @@ class _BaseCardState extends State<BaseCard> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: _theme.colorScheme.onSecondary,
-                      fontSize: widget.size * .075,
+                      fontSize: widget.size * .1,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,

@@ -36,7 +36,7 @@ class PlaylistBar extends StatelessWidget {
     this.playlistData,
     this.onPressed,
     this.onDelete,
-    this.cardIcon = FluentIcons.music_note_1_24_regular,
+    this.cardIcon = FluentIcons.music_note_1_24_filled,
     this.showBuildActions = true,
     this.isAlbum = false,
     this.borderRadius = BorderRadius.zero,
@@ -104,7 +104,12 @@ class PlaylistBar extends StatelessWidget {
                               page: 'playlist',
                               playlistData:
                                   playlistData ??
-                                  {'title': playlistTitle, 'ytid': playlistId},
+                                  {
+                                    'title': playlistTitle,
+                                    'ytid': playlistId,
+                                    'image': playlistArtwork,
+                                    'primary-type': 'playlist',
+                                  },
                             ),
                       ),
                     );
@@ -148,9 +153,16 @@ class PlaylistBar extends StatelessWidget {
   Widget _buildAlbumArt() {
     return BaseCard(
       icon: cardIcon,
-      iconSize: iconSize,
       size: artworkSize,
-      imageUrl: playlistArtwork,
+      showIconLabel: false,
+      inputData:
+          playlistData ??
+          {
+            'title': playlistTitle,
+            'ytid': playlistId,
+            'image': playlistArtwork,
+            'primary-type': 'playlist',
+          },
     );
   }
 
@@ -166,7 +178,13 @@ class PlaylistBar extends StatelessWidget {
               final newValue = !playlistLikeStatus.value;
               playlistLikeStatus.value = newValue;
               updatePlaylistLikeStatus(
-                playlistData ?? {'ytid': playlistId, 'title': playlistTitle},
+                playlistData ??
+                    {
+                      'ytid': playlistId,
+                      'title': playlistTitle,
+                      'image': playlistArtwork,
+                      'primary-type': 'playlist',
+                    },
                 newValue,
               );
             }

@@ -128,7 +128,7 @@ class _LibraryPageState extends State<LibraryPage> {
           context.l10n!.likedSongs,
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/liked'),
-          cardIcon: FluentIcons.music_note_2_24_regular,
+          cardIcon: FluentIcons.heart_24_filled,
           showBuildActions: false,
         ),
         PlaylistBar(
@@ -203,7 +203,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
                 if (userPlaylists.value.isNotEmpty)
                   FutureBuilder(
-                    future: getUserPlaylists(),
+                    future: getUserYTPlaylists(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: Spinner());
@@ -214,7 +214,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         return _buildPlaylistListView(
                           context,
                           snapshot.data!,
-                          'user-added',
+                          'user-youtube',
                         );
                       } else {
                         return const SizedBox();
@@ -299,6 +299,7 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   void _buildPlaylistBars(List playlists) {
+    userPlaylistBars.clear();
     for (final playlist in playlists) {
       if (playlist['source'] == null) playlist['source'] = 'user-liked';
       userPlaylistBars.add(
