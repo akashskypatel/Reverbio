@@ -80,7 +80,7 @@ bool isArtistAlreadyLiked(artistToCheck) =>
       (artist) => artist is Map && checkArtist(artist, artistToCheck),
     );
 
-Future<dynamic> getArtistDetails(
+Future<Map> getArtistDetails(
   dynamic artistData, {
   bool refresh = false,
 }) async {
@@ -91,9 +91,9 @@ Future<dynamic> getArtistDetails(
     if (!refresh) {
       final cached = _getCachedArtist(id);
       if (cached != null) {
-        if (cached?['youtube'] == null)
+        if (cached?['youtube'] == null || cached?['youtube'].isEmpty)
           cached['youtube'] = await _parseYTRelations(
-            List.from(cached['relations'] ?? []),
+            List.from(cached['musicbrainz']?['relations'] ?? []),
           );
         return cached;
       }
@@ -113,7 +113,12 @@ Future<dynamic> getArtistDetails(
     final urls = List.from(mbRes['relations'] ?? []);
     final dcRes = await _parseDCRelations(List.from(urls));
     final ytRes = await _parseYTRelations(List.from(urls));
-    return await _combineResults(mbRes: mbRes, dcRes: dcRes, ytRes: ytRes);
+    final result = await _combineResults(
+      mbRes: mbRes,
+      dcRes: dcRes,
+      ytRes: ytRes,
+    );
+    return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
@@ -138,18 +143,16 @@ Future<dynamic> _parseDCRelations(List relations) async {
 }
 
 Future<dynamic> _parseYTRelations(List relations) async {
-  final urls = relations.where((e) => e['type'] == 'youtube').toList();
   dynamic data = {};
   try {
+    final urls = relations.where((e) => e['type'] == 'youtube').toList();
     if (urls.isNotEmpty) {
       for (final u in urls) {
         final url = u['url']['resource'];
-        final chrx = RegExp(r'.+\/channel\/(\w+)');
-        final usrx = RegExp(r'.+\/user\/(\w+)');
-        final match =
-            chrx.firstMatch(url)?.group(1) ?? usrx.firstMatch(url)?.group(1);
-        if (chrx.firstMatch(url)?.group(1) == null &&
-            usrx.firstMatch(url)?.group(1) != null) {
+        final chrx = RegExp(r'(?:.+\/channel\/)(.*)').firstMatch(url);
+        final usrx = RegExp(r'(?:.+\/user\/)(.*)').firstMatch(url);
+        final match = chrx?.group(1) ?? usrx?.group(1);
+        if (chrx?.group(1) == null && usrx?.group(1) != null) {
           final userSearch = await yt.search.search(match!);
           for (final res in userSearch) {
             if (res.author == match) {
@@ -165,7 +168,7 @@ Future<dynamic> _parseYTRelations(List relations) async {
               return data;
             }
           }
-        } else if (chrx.firstMatch(url)?.group(1) != null) {
+        } else if (chrx?.group(1) != null) {
           final channel = await yt.channels.get(match);
           data = {
             'url': channel.url,
@@ -509,27 +512,38 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
 }
 
 int? getArtistHashCode(dynamic artist) {
-  if (!(artist is Map)) return null;
-  if ((artist['name'] ?? artist['artist'] ?? artist['musicbrainzName']) == null)
+  try {
+    if (!(artist is Map)) return null;
+    if ((artist['name'] ?? artist['artist'] ?? artist['musicbrainzName']) ==
+        null)
+      return null;
+    return (artist['name'] ?? artist['artist'] ?? artist['musicbrainzName'])
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase()
+        .hashCode;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
-  return (artist['name'] ?? artist['artist'] ?? artist['musicbrainzName'])
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim()
-      .toLowerCase()
-      .hashCode;
+  }
 }
 
 bool checkArtist(dynamic artistA, dynamic artistB) {
-  if (artistA == null || artistB == null) return false;
-  if (artistA is String ||
-      artistB is String ||
-      (artistA is Map &&
-          artistB is Map &&
-          (artistA['id'] == null || artistB['id'] == null)))
-    return getArtistHashCode(artistA) == getArtistHashCode(artistB) &&
-        getArtistHashCode(artistA) != null &&
-        getArtistHashCode(artistB) != null;
-  parseEntityId(artistA);
-  parseEntityId(artistB);
-  return checkEntityId(artistA['id'], artistB['id']);
+  try {
+    if (artistA == null || artistB == null) return false;
+    if (artistA is String ||
+        artistB is String ||
+        (artistA is Map &&
+            artistB is Map &&
+            (artistA['id'] == null || artistB['id'] == null)))
+      return getArtistHashCode(artistA) == getArtistHashCode(artistB) &&
+          getArtistHashCode(artistA) != null &&
+          getArtistHashCode(artistB) != null;
+    parseEntityId(artistA);
+    parseEntityId(artistB);
+    return checkEntityId(artistA['id'], artistB['id']);
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return false;
+  }
 }

@@ -55,7 +55,7 @@ dynamic _getCachedAlbum(dynamic album) {
   }
 }
 
-Future<dynamic> getAlbumDetailsById(dynamic albumData) async {
+Future<Map> getAlbumDetailsById(dynamic albumData) async {
   try {
     final id = parseEntityId(albumData);
     final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
@@ -100,8 +100,7 @@ Future<Map<String, dynamic>> findMBAlbum(
     final albums = ((albQry ?? {})['release-groups'] ?? []) as List;
     if (albums.isEmpty) return {};
     final id = (albums.first['artist-credit'] as List).first['artist']['id'];
-    final artQry = await getArtistDetails(id);
-    final artistInfo = Map.from(artQry ?? {});
+    final artistInfo = await getArtistDetails(id);
     if (artistInfo.isNotEmpty) {
       albums.first['artist-details'] = artistInfo;
       albums.first['artist'] = artistInfo['artist'];

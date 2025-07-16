@@ -19,6 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -85,7 +86,7 @@ class BaseCard extends StatefulWidget {
 
 class _BaseCardState extends State<BaseCard> {
   late ValueNotifier<bool> isLikedNotifier = ValueNotifier(_getLikeStatus());
-  late Future _fetchingDataFuture;
+  Future<dynamic>? _fetchingDataFuture;
 
   String? dataType;
   final borderRadius = 13.0;
@@ -99,6 +100,14 @@ class _BaseCardState extends State<BaseCard> {
     super.initState();
     dataType = _parseDataType();
     _fetchingDataFuture = _getUpdatedDate();
+    unawaited(
+      _fetchingDataFuture?.then((data) {
+        if (mounted)
+          setState(() {
+            widget.inputData?.addAll(Map<String, dynamic>.from(data));
+          });
+      }),
+    );
   }
 
   @override
@@ -106,7 +115,7 @@ class _BaseCardState extends State<BaseCard> {
     super.dispose();
   }
 
-  Future<dynamic> _getUpdatedDate() async {
+  dynamic _getUpdatedDate() {
     if ((widget.inputData?['id'] != null &&
             (widget.inputData?['title'] ??
                     widget.inputData?['name'] ??
@@ -116,17 +125,13 @@ class _BaseCardState extends State<BaseCard> {
             widget.inputData?['musicbrainz'] == null))
       switch (dataType) {
         case 'playlist':
-          widget.inputData?.addAll(
-            await getPlaylistInfoForWidget(widget.inputData),
-          );
+          return getPlaylistInfoForWidget(widget.inputData);
         case 'album':
-          widget.inputData?.addAll(await getAlbumDetailsById(widget.inputData));
+          return getAlbumDetailsById(widget.inputData);
         case 'artist':
-          widget.inputData?.addAll(await getArtistDetails(widget.inputData));
+          return getArtistDetails(widget.inputData);
         default:
-          return widget.inputData;
       }
-    return widget.inputData;
   }
 
   @override
@@ -134,85 +139,76 @@ class _BaseCardState extends State<BaseCard> {
     _theme = Theme.of(context);
     isLikedNotifier.value = _getLikeStatus();
     final colorScheme = _theme.colorScheme;
-    return FutureBuilder(
-      future: _fetchingDataFuture,
-      builder: (context, snapshot) {
-        return ValueListenableBuilder<bool>(
-          valueListenable: widget.hideNotifier,
-          builder:
-              (_, value, __) => Visibility(
-                visible: value,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: widget.paddingValue,
-                  ),
-                  child: GestureDetector(
-                    onTap: widget.onPressed,
-                    child: SizedBox(
-                      width: widget.size,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Material(
-                            elevation: 4,
-                            borderRadius: BorderRadius.circular(borderRadius),
-                            clipBehavior: Clip.antiAlias,
-                            child: SizedBox(
-                              width: widget.size,
-                              height: widget.size,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    borderRadius,
+    return ValueListenableBuilder<bool>(
+      valueListenable: widget.hideNotifier,
+      builder:
+          (_, value, __) => Visibility(
+            visible: value,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
+              child: GestureDetector(
+                onTap: widget.onPressed,
+                child: SizedBox(
+                  width: widget.size,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        clipBehavior: Clip.antiAlias,
+                        child: SizedBox(
+                          width: widget.size,
+                          height: widget.size,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(borderRadius),
+                              color: colorScheme.secondary,
+                            ),
+                            child: Stack(
+                              children: [
+                                if (mounted)
+                                  FutureBuilder(
+                                    initialData:
+                                        widget.loadingWidget != null
+                                            ? SizedBox(
+                                              width: widget.size,
+                                              height: widget.size,
+                                              child: widget.loadingWidget,
+                                            )
+                                            : _buildNoArtworkCard(context),
+                                    future: _buildImage(context),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                              ConnectionState.none ||
+                                          snapshot.hasError ||
+                                          snapshot.data == null) {
+                                        if (widget.loadingWidget != null)
+                                          return SizedBox(
+                                            width: widget.size,
+                                            height: widget.size,
+                                            child: widget.loadingWidget,
+                                          );
+                                        return _buildNoArtworkCard(context);
+                                      }
+                                      return snapshot.data!;
+                                    },
                                   ),
-                                  color: colorScheme.secondary,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    if (mounted)
-                                      FutureBuilder(
-                                        initialData:
-                                            widget.loadingWidget != null
-                                                ? SizedBox(
-                                                  width: widget.size,
-                                                  height: widget.size,
-                                                  child: widget.loadingWidget,
-                                                )
-                                                : _buildNoArtworkCard(context),
-                                        future: _buildImage(context),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.connectionState ==
-                                                  ConnectionState.none ||
-                                              snapshot.hasError ||
-                                              snapshot.data == null) {
-                                            if (widget.loadingWidget != null)
-                                              return SizedBox(
-                                                width: widget.size,
-                                                height: widget.size,
-                                                child: widget.loadingWidget,
-                                              );
-                                            return _buildNoArtworkCard(context);
-                                          }
-                                          return snapshot.data!;
-                                        },
-                                      ),
-                                    if (widget.showLabel) _buildLabel(),
-                                    if (widget.showLike) _buildLiked(),
-                                  ],
-                                ),
-                              ),
+                                if (widget.showLabel) _buildLabel(),
+                                if (widget.showLike) _buildLiked(),
+                              ],
                             ),
                           ),
-                          if (widget.showOverflowLabel)
-                            _buildOverflowLabel(context),
-                        ],
+                        ),
                       ),
-                    ),
+                      if (widget.showOverflowLabel)
+                        _buildOverflowLabel(context),
+                    ],
                   ),
                 ),
               ),
-        );
-      },
+            ),
+          ),
     );
   }
 
@@ -360,7 +356,10 @@ class _BaseCardState extends State<BaseCard> {
             children: <Widget>[
               Icon(
                 widget.icon,
-                size: widget.showIconLabel ? widget.size * .15 : widget.size * .45,
+                size:
+                    widget.showIconLabel
+                        ? widget.size * .15
+                        : widget.size * .45,
                 color: _theme.colorScheme.onSecondary,
               ),
               if (widget.inputData != null && widget.showIconLabel)
