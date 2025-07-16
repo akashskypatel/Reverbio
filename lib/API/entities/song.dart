@@ -81,50 +81,26 @@ Future<List> getSongsList(String searchQuery) async {
 
 Future<List> getRecommendedSongs() async {
   try {
-    if (defaultRecommendations.value && userRecentlyPlayed.isNotEmpty) {
-      final recent = userRecentlyPlayed.take(3).toList();
-      /*
-      final recoms = yt.search.searchContent(
-        'searchQuery',
-        filter: TypeFilters.channel,
-      );
-      */
-      final futures =
-          recent.map((songData) async {
-            final song = await yt.videos.get(songData['ytid']);
-            final relatedSongs = await yt.videos.getRelatedVideos(song) ?? [];
-            return relatedSongs
-                .take(3)
-                .map((s) => returnYtSongLayout(0, s))
-                .toList();
-          }).toList();
-
-      final results = await Future.wait(futures);
-      final playlistSongs = results.expand((list) => list).toList()..shuffle();
-      return playlistSongs;
-    } else {
-      final playlistSongs = [...userLikedSongsList, ...userRecentlyPlayed];
-      if (globalSongs.isEmpty) {
-        const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
-        globalSongs = await getSongsFromPlaylist(playlistId);
-      }
-      playlistSongs.addAll(globalSongs.take(10));
-
-      if (userCustomPlaylists.value.isNotEmpty) {
-        for (final userPlaylist in userCustomPlaylists.value) {
-          final _list = (userPlaylist['list'] as List)..shuffle();
-          playlistSongs.addAll(_list.take(5));
-        }
-      }
-
-      playlistSongs.shuffle();
-      final seenYtIds = <String>{};
-      playlistSongs.removeWhere((song) {
-        if (song['ytid'] != null) return !seenYtIds.add(song['ytid']);
-        return false;
-      });
-      return playlistSongs.take(15).toList();
+    final playlistSongs = [...userLikedSongsList, ...userRecentlyPlayed];
+    if (globalSongs.isEmpty) {
+      const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
+      globalSongs = await getSongsFromPlaylist(playlistId);
     }
+    playlistSongs.addAll(pickRandomItems(globalSongs, 10));
+
+    if (userCustomPlaylists.value.isNotEmpty) {
+      for (final userPlaylist in userCustomPlaylists.value) {
+        final _list = (userPlaylist['list'] as List)..shuffle();
+        playlistSongs.addAll(_list.take(5));
+      }
+    }
+    playlistSongs.shuffle();
+    final seenYtIds = <String>{};
+    playlistSongs.removeWhere((song) {
+      if (song['ytid'] != null) return !seenYtIds.add(song['ytid']);
+      return false;
+    });
+    return playlistSongs.take(15).toList();
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
