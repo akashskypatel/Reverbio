@@ -256,6 +256,10 @@ body:
           required: false
         - label: Confirm Skip non-music segment changes work.
           required: false
+        - label: Confirm prepare next song works.
+          required: false
+        - label: Confirm proxy servers works.
+          required: false
         - label: Confirm Clear Cache works.
           required: false
         - label: Confirm Clear Search History works.
