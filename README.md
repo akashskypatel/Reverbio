@@ -36,22 +36,59 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 - Lyrics support <br/>
 - No ads <br/>
 - No subscriptions <br/>
-- 20 supported languages <br/>
+- 31 supported languages <br/>
 - Material UI & accent colors & dynamic colors (Android 12+) <br/>
 - Android and Windows Support <br/>
 - Custom plugin support <br/>
 - Like Songs, Albums, Artists and Playlists <br/>
 
+<details>
+<summary>Supported Languages</summary>
+  <ul>
+  <li>English</li>
+  <li>العربية</li>
+  <li>বাংলা</li>
+  <li>简体中文</li>
+  <li>繁體中文</li>
+  <li>繁體中文 (臺灣)</li>
+  <li>廣東話</li>
+  <li>Français</li>
+  <li>Deutsch</li>
+  <li>Ελληνικά</li>
+  <li>हिन्दी</li>
+  <li>Bahasa Indonesia</li>
+  <li>Italiano</li>
+  <li>日本語</li>
+  <li>한국어</li>
+  <li>Polski</li>
+  <li>Português</li>
+  <li>Português (Brasil)</li>
+  <li>Русский</li>
+  <li>Español</li>
+  <li>فارسی</li>
+  <li>ગુજરાતી</li>
+  <li>मराठी</li>
+  <li>Kiswahili</li>
+  <li>தமிழ்</li>
+  <li>తెలుగు</li>
+  <li>ไทย</li>
+  <li>Türkçe</li>
+  <li>Українська</li>
+  <li>Tiếng Việt</li>
+  </ul>
+</details>
+
 ---
 
 ## Screenshots
 
+
 <details>
 <summary>Mobile</summary>
 
-<center>
-
 ### Android
+
+<center>
 
 | ![Screenshot 1](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot1.png?raw=true) | ![Screenshot 2](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot2.png?raw=true) | ![Screenshot 3](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot3.png?raw=true) | ![Screenshot 4](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot4.png?raw=true) | ![Screenshot 5](https://github.com/akashskypatel/Reverbio/blob/master/repository_files/screenshot5.png?raw=true) |
 |----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
@@ -59,7 +96,7 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 </center>
 
 </details>
-
+<br/>
 <details>
 <summary>Desktop</summary>
 

@@ -7,7 +7,7 @@ export LC_ALL=C
 # Usage: ./update_l10n.sh
 # Translation for below key value pairs for below languages
 # "key" "value"
-# languages: [ar,bn,de,el,en,es,fr,hi,id,it,ja,ko,pl,pt,ru,uk,yue,zh-Hant,zh-TW,zh]
+# languages: [ar,bn,de,el,en,es,fa,fr,gu,hi,id,it,ja,ko,mr,pl,pt-br,pt,ru,sw,ta,te,th,tr,uk,vi,yue,zh-Hant,zh-TW,zh]
 # l10nupdate.json file format:
 # {
 #     "translations": {

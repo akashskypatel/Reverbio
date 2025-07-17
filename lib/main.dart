@@ -79,9 +79,19 @@ const appLanguages = <String, String>{
   '한국어': 'ko',
   'Polski': 'pl',
   'Português': 'pt',
+  'Português (Brasil)': 'pt-br',
   'Русский': 'ru',
   'Español': 'es',
+  'فارسی': 'fa',
+  'ગુજરાતી': 'gu',
+  'मराठी': 'mr',
+  'Kiswahili': 'sw',
+  'தமிழ்': 'ta',
+  'తెలుగు': 'te',
+  'ไทย': 'th',
+  'Türkçe': 'tr',
   'Українська': 'uk',
+  'Tiếng Việt': 'vi'
 };
 
 final List<Locale> appSupportedLocales =
