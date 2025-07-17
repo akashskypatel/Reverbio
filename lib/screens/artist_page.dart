@@ -182,7 +182,11 @@ class _ArtistPageState extends State<ArtistPage> {
   Widget buildArtistHeader() {
     return ArtistHeader(
       _buildArtistImage(),
-      widget.artistData?['artist'] ?? widget.artistData?['name'] ?? widget.artistData?['title'] ?? widget.artistData?['value'] ?? '',
+      widget.artistData?['artist'] ??
+          widget.artistData?['name'] ??
+          widget.artistData?['title'] ??
+          widget.artistData?['value'] ??
+          '',
     );
   }
 

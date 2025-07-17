@@ -106,7 +106,8 @@ class _SectionHeaderState extends State<SectionHeader>
                     ? Row(children: widget.actions!)
                     : const SizedBox.shrink(),
           ),
-        if(widget.expandedActions != null && widget.expandedActions!.isNotEmpty)
+        if (widget.expandedActions != null &&
+            widget.expandedActions!.isNotEmpty)
           Row(children: widget.expandedActions!),
       ],
     );

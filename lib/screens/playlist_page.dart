@@ -362,7 +362,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                               userCustomPlaylists,
                             );
                             _playlist = newPlaylist;
-                            showToast(context, context.l10n!.playlistUpdated);
+                            showToast(context.l10n!.playlistUpdated);
                           }
 
                           GoRouter.of(context).pop(context);
@@ -406,7 +406,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
   void _updateSongsListOnRemove(int indexOfRemovedSong) {
     final dynamic songToRemove = _songsList.elementAt(indexOfRemovedSong);
     showToastWithButton(
-      context,
       context.l10n!.songRemoved,
       context.l10n!.undo.toUpperCase(),
       () {

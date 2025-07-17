@@ -558,7 +558,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                         hours: hours,
                         minutes: minutes,
                       );
-                      showToast(context, context.l10n!.addedSuccess);
+                      showToast(context.l10n!.addedSuccess);
                     }
                     GoRouter.of(context).pop(context);
                   },

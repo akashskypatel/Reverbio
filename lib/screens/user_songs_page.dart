@@ -170,7 +170,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       ? null
                       : () {
                         clearSongQueue();
-                        showToast(context, 'Queue cleared!');
+                        showToast('Queue cleared!');
                       },
               disabledColor: _theme.colorScheme.inversePrimary,
               color: _theme.colorScheme.primary,
@@ -246,7 +246,6 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                     child: FilledButton(
                                       onPressed: () {
                                         showToast(
-                                          context,
                                           addSongsToPlaylist(
                                             context,
                                             filteredPlaylists[index],
@@ -347,7 +346,6 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                   ).pop(confirmcontext),
                               onSubmit: () {
                                 showToast(
-                                  context,
                                   createCustomPlaylist(
                                     customPlaylistName,
                                     image: imageUrl,
@@ -361,7 +359,6 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       );
                     else {
                       showToast(
-                        context,
                         createCustomPlaylist(
                           customPlaylistName,
                           image: imageUrl,
@@ -372,10 +369,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       GoRouter.of(context).pop(context);
                     }
                   } else {
-                    showToast(
-                      context,
-                      '${context.l10n!.provideIdOrNameError}.',
-                    );
+                    showToast('${context.l10n!.provideIdOrNameError}.');
                   }
                 },
               ),

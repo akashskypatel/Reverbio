@@ -80,10 +80,7 @@ bool isArtistAlreadyLiked(artistToCheck) =>
       (artist) => artist is Map && checkArtist(artist, artistToCheck),
     );
 
-Future<Map> getArtistDetails(
-  dynamic artistData, {
-  bool refresh = false,
-}) async {
+Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
   try {
     final id = parseEntityId(artistData);
     final ids = Uri.parse('?$id').queryParameters;

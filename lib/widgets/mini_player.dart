@@ -181,9 +181,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
   Widget _buildLikeButton() {
     final status = ValueNotifier<bool>(
-      isSongAlreadyLiked(
-        audioHandler.songValueNotifier.value?.song,
-      ),
+      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
     );
     final primaryColor = _theme.colorScheme.primary;
     return ValueListenableBuilder<bool>(
@@ -505,9 +503,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = 0;
                           });
-                          audioHandler.setVolume(
-                            _duelCommandment.toDouble(),
-                          );
+                          audioHandler.setVolume(_duelCommandment.toDouble());
                         },
                         icon: const Icon(FluentIcons.speaker_0_24_regular),
                       ),
@@ -523,9 +519,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = newValue.round();
                           });
-                          audioHandler.setVolume(
-                            _duelCommandment.toDouble(),
-                          );
+                          audioHandler.setVolume(_duelCommandment.toDouble());
                         },
                       ),
                     ),
@@ -538,9 +532,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = 100;
                           });
-                          audioHandler.setVolume(
-                            _duelCommandment.toDouble(),
-                          );
+                          audioHandler.setVolume(_duelCommandment.toDouble());
                         },
                         icon: const Icon(FluentIcons.speaker_2_24_regular),
                       ),

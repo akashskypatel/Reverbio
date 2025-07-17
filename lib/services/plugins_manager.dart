@@ -87,7 +87,6 @@ class PluginsManager {
     if (_isProcessingNotifiers[_plugin['name']]!.value) {
       final context = NavigationManager().context;
       showToast(
-        context,
         '${_plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
       return false;
@@ -314,10 +313,7 @@ class PluginsManager {
               null,
             );
             final context = NavigationManager().context;
-            showToast(
-              context,
-              '${context.l10n!.jobError}: ${asyncResult.stringResult}',
-            );
+            showToast('${context.l10n!.jobError}: ${asyncResult.stringResult}');
           }
         }
       } else {
@@ -483,7 +479,6 @@ class PluginsManager {
       if (_isProcessingNotifiers[pluginName]!.value) {
         final context = NavigationManager().context;
         showToast(
-          context,
           '${context.l10n!.cannotRemovePlugin} ${context.l10n!.waitForJob}',
         );
         return;
@@ -552,7 +547,7 @@ class PluginsManager {
     try {
       final context = NavigationManager().context;
       if (result == null) {
-        showToast(context, '$pluginName: $message ${context.l10n!.failed}.');
+        showToast('$pluginName: $message ${context.l10n!.failed}.');
         return;
       }
       final jsResult = tryDecode(result.stringResult);
@@ -562,7 +557,7 @@ class PluginsManager {
               : jsResult['message'] == null
               ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
               : '$pluginName: ${jsResult['message']}';
-      showToast(context, text);
+      showToast(text);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -913,7 +908,6 @@ class PluginsManager {
       if (_isProcessingNotifiers[pluginName]!.value) {
         final context = NavigationManager().context;
         showToast(
-          context,
           '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
         );
         return;
@@ -946,7 +940,6 @@ class PluginsManager {
       if (_isProcessingNotifiers[pluginName]!.value) {
         final context = NavigationManager().context;
         showToast(
-          context,
           '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
         );
         return;

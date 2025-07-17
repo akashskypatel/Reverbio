@@ -112,10 +112,7 @@ class WidgetFactory {
                   ),
                   message: '$pluginName - $label',
                 );
-                showToast(
-                  context,
-                  '$pluginName - $label added to background queue.',
-                );
+                showToast('$pluginName - $label added to background queue.');
               }
               : methodData['isAsync']
               ? () async {
@@ -186,10 +183,7 @@ class WidgetFactory {
                     data,
                   ),
                 );
-                showToast(
-                  context,
-                  '$pluginName - $label added to background queue.',
-                );
+                showToast('$pluginName - $label added to background queue.');
               }
               : methodData['isAsync'] ?? false
               ? () async {
@@ -282,7 +276,6 @@ class WidgetFactory {
                           ),
                         );
                         showToast(
-                          context,
                           '$pluginName - $label added to background queue.',
                         );
                       }
@@ -367,7 +360,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -416,7 +408,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -465,7 +456,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -516,7 +506,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -587,10 +576,7 @@ class WidgetFactory {
                       id: id,
                     ),
                   );
-                  showToast(
-                    NavigationManager().context,
-                    '$pluginName - $label added to background queue.',
-                  );
+                  showToast('$pluginName - $label added to background queue.');
                 }
                 : methodData['isAsync'] ?? false
                 ? (value) async {
@@ -665,10 +651,7 @@ class WidgetFactory {
                     pluginName: pluginName,
                     methodName: methodData['methodName'],
                   );
-                  showToast(
-                    NavigationManager().context,
-                    '$pluginName - $label added to background queue.',
-                  );
+                  showToast('$pluginName - $label added to background queue.');
                 }
                 : methodData['isAsync'] ?? false
                 ? () async {

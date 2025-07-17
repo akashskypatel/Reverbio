@@ -226,7 +226,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
-      //TODO: Fix playNextSongAutomatically
+        //TODO: Fix playNextSongAutomatically
         /*
         ValueListenableBuilder<bool>(
           valueListenable: playNextSongAutomatically,
@@ -302,7 +302,7 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: commonCustomBarRadiusFirst,
           onTap: () {
             clearCache();
-            showToast(context, '${context.l10n!.cacheMsg}!');
+            showToast('${context.l10n!.cacheMsg}!');
           },
         ),
         CustomBar(
@@ -325,7 +325,7 @@ class _SettingsPageState extends State<SettingsPage> {
           FluentIcons.cloud_add_24_filled,
           onTap: () async {
             final response = await restoreData(context);
-            showToast(context, response);
+            showToast(response);
           },
         ),
         //TODO: Fix downloadAppUpdate
@@ -372,7 +372,7 @@ class _SettingsPageState extends State<SettingsPage> {
         CustomBar(
           '${context.l10n!.copyLogs} (${logger.getLogCount()})',
           FluentIcons.error_circle_24_filled,
-          onTap: () async => showToast(context, await logger.copyLogs(context)),
+          onTap: () async => showToast(await logger.copyLogs(context)),
         ),
         CustomBar(
           context.l10n!.about,
@@ -400,17 +400,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
           return GestureDetector(
             onTap: () {
-              addOrUpdateData(
-                'settings',
-                'accentColor',
-                color.toARGB32(),
-              );
+              addOrUpdateData('settings', 'accentColor', color.toARGB32());
               Reverbio.updateAppState(
                 context,
                 newAccentColor: color,
                 useSystemColor: false,
               );
-              showToast(context, context.l10n!.accentChangeMsg);
+              showToast(context.l10n!.accentChangeMsg);
               GoRouter.of(context).pop(context);
             },
             child: Stack(
@@ -581,7 +577,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                   await _reloadPlugins(PM.pluginsData[index]);
                                   setState(() {});
                                   showToast(
-                                    context,
                                     '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) updated!',
                                   );
                                 },
@@ -623,7 +618,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                               PM.pluginsData,
                                             );
                                             showToast(
-                                              context,
                                               context.l10n!.pluginRemoved,
                                             );
                                             GoRouter.of(context).pop(context);
@@ -803,12 +797,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                               pluginData.isNotEmpty;
                                           if (isLoadedNotifier.value)
                                             showToast(
-                                              context,
                                               context.l10n!.pluginLoaded,
                                             );
                                           else
                                             showToast(
-                                              context,
                                               context.l10n!.pluginFailed,
                                             );
                                         }
@@ -841,11 +833,11 @@ class _SettingsPageState extends State<SettingsPage> {
                             isValid = pluginData.isNotEmpty;
                             isLoadedNotifier.value = pluginData.isNotEmpty;
                             if (isLoadedNotifier.value)
-                              showToast(context, context.l10n!.pluginLoaded);
+                              showToast(context.l10n!.pluginLoaded);
                             else
-                              showToast(context, context.l10n!.pluginFailed);
+                              showToast(context.l10n!.pluginFailed);
                           } catch (e) {
-                            showToast(context, 'Error: $e');
+                            showToast('Error: $e');
                             isLoadedNotifier.value = false;
                           }
                         },
@@ -895,7 +887,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   );
                                 });
                                 GoRouter.of(context).pop(context);
-                                showToast(context, context.l10n!.pluginAdded);
+                                showToast(context.l10n!.pluginAdded);
                               }
                             }
                             : null,
@@ -948,7 +940,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () {
               addOrUpdateData('settings', 'language', newLocaleFullCode);
               Reverbio.updateAppState(context, newLocale: newLocale);
-              showToast(context, context.l10n!.languageMsg);
+              showToast(context.l10n!.languageMsg);
               GoRouter.of(context).pop(context);
             },
             activeLanguageFullCode == newLocaleFullCode
@@ -988,7 +980,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () {
               addOrUpdateData('settings', 'audioQuality', quality);
               audioQualitySetting.value = quality;
-              showToast(context, context.l10n!.audioQualityMsg);
+              showToast(context.l10n!.audioQualityMsg);
               GoRouter.of(context).pop(context);
             },
             isCurrentQuality ? activatedColor : inactivatedColor,
@@ -1007,14 +999,14 @@ class _SettingsPageState extends State<SettingsPage> {
       newAccentColor: primaryColorSetting,
       useSystemColor: value,
     );
-    showToast(context, context.l10n!.settingChangedMsg);
+    showToast(context.l10n!.settingChangedMsg);
   }
 
   void _togglePureBlack(BuildContext context, bool value) {
     addOrUpdateData('settings', 'usePureBlackColor', value);
     usePureBlackColor.value = value;
     Reverbio.updateAppState(context);
-    showToast(context, context.l10n!.settingChangedMsg);
+    showToast(context.l10n!.settingChangedMsg);
   }
 
   void _togglePredictiveBack(BuildContext context, bool value) {
@@ -1025,37 +1017,37 @@ class _SettingsPageState extends State<SettingsPage> {
             ? const PredictiveBackPageTransitionsBuilder()
             : const CupertinoPageTransitionsBuilder();
     Reverbio.updateAppState(context);
-    showToast(context, context.l10n!.settingChangedMsg);
+    showToast(context.l10n!.settingChangedMsg);
   }
 
   void _toggleOfflineMode(BuildContext context, bool value) {
     addOrUpdateData('settings', 'offlineMode', value);
     offlineMode.value = value;
-    showToast(context, context.l10n!.restartAppMsg);
+    showToast(context.l10n!.restartAppMsg);
   }
 
   void _toggleSponsorBlock(BuildContext context, bool value) {
     addOrUpdateData('settings', 'sponsorBlockSupport', value);
     sponsorBlockSupport.value = value;
-    showToast(context, context.l10n!.settingChangedMsg);
+    showToast(context.l10n!.settingChangedMsg);
   }
 
   void _toggleSkipNonMusic(BuildContext context, bool value) {
     addOrUpdateData('settings', 'skipNonMusic', value);
     skipNonMusic.value = value;
-    showToast(context, context.l10n!.settingChangedMsg);
+    showToast(context.l10n!.settingChangedMsg);
   }
 
   void _toggleDefaultRecommendations(BuildContext context, bool value) {
     addOrUpdateData('settings', 'defaultRecommendations', value);
     defaultRecommendations.value = value;
-    showToast(context, context.l10n!.settingChangedMsg);
+    showToast(context.l10n!.settingChangedMsg);
   }
 
   void _togglePluginsSupport(BuildContext context, bool value) {
     addOrUpdateData('settings', 'pluginsSupport', value);
     pluginsSupport.value = value;
-    showToast(context, context.l10n!.settingChangedMsg);
+    showToast(context.l10n!.settingChangedMsg);
   }
 
   void _showClearSearchHistoryDialog(BuildContext context) {
@@ -1072,7 +1064,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Navigator.of(context).pop(),
                 searchHistory = [],
                 deleteData('user', 'searchHistory'),
-                showToast(context, '${context.l10n!.searchHistoryMsg}!'),
+                showToast('${context.l10n!.searchHistoryMsg}!'),
               },
         );
       },
@@ -1093,7 +1085,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Navigator.of(context).pop(),
                 userRecentlyPlayed = [],
                 deleteData('user', 'recentlyPlayedSongs'),
-                showToast(context, '${context.l10n!.recentlyPlayedMsg}!'),
+                showToast('${context.l10n!.recentlyPlayedMsg}!'),
               },
         );
       },
@@ -1118,6 +1110,6 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
     final response = await backupData(context);
-    showToast(context, response);
+    showToast(response);
   }
 }

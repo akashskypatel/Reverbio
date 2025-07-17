@@ -264,7 +264,7 @@ class _SongListState extends State<SongList> {
       onPressed: () {
         if (widget.page != 'queue') {
           addSongsToQueue(widget.songBars);
-          showToast(context, context.l10n!.songAdded);
+          showToast(context.l10n!.songAdded);
         }
         if (audioHandler.queueSongBars.isNotEmpty &&
             audioHandler.songValueNotifier.value == null &&
@@ -285,7 +285,6 @@ class _SongListState extends State<SongList> {
             'list': _songsList,
           }, widget.songBars);
           showToast(
-            context,
             '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
           );
         }

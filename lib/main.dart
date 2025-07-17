@@ -305,16 +305,13 @@ void handleIncomingLink(Uri? uri) async {
         if (playlist != null) {
           userCustomPlaylists.value = [...userCustomPlaylists.value, playlist];
           addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
-          showToast(
-            NavigationManager().context,
-            '${NavigationManager().context.l10n!.addedSuccess}!',
-          );
+          showToast('${NavigationManager().context.l10n!.addedSuccess}!');
         } else {
-          showToast(NavigationManager().context, 'Invalid playlist data');
+          showToast('Invalid playlist data');
         }
       }
     } catch (e) {
-      showToast(NavigationManager().context, 'Failed to load playlist');
+      showToast('Failed to load playlist');
     }
   }
 }

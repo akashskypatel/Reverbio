@@ -448,7 +448,7 @@ Future updatePlaylistList(BuildContext context, String playlistId) async {
 
     dbPlaylists[index]['list'] = songList;
     addOrUpdateData('cache', 'playlistSongs$playlistId', songList);
-    showToast(context, context.l10n!.playlistUpdated);
+    showToast(context.l10n!.playlistUpdated);
     return dbPlaylists[index];
   }
 }

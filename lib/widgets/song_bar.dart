@@ -101,7 +101,7 @@ class SongBar extends StatefulWidget {
     }
     if (isError) {
       final context = NavigationManager().context;
-      showToast(context, context.l10n!.errorCouldNotFindAStream);
+      showToast(context.l10n!.errorCouldNotFindAStream);
     }
     return !isError;
   }
@@ -164,7 +164,7 @@ class _SongBarState extends State<SongBar> {
     final ids = Uri.parse('?${parseEntityId(widget.song)}').queryParameters;
     if ((ids['mb'] == null || widget.song['mbid'] == null) &&
         _songMetadataFuture == null) {
-          //TODO: streamline
+      //TODO: streamline
       widget.song['primary-type'] = widget.song['primary-type'] ?? 'song';
       _songMetadataFuture =
           widget.song['primary-type'].toLowerCase() != 'single'
@@ -624,10 +624,10 @@ class _SongBarState extends State<SongBar> {
       case 'offline':
         if (songOfflineStatus.value) {
           unawaited(removeSongFromOffline(widget.song));
-          showToast(context, context.l10n!.songRemovedFromOffline);
+          showToast(context.l10n!.songRemovedFromOffline);
         } else {
           makeSongOffline(widget.song);
-          showToast(context, context.l10n!.songAddedToOffline);
+          showToast(context.l10n!.songAddedToOffline);
         }
         songOfflineStatus.value = !songOfflineStatus.value;
         break;
@@ -678,7 +678,6 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
                           title: Text(playlist['title']),
                           onTap: () {
                             showToast(
-                              context,
                               addSongInCustomPlaylist(
                                 context,
                                 playlist['title'],

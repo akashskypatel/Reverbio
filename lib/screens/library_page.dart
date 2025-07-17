@@ -445,7 +445,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 child: Text(context.l10n!.add.toUpperCase()),
                 onPressed: () async {
                   if (isYouTubeMode && id.isNotEmpty) {
-                    showToast(context, await addYTUserPlaylist(id, context));
+                    showToast(await addYTUserPlaylist(id, context));
                   } else if (!isYouTubeMode && customPlaylistName.isNotEmpty) {
                     if (findPlaylistByName(customPlaylistName) != null)
                       await showDialog(
@@ -465,7 +465,6 @@ class _LibraryPageState extends State<LibraryPage> {
                                   ).pop(confirmcontext),
                               onSubmit: () {
                                 showToast(
-                                  context,
                                   createCustomPlaylist(
                                     customPlaylistName,
                                     image: imageUrl,
@@ -478,7 +477,6 @@ class _LibraryPageState extends State<LibraryPage> {
                       );
                     else {
                       showToast(
-                        context,
                         createCustomPlaylist(
                           customPlaylistName,
                           image: imageUrl,
@@ -488,10 +486,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       GoRouter.of(context).pop(context);
                     }
                   } else {
-                    showToast(
-                      context,
-                      '${context.l10n!.provideIdOrNameError}.',
-                    );
+                    showToast('${context.l10n!.provideIdOrNameError}.');
                   }
                 },
               ),

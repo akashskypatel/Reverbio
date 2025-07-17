@@ -425,10 +425,7 @@ class _SearchPageState extends State<SearchPage> {
       'title': element['title'],
       'list': element['list'],
     }, songBars);
-    showToast(
-      context,
-      '${context.l10n!.queueReplacedByPlaylist}: ${element['title']}',
-    );
+    showToast('${context.l10n!.queueReplacedByPlaylist}: ${element['title']}');
   }
 
   List<Widget> _getItems(

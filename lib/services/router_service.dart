@@ -105,7 +105,8 @@ class NavigationManager {
   static HomePage homePage = HomePage(); //key: homeTabNavigatorKey);
   static LibraryPage libraryPage =
       const LibraryPage(); //key: libraryTabNavigatorKey);
-  static SearchPage searchPage = const SearchPage(); //key: searchTabNavigatorKey);
+  static SearchPage searchPage =
+      const SearchPage(); //key: searchTabNavigatorKey);
   static UserSongsPage queuePage = const UserSongsPage(
     page: 'queue',
   ); //key: queueTabNavigatorKey,page: 'queue',);
@@ -228,7 +229,10 @@ class NavigationManager {
                       applicationVersion: appVersion,
                     ),
               ),
-              GoRoute(path: 'about', builder: (context, state) => const AboutPage()),
+              GoRoute(
+                path: 'about',
+                builder: (context, state) => const AboutPage(),
+              ),
             ],
           ),
         ],
@@ -269,7 +273,10 @@ class NavigationManager {
                       applicationVersion: appVersion,
                     ),
               ),
-              GoRoute(path: 'about', builder: (context, state) => const AboutPage()),
+              GoRoute(
+                path: 'about',
+                builder: (context, state) => const AboutPage(),
+              ),
             ],
           ),
         ],
