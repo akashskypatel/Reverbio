@@ -283,7 +283,7 @@ class _SongBarState extends State<SongBar> {
         ValueListenableBuilder(
           valueListenable: isLikedAnimationPlaying,
           builder:
-              (_, value, __) =>
+              (context, value, __) =>
                   isLikedAnimationPlaying.value && doubleTapdetails != null
                       ? AnimatedHeart(
                         like: songLikeStatus.value,
@@ -477,7 +477,7 @@ class _SongBarState extends State<SongBar> {
           value: 'like',
           child: ValueListenableBuilder<bool>(
             valueListenable: songLikeStatus,
-            builder: (_, value, __) {
+            builder: (context, value, __) {
               return Row(
                 children: [
                   Icon(
@@ -543,7 +543,7 @@ class _SongBarState extends State<SongBar> {
           value: 'offline',
           child: ValueListenableBuilder<bool>(
             valueListenable: songOfflineStatus,
-            builder: (_, value, __) {
+            builder: (context, value, __) {
               return Row(
                 children: [
                   Icon(

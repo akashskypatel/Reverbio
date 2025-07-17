@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
               padding: commonBarPadding,
               child: ValueListenableBuilder<String?>(
                 valueListenable: announcementURL,
-                builder: (_, _url, __) {
+                builder: (context, _url, __) {
                   if (_url == null) return const SizedBox.shrink();
                   return AnnouncementBox(
                     message: context.l10n!.newAnnouncement,
@@ -102,7 +102,7 @@ class _HomePageState extends State<HomePage> {
               padding: commonBarPadding,
               child: ValueListenableBuilder<int>(
                 valueListenable: currentLikedPlaylistsLength,
-                builder: (_, value, __) {
+                builder: (context, value, __) {
                   //TODO: add pagination suggestedPlaylists
                   return HorizontalCardScroller(
                     title: context.l10n!.suggestedPlaylists,

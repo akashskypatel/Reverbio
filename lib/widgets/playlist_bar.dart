@@ -83,7 +83,7 @@ class PlaylistBar extends StatelessWidget {
     final primaryColor = Theme.of(context).colorScheme.primary;
     return ValueListenableBuilder(
       valueListenable: hideNotifier,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return Visibility(
           visible: hideNotifier.value,
           child: Padding(

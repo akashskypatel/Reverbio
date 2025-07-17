@@ -232,7 +232,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _clearFiltersButton() {
     return ValueListenableBuilder(
       valueListenable: isFilteredNotifier,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return IconButton(
           onPressed:
               isFilteredNotifier.value
@@ -286,7 +286,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildUserLikedPlaylistsSection(Color primaryColor) {
     return ValueListenableBuilder(
       valueListenable: currentLikedPlaylistsLength,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return Column(
           children: [
             SectionHeader(title: context.l10n!.likedPlaylists),

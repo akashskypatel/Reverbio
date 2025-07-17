@@ -80,7 +80,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   Widget _clearFiltersButton() {
     return ValueListenableBuilder(
       valueListenable: isFilteredNotifier,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return IconButton(
           onPressed:
               isFilteredNotifier.value

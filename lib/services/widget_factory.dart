@@ -265,7 +265,7 @@ class WidgetFactory {
       trailing: ValueListenableBuilder(
         valueListenable: switchNotifier,
         builder:
-            (_, value, __) => Switch(
+            (context, value, __) => Switch(
               thumbIcon: thumbIcon,
               value: value,
               onChanged:

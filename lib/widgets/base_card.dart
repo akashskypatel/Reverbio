@@ -142,7 +142,7 @@ class _BaseCardState extends State<BaseCard> {
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,
       builder:
-          (_, value, __) => Visibility(
+          (context, value, __) => Visibility(
             visible: value,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
@@ -303,7 +303,7 @@ class _BaseCardState extends State<BaseCard> {
         child: Image.file(
           File(path),
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildNoArtworkCard(context),
+          errorBuilder: (context, __, ___) => _buildNoArtworkCard(context),
           color:
               widget.imageOverlayMask
                   ? _theme.colorScheme.primaryContainer

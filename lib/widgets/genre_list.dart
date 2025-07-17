@@ -56,7 +56,7 @@ class _GenreListState extends State<GenreList> {
             behavior: CustomScrollBehavior(),
             child: ValueListenableBuilder(
               valueListenable: widget.searchQueryNotifier,
-              builder: (_, value, __) {
+              builder: (context, value, __) {
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: widget.genres.length,
@@ -192,7 +192,7 @@ class GenreBubble extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: hideNotifier,
       builder:
-          (_, value, __) => Visibility(
+          (context, value, __) => Visibility(
             visible: value,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),

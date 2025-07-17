@@ -199,7 +199,7 @@ class _SearchPageState extends State<SearchPage> {
             child: ValueListenableBuilder(
               valueListenable: _fetching,
               builder:
-                  (_, value, __) =>
+                  (context, value, __) =>
                       value ? const Spinner() : const SizedBox.shrink(),
             ),
           ),
@@ -480,7 +480,7 @@ class _SearchPageState extends State<SearchPage> {
                   entityName[header]?['action'] != null
                       ? ValueListenableBuilder(
                         valueListenable: entityLikeStatus,
-                        builder: (_, value, __) {
+                        builder: (context, value, __) {
                           return IconButton(
                             onPressed: () async {
                               likedLoding.value = true;

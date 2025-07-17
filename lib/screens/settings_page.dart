@@ -164,7 +164,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ValueListenableBuilder<bool>(
           valueListenable: predictiveBack,
-          builder: (_, value, __) {
+          builder: (context, value, __) {
             return CustomBar(
               context.l10n!.predictiveBack,
               FluentIcons.position_backward_24_filled,
@@ -177,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         ValueListenableBuilder<bool>(
           valueListenable: offlineMode,
-          builder: (_, value, __) {
+          builder: (context, value, __) {
             return CustomBar(
               context.l10n!.offlineMode,
               FluentIcons.cellular_off_24_regular,
@@ -202,7 +202,7 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         ValueListenableBuilder<bool>(
           valueListenable: sponsorBlockSupport,
-          builder: (_, value, __) {
+          builder: (context, value, __) {
             return CustomBar(
               context.l10n!.sponsorBlock,
               FluentIcons.presence_blocked_24_regular,
@@ -215,7 +215,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         ValueListenableBuilder<bool>(
           valueListenable: skipNonMusic,
-          builder: (_, value, __) {
+          builder: (context, value, __) {
             return CustomBar(
               context.l10n!.nonMusicBlock,
               FluentIcons.skip_forward_tab_24_regular,
@@ -230,7 +230,7 @@ class _SettingsPageState extends State<SettingsPage> {
         /*
         ValueListenableBuilder<bool>(
           valueListenable: playNextSongAutomatically,
-          builder: (_, value, __) {
+          builder: (context, value, __) {
             return CustomBar(
               context.l10n!.automaticSongPicker,
               FluentIcons.music_note_2_play_20_filled,
@@ -249,7 +249,7 @@ class _SettingsPageState extends State<SettingsPage> {
         /*
         ValueListenableBuilder<bool>(
           valueListenable: defaultRecommendations,
-          builder: (_, value, __) {
+          builder: (context, value, __) {
             return CustomBar(
               context.l10n!.originalRecommendations,
               FluentIcons.channel_share_24_regular,
@@ -264,7 +264,7 @@ class _SettingsPageState extends State<SettingsPage> {
         */
         ValueListenableBuilder<bool>(
           valueListenable: pluginsSupport,
-          builder: (_, value, __) {
+          builder: (context, value, __) {
             return CustomBar(
               context.l10n!.plugins,
               value
@@ -557,7 +557,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   ValueListenableBuilder(
                     valueListenable: PM.pluginsDataNotifier,
-                    builder: (_, value, ___) {
+                    builder: (context, value, ___) {
                       return ListView.builder(
                         shrinkWrap: true,
                         physics: const BouncingScrollPhysics(),
@@ -787,7 +787,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           const SizedBox(width: 7),
                           ValueListenableBuilder(
                             valueListenable: jsUrlNotifier,
-                            builder: (_, value, __) {
+                            builder: (context, value, __) {
                               return ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: activeButtonBackground,

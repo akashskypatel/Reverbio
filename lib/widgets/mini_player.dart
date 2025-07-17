@@ -188,7 +188,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
     final primaryColor = _theme.colorScheme.primary;
     return ValueListenableBuilder<bool>(
       valueListenable: status,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         final icon = Icon(
           value ? FluentIcons.heart_24_filled : FluentIcons.heart_24_regular,
           color: primaryColor,
@@ -249,7 +249,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
   Widget _buildNextButton(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: activeQueueLength,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         if (audioHandler.hasNext)
           return IconButton(
             onPressed: () => audioHandler.skipToNext(),
@@ -268,7 +268,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
   Widget _buildPreviousButton(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: activeQueueLength,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         if (audioHandler.hasPrevious)
           return IconButton(
             onPressed: () => audioHandler.skipToPrevious(),

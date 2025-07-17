@@ -96,7 +96,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
           if (widget.loadingProgressNotifier != null)
             ValueListenableBuilder<bool>(
               valueListenable: widget.loadingProgressNotifier!,
-              builder: (_, value, __) {
+              builder: (context, value, __) {
                 if (value) {
                   return IconButton(
                     icon: const SizedBox(

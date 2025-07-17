@@ -260,7 +260,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   ) {
     return ValueListenableBuilder<bool>(
       valueListenable: status,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         final icon = Icon(
           value
               ? FluentIcons.cellular_off_24_regular
@@ -387,7 +387,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   ) {
     return ValueListenableBuilder<Duration?>(
       valueListenable: sleepTimerNotifier,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         final icon = Icon(
           value != null
               ? FluentIcons.timer_24_filled
@@ -429,7 +429,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   ) {
     return ValueListenableBuilder<bool>(
       valueListenable: status,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         final icon = Icon(
           value ? FluentIcons.heart_24_filled : FluentIcons.heart_24_regular,
           color: primaryColor,
@@ -1066,7 +1066,7 @@ class PlayerControlButtons extends StatelessWidget {
   ) {
     return ValueListenableBuilder<bool>(
       valueListenable: shuffleNotifier,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return value
             ? IconButton.filled(
               icon: Icon(
@@ -1101,7 +1101,7 @@ class PlayerControlButtons extends StatelessWidget {
   ) {
     return ValueListenableBuilder<AudioServiceRepeatMode>(
       valueListenable: repeatNotifier,
-      builder: (_, repeatMode, __) {
+      builder: (context, repeatMode, __) {
         return IconButton(
           icon: Icon(
             FluentIcons.previous_24_filled,
@@ -1148,7 +1148,7 @@ class PlayerControlButtons extends StatelessWidget {
   ) {
     return ValueListenableBuilder<AudioServiceRepeatMode>(
       valueListenable: repeatNotifier,
-      builder: (_, repeatMode, __) {
+      builder: (context, repeatMode, __) {
         return IconButton(
           icon: Icon(
             FluentIcons.next_24_filled,
@@ -1174,7 +1174,7 @@ class PlayerControlButtons extends StatelessWidget {
   ) {
     return ValueListenableBuilder<AudioServiceRepeatMode>(
       valueListenable: repeatNotifier,
-      builder: (_, repeatMode, __) {
+      builder: (context, repeatMode, __) {
         return repeatMode != AudioServiceRepeatMode.none
             ? IconButton.filled(
               icon: Icon(

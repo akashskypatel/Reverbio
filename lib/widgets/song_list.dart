@@ -95,7 +95,7 @@ class _SongListState extends State<SongList> {
             padding: commonSingleChildScrollViewPadding,
             child: ValueListenableBuilder(
               valueListenable: PM.pluginsDataNotifier,
-              builder: (_, value, __) {
+              builder: (context, value, __) {
                 return SectionHeader(
                   expandedActions: widget.expandedActions,
                   title: widget.title,
@@ -132,7 +132,7 @@ class _SongListState extends State<SongList> {
         else
           ValueListenableBuilder(
             valueListenable: activeQueueLength,
-            builder: (_, value, __) {
+            builder: (context, value, __) {
               if (value != 0) {
                 return _buildSongList();
               } else
@@ -373,7 +373,7 @@ class _SongListState extends State<SongList> {
     return ValueListenableBuilder(
       valueListenable:
           widget.page == 'queue' ? activeQueueLength : _songBarsLength,
-      builder: (_, value, _) {
+      builder: (context, value, _) {
         return SliverReorderableList(
           itemCount: value,
           itemBuilder: (context, index) {

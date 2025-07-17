@@ -261,7 +261,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   Widget _buildLikeButton() {
     return ValueListenableBuilder<bool>(
       valueListenable: playlistLikeStatus,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return IconButton(
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,

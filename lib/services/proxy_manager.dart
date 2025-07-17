@@ -426,7 +426,7 @@ class ProxyManager {
             ..findProxy = (_) {
               return 'PROXY ${proxy.address}; DIRECT';
             }
-            ..badCertificateCallback = (_, __, ___) {
+            ..badCertificateCallback = (context, _context, ___) {
               return false;
             };
       ioClient = IOClient(client);

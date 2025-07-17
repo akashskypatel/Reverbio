@@ -743,10 +743,10 @@ class PluginsManager {
             (context, setState) => ValueListenableBuilder(
               valueListenable: _isProcessingNotifiers[pluginName]!,
               builder:
-                  (_, value, __) => ValueListenableBuilder(
+                  (context, value, __) => ValueListenableBuilder(
                     valueListenable: _backgroundJobNotifiers[pluginName]!,
                     builder:
-                        (_, value, __) => ListView(
+                        (context, value, __) => ListView(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: commonListViewBottmomPadding,
