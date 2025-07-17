@@ -185,5 +185,7 @@
   "next": "Successivo",
   "previous": "Precedente",
   "repeat": "Ripeti",
-  "youtubeInaccessible": "Errore 403 Accesso negato durante il tentativo di riproduzione dello stream YouTube. YouTube potrebbe aver temporaneamente bloccato il tuo indirizzo IP. Prova a cambiare rete o riprova più tardi."
+  "youtubeInaccessible": "Errore 403 Accesso negato durante il tentativo di riproduzione dello stream YouTube. YouTube potrebbe aver temporaneamente bloccato il tuo indirizzo IP. Prova a cambiare rete o riprova più tardi.",
+  "prepareNextSong": "Prepara automaticamente la prossima canzone per una riproduzione più veloce",
+  "useProxies": "Usa server proxy (può aiutare con problemi di accesso a YouTube)"
 }

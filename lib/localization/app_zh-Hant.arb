@@ -185,5 +185,7 @@
   "next": "下一首",
   "previous": "上一首",
   "repeat": "重複播放",
-  "youtubeInaccessible": "嘗試播放 YouTube 串流時出現 403 禁止錯誤。YouTube 可能暫時封鎖了你的 IP 位址。請嘗試更換網路或稍後再試。"
+  "youtubeInaccessible": "嘗試播放 YouTube 串流時出現 403 禁止錯誤。YouTube 可能暫時封鎖了你的 IP 位址。請嘗試更換網路或稍後再試。",
+  "prepareNextSong": "自動準備下一首歌以實現更快播放",
+  "useProxies": "使用代理伺服器（可能有助於解決YouTube存取問題）"
 }

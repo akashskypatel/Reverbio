@@ -185,5 +185,7 @@
   "next": "Weiter",
   "previous": "Zurück",
   "repeat": "Wiederholen",
-  "youtubeInaccessible": "Fehler 403 – Zugriff verweigert beim Abspielen des YouTube-Streams. YouTube hat Ihre IP-Adresse möglicherweise vorübergehend gesperrt. Versuchen Sie, Ihr Netzwerk zu wechseln, oder versuchen Sie es später erneut."
+  "youtubeInaccessible": "Fehler 403 – Zugriff verweigert beim Abspielen des YouTube-Streams. YouTube hat Ihre IP-Adresse möglicherweise vorübergehend gesperrt. Versuchen Sie, Ihr Netzwerk zu wechseln, oder versuchen Sie es später erneut.",
+  "prepareNextSong": "Nächstes Lied automatisch vorbereiten für schnelleren Abspielbeginn",
+  "useProxies": "Proxy-Server verwenden (kann bei YouTube-Zugriffsproblemen helfen)"
 }

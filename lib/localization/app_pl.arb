@@ -185,5 +185,7 @@
   "next": "Następny",
   "previous": "Poprzedni",
   "repeat": "Powtórz",
-  "youtubeInaccessible": "Błąd 403 Zabronione podczas próby odtwarzania strumienia YouTube. YouTube mógł tymczasowo zablokować Twój adres IP. Spróbuj zmienić sieć lub spróbuj ponownie za jakiś czas."
+  "youtubeInaccessible": "Błąd 403 Zabronione podczas próby odtwarzania strumienia YouTube. YouTube mógł tymczasowo zablokować Twój adres IP. Spróbuj zmienić sieć lub spróbuj ponownie za jakiś czas.",
+  "prepareNextSong": "Automatycznie przygotuj następną piosenkę dla szybszego odtwarzania",
+  "useProxies": "Używaj serwerów proxy (może pomóc w problemach z dostępem do YouTube)"
 }

@@ -185,5 +185,7 @@
   "next": "Next",
   "previous": "Previous",
   "repeat": "Repeat",
-  "youtubeInaccessible": "403 Forbidden error when trying to play YouTube Stream. YouTube may have temporarily blocked your IP address. Try changing your network or try again a little while later."
+  "youtubeInaccessible": "403 Forbidden error when trying to play YouTube Stream. YouTube may have temporarily blocked your IP address. Try changing your network or try again a little while later.",
+  "prepareNextSong": "Automatically prepare next song for quicker playback on next song",
+  "useProxies": "Use proxy servers (may help YouTube access issues)"
 }

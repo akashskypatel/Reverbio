@@ -185,5 +185,7 @@
   "next": "Suivant",
   "previous": "Précédent",
   "repeat": "Répéter",
-  "youtubeInaccessible": "Erreur 403 Interdit lors de la tentative de lecture du flux YouTube. YouTube a peut-être temporairement bloqué votre adresse IP. Essayez de changer de réseau ou réessayez un peu plus tard."
+  "youtubeInaccessible": "Erreur 403 Interdit lors de la tentative de lecture du flux YouTube. YouTube a peut-être temporairement bloqué votre adresse IP. Essayez de changer de réseau ou réessayez un peu plus tard.",
+  "prepareNextSong": "Préparer automatiquement la chanson suivante pour une lecture plus rapide",
+  "useProxies": "Utiliser des serveurs proxy (peut résoudre les problèmes d'accès à YouTube)"
 }

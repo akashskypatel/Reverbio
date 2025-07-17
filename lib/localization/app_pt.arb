@@ -185,5 +185,7 @@
   "next": "Próximo",
   "previous": "Anterior",
   "repeat": "Repetir",
-  "youtubeInaccessible": "Erro 403 Proibido ao tentar reproduzir o Stream do YouTube. O YouTube pode ter bloqueado temporariamente seu endereço IP. Tente mudar de rede ou tente novamente mais tarde."
+  "youtubeInaccessible": "Erro 403 Proibido ao tentar reproduzir o Stream do YouTube. O YouTube pode ter bloqueado temporariamente seu endereço IP. Tente mudar de rede ou tente novamente mais tarde.",
+  "prepareNextSong": "Preparar automaticamente a próxima música para reprodução mais rápida",
+  "useProxies": "Usar servidores proxy (pode ajudar em problemas de acesso ao YouTube)"
 }

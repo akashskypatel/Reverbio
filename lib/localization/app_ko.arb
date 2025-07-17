@@ -185,5 +185,7 @@
   "next": "다음",
   "previous": "이전",
   "repeat": "반복",
-  "youtubeInaccessible": "YouTube 스트림 재생 시도 중 403 금지 오류가 발생했습니다. YouTube에서 일시적으로 귀하의 IP 주소를 차단했을 수 있습니다. 네트워크를 변경하거나 잠시 후 다시 시도해 보세요."
+  "youtubeInaccessible": "YouTube 스트림 재생 시도 중 403 금지 오류가 발생했습니다. YouTube에서 일시적으로 귀하의 IP 주소를 차단했을 수 있습니다. 네트워크를 변경하거나 잠시 후 다시 시도해 보세요.",
+  "prepareNextSong": "다음 곡 더 빠른 재생을 위해 자동 준비",
+  "useProxies": "프록시 서버 사용 (YouTube 접근 문제 해결에 도움이 될 수 있음)"
 }
