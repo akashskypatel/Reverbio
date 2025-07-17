@@ -266,13 +266,14 @@ dynamic _getCachedSong(dynamic song) {
   try {
     final cached = cachedSongsList.where((e) {
       return checkSong(song, e) ||
-          (song['ytid'] != null &&
-              e['ytid'] != null &&
-              song['ytid'] == e['ytid']) ||
-          (song['originalTitle'] != null &&
-              song['originalArtist'] != null &&
-              song['originalTitle'] == e['originalTitle'] &&
-              song['originalArtist'] == e['originalArtist']);
+          (song is Map &&
+                  (song['ytid'] != null &&
+                      e['ytid'] != null &&
+                      song['ytid'] == e['ytid']) ||
+              (song['originalTitle'] != null &&
+                  song['originalArtist'] != null &&
+                  song['originalTitle'] == e['originalTitle'] &&
+                  song['originalArtist'] == e['originalArtist']));
     });
     if (cached.isEmpty) return null;
     return cached.first;
@@ -288,7 +289,7 @@ Future<dynamic> getSongByRecordingDetails(
 }) async {
   final id = parseEntityId(recording);
   final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
-  final rcdId = recording['rid'] ?? ids['mb'];
+  final rcdId = recording is Map ? (recording['rid'] ?? ids['mb']) : ids['mb'];
   if (rcdId == null) return recording;
   final cached = _getCachedSong(recording);
   if (cached != null) {
@@ -433,11 +434,8 @@ Future<dynamic> findMBSong(dynamic song) async {
 Future<StreamManifest> getSongManifest(String songId) async {
   try {
     final manifest =
-        //await pxm.getSongManifest(songId) ??
-        await yt.videos.streams.getManifest(
-          songId,
-          ytClients: userChosenClients,
-        );
+    //await pxm.getSongManifest(songId) ??
+    await yt.videos.streams.getManifest(songId, ytClients: userChosenClients);
     return manifest;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -623,6 +621,68 @@ Future<void> makeSongOffline(dynamic song) async {
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
+  }
+}
+
+Future<List<dynamic>> getUserOfflineSongs() async {
+  await getExistingOfflineSongs();
+  return userOfflineSongs;
+}
+
+Future<void> getExistingOfflineSongs() async {
+  final _dir = await getApplicationSupportDirectory();
+  final _audioDirPath = '${_dir.path}/tracks';
+  final _artworkDirPath = '${_dir.path}/artworks';
+  const audioExtensions = [
+    'adts',
+    'aif',
+    'aiff',
+    'aptx',
+    'aptx_hd',
+    'ast',
+    'avi',
+    'caf',
+    'cavsvideo',
+    'daud',
+    'mp2',
+    'mp3',
+    'm4a',
+    'oga',
+    'oma',
+    'tta',
+    'wav',
+    'wsaud',
+    'flac',
+  ];
+  try {
+    await for (final file in Directory(_audioDirPath).list()) {
+      if (file is File &&
+          audioExtensions.contains(
+            extension(basename(file.path)).substring(1),
+          )) {
+        final filename = basename(
+          file.path,
+        ).replaceAll(extension(basename(file.path)), '');
+        final ids = Uri.parse('?$filename').queryParameters;
+        if (ids['mb'] != null && ids['mb']!.isNotEmpty) {
+          if (!userOfflineSongs.any((e) => e['id'].contains(ids['mb']))) {
+            final song = await getSongByRecordingDetails(filename);
+            final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
+            if (imageFiles.isNotEmpty) {
+              song['artworkPath'] = imageFiles.first.path;
+              song['highResImage'] = imageFiles.first.path;
+              song['lowResImage'] = imageFiles.first.path;
+            }
+            song['audioPath'] = file.path;
+            userOfflineSongs.add(song);
+            addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+            currentOfflineSongsLength.value = userOfflineSongs.length;
+          }
+        }
+      }
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
 }
 
@@ -831,8 +891,8 @@ bool isSongDerivative(
 }
 
 bool checkSong(dynamic songA, dynamic songB) {
-  songA['id'] = parseEntityId(songA);
-  songB['id'] = parseEntityId(songB);
+  if (songA is Map) songA['id'] = parseEntityId(songA);
+  if (songB is Map) songB['id'] = parseEntityId(songB);
   if (songA is String && songB is String)
     return checkEntityId(songA, songB) || checkEntityId(songB, songA);
   if (songA is String && !(songB is String))

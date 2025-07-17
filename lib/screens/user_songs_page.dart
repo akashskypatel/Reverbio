@@ -86,7 +86,9 @@ class _UserSongsPageState extends State<UserSongsPage> {
                   });
               },
               icon: Icon(
-                _isEditEnabled ? FluentIcons.edit_off_24_filled : FluentIcons.edit_line_horizontal_3_24_filled,
+                _isEditEnabled
+                    ? FluentIcons.edit_off_24_filled
+                    : FluentIcons.edit_line_horizontal_3_24_filled,
                 color: _theme.colorScheme.primary,
               ),
             ),
@@ -100,12 +102,12 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Widget _buildQueueActionsList() {
     return ValueListenableBuilder(
       valueListenable: activeQueueLength,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return Row(
           children: [
             ValueListenableBuilder<AudioServiceRepeatMode>(
               valueListenable: repeatNotifier,
-              builder: (_, repeatMode, __) {
+              builder: (context, repeatMode, __) {
                 return repeatMode != AudioServiceRepeatMode.none
                     ? IconButton(
                       icon: Icon(
@@ -230,7 +232,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                     Expanded(
                       child: ValueListenableBuilder(
                         valueListenable: listLengthNotifier,
-                        builder: (_, value, __) {
+                        builder: (context, value, __) {
                           return filteredPlaylists.isEmpty
                               ? const Center(child: Text('No playlists found'))
                               : ListView.builder(
@@ -387,24 +389,34 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Widget _buildCustomScrollView(
     String title,
     IconData icon,
-    List songsList,
+    Future songsListFuture,
     ValueNotifier<int> length,
   ) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: buildPlaylistHeader(title, icon, length),
-          ),
-        ),
-        SongList(
-          page: widget.page,
-          title: getTitle(widget.page, context),
-          isEditable: widget.page == 'queue' || _isEditEnabled,
-          inputData: songsList,
-        ),
-      ],
+    return FutureBuilder(
+      future: songsListFuture,
+      builder: (context, snapshot) {
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: buildPlaylistHeader(title, icon, length),
+              ),
+            ),
+            ValueListenableBuilder(
+              valueListenable: currentOfflineSongsLength,
+              builder: (context, _context, ___) {
+                return SongList(
+                  page: widget.page,
+                  title: getTitle(widget.page, context),
+                  isEditable: widget.page == 'queue' || _isEditEnabled,
+                  future: songsListFuture,
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -428,14 +440,14 @@ class _UserSongsPageState extends State<UserSongsPage> {
         FluentIcons.heart_24_regular;
   }
 
-  List getSongsList(String page) {
+  Future<List> getSongsList(String page) {
     return {
-          'liked': userLikedSongsList,
-          'offline': userOfflineSongs,
-          'recents': userRecentlyPlayed,
-          'queue': activeQueue['list'],
+          'liked': Future.value(userLikedSongsList),
+          'offline': getUserOfflineSongs(),
+          'recents': Future.value(userRecentlyPlayed),
+          'queue': Future.value(activeQueue['list'] as List),
         }[page] ??
-        activeQueue['list'];
+        Future.value(activeQueue['list'] as List);
   }
 
   ValueNotifier<int> getLength(String page) {
