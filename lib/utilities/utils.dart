@@ -6,7 +6,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -273,9 +275,7 @@ Future<int> checkUrl(String url) async {
     if (isFilePath(url)) return (await doesFileExist(url)) ? 200 : 400;
     final response = await http.head(Uri.parse(url));
     if (response.statusCode == 403) {
-      showToast(
-        'Forbidden error trying to play YouTube Stream. YouTube may have temporarily blocked your IP address.',
-      );
+      showToast(NavigationManager().context.l10n!.youtubeInaccessible);
       logger.log(
         'Forbidden error trying to play YouTube Stream',
         response,

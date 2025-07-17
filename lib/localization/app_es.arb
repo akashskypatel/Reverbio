@@ -184,5 +184,6 @@
   "pause": "Pausa",
   "next": "Siguiente",
   "previous": "Anterior",
-  "repeat": "Repetir"
+  "repeat": "Repetir",
+  "youtubeInaccessible": "Error 403 Prohibido al intentar reproducir la transmisión de YouTube. YouTube puede haber bloqueado temporalmente tu dirección IP. Intenta cambiar de red o vuelve a intentarlo más tarde."
 }

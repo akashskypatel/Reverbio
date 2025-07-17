@@ -184,5 +184,6 @@
   "pause": "Jeda",
   "next": "Berikutnya",
   "previous": "Sebelumnya",
-  "repeat": "Ulangi"
+  "repeat": "Ulangi",
+  "youtubeInaccessible": "Error 403 Terlarang saat mencoba memutar YouTube Stream. YouTube mungkin telah memblokir sementara alamat IP Anda. Coba ubah jaringan Anda atau coba lagi nanti."
 }

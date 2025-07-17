@@ -184,5 +184,6 @@
   "pause": "Pause",
   "next": "Suivant",
   "previous": "Précédent",
-  "repeat": "Répéter"
+  "repeat": "Répéter",
+  "youtubeInaccessible": "Erreur 403 Interdit lors de la tentative de lecture du flux YouTube. YouTube a peut-être temporairement bloqué votre adresse IP. Essayez de changer de réseau ou réessayez un peu plus tard."
 }

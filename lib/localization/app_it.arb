@@ -184,5 +184,6 @@
   "pause": "Pausa",
   "next": "Successivo",
   "previous": "Precedente",
-  "repeat": "Ripeti"
+  "repeat": "Ripeti",
+  "youtubeInaccessible": "Errore 403 Accesso negato durante il tentativo di riproduzione dello stream YouTube. YouTube potrebbe aver temporaneamente bloccato il tuo indirizzo IP. Prova a cambiare rete o riprova più tardi."
 }

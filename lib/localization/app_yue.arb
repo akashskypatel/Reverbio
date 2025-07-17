@@ -184,5 +184,6 @@
   "pause": "暫停",
   "next": "下一首",
   "previous": "上一首",
-  "repeat": "重複"
+  "repeat": "重複",
+  "youtubeInaccessible": "嘗試播放 YouTube 串流時出現 403 禁止錯誤。YouTube 可能暫時封鎖咗你嘅 IP 地址。試下轉換網絡或者等一陣再試。"
 }

@@ -184,5 +184,6 @@
   "pause": "暂停",
   "next": "下一首",
   "previous": "上一首",
-  "repeat": "重复播放"
+  "repeat": "重复播放",
+  "youtubeInaccessible": "尝试播放 YouTube 流媒体时出现 403 禁止错误。YouTube 可能暂时封锁了您的 IP 地址。请尝试更换网络或稍后再试。"
 }

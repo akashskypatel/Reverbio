@@ -184,5 +184,6 @@
   "pause": "Pause",
   "next": "Weiter",
   "previous": "Zurück",
-  "repeat": "Wiederholen"
+  "repeat": "Wiederholen",
+  "youtubeInaccessible": "Fehler 403 – Zugriff verweigert beim Abspielen des YouTube-Streams. YouTube hat Ihre IP-Adresse möglicherweise vorübergehend gesperrt. Versuchen Sie, Ihr Netzwerk zu wechseln, oder versuchen Sie es später erneut."
 }

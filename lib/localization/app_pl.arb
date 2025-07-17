@@ -184,5 +184,6 @@
   "pause": "Pauza",
   "next": "Następny",
   "previous": "Poprzedni",
-  "repeat": "Powtórz"
+  "repeat": "Powtórz",
+  "youtubeInaccessible": "Błąd 403 Zabronione podczas próby odtwarzania strumienia YouTube. YouTube mógł tymczasowo zablokować Twój adres IP. Spróbuj zmienić sieć lub spróbuj ponownie za jakiś czas."
 }
