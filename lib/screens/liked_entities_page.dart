@@ -116,25 +116,34 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
           child: Column(
             children: [
               _buildSearchBar(context),
-              _buildGenreList(),
-              SectionHeader(
-                title:
-                    widget.page == 'artists'
-                        ? context.l10n!.artists
-                        : context.l10n!.albums,
+              Padding(
+                padding: commonSingleChildScrollViewPadding,
+                child: _buildGenreList(),
               ),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final innerWidth = constraints.maxWidth;
-                  final innerHeight = constraints.maxHeight;
-                  return ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: innerHeight,
-                      maxWidth: innerWidth,
-                    ),
-                    child: Wrap(children: cardList),
-                  );
-                },
+              Padding(
+                padding: commonSingleChildScrollViewPadding,
+                child: SectionHeader(
+                  title:
+                      widget.page == 'artists'
+                          ? context.l10n!.artists
+                          : context.l10n!.albums,
+                ),
+              ),
+              Padding(
+                padding: commonSingleChildScrollViewPadding,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final innerWidth = constraints.maxWidth;
+                    final innerHeight = constraints.maxHeight;
+                    return ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: innerHeight,
+                        maxWidth: innerWidth,
+                      ),
+                      child: Wrap(children: cardList),
+                    );
+                  },
+                ),
               ),
             ],
           ),

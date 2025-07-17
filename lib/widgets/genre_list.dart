@@ -86,17 +86,20 @@ class _GenreListState extends State<GenreList> {
   }
 
   List<PopupMenuItem<String>> _buildSortMenuItems(BuildContext context) {
+    final nameIcon =
+        sortAsc
+            ? FluentIcons.text_sort_ascending_16_filled
+            : FluentIcons.text_sort_descending_16_filled;
+    final countIcon =
+        sortAsc
+            ? FluentIcons.chevron_up_16_filled
+            : FluentIcons.chevron_down_16_filled;
     return [
       PopupMenuItem<String>(
         value: 'name',
         child: Row(
           children: [
-            Icon(
-              sortAsc
-                  ? FluentIcons.text_sort_ascending_16_filled
-                  : FluentIcons.text_sort_descending_16_filled,
-              color: _theme.colorScheme.primary,
-            ),
+            Icon(nameIcon, color: _theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(context.l10n!.name),
           ],
@@ -106,12 +109,7 @@ class _GenreListState extends State<GenreList> {
         value: 'count',
         child: Row(
           children: [
-            Icon(
-              sortAsc
-                  ? FluentIcons.chevron_up_16_filled
-                  : FluentIcons.chevron_down_16_filled,
-              color: _theme.colorScheme.primary,
-            ),
+            Icon(countIcon, color: _theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(context.l10n!.count),
           ],
@@ -131,6 +129,7 @@ class _GenreListState extends State<GenreList> {
         else
           return valueB.compareTo(valueA);
       });
+      if (mounted) setState(() {});
     }
 
     if (value == sortCurrent)
