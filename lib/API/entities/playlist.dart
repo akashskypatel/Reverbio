@@ -152,7 +152,7 @@ String createCustomPlaylist(
   List<dynamic>? songList,
 }) {
   final customPlaylist = {
-    'id': playlistName,
+    'id': 'uc=${playlistName.replaceAll(r'\s+', '_')}',
     'title': playlistName,
     'source': 'user-created',
     'primary-type': 'playlist',
@@ -261,22 +261,14 @@ void removeUserCustomPlaylist(dynamic playlist) {
 
 Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
   try {
-    playlist['id'] = parseEntityId(playlist);
-    if (playlist['id']?.isEmpty) throw Exception('ID is null or empty');
+    final playlistId = parseEntityId(playlist);
+    if (playlist is Map) playlist['id'] = playlistId;
+    if (playlist is String)
+      playlist = await getPlaylistInfoForWidget(playlistId);
+    final ytid = Uri.parse('?$playlistId').queryParameters['yt'];
+    if (ytid == null || ytid.isEmpty) return !add;
     if (add) {
-      if (playlist != null && playlist.isNotEmpty) {
-        userLikedPlaylists.addOrUpdate('id', playlist['id'], {
-          'id': playlist['id'],
-          'title': playlist['title'],
-          'artist': playlist['artist'],
-          'image': playlist['image'],
-        });
-      } else {
-        playlist = await getPlaylistInfoForWidget(playlist);
-        if (playlist != null || playlist.isNotEmpty) {
-          userLikedPlaylists.add(playlist);
-        }
-      }
+      userLikedPlaylists.addOrUpdate('id', playlistId, playlist);
       currentLikedPlaylistsLength.value++;
     } else {
       userLikedPlaylists.removeWhere((value) => checkPlaylist(playlist, value));
@@ -539,7 +531,8 @@ Future<Map> getPlaylistInfoForWidget(
       playlist['artists'] =
           playlist['list']
               .map((song) => (song['artist'] as String).trim())
-              .toSet();
+              .toSet()
+              .toList();
       if (playlist['artists'].length == 1)
         playlist['artist'] = playlist['artists'].first;
     }

@@ -273,7 +273,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
           onPressed: () {
             playlistLikeStatus.value = !playlistLikeStatus.value;
             updatePlaylistLikeStatus(
-              _playlist['ytid'],
+              _playlist,
               playlistLikeStatus.value,
             );
           },

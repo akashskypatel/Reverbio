@@ -291,7 +291,7 @@ class _LibraryPageState extends State<LibraryPage> {
           children: [
             SectionHeader(title: context.l10n!.likedPlaylists),
             if (userLikedPlaylists.isNotEmpty)
-              _buildPlaylistListView(context, userLikedPlaylists, 'user-liked'),
+              _buildPlaylistListView(context, userLikedPlaylists, 'youtube'),
           ],
         );
       },
@@ -328,7 +328,7 @@ class _LibraryPageState extends State<LibraryPage> {
     _buildPlaylistBars(playlists);
     final bars =
         userPlaylistBars
-            .where((value) => value.playlistData!['source'] == source)
+            .where((value) => value.playlistData!['source']?.toLowerCase() == source.toLowerCase())
             .toList();
     return ListView.builder(
       shrinkWrap: true,
