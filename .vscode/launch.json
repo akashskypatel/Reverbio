@@ -34,7 +34,7 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
-            "deviceId": "android",
+            "deviceId": "emulator-5554",
             "args": ["--no-enable-impeller"]
         }
     ]

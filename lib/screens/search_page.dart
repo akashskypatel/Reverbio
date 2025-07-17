@@ -330,6 +330,7 @@ class _SearchPageState extends State<SearchPage> {
       },
     };
     return CustomScrollView(
+      physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       slivers: [
         if ([
