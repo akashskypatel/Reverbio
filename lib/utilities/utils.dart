@@ -276,11 +276,10 @@ Future<int> checkUrl(String url) async {
     final response = await http.head(Uri.parse(url));
     if (response.statusCode == 403) {
       showToast(NavigationManager().context.l10n!.youtubeInaccessible);
-      logger.log(
-        'Forbidden error trying to play YouTube Stream',
-        response,
-        null,
-      );
+      logger.log('Forbidden error trying to play YouTube Stream', {
+        'message': response.body,
+        'status': response.statusCode,
+      }, null);
     }
     return response.statusCode;
   } catch (e, stackTrace) {

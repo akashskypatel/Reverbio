@@ -98,3 +98,11 @@ var sleepTimerNotifier = ValueNotifier<Duration?>(null);
 // Server-Notifiers
 
 final announcementURL = ValueNotifier<String?>(null);
+
+final prepareNextSong = ValueNotifier<bool>(
+  Hive.box('settings').get('prepareNextSong', defaultValue: false),
+);
+
+final useProxies = ValueNotifier<bool>(
+  Hive.box('settings').get('useProxies', defaultValue: false),
+);

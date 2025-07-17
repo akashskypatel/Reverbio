@@ -594,25 +594,28 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       /* if (index < queueSongBars.length) {
         isError = !(await queueSongBars[index].queueSong(play: play));
       } */
-      final newIndex =
-          index >= queueSongBars.length && loopAllSongs ? 0 : index + 1;
-      if (play &&
-          !isError &&
-          queueSongBars.length > 1 &&
-          newIndex != index &&
-          newIndex < queueSongBars.length)
-        unawaited(queueSongBars[newIndex].prepareSong());
+      // Prepare next song
+      if (prepareNextSong.value) {
+        final newIndex =
+            index >= queueSongBars.length && loopAllSongs ? 0 : index + 1;
+        if (play &&
+            !isError &&
+            queueSongBars.length > 1 &&
+            newIndex != index &&
+            newIndex < queueSongBars.length)
+          unawaited(queueSongBars[newIndex].prepareSong());
 
-      if (play &&
-          isError &&
-          skipOnError &&
-          newIndex < queueSongBars.length &&
-          newIndex != index)
-        return await queueSong(
-          songBar: queueSongBars[newIndex],
-          play: play,
-          skipOnError: skipOnError,
-        );
+        if (play &&
+            isError &&
+            skipOnError &&
+            newIndex < queueSongBars.length &&
+            newIndex != index)
+          return await queueSong(
+            songBar: queueSongBars[newIndex],
+            play: play,
+            skipOnError: skipOnError,
+          );
+      }
       final isOffline = songBar.song['isOffline'] ?? false;
       final preliminaryTag = mapToMediaItem(songBar.song);
       if (songBar.song['songUrl'] == null &&

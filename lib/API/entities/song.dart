@@ -434,8 +434,16 @@ Future<dynamic> findMBSong(dynamic song) async {
 Future<StreamManifest> getSongManifest(String songId) async {
   try {
     final manifest =
-    //await pxm.getSongManifest(songId) ??
-    await yt.videos.streams.getManifest(songId, ytClients: userChosenClients);
+        useProxies.value
+            ? await pxm.getSongManifest(songId) ??
+                await yt.videos.streams.getManifest(
+                  songId,
+                  ytClients: userChosenClients,
+                )
+            : await yt.videos.streams.getManifest(
+              songId,
+              ytClients: userChosenClients,
+            );
     return manifest;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

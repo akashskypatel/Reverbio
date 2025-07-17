@@ -137,7 +137,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         CustomBar(
           context.l10n!.audioQuality,
-          Icons.music_note,
+          FluentIcons.headphones_sound_wave_24_filled,
           onTap:
               () => _showAudioQualityPicker(
                 context,
@@ -222,6 +222,34 @@ class _SettingsPageState extends State<SettingsPage> {
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _toggleSkipNonMusic(context, value),
+              ),
+            );
+          },
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: prepareNextSong,
+          builder: (context, value, __) {
+            return CustomBar(
+              context.l10n!.prepareNextSong,
+              FluentIcons.music_note_2_24_filled,
+              borderRadius: commonCustomBarRadiusLast,
+              trailing: Switch(
+                value: value,
+                onChanged: (value) => _togglePrepareNextSong(context, value),
+              ),
+            );
+          },
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: useProxies,
+          builder: (context, value, __) {
+            return CustomBar(
+              context.l10n!.useProxies,
+              FluentIcons.server_link_24_filled,
+              borderRadius: commonCustomBarRadiusLast,
+              trailing: Switch(
+                value: value,
+                onChanged: (value) => _toggleUseProxies(context, value),
               ),
             );
           },
@@ -1047,6 +1075,18 @@ class _SettingsPageState extends State<SettingsPage> {
   void _togglePluginsSupport(BuildContext context, bool value) {
     addOrUpdateData('settings', 'pluginsSupport', value);
     pluginsSupport.value = value;
+    showToast(context.l10n!.settingChangedMsg);
+  }
+
+  void _togglePrepareNextSong(BuildContext context, bool value) {
+    addOrUpdateData('settings', 'prepareNextSong', value);
+    prepareNextSong.value = value;
+    showToast(context.l10n!.settingChangedMsg);
+  }
+
+  void _toggleUseProxies(BuildContext context, bool value) {
+    addOrUpdateData('settings', 'useProxies', value);
+    useProxies.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }
 
