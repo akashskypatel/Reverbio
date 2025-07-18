@@ -290,6 +290,7 @@ Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
                   (e) => Map<String, dynamic>.from({
                     'id': 'yt=${e.id}',
                     'value': e.title,
+                    'title': e.title,
                     'videoCount': e.videoCount,
                     'source': 'youtube',
                     'entity': 'playlist',
