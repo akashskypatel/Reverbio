@@ -26,7 +26,6 @@ import 'dart:convert';
 import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
-import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/settings_manager.dart';
@@ -262,26 +261,43 @@ Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
 
 Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
   String query, {
-  int limit = 3,
+  int offset = 0,
+  List<SearchList> resultList = const [],
 }) async {
   try {
-    final results = await getPlaylists(query: query, type: 'playlist');
+    final index = resultList.isNotEmpty ? (offset ~/ 20) : 0;
+    final results =
+        offset != 0 && offset >= (20 * resultList.length)
+            ? await resultList.last
+                .nextPage() //if offset is greater than list length * 20 get next page from last item
+            : resultList.isNotEmpty
+            ? resultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
+            : await yt.search.searchContent(
+              query,
+              filter: TypeFilters.playlist,
+            ); //if result list is empty then make a new search
+    if ((offset == 0 || offset >= (20 * resultList.length)) && results != null)
+      resultList.add(results);
     return {
       'playlist': {
-        'count': results.length,
-        'offset': 0,
+        'count': results?.length ?? 0,
+        'offset': offset,
+        'resultList': resultList,
         'data':
             results
+                ?.whereType<SearchPlaylist>()
                 .map(
                   (e) => Map<String, dynamic>.from({
-                    ...e,
-                    'value': e['title'],
+                    'id': 'yt=${e.id}',
+                    'value': e.title,
+                    'videoCount': e.videoCount,
+                    'source': 'youtube',
                     'entity': 'playlist',
+                    'primary-type': 'playlist',
                   }),
                 )
-                .toList()
-                .take(limit)
-                .toList(),
+                .toList() ??
+            [],
       },
     };
   } catch (e, stackTrace) {
@@ -299,9 +315,10 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
   int maxScore = 0,
   bool minimal = true,
   String? entity,
+  List<SearchList>? resultList,
 }) async {
   final futures = <Future>[];
-  if (entity != null) {
+  if (entity != null && ['artist', 'song', 'album'].contains(entity)) {
     futures.add(
       getMBSearchSuggestions(
         query,
@@ -310,6 +327,14 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
         minimal: minimal,
         maxScore: maxScore,
         offset: offset,
+      ),
+    );
+  } else if (entity == 'playlist') {
+    futures.add(
+      getYTPlaylistSuggestions(
+        query,
+        offset: offset,
+        resultList: resultList ?? [],
       ),
     );
   } else if (!minimal) {
@@ -342,6 +367,13 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
           minimal: minimal,
           maxScore: maxScore,
           offset: offset,
+        ),
+      )
+      ..add(
+        getYTPlaylistSuggestions(
+          query,
+          offset: offset,
+          resultList: resultList ?? [],
         ),
       );
   } else {

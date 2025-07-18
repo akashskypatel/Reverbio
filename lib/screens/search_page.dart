@@ -167,6 +167,7 @@ class _SearchPageState extends State<SearchPage> {
     int offset = 0,
     bool minimal = true,
     String? entity,
+    dynamic resultList,
   }) async {
     _fetching.value = true;
     if (_suggestionsFuture != null) _suggestionsFuture?.ignore();
@@ -177,6 +178,7 @@ class _SearchPageState extends State<SearchPage> {
       minimal: minimal,
       maxScore: maxScore,
       entity: entity,
+      resultList: resultList,
     );
     await _suggestionsFuture?.whenComplete(() {
       if (mounted)
@@ -372,17 +374,19 @@ class _SearchPageState extends State<SearchPage> {
         onPressed:
             (suggestionList['offset'] ?? 0) > 0
                 ? () async {
+                  final _limit = header == 'playlist' ? 20 : _submitLimit;
                   final offset = math.max(
                     0,
-                    (suggestionList['offset'] ?? 0) - _submitLimit,
+                    (suggestionList['offset'] ?? 0) - _limit,
                   );
                   await _setSearchFuture(
                     _searchBar.text,
-                    limit: _submitLimit,
+                    limit: _limit,
                     offset: offset,
                     minimal: false,
                     maxScore: 50,
-                    entity: suggestionList['entity'],
+                    entity: header.toLowerCase(),
+                    resultList: suggestionList['resultList'],
                   );
                 }
                 : null,
@@ -398,14 +402,16 @@ class _SearchPageState extends State<SearchPage> {
         onPressed:
             (suggestionList['data'] ?? []).isNotEmpty
                 ? () async {
-                  final offset = (suggestionList['offset'] ?? 0) + _submitLimit;
+                  final _limit = header == 'playlist' ? 20 : _submitLimit;
+                  final offset = (suggestionList['offset'] ?? 0) + _limit;
                   await _setSearchFuture(
                     _searchBar.text,
-                    limit: _submitLimit,
+                    limit: _limit,
                     offset: offset,
                     minimal: false,
                     maxScore: 50,
                     entity: header.toLowerCase(),
+                    resultList: suggestionList['resultList'],
                   );
                 }
                 : null,
