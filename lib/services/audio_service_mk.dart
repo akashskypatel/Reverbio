@@ -57,20 +57,30 @@ class AudioPlayerService {
   static final Player _player = Player();
   static bool _isShuffleEnabled = false;
   static double _volume = settings.volume.toDouble();
-  static final _processingStateController =
-      StreamController<AudioProcessingState>.broadcast();
-  static final _indexController = StreamController<int>.broadcast();
+
   static final _volumeNotifier = ValueNotifier(_volume);
   static AudioProcessingState _processingState = AudioProcessingState.idle;
   static AudioPlayerState _playerState = AudioPlayerState.uninitialized;
+
+  final List<SongBar> _queueSongBars = [];
+
+  static final _indexController = StreamController<int>.broadcast();
+  static final _processingStateController =
+      StreamController<AudioProcessingState>.broadcast();
   static final _playerStateController =
       StreamController<AudioPlayerState>.broadcast();
-  final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
-  final List<SongBar> _queueSongBars = [];
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
-  StreamSubscription<MediaItem>? _mediaItemSubscription;
 
+  StreamSubscription<MediaItem>? _mediaItemSubscription;
+  StreamSubscription? _playerStreamBuffer;
+  StreamSubscription? _playerStreamCompleted;
+  StreamSubscription? _playerStreamPlaying;
+  StreamSubscription? _playerStreamError;
+
+  final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
+  ValueNotifier<double> get volumeNotifier => _volumeNotifier;
   ValueNotifier<SongBar?> get songValueNotifier => _songValueNotifier;
+
   List<SongBar> get queueSongBars => _queueSongBars;
   AudioPlayerState get playerState => _playerState;
   AudioProcessingState get state => _processingState;
@@ -119,11 +129,10 @@ class AudioPlayerService {
   Stream<int> get currentIndexStream => _indexController.stream;
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
   Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
-  ValueNotifier<double> get volumeNotifier => _volumeNotifier;
 
   void _initialize() {
     _playerState = AudioPlayerState.initialized;
-    _player.stream.buffer.listen((buffer) {
+    _playerStreamBuffer = _player.stream.buffer.listen((buffer) {
       if ((_player.state.buffer.inSeconds < (_player.state.rate * 60)) ||
           _player.state.buffering) {
         _updateProcessingState(AudioProcessingState.buffering);
@@ -136,7 +145,7 @@ class AudioPlayerService {
         null,
       );
     });
-    _player.stream.completed.listen((isCompleted) {
+    _playerStreamCompleted = _player.stream.completed.listen((isCompleted) {
       if (isCompleted && _processingState != AudioProcessingState.error) {
         _updateProcessingState(AudioProcessingState.completed);
         logger.log(
@@ -146,7 +155,7 @@ class AudioPlayerService {
         );
       }
     });
-    _player.stream.playing.listen((playing) {
+    _playerStreamPlaying = _player.stream.playing.listen((playing) {
       if (playing && _processingState != AudioProcessingState.error) {
         _updateProcessingState(AudioProcessingState.ready);
         _updatePlayerState(AudioPlayerState.paused);
@@ -157,7 +166,7 @@ class AudioPlayerService {
         );
       }
     });
-    _player.stream.error.listen((error) {
+    _playerStreamError = _player.stream.error.listen((error) {
       if (error != '') {
         logger.log('Player Stream Error', error, StackTrace.current);
         _updateProcessingState(AudioProcessingState.error);
@@ -225,7 +234,17 @@ class AudioPlayerService {
 
   Future<void> dispose() async {
     _updatePlayerState(AudioPlayerState.uninitialized);
+    await close();
+    await _playerStreamBuffer?.cancel();
+    await _playerStreamCompleted?.cancel();
+    await _playerStreamPlaying?.cancel();
+    await _playerStreamError?.cancel();
+    await _mediaItemSubscription?.cancel();
     await _processingStateController.close();
+    await _indexController.close();
+    await _processingStateController.close();
+    await _playerStateController.close();
+    await _mediaItemStreamController.close();
     return _player.dispose();
   }
 
@@ -283,7 +302,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _setupEventSubscriptions();
     _updatePlaybackState();
   }
-
   final AudioPlayerService audioPlayer = AudioPlayerService();
 
   Timer? _sleepTimer;
@@ -316,11 +334,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   bool get playing => audioPlayer.playing;
   Stream<Duration> get positionStream => audioPlayer.positionStream;
 
-  @override
-  @override
-  Future<void> onTaskRemoved() async {
-    await audioPlayer.stop().then((_) => audioPlayer.dispose());
-
+  Future<void> dispose() async {
     await _playbackEventSubscription.cancel();
     await _stateChangeSubscription.cancel();
     await _durationSubscription.cancel();
@@ -328,6 +342,12 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _sequenceStateSubscription.cancel();
     await _positionDataSubscription.cancel();
     await _mediaItemSubscription.cancel();
+    await audioPlayer.dispose();
+  }
+
+  @override
+  Future<void> onTaskRemoved() async {
+    await close();
     await super.onTaskRemoved();
   }
 
@@ -393,7 +413,12 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> rewind() =>
       seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
 
-  Future<void> close() => audioPlayer.stop();
+  Future<void> close() async {
+    await audioPlayer.close();
+    playbackState.add(PlaybackState());
+    mediaItem.add(null);
+  }
+
   Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
   Future<void> seekToStart() => audioPlayer.seekToStart();
 

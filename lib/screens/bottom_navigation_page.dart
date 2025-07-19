@@ -133,6 +133,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
+    showMiniPlayer = !nowPlayingOpen;
     try {
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -238,7 +239,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
   Widget _buildMiniPlayerCloseButton(BuildContext context) {
     return IconButton(
       onPressed: () {
-        audioHandler.stop();
+        audioHandler.close();
         if (mounted)
           setState(() {
             showMiniPlayer = false;

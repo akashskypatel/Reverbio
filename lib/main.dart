@@ -91,7 +91,7 @@ const appLanguages = <String, String>{
   'ไทย': 'th',
   'Türkçe': 'tr',
   'Українська': 'uk',
-  'Tiếng Việt': 'vi'
+  'Tiếng Việt': 'vi',
 };
 
 final List<Locale> appSupportedLocales =
@@ -193,6 +193,7 @@ class _ReverbioState extends State<Reverbio> {
   @override
   void dispose() {
     Hive.close();
+    unawaited(audioHandler.dispose());
     super.dispose();
   }
 
