@@ -24,13 +24,13 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+//import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/data_manager.dart';
-import 'package:reverbio/services/playlist_sharing.dart';
+//import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -202,6 +202,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
         if (_playlist != null) ...[
           _buildSyncButton(),
           const SizedBox(width: 10),
+          /*
           if (_playlist['source'] == 'user-created')
             IconButton(
               icon: const Icon(FluentIcons.share_24_regular),
@@ -215,6 +216,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 await Clipboard.setData(ClipboardData(text: url));
               },
             ),
+          */
           ...PM.getWidgetsByType(
             _getPlaylistData,
             [

@@ -446,7 +446,7 @@ Future updatePlaylistList(BuildContext context, String playlistId) async {
 }
 
 int findPlaylistIndexByYtId(String ytid) {
-  return dbPlaylists.indexWhere((playlist) => playlist['id'] == ytid);
+  return dbPlaylists.indexWhere((playlist) => playlist['ytid'] == ytid);
 }
 
 /* Future<void> setActivePlaylist(Map info) async {
