@@ -106,9 +106,17 @@ class _PlaylistPageState extends State<PlaylistPage> {
                       widget.playlistData,
                       isArtist: widget.isArtist,
                     )
-                    : (widget.playlistData['primary-type']?.toLowerCase() ==
-                            'album'
-                        ? await getAlbumDetailsById(widget.playlistData['id'])
+                    : ([
+                          'artist',
+                          'album',
+                          'single',
+                          'ep',
+                          'broadcast',
+                          'other',
+                        ].contains(
+                          widget.playlistData['primary-type']?.toLowerCase(),
+                        )
+                        ? await getAlbumDetailsById(widget.playlistData)
                         : null)));
 
     if (_playlist != null) {
@@ -209,7 +217,15 @@ class _PlaylistPageState extends State<PlaylistPage> {
             ),
           ...PM.getWidgetsByType(
             _getPlaylistData,
-            widget.page == 'album' ? 'AlbumPageHeader' : 'PlaylistPageHeader',
+            [
+                  'album',
+                  'single',
+                  'ep',
+                  'broadcast',
+                  'other',
+                ].contains(widget.page)
+                ? 'AlbumPageHeader'
+                : 'PlaylistPageHeader',
             context,
           ),
           if (_playlist != null && _playlist['source'] == 'user-created')
@@ -222,7 +238,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   dynamic _getPlaylistData() {
     final data =
-        widget.page == 'album' || _playlist['isAlbum']
+        ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page) ||
+                _playlist['isAlbum']
             ? {
               ...(_playlist as Map),
               'album': _playlist['title'],
@@ -249,7 +266,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
     return PlaylistHeader(
       _buildPlaylistImage(),
-      widget.page == 'album'
+      ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page)
           ? _playlist['artist'] != null
               ? '${_playlist['artist']} - ${_playlist['title']}'
               : _playlist['title']
@@ -272,10 +289,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
           iconSize: pageHeaderIconSize,
           onPressed: () {
             playlistLikeStatus.value = !playlistLikeStatus.value;
-            updatePlaylistLikeStatus(
-              _playlist,
-              playlistLikeStatus.value,
-            );
+            updatePlaylistLikeStatus(_playlist, playlistLikeStatus.value);
           },
         );
       },

@@ -175,6 +175,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
+        /*
         ValueListenableBuilder<bool>(
           valueListenable: offlineMode,
           builder: (context, value, __) {
@@ -188,6 +189,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
+        */
       ],
     );
   }
@@ -1099,13 +1101,12 @@ class _SettingsPageState extends State<SettingsPage> {
           cancelText: context.l10n!.cancel,
           message: context.l10n!.clearSearchHistoryQuestion,
           onCancel: () => {Navigator.of(context).pop()},
-          onSubmit:
-              () => {
-                Navigator.of(context).pop(),
-                searchHistory = [],
-                deleteData('user', 'searchHistory'),
-                showToast('${context.l10n!.searchHistoryMsg}!'),
-              },
+          onSubmit: () {
+            searchHistory = [];
+            deleteData('user', 'searchHistory');
+            Navigator.of(context).pop();
+            showToast('${context.l10n!.searchHistoryMsg}!');
+          },
         );
       },
     );

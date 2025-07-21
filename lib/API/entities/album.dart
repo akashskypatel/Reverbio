@@ -265,7 +265,7 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
         'title': album['title'],
         'image': album['image'],
         'genres': album['genres'] ?? album['musicbrainz']?['genres'] ?? [],
-        'primary-type': 'album',
+        'primary-type': album['primary-type'],
       });
       currentLikedAlbumsLength.value++;
       album['album'] = album['title'];
