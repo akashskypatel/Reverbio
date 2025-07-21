@@ -88,10 +88,6 @@ class _SearchPageState extends State<SearchPage> {
       'albums': getAlbumDetailsById,
       'release-group': getAlbumDetailsById,
       'release-groups': getAlbumDetailsById,
-      //'song': getSongByReleaseDetails,
-      //'songs': getSongByReleaseDetails,
-      //'release': getSongByReleaseDetails,
-      //'releases': getSongByReleaseDetails,
       'playlist': getPlaylistInfoForWidget,
       'playlists': getPlaylistInfoForWidget,
     };
@@ -155,7 +151,10 @@ class _SearchPageState extends State<SearchPage> {
         });
     }
     if (!searchHistory.contains(_searchBar.text)) {
-      searchHistory.insert(0, _searchBar.text);
+      if (mounted)
+        setState(() {
+          searchHistory.insert(0, _searchBar.text);
+        });
       addOrUpdateData('user', 'searchHistory', searchHistory);
     }
   }
