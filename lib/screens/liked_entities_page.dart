@@ -113,37 +113,29 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
         }
         _buildCards(context);
         return SingleChildScrollView(
+          padding: commonSingleChildScrollViewPadding,
           child: Column(
             children: [
               _buildSearchBar(context),
-              Padding(
-                padding: commonSingleChildScrollViewPadding,
-                child: _buildGenreList(),
+              _buildGenreList(),
+              SectionHeader(
+                title:
+                    widget.page == 'artists'
+                        ? context.l10n!.artists
+                        : context.l10n!.albums,
               ),
-              Padding(
-                padding: commonSingleChildScrollViewPadding,
-                child: SectionHeader(
-                  title:
-                      widget.page == 'artists'
-                          ? context.l10n!.artists
-                          : context.l10n!.albums,
-                ),
-              ),
-              Padding(
-                padding: commonSingleChildScrollViewPadding,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final innerWidth = constraints.maxWidth;
-                    final innerHeight = constraints.maxHeight;
-                    return ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: innerHeight,
-                        maxWidth: innerWidth,
-                      ),
-                      child: Wrap(children: cardList),
-                    );
-                  },
-                ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final innerWidth = constraints.maxWidth;
+                  final innerHeight = constraints.maxHeight;
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: innerHeight,
+                      maxWidth: innerWidth,
+                    ),
+                    child: Wrap(children: cardList),
+                  );
+                },
               ),
             ],
           ),
