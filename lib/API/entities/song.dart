@@ -604,15 +604,16 @@ Future<void> makeSongOffline(dynamic song) async {
     }
 
     try {
-      final artworkFile = await _downloadAndSaveArtworkFile(
-        song['highResImage'],
-        _artworkFile.path,
-      );
+      final imagePath = await getValidImage(song);
+      if (imagePath != null) {
+        final artworkFile = await _downloadAndSaveArtworkFile(
+          imagePath,
+          _artworkFile.path,
+        );
 
-      if (artworkFile != null) {
-        song['artworkPath'] = artworkFile.path;
-        song['highResImage'] = artworkFile.path;
-        song['lowResImage'] = artworkFile.path;
+        if (artworkFile != null) {
+          song['offlineArtworkPath'] = artworkFile.path;
+        }
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -622,7 +623,7 @@ Future<void> makeSongOffline(dynamic song) async {
       );
     }
 
-    song['audioPath'] = _audioFile.path;
+    song['offlineAudioPath'] = _audioFile.path;
     userOfflineSongs.add(song);
     addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
     currentOfflineSongsLength.value = userOfflineSongs.length;
@@ -653,11 +654,9 @@ Future<void> getExistingOfflineSongs() async {
             final song = await getSongByRecordingDetails(filename);
             final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
             if (imageFiles.isNotEmpty) {
-              song['artworkPath'] = imageFiles.first.path;
-              song['highResImage'] = imageFiles.first.path;
-              song['lowResImage'] = imageFiles.first.path;
+              song['offlineArtworkPath'] = imageFiles.first.path;
             }
-            song['audioPath'] = file.path;
+            song['offlineAudioPath'] = file.path;
             userOfflineSongs.add(song);
             addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
             currentOfflineSongsLength.value = userOfflineSongs.length;
@@ -678,9 +677,9 @@ Future<String?> getOfflinePath(dynamic song) async {
   final audioFiles = await _getRelatedFiles(_audioDirPath, song);
   final artworkFiles = await _getRelatedFiles(_artworkDirPath, song);
   //TODO: add quality check
-  if (audioFiles.isNotEmpty) song['audioPath'] = audioFiles.first.path;
-  if (artworkFiles.isNotEmpty) song['image'] = artworkFiles.first.path;
-  return song['audioPath'];
+  if (audioFiles.isNotEmpty) song['offlineAudioPath'] = audioFiles.first.path;
+  if (artworkFiles.isNotEmpty) song['offlineArtworkPath'] = artworkFiles.first.path;
+  return song['offlineAudioPath'];
 }
 
 Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
@@ -727,20 +726,25 @@ Future<void> removeSongFromOffline(dynamic song) async {
   addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
 }
 
-Future<File?> _downloadAndSaveArtworkFile(String url, String filePath) async {
+Future<File?> _downloadAndSaveArtworkFile(Uri uri, String filePath) async {
   try {
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final file = File(filePath);
-      await file.writeAsBytes(response.bodyBytes);
+    if (uri.isScheme('file') && doesFileExist(uri.toFilePath())) {
+      final file = File(uri.toFilePath());
+      await File(filePath).writeAsBytes(file.readAsBytesSync());
       return file;
     } else {
-      logger.log(
-        'Failed to download file. Status code: ${response.statusCode}',
-        null,
-        null,
-      );
+      final response = await http.get(uri);
+      if (response.statusCode < 300) {
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        return file;
+      } else {
+        logger.log(
+          'Failed to download file. Status code: ${response.statusCode}',
+          null,
+          null,
+        );
+      }
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

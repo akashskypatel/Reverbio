@@ -428,6 +428,14 @@ List<String> _parseImagePath(dynamic obj) {
 List<String>? parseImage(dynamic obj) {
   final images = <String>{};
   if (obj == null) return null;
+  if (obj is Map && obj['offlineArtworkPath'] != null) {
+    if (obj['offlineArtworkPath'] is String)
+      images.add(obj['offlineArtworkPath']);
+    else if (obj['offlineArtworkPath'] is Map) {
+      final res = _parseImagePath(obj['offlineArtworkPath']);
+      images.addAll(res);
+    }
+  }
   if (obj is Map && obj['image'] != null) {
     if (obj['image'] is String && obj['image'].isNotEmpty)
       images.add(obj['image']);
@@ -476,4 +484,23 @@ List<String>? parseImage(dynamic obj) {
       images.add(obj['youtube']['bannerUrl']);
   }
   return images.isNotEmpty ? images.toList() : null;
+}
+
+Future<Uri?> getValidImage(dynamic obj) async {
+  try {
+    final images = parseImage(obj) ?? [];
+    if (images.isEmpty) return null;
+    for (final path in images) {
+      if (isFilePath(path) && doesFileExist(path))
+        return Uri.file(path);
+      else {
+        final imageUrl = Uri.parse(path);
+        if (await checkUrl(imageUrl.toString()) <= 300) return imageUrl;
+      }
+    }
+    return null;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
+  }
+  return null;
 }
