@@ -427,6 +427,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
       future: songsListFuture,
       builder: (context, snapshot) {
         return CustomScrollView(
+          physics: const NeverScrollableScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
@@ -570,7 +571,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
   }
 
   void _listener() {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   Widget _buildPlaylistImage(
