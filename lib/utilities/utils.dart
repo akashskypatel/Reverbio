@@ -431,7 +431,7 @@ List<String>? parseImage(dynamic obj) {
   if (obj is Map && obj['offlineArtworkPath'] != null) {
     if (obj['offlineArtworkPath'] is String)
       images.add(obj['offlineArtworkPath']);
-    else if (obj['offlineArtworkPath'] is Map) {
+    else if (obj['offlineArtworkPath'] is Map || obj['offlineArtworkPath'] is List) {
       final res = _parseImagePath(obj['offlineArtworkPath']);
       images.addAll(res);
     }
@@ -447,7 +447,7 @@ List<String>? parseImage(dynamic obj) {
   if (obj is Map && obj['images'] != null) {
     if (obj['images'] is String)
       images.add(obj['images']);
-    else if (obj['images'] is Map) {
+    else if (obj['images'] is Map || obj['images'] is List) {
       final res = _parseImagePath(obj['images']);
       images.addAll(res);
     }
@@ -455,7 +455,7 @@ List<String>? parseImage(dynamic obj) {
   if (obj is Map && obj['highResImage'] != null) {
     if (obj['highResImage'] is String)
       images.add(obj['highResImage']);
-    else if (obj['highResImage'] is Map) {
+    else if (obj['highResImage'] is Map || obj['highResImage'] is List) {
       final res = _parseImagePath(obj['highResImage']);
       images.addAll(res);
     }
@@ -463,7 +463,7 @@ List<String>? parseImage(dynamic obj) {
   if (obj is Map && obj['lowResImage'] != null) {
     if (obj['lowResImage'] is String)
       images.add(obj['lowResImage']);
-    else if (obj['lowResImage'] is Map) {
+    else if (obj['lowResImage'] is Map || obj['lowResImage'] is List) {
       final res = _parseImagePath(obj['lowResImage']);
       images.addAll(res);
     }
