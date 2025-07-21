@@ -20,9 +20,11 @@
  */
 
 import 'package:audio_service/audio_service.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -292,7 +294,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
         builder: (context, setState) {
           final theme = Theme.of(context);
           final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
-
+          final imagePathController = TextEditingController();
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
@@ -303,6 +305,11 @@ class _UserSongsPageState extends State<UserSongsPage> {
                   children: <Widget>[
                     const SizedBox(height: 15),
                     TextField(
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(
+                          RegExp(r'[/\\:*?"<>|&=]'),
+                        ),
+                      ],
                       decoration: InputDecoration(
                         labelText: context.l10n!.customPlaylistName,
                       ),
@@ -311,13 +318,41 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       },
                     ),
                     const SizedBox(height: 7),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: context.l10n!.customPlaylistImgUrl,
-                      ),
-                      onChanged: (value) {
-                        imageUrl = value;
-                      },
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: imagePathController,
+                            decoration: InputDecoration(
+                              labelText: context.l10n!.customPlaylistImgUrl,
+                            ),
+                            onChanged: (value) {
+                              imageUrl = value;
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            final path =
+                                (await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: [
+                                    'jpeg',
+                                    'jpg',
+                                    'png',
+                                    'gif',
+                                    'webp',
+                                    'bmp',
+                                  ],
+                                ))?.paths.first;
+                            imageUrl = path;
+                            if (imageUrl != null)
+                              imagePathController.text = imageUrl!;
+                          },
+                          icon: const Icon(FluentIcons.folder_open_24_filled),
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
                     ),
                   ],
                 ),
