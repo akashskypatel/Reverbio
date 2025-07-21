@@ -99,7 +99,7 @@ class PluginsManager {
       _plugin['settings'] = settings;
       String jsContent = '';
       if (isFilePath(settings['source'])) {
-        if (await doesFileExist(settings['source'])) {
+        if (doesFileExist(settings['source'])) {
           jsContent = await File(settings['source']).readAsString();
         }
       } else if (await checkUrl(settings['source']) < 400) {

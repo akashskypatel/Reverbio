@@ -641,33 +641,9 @@ Future<void> getExistingOfflineSongs() async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
-  const audioExtensions = [
-    'adts',
-    'aif',
-    'aiff',
-    'aptx',
-    'aptx_hd',
-    'ast',
-    'avi',
-    'caf',
-    'cavsvideo',
-    'daud',
-    'mp2',
-    'mp3',
-    'm4a',
-    'oga',
-    'oma',
-    'tta',
-    'wav',
-    'wsaud',
-    'flac',
-  ];
   try {
     await for (final file in Directory(_audioDirPath).list()) {
-      if (file is File &&
-          audioExtensions.contains(
-            extension(basename(file.path)).substring(1),
-          )) {
+      if (file is File && isAudio(file.path)) {
         final filename = basename(
           file.path,
         ).replaceAll(extension(basename(file.path)), '');

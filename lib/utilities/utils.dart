@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -254,17 +255,13 @@ bool isFilePath(String input) {
     return true;
   }
 
-  if (File(path).existsSync()) {
-    return true;
-  }
-
   return false;
 }
 
-Future<bool> doesFileExist(String path) async {
+bool doesFileExist(String path) {
   try {
     final file = File(path);
-    return await file.exists();
+    return file.existsSync();
   } catch (e) {
     return false; // Invalid path or permissions issue
   }
@@ -272,9 +269,9 @@ Future<bool> doesFileExist(String path) async {
 
 Future<int> checkUrl(String url) async {
   try {
-    if (isFilePath(url)) return (await doesFileExist(url)) ? 200 : 400;
+    if (isFilePath(url)) return (doesFileExist(url)) ? 200 : 400;
     final response = await http.head(Uri.parse(url));
-    if (response.statusCode == 403) {
+    if (response.statusCode == 403 && Uri.parse(url).host == 'youtube.com') {
       showToast(NavigationManager().context.l10n!.youtubeInaccessible);
       logger.log('Forbidden error trying to play YouTube Stream', {
         'message': response.body,
@@ -352,4 +349,131 @@ String removeDuplicates(String input, {int phraseLength = 1}) {
   }
 
   return buffer.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+bool isImage(String path) {
+  const imageExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.bmp'];
+  return imageExtensions.contains(extension(path));
+}
+
+bool isAudio(String path) {
+  const audioExtensions = [
+    '.adts',
+    '.aif',
+    '.aiff',
+    '.aptx',
+    '.aptx_hd',
+    '.ast',
+    '.avi',
+    '.caf',
+    '.cavsvideo',
+    '.daud',
+    '.mp2',
+    '.mp3',
+    '.m4a',
+    '.oga',
+    '.oma',
+    '.tta',
+    '.wav',
+    '.wsaud',
+    '.flac',
+  ];
+  return audioExtensions.contains(extension(path));
+}
+
+Set<String> _parseMapForImage(Map map, Set<String> images) {
+  for (final key in map.keys) {
+    if (map[key] is String && isImage(map[key]))
+      images.add(map[key]);
+    else if (map[key] is List) {
+      final res = _parseListForImage(map[key], images);
+      images.addAll(res);
+    } else if (map[key] is Map) {
+      final res = _parseMapForImage(map[key], images);
+      images.addAll(res);
+    }
+  }
+  return images;
+}
+
+Set<String> _parseListForImage(List list, Set<String> images) {
+  for (final item in list) {
+    if (item is String && (isUrl(item) || isFilePath(item)))
+      images.add(item);
+    else if (item is Map) {
+      final res = _parseMapForImage(item, images);
+      images.addAll(res);
+    } else if (item is List) {
+      final res = _parseListForImage(item, images);
+      images.addAll(res);
+    }
+  }
+  return images;
+}
+
+List<String> _parseImagePath(dynamic obj) {
+  final images = <String>{};
+  if (obj is String && (isUrl(obj) || isFilePath(obj))) images.add(obj);
+  if (obj is Map) {
+    final res = _parseMapForImage(obj, images);
+    images.addAll(res);
+  }
+  if (obj is List) {
+    final res = _parseListForImage(obj, images);
+    images.addAll(res);
+  }
+  return images.toList();
+}
+
+List<String>? parseImage(dynamic obj) {
+  final images = <String>{};
+  if (obj == null) return null;
+  if (obj is Map && obj['image'] != null) {
+    if (obj['image'] is String && obj['image'].isNotEmpty)
+      images.add(obj['image']);
+    else if (obj['image'] is Map || obj['image'] is List) {
+      final res = _parseImagePath(obj['image']);
+      images.addAll(res);
+    }
+  }
+  if (obj is Map && obj['images'] != null) {
+    if (obj['images'] is String)
+      images.add(obj['images']);
+    else if (obj['images'] is Map) {
+      final res = _parseImagePath(obj['images']);
+      images.addAll(res);
+    }
+  }
+  if (obj is Map && obj['highResImage'] != null) {
+    if (obj['highResImage'] is String)
+      images.add(obj['highResImage']);
+    else if (obj['highResImage'] is Map) {
+      final res = _parseImagePath(obj['highResImage']);
+      images.addAll(res);
+    }
+  }
+  if (obj is Map && obj['lowResImage'] != null) {
+    if (obj['lowResImage'] is String)
+      images.add(obj['lowResImage']);
+    else if (obj['lowResImage'] is Map) {
+      final res = _parseImagePath(obj['lowResImage']);
+      images.addAll(res);
+    }
+  }
+  if (obj is Map &&
+      obj['discogs'] != null &&
+      obj['discogs'] is Map &&
+      obj['discogs']['images'] != null) {
+    final res = _parseImagePath(obj['discogs']['images']);
+    images.addAll(res);
+  }
+  if (obj is Map && obj['youtube'] != null && obj['youtube'] is Map) {
+    if (obj['youtube']['logoUrl'] != null &&
+        obj['youtube']['logoUrl'].isNotEmpty)
+      images.add(obj['youtube']['logoUrl']);
+    if (obj['youtube']['bannerUrl'] != null &&
+        obj['youtube']['bannerUrl'].isNotEmpty)
+      images.add(obj['youtube']['bannerUrl']);
+  }
+  return images.isNotEmpty ? images.toList() : null;
 }

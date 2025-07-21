@@ -41,7 +41,6 @@ class BaseCard extends StatefulWidget {
     this.size = 220,
     this.iconSize,
     this.image,
-    this.imageUrl,
     this.inputData,
     this.showLabel = false,
     this.showOverflowLabel = false,
@@ -59,7 +58,6 @@ class BaseCard extends StatefulWidget {
   final bool showOverflowLabel;
   final bool showLike;
   final bool showIconLabel;
-  final String? imageUrl;
   final CachedNetworkImage? image;
   final bool imageOverlayMask;
   final Map<dynamic, dynamic>? inputData;
@@ -121,15 +119,26 @@ class _BaseCardState extends State<BaseCard> {
                     widget.inputData?['name'] ??
                     widget.inputData?['artist']) ==
                 null) ||
-        (['artist', 'album'].contains(widget.inputData?['primary-type']) &&
+        ([
+              'artist',
+              'album',
+              'single',
+              'ep',
+              'broadcast',
+              'other',
+            ].contains(widget.inputData?['primary-type']?.toLowerCase()) &&
             widget.inputData?['musicbrainz'] == null))
       switch (dataType) {
         case 'playlist':
           return getPlaylistInfoForWidget(widget.inputData);
-        case 'album':
-          return getAlbumDetailsById(widget.inputData);
         case 'artist':
           return getArtistDetails(widget.inputData);
+        case 'album':
+        case 'single':
+        case 'ep':
+        case 'broadcast':
+        case 'other':
+          return getAlbumDetailsById(widget.inputData);
         default:
       }
   }
@@ -218,71 +227,16 @@ class _BaseCardState extends State<BaseCard> {
     return null;
   }
 
-  String _parseImageLink() {
-    String link = '';
-    if (widget.inputData == null) return link;
-    try {
-      if (widget.inputData?['image'] != null) link = widget.inputData?['image'];
-      if (widget.inputData?['images'] != null && link.isEmpty) {
-        final front =
-            widget.inputData!['images']
-                .where((e) => e['front'] == true)
-                .toList();
-        if (front.isNotEmpty && link.isEmpty) {
-          widget.inputData?['image'] = front.first['image'];
-          link = front.first['image'];
-        }
-        widget.inputData?['image'] = widget.inputData?['images'][0]['image'];
-        link = widget.inputData?['images'][0]['image'];
-      }
-      if (dataType == 'artist' && link.isEmpty) {
-        widget.inputData?['image'] = _getPrimaryImageUrl(widget.inputData);
-        link =
-            widget.inputData?['image'] ??
-            widget.inputData?['youtube']?['logoUrl'] ??
-            widget.inputData?['youtube']?['bannerUrl'] ??
-            '';
-      }
-      return link;
-    } catch (e, stackTrace) {
-      logger.log('error in _parseImageLink', e, stackTrace);
-      return '';
-    }
-  }
-
-  String? _getPrimaryImageUrl(dynamic artistData) {
-    if (artistData == null ||
-        artistData['discogs'] == null ||
-        artistData['discogs']['images'] == null)
-      return null;
-    try {
-      final images = List<Map<dynamic, dynamic>>.from(
-        artistData['discogs']['images'],
-      );
-      final primaryImage = images.where((e) => e['type'] == 'primary');
-      if (primaryImage.isEmpty) return '';
-      return primaryImage.first['uri'];
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}',
-        e,
-        stackTrace,
-      );
-      return null;
-    }
-  }
-
   Future<Widget> _buildImage(BuildContext context) async {
     try {
-      final path =
-          (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-              ? widget.imageUrl!
-              : _parseImageLink();
-      if (path.isEmpty) return _buildNoArtworkCard(context);
-      if (isFilePath(path)) return _buildFileArtworkCard(path, context);
-      final imageUrl = Uri.parse(path);
-      if (await checkUrl(imageUrl.toString()) <= 300)
-        return _buildOnilneArtworkCard(imageUrl, context);
+      final images = parseImage(widget.inputData) ?? [];
+      if (images.isEmpty) return _buildNoArtworkCard(context);
+      for (final path in images) {
+        if (isFilePath(path) && doesFileExist(path)) return _buildFileArtworkCard(path, context);
+        final imageUrl = Uri.parse(path);
+        if (await checkUrl(imageUrl.toString()) <= 300)
+          return _buildOnilneArtworkCard(imageUrl, context);
+      }
       return _buildNoArtworkCard(context);
     } catch (e, stackTrace) {
       logger.log(
@@ -434,6 +388,10 @@ class _BaseCardState extends State<BaseCard> {
           !isLikedNotifier.value,
         );
       case 'album':
+      case 'single':
+      case 'ep':
+      case 'broadcast':
+      case 'other':
         if (widget.inputData?['source'] == 'youtube')
           return updatePlaylistLikeStatus(
             widget.inputData,
@@ -457,6 +415,10 @@ class _BaseCardState extends State<BaseCard> {
       case 'playlist':
         liked = isPlaylistAlreadyLiked(widget.inputData);
       case 'album':
+      case 'single':
+      case 'ep':
+      case 'broadcast':
+      case 'other':
         if (widget.inputData?['source'] == 'youtube')
           liked = isPlaylistAlreadyLiked(widget.inputData);
         else
@@ -490,7 +452,13 @@ class _BaseCardState extends State<BaseCard> {
               ? ''
               : dataType == 'playlist'
               ? context.l10n!.playlist
-              : dataType == 'album'
+              : [
+                'album',
+                'single',
+                'ep',
+                'broadcast',
+                'other',
+              ].contains(dataType)
               ? context.l10n!.album
               : dataType?.toTitleCase ?? 'Unknown',
           style: _theme.textTheme.labelSmall?.copyWith(
