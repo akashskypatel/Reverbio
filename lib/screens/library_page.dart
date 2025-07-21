@@ -19,9 +19,11 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -328,7 +330,11 @@ class _LibraryPageState extends State<LibraryPage> {
     _buildPlaylistBars(playlists);
     final bars =
         userPlaylistBars
-            .where((value) => value.playlistData!['source']?.toLowerCase() == source.toLowerCase())
+            .where(
+              (value) =>
+                  value.playlistData!['source']?.toLowerCase() ==
+                  source.toLowerCase(),
+            )
             .toList();
     return ListView.builder(
       shrinkWrap: true,
@@ -356,7 +362,7 @@ class _LibraryPageState extends State<LibraryPage> {
           final activeButtonBackground = theme.colorScheme.surfaceContainer;
           final inactiveButtonBackground = theme.colorScheme.secondaryContainer;
           final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
-
+          final imagePathController = TextEditingController();
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
@@ -419,6 +425,11 @@ class _LibraryPageState extends State<LibraryPage> {
                       )
                     else ...[
                       TextField(
+                        inputFormatters: [
+                          FilteringTextInputFormatter.deny(
+                            RegExp(r'[/\\:*?"<>|&=]'),
+                          ),
+                        ],
                         decoration: InputDecoration(
                           labelText: context.l10n!.customPlaylistName,
                         ),
@@ -427,13 +438,41 @@ class _LibraryPageState extends State<LibraryPage> {
                         },
                       ),
                       const SizedBox(height: 7),
-                      TextField(
-                        decoration: InputDecoration(
-                          labelText: context.l10n!.customPlaylistImgUrl,
-                        ),
-                        onChanged: (value) {
-                          imageUrl = value;
-                        },
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: imagePathController,
+                              decoration: InputDecoration(
+                                labelText: context.l10n!.customPlaylistImgUrl,
+                              ),
+                              onChanged: (value) {
+                                imageUrl = value;
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              final path =
+                                  (await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: [
+                                      'jpeg',
+                                      'jpg',
+                                      'png',
+                                      'gif',
+                                      'webp',
+                                      'bmp',
+                                    ],
+                                  ))?.paths.first;
+                              imageUrl = path;
+                              if (imageUrl != null)
+                                imagePathController.text = imageUrl!;
+                            },
+                            icon: const Icon(FluentIcons.folder_open_24_filled),
+                            color: theme.colorScheme.primary,
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -446,6 +485,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 onPressed: () async {
                   if (isYouTubeMode && id.isNotEmpty) {
                     showToast(await addYTUserPlaylist(id, context));
+                    GoRouter.of(context).pop(context);
                   } else if (!isYouTubeMode && customPlaylistName.isNotEmpty) {
                     if (findPlaylistByName(customPlaylistName) != null)
                       await showDialog(
