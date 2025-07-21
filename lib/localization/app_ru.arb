@@ -42,7 +42,7 @@
   "copyLogs": "Копировать логи",
   "copyLogsNoLogs": "Нет логов для копирования",
   "copyLogsSuccess": "Логи успешно скопированы",
-  "customPlaylistImgUrl": "URL изображения плейлиста",
+  "customPlaylistImgUrl": "Путь к изображению или URL",
   "customPlaylistName": "Название плейлиста",
   "customPlaylists": "Пользовательские плейлисты",
   "decreaseVolume": "Уменьшить громкость",
