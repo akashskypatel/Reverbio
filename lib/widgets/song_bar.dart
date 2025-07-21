@@ -605,9 +605,6 @@ class _SongBarState extends State<SongBar> {
       case 'like':
         songLikeStatus.value = !songLikeStatus.value;
         updateSongLikeStatus(widget.song, songLikeStatus.value);
-        final likedSongsLength = currentLikedSongsLength.value;
-        currentLikedSongsLength.value =
-            songLikeStatus.value ? likedSongsLength + 1 : likedSongsLength - 1;
         break;
       case 'remove':
         if (widget.onRemove != null) widget.onRemove!();

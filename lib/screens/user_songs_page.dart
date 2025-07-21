@@ -31,6 +31,7 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -53,32 +54,34 @@ class UserSongsPage extends StatefulWidget {
 class _UserSongsPageState extends State<UserSongsPage> {
   late ThemeData _theme;
   bool _isEditEnabled = false;
-
+  late final ValueNotifier<int> _lengthNotifier;
+  late final String _title;
+  late final IconData _icon;
   @override
   void initState() {
     super.initState();
+    _title = getTitle(widget.page);
+    _icon = getIcon(widget.page);
+    _lengthNotifier = getLength(widget.page);
+    _lengthNotifier.addListener(_listener);
   }
 
   @override
   void dispose() {
     super.dispose();
+    _lengthNotifier.removeListener(_listener);
   }
 
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
-    final title = getTitle(widget.page, context);
-    final icon = getIcon(widget.page);
-    final songsList = getSongsList(widget.page);
-    final length = getLength(widget.page);
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(title), //offlineMode.value ? Text(title) : null,
+        title: Text(_title), //offlineMode.value ? Text(title) : null,
         actions: [
-          if (title == context.l10n!.queue)
+          if (_title == context.l10n!.queue)
             Row(children: [_buildQueueActionsList()]),
-          if (title == context.l10n!.likedSongs)
+          if (_title == context.l10n!.likedSongs)
             IconButton(
               iconSize: pageHeaderIconSize,
               onPressed: () {
@@ -97,7 +100,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
-      body: _buildCustomScrollView(title, icon, songsList, length),
+      body: _buildCustomScrollView(_title, _icon, getSongsList(widget.page)),
     );
   }
 
@@ -419,7 +422,6 @@ class _UserSongsPageState extends State<UserSongsPage> {
     String title,
     IconData icon,
     Future songsListFuture,
-    ValueNotifier<int> length,
   ) {
     return FutureBuilder(
       future: songsListFuture,
@@ -429,7 +431,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: buildPlaylistHeader(title, icon, length),
+                child: buildPlaylistHeader(title, icon, _lengthNotifier),
               ),
             ),
             ValueListenableBuilder(
@@ -437,7 +439,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
               builder: (context, _context, ___) {
                 return SongList(
                   page: widget.page,
-                  title: getTitle(widget.page, context),
+                  title: getTitle(widget.page),
                   isEditable: widget.page == 'queue' || _isEditEnabled,
                   future: songsListFuture,
                 );
@@ -449,7 +451,8 @@ class _UserSongsPageState extends State<UserSongsPage> {
     );
   }
 
-  String getTitle(String page, BuildContext context) {
+  String getTitle(String page) {
+    final context = NavigationManager().context;
     return {
           'liked': context.l10n!.likedSongs,
           'offline': context.l10n!.offlineSongs,
@@ -566,12 +569,17 @@ class _UserSongsPageState extends State<UserSongsPage> {
     );
   }
 
+  void _listener() {
+    setState(() {});
+  }
+
   Widget _buildPlaylistImage(
     String title,
     IconData icon,
     ValueNotifier<int> length,
   ) {
     final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
+    length.addListener(_listener);
     return ValueListenableBuilder(
       valueListenable: length,
       builder: (context, value, child) {

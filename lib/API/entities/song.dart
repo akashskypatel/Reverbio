@@ -113,12 +113,12 @@ Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
     if (song['id']?.isEmpty) throw Exception('ID is null or empty');
     if (add && song != null) {
       userLikedSongsList.add(song);
-      currentLikedSongsLength.value++;
+      currentLikedSongsLength.value = userLikedSongsList.length;
       song['song'] = song['title'];
       PM.onEntityLiked(song);
     } else {
       userLikedSongsList.removeWhere((s) => checkSong(s, song));
-      currentLikedSongsLength.value--;
+      currentLikedSongsLength.value = userLikedSongsList.length;
     }
     addOrUpdateData('user', 'likedSongs', userLikedSongsList);
     return add;
