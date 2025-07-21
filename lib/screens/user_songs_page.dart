@@ -427,7 +427,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
       future: songsListFuture,
       builder: (context, snapshot) {
         return CustomScrollView(
-          physics: const NeverScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
