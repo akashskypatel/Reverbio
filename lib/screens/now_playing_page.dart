@@ -866,15 +866,12 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
           return v;
         });
         return Wrap(
-          alignment: WrapAlignment.spaceEvenly,
+          alignment: WrapAlignment.center,
           runSpacing: 10,
           children: [
             SizedBox(
-              width: screenWidth * 0.85,
-              child: Wrap(
-                runAlignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                direction: Axis.vertical,
+              width: screenWidth,
+              child: Column(
                 children: [
                   MarqueeTextWidget(
                     text: widget.mediaItem.title,
@@ -884,7 +881,6 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
                   ),
                   const SizedBox(height: 10),
                   Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       if (audioHandler
                               .audioPlayer
