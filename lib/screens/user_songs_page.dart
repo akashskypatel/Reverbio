@@ -81,22 +81,21 @@ class _UserSongsPageState extends State<UserSongsPage> {
         actions: [
           if (_title == context.l10n!.queue)
             Row(children: [_buildQueueActionsList()]),
-          if (_title == context.l10n!.likedSongs)
-            IconButton(
-              iconSize: pageHeaderIconSize,
-              onPressed: () {
-                if (mounted)
-                  setState(() {
-                    _isEditEnabled = !_isEditEnabled;
-                  });
-              },
-              icon: Icon(
-                _isEditEnabled
-                    ? FluentIcons.edit_off_24_filled
-                    : FluentIcons.edit_line_horizontal_3_24_filled,
-                color: _theme.colorScheme.primary,
-              ),
+          IconButton(
+            iconSize: pageHeaderIconSize,
+            onPressed: () {
+              if (mounted)
+                setState(() {
+                  _isEditEnabled = !_isEditEnabled;
+                });
+            },
+            icon: Icon(
+              _isEditEnabled
+                  ? FluentIcons.edit_off_24_filled
+                  : FluentIcons.edit_line_horizontal_3_24_filled,
+              color: _theme.colorScheme.primary,
             ),
+          ),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
@@ -226,7 +225,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         onChanged: filterPlaylists,
                         decoration: const InputDecoration(
                           hintText: 'Search playlists...',
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: Icon(FluentIcons.search_24_filled),
                           contentPadding: EdgeInsets.symmetric(horizontal: 8),
                           isDense: true,
                         ),
@@ -441,7 +440,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                 return SongList(
                   page: widget.page,
                   title: getTitle(widget.page),
-                  isEditable: widget.page == 'queue' || _isEditEnabled,
+                  isEditable: _isEditEnabled,
                   future: songsListFuture,
                 );
               },
