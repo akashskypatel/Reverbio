@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_js/extensions/fetch.dart';
 import 'package:flutter_js/flutter_js.dart';
@@ -118,8 +119,7 @@ class PluginsManager {
         final result = flutterJs.evaluate(data['script']);
         if (!result.isError) {
           _pluginsCacheData.add(data);
-          (_plugin['runtime'] as JavascriptRuntime).dispose();
-          _plugin['runtime'] = flutterJs;
+          flutterJs.dispose();
           return true;
         }
       }
@@ -156,15 +156,7 @@ class PluginsManager {
             .where((value) => value['name'] == _plugin['name'])
             .toList()
             .isEmpty) {
-          final flutterJs = getJavascriptRuntime()..evaluate(_plugin['script']);
-          _plugins.add({'name': _plugin['name'], 'runtime': flutterJs});
-          await flutterJs.enableFetch();
-          await flutterJs.enableHandlePromises();
-          _executeMethod(
-            methodName:
-                'loadSettings(${getDefaultSettings(_plugin['name'])},${getUserSettings(_plugin['name'])})',
-            runtime: flutterJs,
-          );
+          _plugins.add({'name': _plugin['name'], 'script': _plugin['script']});
           _isProcessingNotifiers[_plugin['name']] = ValueNotifier(false);
           _backgroundJobNotifiers[_plugin['name']] = ValueNotifier(-1);
           _futures[_plugin['name']] = [];
@@ -276,8 +268,13 @@ class PluginsManager {
       if (!_activeJob[pluginName]['cancel']) {
         _backgroundJobNotifiers[pluginName]!.value =
             _activeJob[pluginName]['id'];
-        final jsRuntime =
-            _activeJob[pluginName]['runtime'] as JavascriptRuntime;
+        final jsRuntime = getJsRuntime(pluginName);
+        if (jsRuntime == null)
+          throw Exception(
+            'There was an error executing background job for: $pluginName',
+          );
+        await jsRuntime.enableFetch();
+        await jsRuntime.enableHandlePromises();
         _activeJob[pluginName]['started'] = DateTime.now();
         _activeJob[pluginName]['status'] = 'running';
         JsEvalResult? asyncResult;
@@ -316,6 +313,7 @@ class PluginsManager {
             showToast('${context.l10n!.jobError}: ${asyncResult.stringResult}');
           }
         }
+        jsRuntime.dispose();
       } else {
         _backgroundJobNotifiers[pluginName]!.value =
             _activeJob[pluginName]['id'];
@@ -352,7 +350,6 @@ class PluginsManager {
         orElse: () => {},
       );
       if (_plugin.isEmpty) return;
-      final jsRuntime = _plugin['runtime'] as JavascriptRuntime;
       _backgroundJobNotifiers[pluginName]!.value =
           _futures.length + _completed.length + 1;
       if (!_futures.containsKey(pluginName)) _futures[pluginName] = [];
@@ -361,7 +358,6 @@ class PluginsManager {
         'code': buildMethodCall(methodName, args),
         'message': message ?? pluginName,
         'plugin': pluginName,
-        'runtime': jsRuntime,
         'priority': priority,
         'status': 'queued',
         'created': DateTime.now(),
@@ -433,7 +429,7 @@ class PluginsManager {
         if (!result.isError) {
           removePlugin(data['name']);
           _pluginsCacheData.add(data);
-          _plugins.add({'name': data['name'], 'runtime': flutterJs});
+          _plugins.add({'name': data['name'], 'script': data['script']});
           pluginsDataNotifier.value = _pluginsCacheData.length;
           _isProcessingNotifiers[data['name']] = ValueNotifier(false);
           _backgroundJobNotifiers[data['name']] = ValueNotifier(-1);
@@ -485,12 +481,7 @@ class PluginsManager {
       }
       _clearBackgroundJobData(pluginName);
       _pluginsCacheData.removeWhere((value) => value['name'] == pluginName);
-      _plugins.removeWhere((value) {
-        if (value['name'] == pluginName) {
-          (value['runtime'] as JavascriptRuntime).dispose();
-        }
-        return value['name'] == pluginName;
-      });
+      _plugins.removeWhere((value) => value['name'] == pluginName);
       pluginsDataNotifier.value = _pluginsCacheData.length;
     } catch (e, stackTrace) {
       logger.log(
@@ -720,7 +711,7 @@ class PluginsManager {
               title: Text(
                 '${job['message']} Priority: ${job['priority']}, ${result['message']}',
               ),
-              trailing: const Icon(Icons.check),
+              trailing: const Icon(FluentIcons.check_24_regular),
             ),
           );
         }),
@@ -728,7 +719,7 @@ class PluginsManager {
           (job) => Card(
             child: ListTile(
               title: Text('${job['message']} Priority: ${job['priority']}'),
-              trailing: const Icon(Icons.access_time),
+              trailing: const Icon(FluentIcons.clock_24_regular),
             ),
           ),
         ),
@@ -823,19 +814,32 @@ class PluginsManager {
     }
   }
 
-  static JavascriptRuntime getJsRuntime(String pluginName) {
+  static JavascriptRuntime? getJsRuntime(String pluginName) {
     try {
-      return _plugins.firstWhere(
-            (value) => value['name'] == pluginName,
-          )['runtime']
-          as JavascriptRuntime;
+      final jsRuntime = getJavascriptRuntime();
+      unawaited(jsRuntime.enableFetch());
+      unawaited(jsRuntime.enableHandlePromises());
+      final script =
+          _plugins.firstWhere((value) => value['name'] == pluginName)['script']
+              as String;
+      final result = jsRuntime.evaluate(script);
+      if (result.isError)
+        throw Exception(
+          'Could not create JavaScript Runtime for: $pluginName. There was an error in the script. ${result.stringResult}',
+        );
+      _executeMethod(
+        methodName:
+            'loadSettings(${getDefaultSettings(pluginName)},${getUserSettings(pluginName)})',
+        runtime: jsRuntime,
+      );
+      return jsRuntime;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
-      return getJavascriptRuntime();
+      return null;
     }
   }
 
@@ -935,6 +939,7 @@ class PluginsManager {
     required String pluginName,
     required String methodName,
     List<dynamic>? args,
+    Duration? timeout,
   }) async {
     try {
       if (_isProcessingNotifiers[pluginName]!.value) {
@@ -948,9 +953,15 @@ class PluginsManager {
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
       final jsRuntime = getJsRuntime(pluginName);
+      if (jsRuntime == null)
+        throw Exception(
+          'Invalid JavaScript Runtime for: $pluginName, $methodName',
+        );
+      await jsRuntime.enableFetch();
+      await jsRuntime.enableHandlePromises();
       final promise = await jsRuntime.evaluateAsync(methodCall);
       jsRuntime.executePendingJob();
-      final result = await jsRuntime.handlePromise(promise);
+      final result = await jsRuntime.handlePromise(promise, timeout: timeout);
       final data = tryDecode(result.stringResult);
       return data ?? result.stringResult;
     } catch (e, stackTrace) {
@@ -1157,7 +1168,12 @@ class PluginsManager {
           orElse: () => {},
         );
         if (_plugin.isEmpty) return (null, null);
-        jsRuntime = _plugin['runtime'] as JavascriptRuntime;
+        final jsrt = getJsRuntime(pluginName);
+        if (jsrt == null)
+          throw Exception(
+            'JavaScript Runtime could nnot be created for: $pluginName, $methodName',
+          );
+        jsRuntime = jsrt;
       } else
       // if only [runtime] provided
       if ((script == null || script.isEmpty) &&
@@ -1226,6 +1242,7 @@ class PluginsManager {
     String? pluginName,
     JavascriptRuntime? runtime,
     List<dynamic>? args,
+    Duration? timeout,
   }) async {
     try {
       final (jsResult, jsRuntime) = _executeMethod(
@@ -1236,10 +1253,7 @@ class PluginsManager {
         args: args,
       );
       if (jsResult == null || jsRuntime == null) return (null, jsRuntime);
-      final result = await jsRuntime.handlePromise(
-        jsResult,
-        timeout: const Duration(seconds: 60),
-      );
+      final result = await jsRuntime.handlePromise(jsResult, timeout: timeout);
       return (result, jsRuntime);
     } catch (e, stackTrace) {
       logger.log(
