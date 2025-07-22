@@ -114,8 +114,6 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _buildUserPlaylistsSection(Color primaryColor) {
     userPlaylistBars.clear();
-    final isUserPlaylistsEmpty =
-        userPlaylists.value.isEmpty && userCustomPlaylists.value.isEmpty;
     return Column(
       children: [
         PlaylistBar(
@@ -138,10 +136,6 @@ class _LibraryPageState extends State<LibraryPage> {
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/artists'),
           cardIcon: FluentIcons.mic_sparkle_24_filled,
-          borderRadius:
-              isUserPlaylistsEmpty
-                  ? commonCustomBarRadiusLast
-                  : BorderRadius.zero,
           showBuildActions: false,
         ),
         PlaylistBar(
@@ -149,10 +143,6 @@ class _LibraryPageState extends State<LibraryPage> {
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/albums'),
           cardIcon: FluentIcons.cd_16_filled,
-          borderRadius:
-              isUserPlaylistsEmpty
-                  ? commonCustomBarRadiusLast
-                  : BorderRadius.zero,
           showBuildActions: false,
         ),
         PlaylistBar(
