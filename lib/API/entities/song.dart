@@ -643,27 +643,28 @@ Future<void> getExistingOfflineSongs() async {
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
   try {
-    await for (final file in Directory(_audioDirPath).list()) {
-      if (file is File && isAudio(file.path)) {
-        final filename = basename(
-          file.path,
-        ).replaceAll(extension(basename(file.path)), '');
-        final ids = Uri.parse('?$filename').queryParameters;
-        if (ids['mb'] != null && ids['mb']!.isNotEmpty) {
-          if (!userOfflineSongs.any((e) => e['id'].contains(ids['mb']))) {
-            final song = await getSongByRecordingDetails(filename);
-            final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
-            if (imageFiles.isNotEmpty) {
-              song['offlineArtworkPath'] = imageFiles.first.path;
+    if (Directory(_audioDirPath).existsSync())
+      await for (final file in Directory(_audioDirPath).list()) {
+        if (file is File && isAudio(file.path)) {
+          final filename = basename(
+            file.path,
+          ).replaceAll(extension(basename(file.path)), '');
+          final ids = Uri.parse('?$filename').queryParameters;
+          if (ids['mb'] != null && ids['mb']!.isNotEmpty) {
+            if (!userOfflineSongs.any((e) => e['id'].contains(ids['mb']))) {
+              final song = await getSongByRecordingDetails(filename);
+              final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
+              if (imageFiles.isNotEmpty) {
+                song['offlineArtworkPath'] = imageFiles.first.path;
+              }
+              song['offlineAudioPath'] = file.path;
+              userOfflineSongs.add(song);
+              addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+              currentOfflineSongsLength.value = userOfflineSongs.length;
             }
-            song['offlineAudioPath'] = file.path;
-            userOfflineSongs.add(song);
-            addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
-            currentOfflineSongsLength.value = userOfflineSongs.length;
           }
         }
       }
-    }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -678,7 +679,8 @@ Future<String?> getOfflinePath(dynamic song) async {
   final artworkFiles = await _getRelatedFiles(_artworkDirPath, song);
   //TODO: add quality check
   if (audioFiles.isNotEmpty) song['offlineAudioPath'] = audioFiles.first.path;
-  if (artworkFiles.isNotEmpty) song['offlineArtworkPath'] = artworkFiles.first.path;
+  if (artworkFiles.isNotEmpty)
+    song['offlineArtworkPath'] = artworkFiles.first.path;
   return song['offlineAudioPath'];
 }
 
