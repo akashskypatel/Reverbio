@@ -64,3 +64,7 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation("com.github.fast-development.android-js-runtimes:fastdev-jsruntimes-jsc:0.3.5")
+}

@@ -19,9 +19,11 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -48,6 +50,7 @@ class _LibraryPageState extends State<LibraryPage> {
   final FocusNode _inputNode = FocusNode();
   ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
   final List<PlaylistBar> userPlaylistBars = [];
+  late ThemeData _theme;
 
   @override
   void dispose() {
@@ -75,8 +78,8 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-
+    _theme = Theme.of(context);
+    final primaryColor = _theme.colorScheme.primary;
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n!.library),
@@ -111,8 +114,6 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _buildUserPlaylistsSection(Color primaryColor) {
     userPlaylistBars.clear();
-    final isUserPlaylistsEmpty =
-        userPlaylists.value.isEmpty && userCustomPlaylists.value.isEmpty;
     return Column(
       children: [
         PlaylistBar(
@@ -127,7 +128,7 @@ class _LibraryPageState extends State<LibraryPage> {
           context.l10n!.likedSongs,
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/liked'),
-          cardIcon: FluentIcons.music_note_2_24_regular,
+          cardIcon: FluentIcons.heart_24_filled,
           showBuildActions: false,
         ),
         PlaylistBar(
@@ -135,10 +136,6 @@ class _LibraryPageState extends State<LibraryPage> {
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/artists'),
           cardIcon: FluentIcons.mic_sparkle_24_filled,
-          borderRadius:
-              isUserPlaylistsEmpty
-                  ? commonCustomBarRadiusLast
-                  : BorderRadius.zero,
           showBuildActions: false,
         ),
         PlaylistBar(
@@ -146,10 +143,6 @@ class _LibraryPageState extends State<LibraryPage> {
           onPressed:
               () => NavigationManager.router.go('/library/userSongs/albums'),
           cardIcon: FluentIcons.cd_16_filled,
-          borderRadius:
-              isUserPlaylistsEmpty
-                  ? commonCustomBarRadiusLast
-                  : BorderRadius.zero,
           showBuildActions: false,
         ),
         PlaylistBar(
@@ -202,7 +195,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
                 if (userPlaylists.value.isNotEmpty)
                   FutureBuilder(
-                    future: getUserPlaylists(),
+                    future: getUserYTPlaylists(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: Spinner());
@@ -213,7 +206,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         return _buildPlaylistListView(
                           context,
                           snapshot.data!,
-                          'user-added',
+                          'user-youtube',
                         );
                       } else {
                         return const SizedBox();
@@ -231,7 +224,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _clearFiltersButton() {
     return ValueListenableBuilder(
       valueListenable: isFilteredNotifier,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return IconButton(
           onPressed:
               isFilteredNotifier.value
@@ -243,8 +236,8 @@ class _LibraryPageState extends State<LibraryPage> {
                   : null,
           icon: const Icon(FluentIcons.filter_dismiss_24_filled, size: 30),
           iconSize: pageHeaderIconSize,
-          color: Theme.of(context).colorScheme.primary,
-          disabledColor: Theme.of(context).colorScheme.primaryContainer,
+          color: _theme.colorScheme.primary,
+          disabledColor: _theme.colorScheme.primaryContainer,
         );
       },
     );
@@ -285,12 +278,12 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildUserLikedPlaylistsSection(Color primaryColor) {
     return ValueListenableBuilder(
       valueListenable: currentLikedPlaylistsLength,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return Column(
           children: [
             SectionHeader(title: context.l10n!.likedPlaylists),
             if (userLikedPlaylists.isNotEmpty)
-              _buildPlaylistListView(context, userLikedPlaylists, 'user-liked'),
+              _buildPlaylistListView(context, userLikedPlaylists, 'youtube'),
           ],
         );
       },
@@ -298,6 +291,7 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   void _buildPlaylistBars(List playlists) {
+    userPlaylistBars.clear();
     for (final playlist in playlists) {
       if (playlist['source'] == null) playlist['source'] = 'user-liked';
       userPlaylistBars.add(
@@ -326,7 +320,11 @@ class _LibraryPageState extends State<LibraryPage> {
     _buildPlaylistBars(playlists);
     final bars =
         userPlaylistBars
-            .where((value) => value.playlistData!['source'] == source)
+            .where(
+              (value) =>
+                  value.playlistData!['source']?.toLowerCase() ==
+                  source.toLowerCase(),
+            )
             .toList();
     return ListView.builder(
       shrinkWrap: true,
@@ -354,7 +352,7 @@ class _LibraryPageState extends State<LibraryPage> {
           final activeButtonBackground = theme.colorScheme.surfaceContainer;
           final inactiveButtonBackground = theme.colorScheme.secondaryContainer;
           final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
-
+          final imagePathController = TextEditingController();
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
@@ -417,6 +415,11 @@ class _LibraryPageState extends State<LibraryPage> {
                       )
                     else ...[
                       TextField(
+                        inputFormatters: [
+                          FilteringTextInputFormatter.deny(
+                            RegExp(r'[/\\:*?"<>|&=]'),
+                          ),
+                        ],
                         decoration: InputDecoration(
                           labelText: context.l10n!.customPlaylistName,
                         ),
@@ -425,13 +428,41 @@ class _LibraryPageState extends State<LibraryPage> {
                         },
                       ),
                       const SizedBox(height: 7),
-                      TextField(
-                        decoration: InputDecoration(
-                          labelText: context.l10n!.customPlaylistImgUrl,
-                        ),
-                        onChanged: (value) {
-                          imageUrl = value;
-                        },
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: imagePathController,
+                              decoration: InputDecoration(
+                                labelText: context.l10n!.customPlaylistImgUrl,
+                              ),
+                              onChanged: (value) {
+                                imageUrl = value;
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              final path =
+                                  (await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: [
+                                      'jpeg',
+                                      'jpg',
+                                      'png',
+                                      'gif',
+                                      'webp',
+                                      'bmp',
+                                    ],
+                                  ))?.paths.first;
+                              imageUrl = path;
+                              if (imageUrl != null)
+                                imagePathController.text = imageUrl!;
+                            },
+                            icon: const Icon(FluentIcons.folder_open_24_filled),
+                            color: theme.colorScheme.primary,
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -443,7 +474,8 @@ class _LibraryPageState extends State<LibraryPage> {
                 child: Text(context.l10n!.add.toUpperCase()),
                 onPressed: () async {
                   if (isYouTubeMode && id.isNotEmpty) {
-                    showToast(context, await addYTUserPlaylist(id, context));
+                    showToast(await addYTUserPlaylist(id, context));
+                    GoRouter.of(context).pop(context);
                   } else if (!isYouTubeMode && customPlaylistName.isNotEmpty) {
                     if (findPlaylistByName(customPlaylistName) != null)
                       await showDialog(
@@ -463,7 +495,6 @@ class _LibraryPageState extends State<LibraryPage> {
                                   ).pop(confirmcontext),
                               onSubmit: () {
                                 showToast(
-                                  context,
                                   createCustomPlaylist(
                                     customPlaylistName,
                                     image: imageUrl,
@@ -476,7 +507,6 @@ class _LibraryPageState extends State<LibraryPage> {
                       );
                     else {
                       showToast(
-                        context,
                         createCustomPlaylist(
                           customPlaylistName,
                           image: imageUrl,
@@ -486,10 +516,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       GoRouter.of(context).pop(context);
                     }
                   } else {
-                    showToast(
-                      context,
-                      '${context.l10n!.provideIdOrNameError}.',
-                    );
+                    showToast('${context.l10n!.provideIdOrNameError}.');
                   }
                 },
               ),

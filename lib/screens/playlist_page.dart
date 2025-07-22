@@ -24,13 +24,13 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+//import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/data_manager.dart';
-import 'package:reverbio/services/playlist_sharing.dart';
+//import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -61,13 +61,13 @@ class PlaylistPage extends StatefulWidget {
 class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   dynamic _playlist;
-
+  late ThemeData _theme;
   bool _isLoading = true;
   //final int _itemsPerPage = 35;
   //var _currentPage = 0;
   var _currentLastLoadedId = 0;
   late final playlistLikeStatus = ValueNotifier<bool>(
-    isPlaylistAlreadyLiked(widget.playlistData['ytid']),
+    isPlaylistAlreadyLiked(widget.playlistData),
   );
 
   @override
@@ -106,9 +106,17 @@ class _PlaylistPageState extends State<PlaylistPage> {
                       widget.playlistData,
                       isArtist: widget.isArtist,
                     )
-                    : (widget.playlistData['primary-type']?.toLowerCase() ==
-                            'album'
-                        ? await getAlbumDetailsById(widget.playlistData['id'])
+                    : ([
+                          'artist',
+                          'album',
+                          'single',
+                          'ep',
+                          'broadcast',
+                          'other',
+                        ].contains(
+                          widget.playlistData['primary-type']?.toLowerCase(),
+                        )
+                        ? await getAlbumDetailsById(widget.playlistData)
                         : null)));
 
     if (_playlist != null) {
@@ -135,7 +143,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     if (_playlist['list'] == null) return list;
     final _count = _playlist['list'].length as int;
     //final n = min(_itemsPerPage, _count - _currentPage * _itemsPerPage);
-    //TODO: restore pagination
+    //TODO: restore pagination to large playlists
     for (var i = 0; i < _count; i++) {
       list.add(_playlist['list'][_currentLastLoadedId]);
       _currentLastLoadedId++;
@@ -147,6 +155,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: _buildNavigationBar(),
       body:
@@ -193,6 +202,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
         if (_playlist != null) ...[
           _buildSyncButton(),
           const SizedBox(width: 10),
+          /*
           if (_playlist['source'] == 'user-created')
             IconButton(
               icon: const Icon(FluentIcons.share_24_regular),
@@ -206,9 +216,18 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 await Clipboard.setData(ClipboardData(text: url));
               },
             ),
+          */
           ...PM.getWidgetsByType(
             _getPlaylistData,
-            widget.page == 'album' ? 'AlbumPageHeader' : 'PlaylistPageHeader',
+            [
+                  'album',
+                  'single',
+                  'ep',
+                  'broadcast',
+                  'other',
+                ].contains(widget.page)
+                ? 'AlbumPageHeader'
+                : 'PlaylistPageHeader',
             context,
           ),
           if (_playlist != null && _playlist['source'] == 'user-created')
@@ -221,7 +240,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   dynamic _getPlaylistData() {
     final data =
-        widget.page == 'album' || _playlist['isAlbum']
+        ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page) ||
+                _playlist['isAlbum']
             ? {
               ...(_playlist as Map),
               'album': _playlist['title'],
@@ -248,8 +268,10 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
     return PlaylistHeader(
       _buildPlaylistImage(),
-      widget.page == 'album'
-          ? '${_playlist['artist']} - ${_playlist['title']}'
+      ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page)
+          ? _playlist['artist'] != null
+              ? '${_playlist['artist']} - ${_playlist['title']}'
+              : _playlist['title']
           : _playlist['title'],
       _songsLength,
     );
@@ -258,7 +280,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   Widget _buildLikeButton() {
     return ValueListenableBuilder<bool>(
       valueListenable: playlistLikeStatus,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return IconButton(
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -269,10 +291,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
           iconSize: pageHeaderIconSize,
           onPressed: () {
             playlistLikeStatus.value = !playlistLikeStatus.value;
-            updatePlaylistLikeStatus(
-              _playlist['ytid'],
-              playlistLikeStatus.value,
-            );
+            updatePlaylistLikeStatus(_playlist, playlistLikeStatus.value);
           },
         );
       },
@@ -359,7 +378,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                               userCustomPlaylists,
                             );
                             _playlist = newPlaylist;
-                            showToast(context, context.l10n!.playlistUpdated);
+                            showToast(context.l10n!.playlistUpdated);
                           }
 
                           GoRouter.of(context).pop(context);
@@ -391,7 +410,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       final updatedPlaylist = await getPlaylistInfoForWidget(
         widget.playlistData,
       );
-      if (updatedPlaylist != null) {
+      if (updatedPlaylist.isNotEmpty) {
         if (mounted)
           setState(() {
             _songsList = updatedPlaylist['list'];
@@ -403,7 +422,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
   void _updateSongsListOnRemove(int indexOfRemovedSong) {
     final dynamic songToRemove = _songsList.elementAt(indexOfRemovedSong);
     showToastWithButton(
-      context,
       context.l10n!.songRemoved,
       context.l10n!.undo.toUpperCase(),
       () {
@@ -426,9 +444,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
   Widget _buildSortSongActionButton() {
     return DropdownButton<String>(
       borderRadius: BorderRadius.circular(5),
-      dropdownColor: Theme.of(context).colorScheme.secondaryContainer,
+      dropdownColor: _theme.colorScheme.secondaryContainer,
       underline: const SizedBox.shrink(),
-      iconEnabledColor: Theme.of(context).colorScheme.primary,
+      iconEnabledColor: _theme.colorScheme.primary,
       elevation: 0,
       iconSize: 30,
       icon: const Icon(FluentIcons.filter_16_filled),

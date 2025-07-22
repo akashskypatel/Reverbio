@@ -25,19 +25,23 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
+import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
-import 'package:reverbio/widgets/song_artwork.dart';
+//import 'package:reverbio/widgets/song_artwork.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 const double playerHeight = 120;
 
 class MiniPlayer extends StatefulWidget {
-  MiniPlayer({super.key, required this.metadata, required this.closeButton});
-  final MediaItem metadata;
+  MiniPlayer({super.key, required this.mediaItem, required this.closeButton});
+  final MediaItem mediaItem;
   final Widget closeButton;
 
   @override
@@ -45,70 +49,164 @@ class MiniPlayer extends StatefulWidget {
 }
 
 class _MiniPlayerState extends State<MiniPlayer> {
+  late ThemeData _theme;
   @override
   void initState() {
     super.initState();
-    audioHandler.audioPlayer.songValueNotifier.addListener(_songListener);
+    audioHandler.songValueNotifier.addListener(_songListener);
   }
 
   @override
   void dispose() {
     super.dispose();
-    audioHandler.audioPlayer.songValueNotifier.removeListener(_songListener);
+    audioHandler.songValueNotifier.removeListener(_songListener);
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    _theme = Theme.of(context);
+    final colorScheme = _theme.colorScheme;
 
     return GestureDetector(
       onTap: () async {
-        await context.push('/nowPlaying');
+        if (!nowPlayingOpen) {
+          nowPlayingOpen = !nowPlayingOpen;
+          await context.push('/nowPlaying');
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(color: colorScheme.surfaceContainerHigh),
-        child: Column(
-          children: [
-            PositionSlider(
-              closeButton: widget.closeButton,
-              positionDataNotifier: audioHandler.positionDataNotifier,
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    _buildArtwork(),
-                    _buildMetadata(colorScheme.primary, colorScheme.secondary),
-                    Row(
-                      children: [
-                        _buildPreviousButton(context),
-                        if (audioHandler.hasPrevious) const SizedBox(width: 10),
-                        StreamBuilder<Duration>(
-                          stream: audioHandler.audioPlayer.positionStream,
-                          builder: (context, snapshot) {
-                            return _buildStopButton(context);
-                          },
-                        ),
-                        const SizedBox(width: 10),
-                        StreamBuilder<PlaybackState>(
-                          stream: audioHandler.playbackState,
-                          builder: (context, snapshot) {
-                            return _buildPlayPauseButton(context);
-                          },
-                        ),
-                        if (audioHandler.hasNext) const SizedBox(width: 10),
-                        _buildNextButton(context),
-                      ],
-                    ),
-                  ],
+        child: ClipRRect(
+          child: Column(
+            children: [
+              if (!nowPlayingOpen)
+                PositionSlider(
+                  closeButton: widget.closeButton,
+                  positionDataNotifier: audioHandler.positionDataNotifier,
                 ),
+              if (!nowPlayingOpen)
+                if (isLargeScreen(context)) _buildLargeScreenControls(),
+              if (!nowPlayingOpen)
+                if (!isLargeScreen(context)) _buildSmallScreenControls(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLargeScreenControls() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          children: [
+            _buildArtwork(),
+            _buildMetadata(),
+            Row(
+              children: [
+                _buildLikeButton(),
+                _buildPreviousButton(context),
+                if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                StreamBuilder<Duration>(
+                  stream: audioHandler.positionStream,
+                  builder: (context, snapshot) {
+                    return _buildStopButton(context);
+                  },
+                ),
+                const SizedBox(width: 10),
+                StreamBuilder<PlaybackState>(
+                  stream: audioHandler.playbackState,
+                  builder: (context, snapshot) {
+                    return _buildPlayPauseButton(context);
+                  },
+                ),
+                if (audioHandler.hasNext) const SizedBox(width: 10),
+                _buildNextButton(context),
               ],
             ),
           ],
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildSmallScreenControls() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          children: [
+            _buildArtwork(),
+            _buildMetadata(),
+            Row(
+              children: [
+                if (isLargeScreen(context)) ...[
+                  _buildLikeButton(),
+                  _buildPreviousButton(context),
+                  if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                  StreamBuilder<Duration>(
+                    stream: audioHandler.positionStream,
+                    builder: (context, snapshot) {
+                      return _buildStopButton(context);
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  StreamBuilder<PlaybackState>(
+                    stream: audioHandler.playbackState,
+                    builder: (context, snapshot) {
+                      return _buildPlayPauseButton(context);
+                    },
+                  ),
+                  if (audioHandler.hasNext) const SizedBox(width: 10),
+                  _buildNextButton(context),
+                ] else ...[
+                  _buildLikeButton(),
+                  const SizedBox(width: 10),
+                  StreamBuilder<PlaybackState>(
+                    stream: audioHandler.playbackState,
+                    builder: (context, snapshot) {
+                      return _buildPlayPauseButton(context);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLikeButton() {
+    final status = ValueNotifier<bool>(
+      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
+    );
+    final primaryColor = _theme.colorScheme.primary;
+    return ValueListenableBuilder<bool>(
+      valueListenable: status,
+      builder: (context, value, __) {
+        final icon = Icon(
+          value ? FluentIcons.heart_24_filled : FluentIcons.heart_24_regular,
+          color: primaryColor,
+        );
+        void onPressed() {
+          updateSongLikeStatus(
+            audioHandler.songValueNotifier.value?.song,
+            !status.value,
+          );
+          status.value = !status.value;
+        }
+
+        return IconButton(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          icon: icon,
+          iconSize: 35,
+          onPressed: onPressed,
+        );
+      },
     );
   }
 
@@ -117,8 +215,8 @@ class _MiniPlayerState extends State<MiniPlayer> {
   }
 
   Widget _buildPlayPauseButton(BuildContext context) {
-    final processingState = audioHandler.audioPlayer.state;
-    final isPlaying = audioHandler.audioPlayer.playing;
+    final processingState = audioHandler.state;
+    final isPlaying = audioHandler.playing;
     final iconDataAndAction = getIconFromProcessingState(
       processingState,
       isPlaying,
@@ -127,51 +225,61 @@ class _MiniPlayerState extends State<MiniPlayer> {
       onPressed: iconDataAndAction.onPressed,
       icon: Icon(
         iconDataAndAction.iconData,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: 35,
       ),
     );
   }
 
   Widget _buildStopButton(BuildContext context) {
-    final isPlaying = audioHandler.audioPlayer.playing;
+    final isPlaying = audioHandler.playing;
     return IconButton(
       onPressed:
-          isPlaying || audioHandler.audioPlayer.position.inSeconds > 0
+          isPlaying || audioHandler.position.inSeconds > 0
               ? () => audioHandler.seekToStart()
               : null,
       icon: const Icon(FluentIcons.stop_24_filled, size: 35),
-      color: Theme.of(context).colorScheme.primary,
-      disabledColor: Theme.of(context).colorScheme.secondaryContainer,
+      color: _theme.colorScheme.primary,
+      disabledColor: _theme.colorScheme.secondaryContainer,
     );
   }
 
   Widget _buildNextButton(BuildContext context) {
-    if (audioHandler.hasNext)
-      return IconButton(
-        onPressed: () => audioHandler.skipToNext(),
-        icon: Icon(
-          FluentIcons.next_24_filled,
-          color: Theme.of(context).colorScheme.primary,
-          size: 25,
-        ),
-      );
-    else
-      return const SizedBox.shrink();
+    return ValueListenableBuilder(
+      valueListenable: activeQueueLength,
+      builder: (context, value, __) {
+        if (audioHandler.hasNext)
+          return IconButton(
+            onPressed: () => audioHandler.skipToNext(),
+            icon: Icon(
+              FluentIcons.next_24_filled,
+              color: _theme.colorScheme.primary,
+              size: 25,
+            ),
+          );
+        else
+          return const SizedBox.shrink();
+      },
+    );
   }
 
   Widget _buildPreviousButton(BuildContext context) {
-    if (audioHandler.hasPrevious)
-      return IconButton(
-        onPressed: () => audioHandler.skipToPrevious(),
-        icon: Icon(
-          FluentIcons.previous_24_filled,
-          color: Theme.of(context).colorScheme.primary,
-          size: 25,
-        ),
-      );
-    else
-      return const SizedBox.shrink();
+    return ValueListenableBuilder(
+      valueListenable: activeQueueLength,
+      builder: (context, value, __) {
+        if (audioHandler.hasPrevious)
+          return IconButton(
+            onPressed: () => audioHandler.skipToPrevious(),
+            icon: Icon(
+              FluentIcons.previous_24_filled,
+              color: _theme.colorScheme.primary,
+              size: 25,
+            ),
+          );
+        else
+          return const SizedBox.shrink();
+      },
+    );
   }
 
   Widget _buildArtwork() {
@@ -179,75 +287,104 @@ class _MiniPlayerState extends State<MiniPlayer> {
       padding: const EdgeInsets.only(top: 7, bottom: 7, right: 15),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 55, maxWidth: 55),
-        child: SongArtworkWidget(
-          metadata: widget.metadata,
+        child: BaseCard(
+          icon: FluentIcons.music_note_2_24_filled,
           size: 55,
-          errorWidgetIconSize: 30,
+          paddingValue: 0,
+          loadingWidget: const Spinner(),
+          inputData: audioHandler.songValueNotifier.value?.song,
         ),
       ),
     );
   }
 
-  Widget _buildMetadata(Color titleColor, Color artistColor) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: MarqueeWidget(
-            manualScrollEnabled: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  widget.metadata.title,
-                  style: TextStyle(
-                    color: titleColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+  Widget _buildMetadata() {
+    final titleColor = _theme.colorScheme.primary;
+    return ValueListenableBuilder(
+      valueListenable: audioHandler.songValueNotifier,
+      builder: (context, value, child) {
+        final song = audioHandler.songValueNotifier.value!.song;
+        final artistData = (song['artist-credit'] ?? []) as List;
+        int index = 1;
+        final artistLabels = artistData.fold(<Widget>[], (v, e) {
+          v.add(_buildArtistLabel(e['artist']));
+          if (index != artistData.length)
+            v.add(
+              Text(
+                ', ',
+                style: TextStyle(
+                  color: _theme.colorScheme.secondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
                 ),
-                if (widget.metadata.artist != null)
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        final artistData =
-                            widget.metadata.extras?['artistId'] != null
-                                ? await getArtistDetails(
-                                  widget.metadata.extras?['artistId']!,
-                                )
-                                : await searchArtistDetails(
-                                  widget.metadata.artist!,
-                                  limit: 10,
-                                  paginated: true,
-                                  exact: false,
-                                );
-                        if (!mounted ||
-                            artistData == null ||
-                            artistData.isEmpty)
-                          throw Exception();
-                        await context.push('/artist', extra: artistData);
-                      } catch (e, stackTrace) {
-                        logger.log(
-                          'open artist page from miniplayer',
-                          e,
-                          stackTrace,
-                        );
-                      }
-                    },
-                    child: Text(
-                      widget.metadata.artist!,
+              ),
+            );
+          index++;
+          return v;
+        });
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MarqueeWidget(
+                manualScrollEnabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      audioHandler.songValueNotifier.value?.song['title'],
                       style: TextStyle(
-                        color: artistColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
+                        color: titleColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-              ],
+                    Row(
+                      children: [
+                        if (audioHandler
+                                .audioPlayer
+                                .songValueNotifier
+                                .value
+                                ?.song !=
+                            null)
+                          ...artistLabels,
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildArtistLabel(dynamic artistData) {
+    return GestureDetector(
+      onTap: () async {
+        try {
+          if (!mounted || artistData == null || artistData.isEmpty)
+            throw Exception();
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) =>
+                      ArtistPage(page: '/artist', artistData: artistData),
+              settings: RouteSettings(name: '/artist?${artistData['id']}'),
+            ),
+          );
+        } catch (_) {}
+      },
+      child: Text(
+        artistData['name'] ?? artistData['artist'] ?? artistData['title'] ?? '',
+        style: TextStyle(
+          color: _theme.colorScheme.secondary,
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
         ),
       ),
     );
@@ -344,7 +481,7 @@ class PositionSlider extends StatelessWidget {
   void _showVolumeSlider(BuildContext context) => showDialog(
     context: context,
     builder: (BuildContext savecontext) {
-      int _duelCommandment = audioHandler.audioPlayer.volume.toInt();
+      int _duelCommandment = audioHandler.volume.toInt();
       return StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
@@ -366,9 +503,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = 0;
                           });
-                          audioHandler.audioPlayer.setVolume(
-                            _duelCommandment.toDouble(),
-                          );
+                          audioHandler.setVolume(_duelCommandment.toDouble());
                         },
                         icon: const Icon(FluentIcons.speaker_0_24_regular),
                       ),
@@ -384,9 +519,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = newValue.round();
                           });
-                          audioHandler.audioPlayer.setVolume(
-                            _duelCommandment.toDouble(),
-                          );
+                          audioHandler.setVolume(_duelCommandment.toDouble());
                         },
                       ),
                     ),
@@ -399,9 +532,7 @@ class PositionSlider extends StatelessWidget {
                           setState(() {
                             _duelCommandment = 100;
                           });
-                          audioHandler.audioPlayer.setVolume(
-                            _duelCommandment.toDouble(),
-                          );
+                          audioHandler.setVolume(_duelCommandment.toDouble());
                         },
                         icon: const Icon(FluentIcons.speaker_2_24_regular),
                       ),

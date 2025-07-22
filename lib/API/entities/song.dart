@@ -24,10 +24,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:fuzzy/fuzzy.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -37,6 +37,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -46,6 +47,8 @@ List userLikedSongsList = Hive.box('user').get('likedSongs', defaultValue: []);
 List userOfflineSongs = Hive.box(
   'userNoBackup',
 ).get('offlineSongs', defaultValue: []);
+
+List cachedSongsList = Hive.box('cache').get('cachedSongs', defaultValue: []);
 
 final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(
   userLikedSongsList.length,
@@ -78,67 +81,51 @@ Future<List> getSongsList(String searchQuery) async {
 
 Future<List> getRecommendedSongs() async {
   try {
-    if (defaultRecommendations.value && userRecentlyPlayed.isNotEmpty) {
-      final recent = userRecentlyPlayed.take(3).toList();
-      /*
-      final recoms = yt.search.searchContent(
-        'searchQuery',
-        filter: TypeFilters.channel,
-      );
-      */
-      final futures =
-          recent.map((songData) async {
-            final song = await yt.videos.get(songData['ytid']);
-            final relatedSongs = await yt.videos.getRelatedVideos(song) ?? [];
-            return relatedSongs
-                .take(3)
-                .map((s) => returnYtSongLayout(0, s))
-                .toList();
-          }).toList();
-
-      final results = await Future.wait(futures);
-      final playlistSongs = results.expand((list) => list).toList()..shuffle();
-      return playlistSongs;
-    } else {
-      final playlistSongs = [...userLikedSongsList, ...userRecentlyPlayed];
-      if (globalSongs.isEmpty) {
-        const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
-        globalSongs = await getSongsFromPlaylist(playlistId);
-      }
-      playlistSongs.addAll(globalSongs.take(10));
-
-      if (userCustomPlaylists.value.isNotEmpty) {
-        for (final userPlaylist in userCustomPlaylists.value) {
-          final _list = (userPlaylist['list'] as List)..shuffle();
-          playlistSongs.addAll(_list.take(5));
-        }
-      }
-
-      playlistSongs.shuffle();
-      final seenYtIds = <String>{};
-      playlistSongs.removeWhere((song) {
-        if (song['ytid'] != null) return !seenYtIds.add(song['ytid']);
-        return false;
-      });
-      return playlistSongs.take(15).toList();
+    final playlistSongs = [...userLikedSongsList, ...userRecentlyPlayed];
+    if (globalSongs.isEmpty) {
+      const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
+      globalSongs = await getSongsFromPlaylist(playlistId);
     }
+    playlistSongs.addAll(pickRandomItems(globalSongs, 10));
+
+    if (userCustomPlaylists.value.isNotEmpty) {
+      for (final userPlaylist in userCustomPlaylists.value) {
+        final _list = (userPlaylist['list'] as List)..shuffle();
+        playlistSongs.addAll(_list.take(5));
+      }
+    }
+    playlistSongs.shuffle();
+    final seenYtIds = <String>{};
+    playlistSongs.removeWhere((song) {
+      if (song['ytid'] != null) return !seenYtIds.add(song['ytid']);
+      return false;
+    });
+    return playlistSongs.take(15).toList();
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
   }
 }
 
-Future<void> updateSongLikeStatus(dynamic song, bool add) async {
-  if (add && song != null) {
-    userLikedSongsList.add(song);
-    currentLikedSongsLength.value++;
-    song['song'] = song['title'];
-    PM.onEntityLiked(song);
-  } else {
-    userLikedSongsList.removeWhere((s) => checkSong(s, song));
-    currentLikedSongsLength.value--;
+Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
+  try {
+    song['id'] = parseEntityId(song);
+    if (song['id']?.isEmpty) throw Exception('ID is null or empty');
+    if (add && song != null) {
+      userLikedSongsList.add(song);
+      currentLikedSongsLength.value = userLikedSongsList.length;
+      song['song'] = song['title'];
+      PM.onEntityLiked(song);
+    } else {
+      userLikedSongsList.removeWhere((s) => checkSong(s, song));
+      currentLikedSongsLength.value = userLikedSongsList.length;
+    }
+    addOrUpdateData('user', 'likedSongs', userLikedSongsList);
+    return add;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return !add;
   }
-  addOrUpdateData('user', 'likedSongs', userLikedSongsList);
 }
 
 void moveLikedSong(int oldIndex, int newIndex) {
@@ -150,11 +137,15 @@ void moveLikedSong(int oldIndex, int newIndex) {
   addOrUpdateData('user', 'likedSongs', userLikedSongsList);
 }
 
-bool isSongAlreadyLiked(songIdToCheck) =>
-    userLikedSongsList.any((song) => checkSongId(song['id'], songIdToCheck));
+bool isSongAlreadyLiked(songToCheck) =>
+    songToCheck is Map &&
+    userLikedSongsList.any(
+      (song) => song is Map && checkSong(song, songToCheck),
+    );
 
-bool isSongAlreadyOffline(songIdToCheck) =>
-    userOfflineSongs.any((song) => checkSongId(song['id'], songIdToCheck));
+bool isSongAlreadyOffline(songToCheck) => userOfflineSongs.any(
+  (song) => song is Map && songToCheck is Map && checkSong(song, songToCheck),
+);
 
 void getSimilarSong(String songYtId) async {
   try {
@@ -171,7 +162,6 @@ void getSimilarSong(String songYtId) async {
 
 Future<dynamic> findYTSong(dynamic song) async {
   try {
-    final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
     final lcSongName =
         (song['title'] ?? '')
             .toString()
@@ -193,7 +183,9 @@ Future<dynamic> findYTSong(dynamic song) async {
             .replaceAll(RegExp(r'\s+'), ' ')
             .replaceAll(specialRegex, '')
             .trim();
-    final results = await getSongsList('"$lcArtist" "$lcSongName" "$lcAlbum"');
+    final results = await getSongsList(
+      '\'$lcArtist\' \'$lcSongName\' \'$lcAlbum\'',
+    );
     results.sort((a, b) => b['views'].compareTo(a['views']));
     final result =
         results.where((value) {
@@ -254,7 +246,13 @@ Future<dynamic> findWDSong(String title, String artist) async {
       'format': 'json',
       'srprop': 'snippet|titlesnippet|categorysnippet',
     });
-    final response = await http.get(uri);
+    final response = await http.get(
+      uri,
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      },
+    );
     final result = jsonDecode(response.body);
     final search = result['query']['search'] as List;
     return search;
@@ -264,26 +262,120 @@ Future<dynamic> findWDSong(String title, String artist) async {
   }
 }
 
+dynamic _getCachedSong(dynamic song) {
+  try {
+    final cached = cachedSongsList.where((e) {
+      return checkSong(song, e) ||
+          (song is Map &&
+                  (song['ytid'] != null &&
+                      e['ytid'] != null &&
+                      song['ytid'] == e['ytid']) ||
+              (song['originalTitle'] != null &&
+                  song['originalArtist'] != null &&
+                  song['originalTitle'] == e['originalTitle'] &&
+                  song['originalArtist'] == e['originalArtist']));
+    });
+    if (cached.isEmpty) return null;
+    return cached.first;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
+  }
+}
+
+Future<dynamic> getSongByRecordingDetails(
+  dynamic recording, {
+  bool getImage = true,
+}) async {
+  final id = parseEntityId(recording);
+  final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
+  final rcdId = recording is Map ? (recording['rid'] ?? ids['mb']) : ids['mb'];
+  if (rcdId == null) return recording;
+  final cached = _getCachedSong(recording);
+  if (cached != null) {
+    recording.addAll(Map<String, dynamic>.from(cached));
+    return recording;
+  } else
+    try {
+      recording = await mb.recordings.get(
+        rcdId,
+        inc: [
+          'artists',
+          'releases',
+          'release-groups',
+          'isrcs',
+          'url-rels',
+          'artist-credits',
+          'annotation',
+          'tags',
+          'genres',
+          'ratings',
+          'artist-rels',
+          'release-rels',
+          'release-group-rels',
+        ],
+      );
+      recording['artist'] = combineArtists(recording);
+      if (getImage)
+        for (final release in recording['releases']) {
+          final coverArt = await mb.coverArt.get(release['id'], 'release');
+          if (coverArt['error'] == null) {
+            //TODO: parse by image size
+            recording['images'] = coverArt['images'];
+            break;
+          }
+        }
+      recording.addAll({
+        'id': 'mb=${recording['id']}',
+        'rid': recording['id'],
+        'mbid': recording['id'],
+        'mbidType': 'recording',
+        'duration': (recording['length'] ?? 0) ~/ 1000,
+        'primary-type': 'song',
+        'cachedAt': DateTime.now().toString(),
+      });
+      cachedSongsList.addOrUpdate('id', recording['id'], recording);
+      addOrUpdateData('cache', 'cachedSongs', cachedSongsList);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  return recording;
+}
+
 Future<dynamic> findMBSong(dynamic song) async {
   try {
-    final artist = song['artist'].toString();
-    final title = song['title'].toString().replaceAll(
+    song['originalTitle'] = song['title'];
+    song['originalArtist'] = song['artist'];
+    final cached = _getCachedSong(song);
+    if (cached != null) {
+      song.addAll(Map<String, dynamic>.from(cached));
+      return song;
+    }
+    song['id'] = parseEntityId(song);
+    final ids = Uri.parse('?${song['id']}').queryParameters;
+    if (ids['mb'] != null && song['mbidType'] == 'recording') {
+      song.addAll(await getSongByRecordingDetails(song));
+      return song;
+    }
+    final iArtist = song['artist'].toString();
+    final iTitle = song['title'].toString().replaceAll(
       RegExp('(official)|(visualizer)|(visualiser)', caseSensitive: false),
       '',
     );
-    final regex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
-    final artists = splitArtists(artist);
+    final artists = splitArtists(iArtist);
     Map artistInfo = {};
     String artistId = '';
-    List recordings = [];
-    List works = [];
     String artistQry = '';
     if (artists.length == 1) {
       artistInfo = Map.from(
         await searchArtistDetails(
-          artist
+          iArtist
               .trim()
-              .replaceAll(regex, ' ')
+              .replaceAll(specialRegex, ' ')
               .replaceAll(RegExp(r'\s+'), ' ')
               .trim(),
         ),
@@ -295,111 +387,63 @@ Future<dynamic> findMBSong(dynamic song) async {
       for (final artsts in artists) {
         artistQry =
             artistQry.isNotEmpty
-                ? '$artistQry OR artist:"${artsts.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}"'
-                : 'artist:"${artsts.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}"';
+                ? '$artistQry OR artist:\'${artsts.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\''
+                : 'artist:\'${artsts.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\'';
       }
       artistQry = '($artistQry)';
     }
-    final sTitle =
-        title.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-    final sArtist =
-        artist.replaceAll(regex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-    final similar =
-        sTitle.toLowerCase().contains(sArtist.toLowerCase()) ||
-        sArtist.toLowerCase().contains(sTitle.toLowerCase());
-    final exact = sTitle.toLowerCase() == sArtist.toLowerCase();
-    final rA =
-        sTitle.toLowerCase() != sArtist.toLowerCase() &&
-                sTitle.toLowerCase().contains(sArtist.toLowerCase())
-            ? sTitle.toLowerCase().replaceAll(sArtist.toLowerCase(), '')
-            : sTitle.toLowerCase();
-    final rB =
-        sTitle.toLowerCase() != sArtist.toLowerCase() &&
-                sArtist.toLowerCase().contains(sTitle.toLowerCase())
-            ? sArtist.toLowerCase().replaceAll(sTitle.toLowerCase(), '')
-            : sArtist.toLowerCase();
+    final sTitle = removeDuplicates(
+      sanitizeSongTitle(iTitle)
+          .replaceAll(specialRegex, ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim()
+          .toLowerCase(),
+    ).replaceAll(' ', '|');
+    final sArtist = removeDuplicates(
+      sanitizeSongTitle(iArtist)
+          .replaceAll(specialRegex, ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim()
+          .toLowerCase(),
+    ).replaceAll(' ', '|').replaceAll(sTitle, '');
+    final phrase = '$sTitle|$sArtist';
     final qry =
-        (artistId.isNotEmpty
-            ? (exact ? '"$sTitle"~0.75' : '"$sTitle"~0.75 AND arid:"$artistId"')
-            : exact
-            ? '"$sTitle"~0.75'
-            : (similar
-                ? '("$rA" AND artist:"$rB") OR ("$rB" AND artist:"$rA")'
-                : (artistQry.isNotEmpty
-                    ? '"$sTitle"~0.75 AND (artist:"${artists.join('" & "')}" OR $artistQry)'
-                    : '(("$sTitle"~0.75 AND artist:"$sArtist") OR ("$sArtist"~0.75 AND artist:"$sTitle"))')));
-    works = List<Map<String, dynamic>>.from(
-      (await mb.works.search(qry))['works'],
-    );
-    recordings = List<Map<String, dynamic>>.from(
-      (await mb.recordings.search(qry))['recordings'],
-    );
-    if (recordings.isEmpty && works.isEmpty) return song;
+        artistId.isNotEmpty
+            ? "('$sTitle' OR release:'$sTitle') AND arid:$artistId"
+            : sArtist.isNotEmpty
+            ? "('$sTitle' OR release:'$sTitle') AND (artist:'$sArtist' OR artistname:'$sArtist')"
+            : "'$phrase' OR release:'$phrase' OR artist:'$phrase' OR artistname:'$phrase'";
 
-    dynamic recording;
-    if (works.length != 1) {
-      recordings =
-          recordings.where((rcd) {
-            final acs =
-                (rcd['artist-credit'] as List).where((value) {
-                  for (final a in artists) {
-                    if (value['name'].toLowerCase().contains(a.toLowerCase()))
-                      return true;
-                  }
-                  return false;
-                }).toList();
-            return acs.isNotEmpty;
-          }).toList();
-      if (recordings.isEmpty) return song;
-      if (recordings.length == 1) {
-        recording = recordings.first;
-      } else {
-        final WeightedKey<Map<String, dynamic>> keys = WeightedKey(
-          name: 'title',
-          getter: (e) => e['title'],
-          weight: 1,
-        );
-        final fuzzy = Fuzzy(
-          recordings as List<Map<String, dynamic>>,
-          options: FuzzyOptions(threshold: 1, keys: [keys]),
-        );
-        final result = fuzzy.search(title)
-          ..sort((a, b) => a.score.compareTo(b.score));
-        recording = result.first.item;
+    final qryResult =
+        (await mb.recordings.search(qry, limit: 100))?['recordings'] ?? [];
+    final recordings = List<Map<String, dynamic>>.from(qryResult);
+    for (dynamic recording in recordings) {
+      recording['artist'] = combineArtists(recording);
+      if (checkTitleAndArtist(song, recording)) {
+        recording = await getSongByRecordingDetails(recording);
+        song.addAll(recording);
+        return song;
       }
-      if (recording['artist-credit'] != null)
-        artistInfo = {
-          'artist': recording['artist-credit'].first['artist']['name'],
-          'id': 'mb=${recording['artist-credit'].first['artist']['id']}',
-        };
-    } else {
-      recording = works.first;
     }
-
-    song.addAll({
-      'id': 'mb=${recording['id']}',
-      'mbid': recording['id'],
-      'mbidType': works.length != 1 ? 'recording' : 'work',
-      'title': recording['title'],
-      'artist': artistInfo['artist'] ?? artists.join(' & '),
-      'artistId': artistInfo['id'],
-      'primary-type': 'song',
-    });
-    return song;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
   }
+  return song;
 }
 
 Future<StreamManifest> getSongManifest(String songId) async {
   try {
     final manifest =
-        await pxm.getSongManifest(songId) ??
-        await yt.videos.streams.getManifest(
-          songId,
-          ytClients: userChosenClients,
-        );
+        useProxies.value
+            ? await pxm.getSongManifest(songId) ??
+                await yt.videos.streams.getManifest(
+                  songId,
+                  ytClients: userChosenClients,
+                )
+            : await yt.videos.streams.getManifest(
+              songId,
+              ytClients: userChosenClients,
+            );
     return manifest;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -410,19 +454,23 @@ Future<StreamManifest> getSongManifest(String songId) async {
 const Duration _cacheDuration = Duration(hours: 3);
 
 Future<void> getSongUrl(dynamic song) async {
+  final offlinePath = await getOfflinePath(song);
+  if (song['mbid'] == null) await findMBSong(song);
+  if (offlinePath != null) {
+    song['songUrl'] = offlinePath;
+    return;
+  }
   await PM.getSongUrl(song, getSongYoutubeUrl);
 }
 
 Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   try {
     if (song == null) return '';
-    if (song['mbid'] == null)
-      if (waitForMb)
-        await findMBSong(song);
-      else
-        unawaited(findMBSong(song));
-    if (song['ytid'] == null)
-      song.addAll(Map<String, dynamic>.from(await findYTSong(song)));
+    if (song['mbid'] == null) await findMBSong(song);
+    if (song['ytid'] == null) {
+      final sngQry = await findYTSong(song);
+      song.addAll(Map<String, dynamic>.from(sngQry ?? {}));
+    }
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
@@ -487,7 +535,7 @@ Future<String?> getYouTubeAudioUrl(String songId) async {
 Future<Map<String, dynamic>> getYTSongDetails(dynamic song) async {
   try {
     final songIndex = (song['index'] ?? 0) as int;
-    String songId = parseSongId(song);
+    String songId = parseEntityId(song);
     if (songId.contains('yt=') || song['ytid'] != null) {
       songId =
           Uri.parse('?$songId').queryParameters['yt'] ?? song['ytid'] ?? '';
@@ -523,19 +571,22 @@ Future<String?> getSongLyrics(String artist, String title) async {
 }
 
 Future<void> makeSongOffline(dynamic song) async {
+  //TODO: make available offline for other sources
   try {
     final _dir = await getApplicationSupportDirectory();
     final _audioDirPath = '${_dir.path}/tracks';
     final _artworkDirPath = '${_dir.path}/artworks';
-    final String id = song['id'];
-    final _audioFile = File('$_audioDirPath/$id.m4a');
-    final _artworkFile = File('$_artworkDirPath/$id.jpg');
-
     await Directory(_audioDirPath).create(recursive: true);
     await Directory(_artworkDirPath).create(recursive: true);
 
+    final id = song['id'] = parseEntityId(song);
+    if (song['ytid'] == null || song['ytid'].isEmpty)
+      song.addAll(Map<String, dynamic>.from(await findYTSong(song) ?? {}));
+    final _audioFile = File('$_audioDirPath/$id.m4a');
+    final _artworkFile = File('$_artworkDirPath/$id.jpg');
+
     try {
-      final audioManifest = await getSongManifest(id);
+      final audioManifest = await getSongManifest(song['ytid']);
       final stream = yt.videos.streamsClient.get(
         audioManifest.audioOnly.withHighestBitrate(),
       );
@@ -553,15 +604,16 @@ Future<void> makeSongOffline(dynamic song) async {
     }
 
     try {
-      final artworkFile = await _downloadAndSaveArtworkFile(
-        song['highResImage'],
-        _artworkFile.path,
-      );
+      final imagePath = await getValidImage(song);
+      if (imagePath != null) {
+        final artworkFile = await _downloadAndSaveArtworkFile(
+          imagePath,
+          _artworkFile.path,
+        );
 
-      if (artworkFile != null) {
-        song['artworkPath'] = artworkFile.path;
-        song['highResImage'] = artworkFile.path;
-        song['lowResImage'] = artworkFile.path;
+        if (artworkFile != null) {
+          song['offlineArtworkPath'] = artworkFile.path;
+        }
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -571,7 +623,7 @@ Future<void> makeSongOffline(dynamic song) async {
       );
     }
 
-    song['audioPath'] = _audioFile.path;
+    song['offlineAudioPath'] = _audioFile.path;
     userOfflineSongs.add(song);
     addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
     currentOfflineSongsLength.value = userOfflineSongs.length;
@@ -581,35 +633,120 @@ Future<void> makeSongOffline(dynamic song) async {
   }
 }
 
-Future<void> removeSongFromOffline(dynamic songId) async {
+Future<List<dynamic>> getUserOfflineSongs() async {
+  await getExistingOfflineSongs();
+  return userOfflineSongs;
+}
+
+Future<void> getExistingOfflineSongs() async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
-  final _audioFile = File('$_audioDirPath/$songId.m4a');
-  final _artworkFile = File('$_artworkDirPath/$songId.jpg');
+  try {
+    if (Directory(_audioDirPath).existsSync())
+      await for (final file in Directory(_audioDirPath).list()) {
+        if (file is File && isAudio(file.path)) {
+          final filename = basename(
+            file.path,
+          ).replaceAll(extension(basename(file.path)), '');
+          final ids = Uri.parse('?$filename').queryParameters;
+          if (ids['mb'] != null && ids['mb']!.isNotEmpty) {
+            if (!userOfflineSongs.any((e) => e['id'].contains(ids['mb']))) {
+              final song = await getSongByRecordingDetails(filename);
+              final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
+              if (imageFiles.isNotEmpty) {
+                song['offlineArtworkPath'] = imageFiles.first.path;
+              }
+              song['offlineAudioPath'] = file.path;
+              userOfflineSongs.add(song);
+              addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+              currentOfflineSongsLength.value = userOfflineSongs.length;
+            }
+          }
+        }
+      }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+}
 
-  if (await _audioFile.exists()) await _audioFile.delete(recursive: true);
-  if (await _artworkFile.exists()) await _artworkFile.delete(recursive: true);
+Future<String?> getOfflinePath(dynamic song) async {
+  final _dir = await getApplicationSupportDirectory();
+  final _audioDirPath = '${_dir.path}/tracks';
+  final _artworkDirPath = '${_dir.path}/artworks';
+  song['id'] = parseEntityId(song);
+  final audioFiles = await _getRelatedFiles(_audioDirPath, song);
+  final artworkFiles = await _getRelatedFiles(_artworkDirPath, song);
+  //TODO: add quality check
+  if (audioFiles.isNotEmpty) song['offlineAudioPath'] = audioFiles.first.path;
+  if (artworkFiles.isNotEmpty)
+    song['offlineArtworkPath'] = artworkFiles.first.path;
+  return song['offlineAudioPath'];
+}
 
-  userOfflineSongs.removeWhere((song) => checkSongId(song['id'], songId));
+Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
+  final files = <File>[];
+  try {
+    final ids = Uri.parse('?${entity['id']}').queryParameters;
+    await for (final file in Directory(directory).list()) {
+      for (final songId in ids.values) {
+        if (file is File && basename(file.path).contains(songId)) {
+          files.add(file);
+        }
+      }
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return files;
+}
+
+Future<void> _deleteRelatedFiles(String directory, dynamic entity) async {
+  try {
+    final ids = Uri.parse('?${entity['id']}').queryParameters;
+    await for (final file in Directory(directory).list()) {
+      for (final songId in ids.values) {
+        if (file is File && basename(file.path).contains(songId)) {
+          await file.delete();
+        }
+      }
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+}
+
+Future<void> removeSongFromOffline(dynamic song) async {
+  final _dir = await getApplicationSupportDirectory();
+  final _audioDirPath = '${_dir.path}/tracks';
+  final _artworkDirPath = '${_dir.path}/artworks';
+  song['id'] = parseEntityId(song);
+  unawaited(_deleteRelatedFiles(_audioDirPath, song));
+  unawaited(_deleteRelatedFiles(_artworkDirPath, song));
+  userOfflineSongs.removeWhere((s) => checkSong(song, s));
   currentOfflineSongsLength.value = userOfflineSongs.length;
   addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
 }
 
-Future<File?> _downloadAndSaveArtworkFile(String url, String filePath) async {
+Future<File?> _downloadAndSaveArtworkFile(Uri uri, String filePath) async {
   try {
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final file = File(filePath);
-      await file.writeAsBytes(response.bodyBytes);
+    if (uri.isScheme('file') && doesFileExist(uri.toFilePath())) {
+      final file = File(uri.toFilePath());
+      await File(filePath).writeAsBytes(file.readAsBytesSync());
       return file;
     } else {
-      logger.log(
-        'Failed to download file. Status code: ${response.statusCode}',
-        null,
-        null,
-      );
+      final response = await http.get(uri);
+      if (response.statusCode < 300) {
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        return file;
+      } else {
+        logger.log(
+          'Failed to download file. Status code: ${response.statusCode}',
+          null,
+          null,
+        );
+      }
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -700,7 +837,6 @@ Future<Map<String, String>?> getYtSongAndArtist(String ytid) async {
 
 bool isSongLive(String? artist, String? album, String? title, String value) {
   // Convert to lowercase and remove title/artist
-  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
   final replaced =
       value
           .toLowerCase()
@@ -726,7 +862,6 @@ bool isSongDerivative(
   String? title,
   String value,
 ) {
-  final specialRegex = RegExp(r'''[+\-\—\–&|!(){}[\]^"~*?:\\']''');
   final replaced =
       value
           .toLowerCase()
@@ -738,45 +873,129 @@ bool isSongDerivative(
           .trim();
 
   final regex = RegExp(
-    r'(\bversion\b|\bacoustic\b|\binstrumental\b|\bre\s?mix(?:\b|es\b|ed\b)|\bcover(?:\b|s\b|ed\b)|\bperform(?:ance\b|ed\b)|\bmashup\b|\bparod(?:y\b|ies\b|ied\b)|\bedit(?:\b|s\b|ed\b))',
+    r'(\bversion\b|\bacapella\b|\bacoustic\b|\binstrumental\b|\bre\s?mix(?:\b|es\b|ed\b)|\bcover(?:\b|s\b|ed\b)|\bperform(?:ance\b|ed\b)|\bmashup\b|\bparod(?:y\b|ies\b|ied\b)|\bedit(?:\b|s\b|ed\b))',
     caseSensitive: false,
   );
 
   return regex.hasMatch(replaced);
 }
 
-String parseSongId(dynamic song) {
-  dynamic ids;
-  String songId = song['id'] ?? song['ytid'] ?? song['mbid'] ?? '';
-  if (songId.contains('=')) {
-    ids = Uri.parse('?$songId').queryParameters;
-    songId = Uri(
-      host: '',
-      queryParameters: ids,
-    ).toString().replaceAll('?', '').replaceAll('//', '');
-  } else if (songId.length >= 36) {
-    songId = 'mb=$songId';
-  } else if (songId.isNotNullOrEmpty) {
-    songId = 'yt=$songId';
-  }
-  song['id'] = songId;
-  return songId;
+bool checkSong(dynamic songA, dynamic songB) {
+  if (songA is Map) songA['id'] = parseEntityId(songA);
+  if (songB is Map) songB['id'] = parseEntityId(songB);
+  if (songA is String && songB is String)
+    return checkEntityId(songA, songB) || checkEntityId(songB, songA);
+  if (songA is String && !(songB is String))
+    return checkEntityId(songA, songB['id']) ||
+        checkEntityId(songB['id'], songA);
+  if (songB is String && !(songA is String))
+    return checkEntityId(songB, songA['id']) ||
+        checkEntityId(songA['id'], songB);
+  if (songA['id'] == null ||
+      songB['id'] == null ||
+      songA['id']?.isEmpty ||
+      songB['id']?.isEmpty)
+    return checkTitleAndArtist(songA, songB);
+  return checkEntityId(songA['id'], songB['id']) ||
+      checkEntityId(songB['id'], songA['id']) ||
+      (getSongHashCode(songA) == getSongHashCode(songB));
 }
 
-bool checkSongId(String id, String otherId) {
-  if (id.contains('=') || id.contains('&')) {
-    final ids = Uri.parse('?$id').queryParameters;
-    return ids.values.any((i) => otherId.contains(i));
-  }
-  return id.contains(otherId) || otherId.contains(id);
+int? getSongHashCode(dynamic song) {
+  if (!(song is Map)) return null;
+  if ((song['title'] ?? song['song']) == null || song['artist'] == null)
+    return null;
+  return sanitizeSongTitle(
+        song['title'] ?? song['song'],
+      ).toLowerCase().hashCode ^
+      song['artist'].toLowerCase().hashCode;
 }
 
-bool checkSong(dynamic song, dynamic otherSong) {
-  parseSongId(song);
-  parseSongId(otherSong);
-  return checkSongId(song['id'], otherSong['id']) ||
-      (sanitizeSongTitle(otherSong['title']) ==
-              sanitizeSongTitle(song['title']) &&
-          otherSong['artist'].toString().toLowerCase() ==
-              song['artist'].toString().toLowerCase());
+bool checkTitleAndArtist(dynamic songA, dynamic songB) {
+  final extrasRegex = RegExp(
+    r'[\(\[\{\<](?:[^)\]\}\>]*\b(official|music|lyrics?|video|audio|vi[sz]uali[sz]er?|hd|4k|high|quality|version|acoustic|instrumental|acapella|remix|acoustic|re(?:\s?|-)mix(?:|es|ed)|cover(?:|s|ed)|perform(?:ance|ed)|mashup|parod(?:y|ies|ied)|edit(?:|s|ed)|(live\s*(?:at|\@|from|in|on|performance|))|(?:stage|show|concert|tour|cover|perform(?:ance|ed)))\b[^)\]\}\>]*)[\)\]\}\>]',
+    caseSensitive: false,
+  );
+  songA['artist'] = songA['artist'] ?? combineArtists(songA) ?? '';
+  songB['artist'] = songB['artist'] ?? combineArtists(songB) ?? '';
+  final aTitle = removeDuplicates(
+    sanitizeSongTitle(songA['title'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final aArtist = removeDuplicates(
+    sanitizeSongTitle(songA['artist'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final bTitle = removeDuplicates(
+    sanitizeSongTitle(songB['title'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final bArtist = removeDuplicates(
+    sanitizeSongTitle(songB['artist'])
+        .replaceAll(specialRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase(),
+  );
+  final titleCheck =
+      aTitle.length >= bTitle.length
+          ? aTitle.contains(bTitle)
+          : bTitle.contains(aTitle);
+  final artistCheck =
+      (aArtist.length >= bArtist.length
+          ? aArtist.contains(bArtist)
+          : bArtist.contains(aArtist)) ||
+      aTitle == aArtist ||
+      bTitle == bArtist;
+  final aExtras =
+      extrasRegex
+          .firstMatch(songA['title'])?[0]
+          ?.replaceAll(specialRegex, ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim()
+          .toLowerCase();
+  final bExtras =
+      extrasRegex
+          .firstMatch(songB['title'])?[0]
+          ?.replaceAll(specialRegex, ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim()
+          .toLowerCase();
+  final extraCheck =
+      (aExtras == null && bExtras == null) ||
+      (aExtras != null &&
+          bExtras != null &&
+          weightedRatio(aExtras, bExtras) >= 90);
+  final ratioCheck =
+      aTitle != aArtist && bTitle != bArtist
+          ? weightedRatio(
+                removeDuplicates('$aTitle $aArtist'),
+                removeDuplicates('$bTitle $bArtist'),
+              ) >=
+              90
+          : weightedRatio(
+                    removeDuplicates(aTitle),
+                    removeDuplicates('$bTitle $bArtist'),
+                  ) >=
+                  90 ||
+              weightedRatio(
+                    removeDuplicates(bTitle),
+                    removeDuplicates('$aTitle $aArtist'),
+                  ) >=
+                  90 ||
+              weightedRatio(
+                    removeDuplicates(bTitle),
+                    removeDuplicates(aTitle),
+                  ) >=
+                  90;
+  return ((titleCheck && artistCheck) || ratioCheck) && extraCheck;
 }

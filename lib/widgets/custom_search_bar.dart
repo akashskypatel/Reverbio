@@ -19,6 +19,8 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -32,6 +34,7 @@ class CustomSearchBar extends StatefulWidget {
     required this.labelText,
     this.onChanged,
     this.loadingProgressNotifier,
+    this.searchDelayMs = 500,
   });
   final Function(String) onSubmitted;
   final ValueNotifier<bool>? loadingProgressNotifier;
@@ -39,14 +42,37 @@ class CustomSearchBar extends StatefulWidget {
   final FocusNode focusNode;
   final String labelText;
   final Function(String)? onChanged;
+  final int searchDelayMs;
 
   @override
   _CustomSearchBarState createState() => _CustomSearchBarState();
 }
 
 class _CustomSearchBarState extends State<CustomSearchBar> {
+  late ThemeData _theme;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel(); // Cancel timer when widget is disposed
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(Function(String) searchFunction, String value) {
+    // Cancel previous timer if it exists
+    _debounceTimer?.cancel();
+
+    // Start a new timer that fires after 1 second of inactivity
+    _debounceTimer = Timer(Duration(milliseconds: widget.searchDelayMs), () {
+      searchFunction(value); // Your actual search function
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 3),
       child: SearchBar(
@@ -59,8 +85,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
         onChanged:
             widget.onChanged != null
                 ? (value) async {
-                  widget.onChanged!(value);
-
+                  _onSearchChanged(widget.onChanged!, value);
                   if (mounted) setState(() {});
                 }
                 : null,
@@ -71,7 +96,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
           if (widget.loadingProgressNotifier != null)
             ValueListenableBuilder<bool>(
               valueListenable: widget.loadingProgressNotifier!,
-              builder: (_, value, __) {
+              builder: (context, value, __) {
                 if (value) {
                   return IconButton(
                     icon: const SizedBox(
@@ -99,7 +124,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
             IconButton(
               icon: Icon(
                 FluentIcons.search_20_regular,
-                color: Theme.of(context).colorScheme.primary,
+                color: _theme.colorScheme.primary,
               ),
               onPressed: () {
                 widget.onSubmitted(widget.controller.text);

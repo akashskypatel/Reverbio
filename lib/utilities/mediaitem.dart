@@ -20,6 +20,7 @@
  */
 
 import 'package:audio_service/audio_service.dart';
+import 'package:reverbio/utilities/utils.dart';
 
 Map mediaItemToMap(MediaItem mediaItem) => {
   'id': mediaItem.id,
@@ -32,24 +33,29 @@ Map mediaItemToMap(MediaItem mediaItem) => {
   'isLive': mediaItem.extras!['isLive'],
 };
 
-MediaItem mapToMediaItem(Map song) => MediaItem(
-  id: song['id'].toString(),
-  album: '',
-  artist: song['artist'].toString().trim(),
-  title: song['title'].toString(),
-  artUri:
-      song['isOffline'] ?? false
-          ? Uri.file(song['highResImage'].toString())
-          : Uri.parse(song['highResImage'].toString()),
-  extras: {
-    'artistId': song['artistId'],
-    'lowResImage': song['lowResImage'],
-    'ytid': song['ytid'],
-    'isLive': song['isLive'],
-    'isOffline': song['isOffline'],
-    'artWorkPath': song['highResImage'].toString(),
-  },
-);
+MediaItem mapToMediaItem(Map song) {
+  final imagePath = parseImage(song)?.first ?? '';
+  return MediaItem(
+    id: song['id'] ?? '',
+    album: song['album'] ?? '',
+    artist: song['artist'] ?? '',
+    title: song['title'] ?? '',
+    artUri:
+        imagePath.isNotEmpty
+            ? (isFilePath(imagePath) && doesFileExist(imagePath)
+                ? Uri.file(imagePath)
+                : (isUrl(imagePath) ? Uri.parse(imagePath) : null))
+            : null,
+    extras: {
+      'artistId': song['artistId'] ?? '',
+      'lowResImage': song['lowResImage'] ?? '',
+      'ytid': song['ytid'] ?? '',
+      'isLive': song['isLive'] ?? false,
+      'isOffline': song['isOffline'] ?? false,
+      'artWorkPath': song['highResImage'] ?? '',
+    },
+  );
+}
 
 // Add this helper method to convert Media to MediaItem
 Map<String, dynamic> songToMediaExtras(Map song) => {

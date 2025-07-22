@@ -36,12 +36,12 @@ class PlaylistBar extends StatelessWidget {
     this.playlistData,
     this.onPressed,
     this.onDelete,
-    this.cardIcon = FluentIcons.music_note_1_24_regular,
+    this.cardIcon = FluentIcons.music_note_1_24_filled,
     this.showBuildActions = true,
     this.isAlbum = false,
     this.borderRadius = BorderRadius.zero,
   }) : playlistLikeStatus = ValueNotifier<bool>(
-         isPlaylistAlreadyLiked(playlistId),
+         isPlaylistAlreadyLiked(playlistData),
        );
 
   final Map? playlistData;
@@ -83,7 +83,7 @@ class PlaylistBar extends StatelessWidget {
     final primaryColor = Theme.of(context).colorScheme.primary;
     return ValueListenableBuilder(
       valueListenable: hideNotifier,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return Visibility(
           visible: hideNotifier.value,
           child: Padding(
@@ -96,14 +96,20 @@ class PlaylistBar extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         settings: RouteSettings(
-                          name: 'playlist?yt=$playlistId',
+                          name:
+                              'playlist?yt=${playlistId ?? playlistData?['id']}',
                         ),
                         builder:
                             (context) => PlaylistPage(
                               page: 'playlist',
                               playlistData:
                                   playlistData ??
-                                  {'title': playlistTitle, 'ytid': playlistId},
+                                  {
+                                    'title': playlistTitle,
+                                    'ytid': playlistId,
+                                    'image': playlistArtwork,
+                                    'primary-type': 'playlist',
+                                  },
                             ),
                       ),
                     );
@@ -147,9 +153,16 @@ class PlaylistBar extends StatelessWidget {
   Widget _buildAlbumArt() {
     return BaseCard(
       icon: cardIcon,
-      iconSize: iconSize,
       size: artworkSize,
-      imageUrl: playlistArtwork,
+      showIconLabel: false,
+      inputData:
+          playlistData ??
+          {
+            'title': playlistTitle,
+            'ytid': playlistId,
+            'image': playlistArtwork,
+            'primary-type': 'playlist',
+          },
     );
   }
 
@@ -161,13 +174,19 @@ class PlaylistBar extends StatelessWidget {
       onSelected: (String value) {
         switch (value) {
           case 'like':
-            if (playlistId != null) {
+            if ((playlistId ?? playlistData?['id']) != null) {
               final newValue = !playlistLikeStatus.value;
               playlistLikeStatus.value = newValue;
-              updatePlaylistLikeStatus({
-                'ytid': playlistId,
-                'title': playlistTitle,
-              }, newValue);
+              updatePlaylistLikeStatus(
+                playlistData ??
+                    {
+                      'ytid': playlistId,
+                      'title': playlistTitle,
+                      'image': playlistArtwork,
+                      'primary-type': 'playlist',
+                    },
+                newValue,
+              );
             }
             break;
           case 'remove':

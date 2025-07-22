@@ -5,7 +5,7 @@ repository: https://github.com/akashskypatel/Reverbio
 issue_tracker: https://github.com/akashskypatel/Reverbio/issues
 
 publish_to: 'none'
-version: 1.0.1 # run update.sh after changing the version
+version: 1.2.0 # run update.sh after changing the version
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -15,16 +15,14 @@ dependencies:
   app_links: ^6.4.0
   audio_service: ^0.18.17
   cached_network_image: ^3.4.1
-  discogs_api_client:
-    path: ../discogs_api_client
+  discogs_api_client: ^0.1.6
   dynamic_color: ^1.7.0
   file_picker: ^10.1.2
   fluentui_system_icons: ^1.1.273
   flutter:
     sdk: flutter
   flutter_flip_card: ^0.0.6
-  flutter_js:
-    path: ../flutter_js
+  flutter_js: ^0.8.5
   flutter_localizations:
     sdk: flutter
   fuzzy: ^0.5.1
@@ -37,8 +35,7 @@ dependencies:
   intl: 0.20.2
   media_kit: ^1.1.11
   media_kit_libs_audio: ^1.0.5
-  musicbrainz_api_client:
-    path: ../musicbrainz_api_client
+  musicbrainz_api_client: ^0.1.8
   path: ^1.9.1
   path_provider: ^2.1.5
   rxdart: ^0.28.0

@@ -50,7 +50,11 @@ final predictiveBack = ValueNotifier<bool>(
 );
 
 final sponsorBlockSupport = ValueNotifier<bool>(
-  Hive.box('settings').get('sponsorBlockSupport', defaultValue: false),
+  Hive.box('settings').get('sponsorBlockSupport', defaultValue: true),
+);
+
+final skipNonMusic = ValueNotifier<bool>(
+  Hive.box('settings').get('skipNonMusic', defaultValue: true),
 );
 
 final defaultRecommendations = ValueNotifier<bool>(
@@ -94,3 +98,11 @@ var sleepTimerNotifier = ValueNotifier<Duration?>(null);
 // Server-Notifiers
 
 final announcementURL = ValueNotifier<String?>(null);
+
+final prepareNextSong = ValueNotifier<bool>(
+  Hive.box('settings').get('prepareNextSong', defaultValue: false),
+);
+
+final useProxies = ValueNotifier<bool>(
+  Hive.box('settings').get('useProxies', defaultValue: true),
+);

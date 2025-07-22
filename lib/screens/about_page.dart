@@ -34,6 +34,7 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
+  late ThemeData _theme;
   @override
   void dispose() {
     super.dispose();
@@ -41,6 +42,7 @@ class _AboutPageState extends State<AboutPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n!.about)),
       body: SingleChildScrollView(
@@ -52,7 +54,7 @@ class _AboutPageState extends State<AboutPage> {
               child: Text(
                 'Reverbio  | $appVersion',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _theme.colorScheme.primary,
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'paytoneOne',

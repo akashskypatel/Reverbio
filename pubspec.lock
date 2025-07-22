@@ -196,9 +196,10 @@ packages:
   discogs_api_client:
     dependency: "direct main"
     description:
-      path: "../discogs_api_client"
-      relative: true
-    source: path
+      name: discogs_api_client
+      sha256: e9310b17e67e3530eac69d6046f419810a7856528ba663ec3173a3daa99277da
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.6"
   dynamic_color:
     dependency: "direct main"
@@ -288,10 +289,11 @@ packages:
   flutter_js:
     dependency: "direct main"
     description:
-      path: "../flutter_js"
-      relative: true
-    source: path
-    version: "0.8.2"
+      name: flutter_js
+      sha256: a04966b102967891ee4947d6e52b450676f16204876ba936e394008ca26db04b
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.5"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -335,10 +337,10 @@ packages:
     dependency: transitive
     description:
       name: freezed_annotation
-      sha256: c87ff004c8aa6af2d531668b46a4ea379f7191dc6dfa066acd53d506da6e044b
+      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "3.1.0"
   fuzzy:
     dependency: "direct main"
     description:
@@ -566,10 +568,11 @@ packages:
   musicbrainz_api_client:
     dependency: "direct main"
     description:
-      path: "../musicbrainz_api_client"
-      relative: true
-    source: path
-    version: "0.1.8"
+      name: musicbrainz_api_client
+      sha256: "23edf07f1ba88f97a3bb60281d3a1c9b565e10c81b2cfc1cb02fc28edd889c9b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.10"
   octo_image:
     dependency: transitive
     description:
@@ -662,10 +665,10 @@ packages:
     dependency: transitive
     description:
       name: posix
-      sha256: f0d7856b6ca1887cfa6d1d394056a296ae33489db914e365e2044fdada449e62
+      sha256: "6323a5b0fa688b6a010df4905a56b00181479e6d10534cecfecede2aa55add61"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.2"
+    version: "6.0.3"
   rxdart:
     dependency: "direct main"
     description:
@@ -795,10 +798,10 @@ packages:
     dependency: transitive
     description:
       name: synchronized
-      sha256: "0669c70faae6270521ee4f05bffd2919892d42d1276e6c495be80174b6bc0ef6"
+      sha256: c254ade258ec8282947a0acbbc90b9575b4f19673533ee46f2f6e9b3aeefd7c0
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.1"
+    version: "3.4.0"
   term_glyph:
     dependency: transitive
     description:
@@ -867,10 +870,10 @@ packages:
     dependency: "direct main"
     description:
       name: url_launcher
-      sha256: "9d06212b1362abc2f0f0d78e6f09f726608c74e3b9462e8368bb03314aa8d603"
+      sha256: f6a7e5c4835bb4e3026a04793a4199ca2d14c739ec378fdfe23fc8075d0439f8
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.1"
+    version: "6.3.2"
   url_launcher_android:
     dependency: transitive
     description:
@@ -995,10 +998,10 @@ packages:
     dependency: "direct main"
     description:
       name: youtube_explode_dart
-      sha256: "8db47e0f947598f6aa29d2862efb98b92af0c78990d4b23c224f3475c556b47b"
+      sha256: "9cd131624135065a6866c1e8ad4f4703e5bcfd1da322d4fddc55c972d04b6b22"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.2"
+    version: "2.5.1"
 sdks:
   dart: ">=3.8.0 <4.0.0"
   flutter: ">=3.29.0"

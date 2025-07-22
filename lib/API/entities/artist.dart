@@ -20,11 +20,12 @@
  */
 
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:hive/hive.dart';
-import 'package:reverbio/API/Reverbio.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
@@ -46,7 +47,12 @@ final ValueNotifier<int> currentLikedArtistsLength = ValueNotifier<int>(
 /// Returns current liked status if successful.
 Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
   try {
+    artist['id'] = parseEntityId(artist);
+    if (artist['id']?.isEmpty) throw Exception('ID is null or empty');
     if (add) {
+      if (artist['id'] != null &&
+          (artist['musicbrainz'] == null || artist['musicbrainz'].isEmpty))
+        unawaited(getArtistDetails(artist));
       userLikedArtistsList.addOrUpdate('id', artist['id'], {
         'id': artist['id'],
         'name': artist['artist'],
@@ -57,31 +63,40 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
       currentLikedArtistsLength.value++;
       PM.onEntityLiked(artist);
     } else {
-      userLikedArtistsList.removeWhere((value) => value['id'] == artist['id']);
+      userLikedArtistsList.removeWhere((value) => checkArtist(artist, value));
       currentLikedArtistsLength.value--;
     }
     addOrUpdateData('user', 'likedArtists', userLikedArtistsList);
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return !add;
   }
 }
 
-bool isArtistAlreadyLiked(artistIdToCheck) =>
-    userLikedArtistsList.any((artist) => artist['id'] == artistIdToCheck);
+bool isArtistAlreadyLiked(artistToCheck) =>
+    artistToCheck is Map &&
+    userLikedArtistsList.any(
+      (artist) => artist is Map && checkArtist(artist, artistToCheck),
+    );
 
-Future<dynamic> getArtistDetails(String id) async {
+Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
   try {
-    dynamic ids;
-    if (id.contains(RegExp(r'(yt\=|mb\=|dc\=)'))) {
-      ids = Uri.parse('?$id').queryParameters;
-      if (ids['mb'] == null) return {};
+    final id = parseEntityId(artistData);
+    final ids = Uri.parse('?$id').queryParameters;
+    if (ids['mb'] == null) return {};
+    if (!refresh) {
+      final cached = _getCachedArtist(id);
+      if (cached != null) {
+        if (cached?['youtube'] == null || cached?['youtube'].isEmpty)
+          cached['youtube'] = await _parseYTRelations(
+            List.from(cached['musicbrainz']?['relations'] ?? []),
+          );
+        return cached;
+      }
     }
-    final cached = _getCachedArtist(id);
-    if (cached != null) return cached;
     final mbRes = await mb.artists.get(
-      ids == null ? id : ids['mb']!,
+      ids['mb']!,
       inc: [
         'release-groups',
         'aliases',
@@ -92,21 +107,80 @@ Future<dynamic> getArtistDetails(String id) async {
         'url-rels',
       ],
     );
-    final urls =
-        List.from(
-          mbRes['relations'] ?? [],
-        ).where((e) => e['type'] == 'discogs').toList();
-    if (urls.isNotEmpty) {
-      final discogsUrl = urls[0]['url']['resource'];
-      final regex = RegExp(r'/artist/(\d+)');
-      final match = regex.firstMatch(discogsUrl)?.group(1) ?? '';
-      final dcRes = await _getArtistDetailsDC(match);
-      return await _combineResults({'mbRes': mbRes, 'dcRes': dcRes});
-    }
+    final urls = List.from(mbRes['relations'] ?? []);
+    final dcRes = await _parseDCRelations(List.from(urls));
+    final ytRes = await _parseYTRelations(List.from(urls));
+    final result = await _combineResults(
+      mbRes: mbRes,
+      dcRes: dcRes,
+      ytRes: ytRes,
+    );
+    return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
   }
+}
+
+Future<dynamic> _parseDCRelations(List relations) async {
+  final urls = relations.where((e) => e['type'] == 'discogs').toList();
+  dynamic data = {};
+  try {
+    if (urls.isNotEmpty) {
+      for (final u in urls) {
+        final discogsUrl = u['url']['resource'];
+        final regex = RegExp(r'.+\/artist\/(\d+)');
+        final match = regex.firstMatch(discogsUrl)?.group(1) ?? '';
+        data = await _getArtistDetailsDC(match);
+        if (data != null && data.isNotEmpty) return data;
+      }
+    }
+  } catch (_) {}
+  return data;
+}
+
+Future<dynamic> _parseYTRelations(List relations) async {
+  dynamic data = {};
+  try {
+    final urls = relations.where((e) => e['type'] == 'youtube').toList();
+    if (urls.isNotEmpty) {
+      for (final u in urls) {
+        final url = u['url']['resource'];
+        final chrx = RegExp(r'(?:.+\/channel\/)(.*)').firstMatch(url);
+        final usrx = RegExp(r'(?:.+\/user\/)(.*)').firstMatch(url);
+        final match = chrx?.group(1) ?? usrx?.group(1);
+        if (chrx?.group(1) == null && usrx?.group(1) != null) {
+          final userSearch = await yt.search.search(match!);
+          for (final res in userSearch) {
+            if (res.author == match) {
+              final channel = await yt.channels.get(res.channelId);
+              data = {
+                'url': channel.url,
+                'bannerUrl': channel.bannerUrl,
+                'id': channel.id.value,
+                'logoUrl': channel.logoUrl,
+                'subscribersCount': channel.subscribersCount,
+                'title': channel.title,
+              };
+              return data;
+            }
+          }
+        } else if (chrx?.group(1) != null) {
+          final channel = await yt.channels.get(match);
+          data = {
+            'url': channel.url,
+            'bannerUrl': channel.bannerUrl,
+            'id': channel.id.value,
+            'logoUrl': channel.logoUrl,
+            'subscribersCount': channel.subscribersCount,
+            'title': channel.title,
+          };
+          return data;
+        }
+      }
+    }
+  } catch (_) {}
+  return data;
 }
 
 Future<dynamic> searchArtistDetails(
@@ -118,7 +192,7 @@ Future<dynamic> searchArtistDetails(
 }) async {
   try {
     final q = query.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final cached = _searchCachedArtists(q, exact: exact);
+    final cached = _searchCachedArtists(q);
     if (cached != null && cached.isNotEmpty) return cached.first;
     final res = await _callApis(
       q,
@@ -139,8 +213,7 @@ Future<dynamic> getRecommendedArtists(
   List<String> query,
   int itemsNumber,
 ) async {
-  await searchArtistsDetails(query, limit: itemsNumber, paginated: true);
-  return pickRandomItems(cachedArtistsList, itemsNumber);
+  return pickRandomItems(await searchArtistsDetails(query), itemsNumber);
 }
 
 Future<dynamic> searchArtistsDetails(
@@ -152,27 +225,30 @@ Future<dynamic> searchArtistsDetails(
 }) async {
   try {
     final queries =
-        query.map((e) => e.replaceAll(RegExp(r'\s+'), ' ').trim()).toList();
+        query
+            .map((e) => e.replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase())
+            .toList();
     final result = [];
     final uncached = <String>[];
     for (final q in queries) {
-      final cached = _searchCachedArtists(q, exact: exact);
+      final cached = _searchCachedArtists(q);
       if (cached != null && cached.isNotEmpty && exact) {
-        result.add(cached.first);
+        result.add(cached);
       } else
         uncached.add(q);
     }
-    for (final q in uncached) {
-      final res = await _callApis(
-        q,
-        exact: exact,
-        limit: limit,
-        offset: offset,
-        paginated: paginated,
-      );
-      if (res.isNotEmpty) result.addAll(res);
+    final qry = uncached.map((e) => '"${e.replaceAll(' ', '|')}"').join(' OR ');
+    final artistsSearch = await mb.artists.search(qry, limit: limit);
+    final artistList = LinkedHashSet<String>();
+    for (final artist in (artistsSearch?['artists'] ?? [])) {
+      if (artistList.add(artist['name'].toLowerCase())) {
+        if (uncached.contains(artist['name'].toLowerCase()) ||
+            uncached.contains(artist['sort-name'].toLowerCase())) {
+          artist['primary-type'] = 'artist';
+          result.add(artist);
+        }
+      }
     }
-
     return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -199,21 +275,15 @@ Future<List<dynamic>> _callApis(
     if (mbRes != null) {
       for (final artist in mbRes) {
         if (artist['type'] != 'Other') {
-          final urls =
-              List.from(
-                artist['relations'] ?? [],
-              ).where((e) => e['type'] == 'discogs').toList();
-          if (urls.isNotEmpty) {
-            final discogsUrl = urls[0]['url']['resource'];
-            final regex = RegExp(r'/artist/(\d+)');
-            final match = regex.firstMatch(discogsUrl)?.group(1) ?? '';
-            final dcRes = await _getArtistDetailsDC(match);
-            final combined = await _combineResults({
-              'mbRes': artist,
-              'dcRes': dcRes,
-            });
-            results.add(combined);
-          }
+          final relations = List.from(artist['relations'] ?? []);
+          final dcRes = await _parseDCRelations(relations);
+          final ytRes = await _parseYTRelations(relations);
+          final combined = await _combineResults(
+            mbRes: artist,
+            dcRes: dcRes,
+            ytRes: ytRes,
+          );
+          results.add(combined);
         }
       }
     }
@@ -233,7 +303,11 @@ Future<List<dynamic>> _callApis(
   }
 }
 
-Future<Map<String, dynamic>> _combineResults(Map<String, dynamic> data) async {
+Future<Map<String, dynamic>> _combineResults({
+  Map mbRes = const {},
+  Map dcRes = const {},
+  Map ytRes = const {},
+}) async {
   try {
     await Hive.openBox('cache').whenComplete(
       () =>
@@ -241,10 +315,14 @@ Future<Map<String, dynamic>> _combineResults(Map<String, dynamic> data) async {
             'cache',
           ).get('cachedArtists', defaultValue: []),
     );
-    final mbRes = data['mbRes'];
-    final dcRes = data['dcRes'];
-
-    final id = 'mb=${mbRes['id']}&dc=${dcRes['id']}';
+    final ids = <String, String>{};
+    if (mbRes['id'] != null) ids['mb'] = mbRes['id'].toString();
+    if (dcRes['id'] != null) ids['dc'] = dcRes['id'].toString();
+    if (ytRes['id'] != null) ids['yt'] = ytRes['id'].toString();
+    final id = Uri(
+      host: '',
+      queryParameters: ids,
+    ).toString().replaceAll('//?', '');
     final res = {
       'id': id,
       'artist': mbRes['name'],
@@ -252,6 +330,7 @@ Future<Map<String, dynamic>> _combineResults(Map<String, dynamic> data) async {
       'discogsName': dcRes['name'],
       'musicbrainz': mbRes,
       'discogs': dcRes,
+      'youtube': ytRes,
       'primary-type': 'artist',
       'cachedAt': DateTime.now().toString(),
     };
@@ -279,80 +358,14 @@ dynamic _getCachedArtist(String id) {
 }
 
 /// Score is automatically 0 if exact = true
-dynamic _searchCachedArtists(
-  String query, {
-  bool exact = true,
-  double score = 0.1,
-}) {
+dynamic _searchCachedArtists(String query) {
   try {
-    if (exact) score = 0.0;
-    final names =
-        cachedArtistsList
-            .map(
-              (e) => {
-                'id': e['id'],
-                'musicbrainzName': e['musicbrainzName'],
-                'discogsName': e['discogsName'],
-              },
-            )
-            .toList();
-    final List<WeightedKey<Map<String, dynamic>>> keys = [
-      WeightedKey(
-        name: 'musicbrainzName',
-        getter: (e) => e['musicbrainzName'],
-        weight: 1,
-      ),
-      WeightedKey(
-        name: 'discogsName',
-        getter: (e) => e['discogsName'],
-        weight: 1,
-      ),
-    ];
-    final fuzzy = Fuzzy(names, options: FuzzyOptions(threshold: 1, keys: keys));
-    final sorted =
-        fuzzy.search(query)
-          ..where((e) => e.score <= 0.2)
-          ..sort((a, b) {
-            final scorecomp = a.score.compareTo(b.score);
-            if (scorecomp != 0) {
-              return scorecomp;
-            }
-            for (var i = 0; i < a.matches.length; i++) {
-              final indexcomp = a.matches[i].arrayIndex.compareTo(
-                b.matches[i].arrayIndex,
-              );
-              if (indexcomp != 0) {
-                return indexcomp;
-              }
-            }
-            return 0;
-          });
-    if (exact) {
-      final filtered =
-          sorted.where((e) => e.score.isNearlyZero(tolerance: 0.0001)).toList();
-      if (filtered.isEmpty) {
-        return null;
-      }
-      final id = filtered.first.item['id'];
-      final result = cachedArtistsList.where((e) => e['id'] == id);
-      if (result.isEmpty) {
-        return null;
-      }
-      return [result.first];
-    } else {
-      final filtered = sorted.where((e) => e.score <= score);
-      final idSet = filtered.map((map) => map.item['id']).toSet();
-      final result = List<dynamic>.from(
-        cachedArtistsList.where((e) {
-          final id = e['id'];
-          return idSet.contains(id);
-        }).toList(),
-      );
-      return result;
-    }
+    final cached = cachedArtistsList.where((e) => checkArtist(e, query));
+    if (cached.isEmpty) return null;
+    return cached.first;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return null;
   }
 }
 
@@ -372,6 +385,8 @@ Future<dynamic> _getArtistDetailsMB(
       paginated: paginated,
     );
     stopwatch.stop();
+    if (res.isEmpty || res['artists'] == null || res['artists'].isEmpty)
+      return null;
     final _results =
         exact
             ? List<dynamic>.from(res['artists']).where((e) => e['score'] == 100)
@@ -423,7 +438,8 @@ Future<dynamic> _getArtistDetailsMB(
         } else {
           final finalResult = [];
           for (final artist in result) {
-            finalResult.add(await mb.artists.get(artist.item['id'], inc: inc));
+            final artQry = await mb.artists.get(artist.item['id'], inc: inc);
+            finalResult.add(artQry ?? {});
           }
           //TODO optimize
           return finalResult;
@@ -489,5 +505,42 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
+  }
+}
+
+int? getArtistHashCode(dynamic artist) {
+  try {
+    if (!(artist is Map)) return null;
+    if ((artist['name'] ?? artist['artist'] ?? artist['musicbrainzName']) ==
+        null)
+      return null;
+    return (artist['name'] ?? artist['artist'] ?? artist['musicbrainzName'])
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase()
+        .hashCode;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
+  }
+}
+
+bool checkArtist(dynamic artistA, dynamic artistB) {
+  try {
+    if (artistA == null || artistB == null) return false;
+    if (artistA is String ||
+        artistB is String ||
+        (artistA is Map &&
+            artistB is Map &&
+            (artistA['id'] == null || artistB['id'] == null)))
+      return getArtistHashCode(artistA) == getArtistHashCode(artistB) &&
+          getArtistHashCode(artistA) != null &&
+          getArtistHashCode(artistB) != null;
+    parseEntityId(artistA);
+    parseEntityId(artistB);
+    return checkEntityId(artistA['id'], artistB['id']);
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return false;
   }
 }

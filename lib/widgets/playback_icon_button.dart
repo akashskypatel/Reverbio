@@ -22,13 +22,15 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 
 Widget buildPlaybackIconButton(
   PlaybackState? playerState,
   double iconSize,
   Color iconColor,
-  Color backgroundColor, {
+  Color backgroundColor,
+  BuildContext context, {
   double elevation = 2,
   EdgeInsets padding = const EdgeInsets.all(15),
 }) {
@@ -40,14 +42,22 @@ Widget buildPlaybackIconButton(
     isPlaying,
   );
 
-  return RawMaterialButton(
-    elevation: elevation,
-    onPressed: iconDataAndAction.onPressed,
-    fillColor: backgroundColor,
-    splashColor: Colors.transparent,
-    padding: padding,
-    shape: const CircleBorder(),
-    child: Icon(iconDataAndAction.iconData, color: iconColor, size: iconSize),
+  return Tooltip(
+    message:
+        (audioHandler.duration - audioHandler.position).inMilliseconds <= 100
+            ? context.l10n!.repeat
+            : isPlaying
+            ? context.l10n!.pause
+            : context.l10n!.play,
+    child: RawMaterialButton(
+      elevation: elevation,
+      onPressed: iconDataAndAction.onPressed,
+      fillColor: backgroundColor,
+      splashColor: Colors.transparent,
+      padding: padding,
+      shape: const CircleBorder(),
+      child: Icon(iconDataAndAction.iconData, color: iconColor, size: iconSize),
+    ),
   );
 }
 

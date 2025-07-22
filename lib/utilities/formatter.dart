@@ -23,7 +23,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 Map<String, dynamic> returnYtSongLayout(int index, Video song) {
-  final songInfo = tryParseTitleAndArtist(song.title);
+  final songInfo = tryParseTitleAndArtist(song);
   return {
     'index': index,
     'id': 'yt=${song.id}',

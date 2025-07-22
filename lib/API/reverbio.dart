@@ -20,6 +20,7 @@
  */
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
@@ -47,44 +48,347 @@ bool youtubeValidate(String url) {
   return regExp.hasMatch(url);
 }
 
-Future<List<String>> getSearchSuggestions(String query) async {
-  // Custom implementation:
-
-  // const baseUrl = 'https://suggestqueries.google.com/complete/search';
-  // final parameters = {
-  //   'client': 'firefox',
-  //   'ds': 'yt',
-  //   'q': query,
-  // };
-
-  // final uri = Uri.parse(baseUrl).replace(queryParameters: parameters);
-
-  // try {
-  //   final response = await http.get(
-  //     uri,
-  //     headers: {
-  //       'User-Agent':
-  //           'Mozilla/5.0 (Windows NT 10.0; rv:96.0) Gecko/20100101 Firefox/96.0',
-  //     },
-  //   );
-
-  //   if (response.statusCode == 200) {
-  //     final suggestions = jsonDecode(response.body)[1] as List<dynamic>;
-  //     final suggestionStrings = suggestions.cast<String>().toList();
-  //     return suggestionStrings;
-  //   }
-  // } catch (e, stackTrace) {
-  //   logger.log('Error in getSearchSuggestions:$e\n$stackTrace');
-  // }
-
-  // Built-in implementation:
-
-  final suggestions = await yt.search.getQuerySuggestions(query);
-
-  return suggestions;
+String parseEntityId(dynamic entity) {
+  dynamic ids;
+  String songId =
+      entity is String
+          ? entity
+          : entity['id'] ??
+              entity['mbid'] ??
+              entity['ytid'] ??
+              entity['dcid'] ??
+              '';
+  final mbRx = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
+  if (songId.contains('=')) {
+    ids = Uri.parse('?$songId').queryParameters;
+    songId = Uri(
+      host: '',
+      queryParameters: ids,
+    ).toString().replaceAll('?', '').replaceAll('//', '');
+  } else if (mbRx.hasMatch(songId)) {
+    songId = 'mb=$songId';
+  } else if (int.tryParse(songId) != null) {
+    songId = 'dc=$songId';
+  } else if (songId.isNotEmpty) {
+    songId = 'yt=$songId';
+  }
+  ids = Uri.parse('?$songId').queryParameters;
+  if (entity is Map) {
+    entity =
+        Map<String, dynamic>.from(entity)
+          ..addAll(<String, dynamic>{'id': songId})
+          ..addAll(<String, dynamic>{'ytid': ids['yt']})
+          ..addAll(<String, dynamic>{'mbid': ids['mb']})
+          ..addAll(<String, dynamic>{'dcid': ids['dc']});
+  }
+  return songId;
 }
 
-Future<List<Map<String, int>>> getSkipSegments(String id) async {
+String? combineArtists(dynamic value) {
+  if (value == null) return null;
+  final artists =
+      ((value['artist-credit'] ?? []) as List)
+          .map((e) => e['name'] as String)
+          .toList();
+  final result = artists
+      .fold<Set<String>>(<String>{}, (result, str) {
+        final names = str.split(RegExp(r'\s*[&,]\s*')).map((n) => n.trim());
+        return result..addAll(names);
+      })
+      .toList()
+      .join(', ');
+  return result.isEmpty ? null : result;
+}
+
+Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
+  String query,
+  String entity, {
+  int limit = 5,
+  int offset = 0,
+  int maxScore = 0,
+  bool minimal = true,
+}) async {
+  entity = entity.trim().toLowerCase();
+  query = query.replaceAll(RegExp(r'\s+'), ' ').trim().replaceAll(' ', '|');
+  final entityName = <String, dynamic>{
+    'artist': {'function': mb.artists.search, 'name': 'artists', 'type': null},
+    'artists': {'function': mb.artists.search, 'name': 'artists', 'type': null},
+    'album': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'albums': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'release-group': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'release-groups': {
+      'function': mb.releaseGroups.search,
+      'name': 'release-groups',
+      'type': 'album',
+    },
+    'song': {
+      'function': mb.recordings.search,
+      'name': 'recordings',
+      'type': 'song',
+    },
+    'songs': {
+      'function': mb.recordings.search,
+      'name': 'recordings',
+      'type': 'song',
+    },
+    'recording': {
+      'function': mb.recordings.search,
+      'name': 'recordings',
+      'type': 'song',
+    },
+    'recordings': {
+      'function': mb.recordings.search,
+      'name': 'recordings',
+      'type': 'song',
+    },
+  };
+  int hashCode(Map<String, dynamic> e) {
+    if (['artist', 'artists'].contains(e['entity']))
+      return e['value']!.toLowerCase().hashCode;
+    else
+      return e['value']!.toLowerCase().hashCode ^
+          e['artist']!.toLowerCase().hashCode;
+  }
+
+  final exclude = ['various artists'];
+  bool isEqual(Map<String, dynamic> e1, Map<String, dynamic> e2) {
+    return hashCode(e1) == hashCode(e2);
+  }
+
+  if (entityName[entity]?['function'] == null)
+    throw Exception('MusicBrainz returned no results.');
+  try {
+    final params = Map<String, String>.from(
+      entityName[entity]?['type'] != null
+          ? {'primarytype': entityName[entity]?['type'] ?? ''}
+          : {},
+    );
+    final fn = (entityName[entity]?['function'] as Function?) ?? () {};
+    final result = await fn(
+      '$query OR artist:$query OR artistname:$query',
+      limit: minimal ? 25 : 100,
+      params: params,
+      offset: offset,
+    );
+    if (result == null || result[entityName[entity]?['name']] == null)
+      throw Exception('MusicBrainz search failed.');
+    if (result[entityName[entity]?['name']].isNotEmpty) {
+      final uniqueList = LinkedHashSet<Map<String, dynamic>>(
+        equals: isEqual,
+        hashCode: hashCode,
+      )..addAll(
+        (result[entityName[entity]?['name']] as List).map(
+          (e) => {
+            'entity': entityName[entity]?['name'],
+            'value': (e['title'] ?? e['name']) as String,
+            'title': e['title'],
+            'artist-credit': e['artist-credit'],
+            'artist': combineArtists(e),
+            'id': 'mb=${e['id']}',
+            'rid': e['id'],
+            'duration': (e['length'] ?? 0) ~/ 1000,
+            'mbidType': 'recording',
+            'releases': e['releases'],
+            'score': e['score'],
+          },
+        ),
+      );
+      final list =
+          uniqueList
+              .where(
+                (e) =>
+                    (e['score'] as int) >= maxScore &&
+                    !exclude.contains(e['value'].toLowerCase()),
+              )
+              .take(limit)
+              .toList();
+      return <String, Map<String, dynamic>>{
+        entity: {
+          'count': result['count'],
+          'offset': result['offset'],
+          'data': list,
+        },
+      };
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return {
+    entity: {'count': 0, 'offset': 0, 'data': []},
+  };
+}
+
+Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
+  String query, {
+  int limit = 10,
+}) async {
+  try {
+    final results = await yt.search.getQuerySuggestions(query);
+    return {
+      'youtube': {
+        'count': results.length,
+        'offset': 0,
+        'data':
+            results
+                .map((e) => {'value': e, 'entity': 'youtube'})
+                .toList()
+                .take(limit)
+                .toList(),
+      },
+    };
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return {
+    'youtube': {'count': 0, 'offset': 0, 'data': []},
+  };
+}
+
+Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
+  String query, {
+  int offset = 0,
+  List<SearchList> resultList = const [],
+}) async {
+  try {
+    final index = resultList.isNotEmpty ? (offset ~/ 20) : 0;
+    final results =
+        offset != 0 && offset >= (20 * resultList.length)
+            ? await resultList.last
+                .nextPage() //if offset is greater than list length * 20 get next page from last item
+            : resultList.isNotEmpty
+            ? resultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
+            : await yt.search.searchContent(
+              query,
+              filter: TypeFilters.playlist,
+            ); //if result list is empty then make a new search
+    if ((offset == 0 || offset >= (20 * resultList.length)) && results != null)
+      resultList.add(results);
+    return {
+      'playlist': {
+        'count': results?.length ?? 0,
+        'offset': offset,
+        'resultList': resultList,
+        'data':
+            results
+                ?.whereType<SearchPlaylist>()
+                .map(
+                  (e) => Map<String, dynamic>.from({
+                    'id': 'yt=${e.id}',
+                    'value': e.title,
+                    'title': e.title,
+                    'videoCount': e.videoCount,
+                    'source': 'youtube',
+                    'entity': 'playlist',
+                    'primary-type': 'playlist',
+                  }),
+                )
+                .toList() ??
+            [],
+      },
+    };
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return {
+    'playlist': {'count': 0, 'offset': 0, 'data': []},
+  };
+}
+
+Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
+  String query, {
+  int? limit,
+  int offset = 0,
+  int maxScore = 0,
+  bool minimal = true,
+  String? entity,
+  List<SearchList>? resultList,
+}) async {
+  final futures = <Future>[];
+  if (entity != null && ['artist', 'song', 'album'].contains(entity)) {
+    futures.add(
+      getMBSearchSuggestions(
+        query,
+        entity,
+        limit: limit ?? 5,
+        minimal: minimal,
+        maxScore: maxScore,
+        offset: offset,
+      ),
+    );
+  } else if (entity == 'playlist') {
+    futures.add(
+      getYTPlaylistSuggestions(
+        query,
+        offset: offset,
+        resultList: resultList ?? [],
+      ),
+    );
+  } else if (!minimal) {
+    futures
+      ..add(
+        getMBSearchSuggestions(
+          query,
+          'artist',
+          limit: limit ?? 5,
+          minimal: minimal,
+          maxScore: maxScore,
+          offset: offset,
+        ),
+      )
+      ..add(
+        getMBSearchSuggestions(
+          query,
+          'album',
+          limit: limit ?? 5,
+          minimal: minimal,
+          maxScore: maxScore,
+          offset: offset,
+        ),
+      )
+      ..add(
+        getMBSearchSuggestions(
+          query,
+          'song',
+          limit: limit ?? 5,
+          minimal: minimal,
+          maxScore: maxScore,
+          offset: offset,
+        ),
+      )
+      ..add(
+        getYTPlaylistSuggestions(
+          query,
+          offset: offset,
+          resultList: resultList ?? [],
+        ),
+      );
+  } else {
+    futures.add(getYTSearchSuggestions(query));
+  }
+  final results = <String, Map<String, dynamic>>{};
+  final fetchingList = await Future.wait(futures);
+  for (final message in fetchingList) {
+    results.addAll(message);
+  }
+  return results;
+}
+
+Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
   try {
     final res = await http.get(
       Uri(
@@ -110,6 +414,7 @@ Future<List<Map<String, int>>> getSkipSegments(String id) async {
       final segments =
           data.map((obj) {
             return {
+              'category': obj['category'],
               'start':
                   ((double.tryParse(
                                 (obj['segment'] as List).first.toString(),
@@ -176,4 +481,12 @@ Future<Map<String, dynamic>> getIPGeolocation() async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return {};
   }
+}
+
+bool checkEntityId(String id, String otherId) {
+  if (id.contains('=') || id.contains('&')) {
+    final ids = Uri.parse('?$id').queryParameters;
+    return ids.values.any((i) => otherId.contains(i));
+  }
+  return id.contains(otherId) || otherId.contains(id);
 }

@@ -87,7 +87,6 @@ class PluginsManager {
     if (_isProcessingNotifiers[_plugin['name']]!.value) {
       final context = NavigationManager().context;
       showToast(
-        context,
         '${_plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
       return false;
@@ -100,7 +99,7 @@ class PluginsManager {
       _plugin['settings'] = settings;
       String jsContent = '';
       if (isFilePath(settings['source'])) {
-        if (await doesFileExist(settings['source'])) {
+        if (doesFileExist(settings['source'])) {
           jsContent = await File(settings['source']).readAsString();
         }
       } else if (await checkUrl(settings['source']) < 400) {
@@ -314,10 +313,7 @@ class PluginsManager {
               null,
             );
             final context = NavigationManager().context;
-            showToast(
-              context,
-              '${context.l10n!.jobError}: ${asyncResult.stringResult}',
-            );
+            showToast('${context.l10n!.jobError}: ${asyncResult.stringResult}');
           }
         }
       } else {
@@ -483,7 +479,6 @@ class PluginsManager {
       if (_isProcessingNotifiers[pluginName]!.value) {
         final context = NavigationManager().context;
         showToast(
-          context,
           '${context.l10n!.cannotRemovePlugin} ${context.l10n!.waitForJob}',
         );
         return;
@@ -552,7 +547,7 @@ class PluginsManager {
     try {
       final context = NavigationManager().context;
       if (result == null) {
-        showToast(context, '$pluginName: $message ${context.l10n!.failed}.');
+        showToast('$pluginName: $message ${context.l10n!.failed}.');
         return;
       }
       final jsResult = tryDecode(result.stringResult);
@@ -562,7 +557,7 @@ class PluginsManager {
               : jsResult['message'] == null
               ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
               : '$pluginName: ${jsResult['message']}';
-      showToast(context, text);
+      showToast(text);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -743,10 +738,10 @@ class PluginsManager {
             (context, setState) => ValueListenableBuilder(
               valueListenable: _isProcessingNotifiers[pluginName]!,
               builder:
-                  (_, value, __) => ValueListenableBuilder(
+                  (context, value, __) => ValueListenableBuilder(
                     valueListenable: _backgroundJobNotifiers[pluginName]!,
                     builder:
-                        (_, value, __) => ListView(
+                        (context, value, __) => ListView(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: commonListViewBottmomPadding,
@@ -913,7 +908,6 @@ class PluginsManager {
       if (_isProcessingNotifiers[pluginName]!.value) {
         final context = NavigationManager().context;
         showToast(
-          context,
           '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
         );
         return;
@@ -946,7 +940,6 @@ class PluginsManager {
       if (_isProcessingNotifiers[pluginName]!.value) {
         final context = NavigationManager().context;
         showToast(
-          context,
           '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
         );
         return;
@@ -1145,37 +1138,42 @@ class PluginsManager {
     List<dynamic>? args,
   }) {
     try {
-      if (methodName.isNullOrEmpty) return (null, null);
+      if (methodName == null || methodName.isEmpty) return (null, null);
       late final JavascriptRuntime jsRuntime;
       // if only [script] provided
-      if (script.isNotNullOrEmpty &&
-          pluginName.isNullOrEmpty &&
+      if (script != null &&
+          script.isNotEmpty &&
+          (pluginName == null || pluginName.isEmpty) &&
           runtime == null) {
-        jsRuntime = getJavascriptRuntime()..evaluate(script!);
+        jsRuntime = getJavascriptRuntime()..evaluate(script);
       } else
       // if only [pluginName] provided
-      if (script.isNullOrEmpty &&
-          pluginName.isNotNullOrEmpty &&
+      if ((script == null || script.isEmpty) &&
+          pluginName != null &&
+          pluginName.isNotEmpty &&
           runtime == null) {
         final _plugin = _plugins.firstWhere(
-          (value) => value['name'].toLowerCase() == pluginName!.toLowerCase(),
+          (value) => value['name'].toLowerCase() == pluginName.toLowerCase(),
           orElse: () => {},
         );
         if (_plugin.isEmpty) return (null, null);
         jsRuntime = _plugin['runtime'] as JavascriptRuntime;
       } else
       // if only [runtime] provided
-      if (script.isNullOrEmpty && pluginName.isNullOrEmpty && runtime != null) {
+      if ((script == null || script.isEmpty) &&
+          (pluginName == null || pluginName.isEmpty) &&
+          runtime != null) {
         jsRuntime = runtime;
       } else
       // if [script] and [runtime] provided
-      if (script.isNotNullOrEmpty &&
-          pluginName.isNullOrEmpty &&
+      if (script != null &&
+          script.isNotEmpty &&
+          (pluginName == null || pluginName.isEmpty) &&
           runtime != null) {
-        jsRuntime = runtime..evaluate(script!);
+        jsRuntime = runtime..evaluate(script);
       }
 
-      methodName = methodName!.trim();
+      methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
 
       if (methodCall.isEmpty) return (null, null);

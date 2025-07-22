@@ -20,10 +20,12 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:reverbio/services/router_service.dart';
 
 const _toastDuration = Duration(seconds: 3);
 
-void showToast(BuildContext context, String text) {
+void showToast(String text, {BuildContext? context}) {
+  context = context ?? NavigationManager().context;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
@@ -38,11 +40,12 @@ void showToast(BuildContext context, String text) {
 }
 
 void showToastWithButton(
-  BuildContext context,
   String text,
   String buttonName,
-  VoidCallback onPressedToast,
-) {
+  VoidCallback onPressedToast, {
+  BuildContext? context,
+}) {
+  context = context ?? NavigationManager().context;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,

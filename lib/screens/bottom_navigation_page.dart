@@ -19,7 +19,6 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -41,11 +40,12 @@ class BottomNavigationPage extends StatefulWidget {
 
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
+  late ThemeData _theme;
   bool showMiniPlayer = false;
   @override
   void initState() {
     super.initState();
-    audioHandler.audioPlayer.playerStateStream.listen((state) {
+    audioHandler.playerStateStream.listen((state) {
       if (mounted)
         setState(() {
           switch (state) {
@@ -132,6 +132,8 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
+    showMiniPlayer = !nowPlayingOpen;
     try {
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -165,40 +167,26 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                         });
                     },
                   ),
-                Expanded(
+                Flexible(
+                  fit: FlexFit.tight,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(child: widget.child),
+                      Flexible(fit: FlexFit.tight, child: widget.child),
                       if (showMiniPlayer)
-                        StreamBuilder<MediaItem?>(
-                          stream: audioHandler.mediaItem,
+                        ValueListenableBuilder(
+                          valueListenable: audioHandler.songValueNotifier,
                           builder:
-                              (context, snapshot) =>
-                                  snapshot.hasData &&
-                                          !snapshot.hasError &&
-                                          snapshot.data != null
+                              (context, value, child) =>
+                                  value != null && !nowPlayingOpen
                                       ? MiniPlayer(
-                                        metadata: snapshot.data!,
+                                        mediaItem: value.mediaItem,
                                         closeButton:
                                             _buildMiniPlayerCloseButton(
                                               context,
                                             ),
                                       )
                                       : const SizedBox.shrink(),
-                          /*
-                        {
-                          final metadata = snapshot.data;
-                          if (metadata == null) {
-                            return const SizedBox.shrink();
-                          } else {
-                            return MiniPlayer(
-                              metadata: metadata,
-                              closeButton: _buildMiniPlayerCloseButton(context),
-                              navigatorObserver: widget.navigatorObserver,
-                            );
-                          }
-                        },
-                        */
                         ),
                     ],
                   ),
@@ -251,7 +239,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
   Widget _buildMiniPlayerCloseButton(BuildContext context) {
     return IconButton(
       onPressed: () {
-        audioHandler.stop();
+        audioHandler.close();
         if (mounted)
           setState(() {
             showMiniPlayer = false;
@@ -259,10 +247,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
       },
       icon: Icon(
         FluentIcons.dismiss_24_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: 30,
       ),
-      disabledColor: Theme.of(context).colorScheme.secondaryContainer,
+      disabledColor: _theme.colorScheme.secondaryContainer,
     );
   }
 }

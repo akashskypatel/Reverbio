@@ -23,7 +23,6 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/plugins_manager.dart';
-import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
@@ -112,10 +111,7 @@ class WidgetFactory {
                   ),
                   message: '$pluginName - $label',
                 );
-                showToast(
-                  context,
-                  '$pluginName - $label added to background queue.',
-                );
+                showToast('$pluginName - $label added to background queue.');
               }
               : methodData['isAsync']
               ? () async {
@@ -186,10 +182,7 @@ class WidgetFactory {
                     data,
                   ),
                 );
-                showToast(
-                  context,
-                  '$pluginName - $label added to background queue.',
-                );
+                showToast('$pluginName - $label added to background queue.');
               }
               : methodData['isAsync'] ?? false
               ? () async {
@@ -265,7 +258,7 @@ class WidgetFactory {
       trailing: ValueListenableBuilder(
         valueListenable: switchNotifier,
         builder:
-            (_, value, __) => Switch(
+            (context, value, __) => Switch(
               thumbIcon: thumbIcon,
               value: value,
               onChanged:
@@ -282,7 +275,6 @@ class WidgetFactory {
                           ),
                         );
                         showToast(
-                          context,
                           '$pluginName - $label added to background queue.',
                         );
                       }
@@ -367,7 +359,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -416,7 +407,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -465,7 +455,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -516,7 +505,6 @@ class WidgetFactory {
                             ),
                           );
                           showToast(
-                            context,
                             '$pluginName - $label added to background queue.',
                           );
                         }
@@ -587,10 +575,7 @@ class WidgetFactory {
                       id: id,
                     ),
                   );
-                  showToast(
-                    NavigationManager().context,
-                    '$pluginName - $label added to background queue.',
-                  );
+                  showToast('$pluginName - $label added to background queue.');
                 }
                 : methodData['isAsync'] ?? false
                 ? (value) async {
@@ -665,10 +650,7 @@ class WidgetFactory {
                     pluginName: pluginName,
                     methodName: methodData['methodName'],
                   );
-                  showToast(
-                    NavigationManager().context,
-                    '$pluginName - $label added to background queue.',
-                  );
+                  showToast('$pluginName - $label added to background queue.');
                 }
                 : methodData['isAsync'] ?? false
                 ? () async {

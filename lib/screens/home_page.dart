@@ -28,6 +28,7 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/announcement_box.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_list.dart';
@@ -40,6 +41,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late ThemeData _theme;
   Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
     playlistsNum: recommendedCardsNumber,
   );
@@ -66,6 +68,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reverbio'),
@@ -82,14 +85,12 @@ class _HomePageState extends State<HomePage> {
               padding: commonBarPadding,
               child: ValueListenableBuilder<String?>(
                 valueListenable: announcementURL,
-                builder: (_, _url, __) {
+                builder: (context, _url, __) {
                   if (_url == null) return const SizedBox.shrink();
                   return AnnouncementBox(
                     message: context.l10n!.newAnnouncement,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.secondaryContainer,
-                    textColor:
-                        Theme.of(context).colorScheme.onSecondaryContainer,
+                    backgroundColor: _theme.colorScheme.secondaryContainer,
+                    textColor: _theme.colorScheme.onSecondaryContainer,
                     url: _url,
                   );
                 },
@@ -101,7 +102,8 @@ class _HomePageState extends State<HomePage> {
               padding: commonBarPadding,
               child: ValueListenableBuilder<int>(
                 valueListenable: currentLikedPlaylistsLength,
-                builder: (_, value, __) {
+                builder: (context, value, __) {
+                  //TODO: add pagination suggestedPlaylists
                   return HorizontalCardScroller(
                     title: context.l10n!.suggestedPlaylists,
                     future: _recommendedPlaylistsFuture,
@@ -117,6 +119,7 @@ class _HomePageState extends State<HomePage> {
                 child: FutureBuilder(
                   future: _recommendedSongsFuture,
                   builder: (context, snapshot) {
+                    //TODO: add pagination suggestedArtists
                     return HorizontalCardScroller(
                       title: context.l10n!.suggestedArtists,
                       future: _recommendedArtistsFuture,
@@ -126,6 +129,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+          //TODO: add pagination recommendedForYou
           SongList(
             page: 'recommended',
             title: context.l10n!.recommendedForYou,
@@ -164,16 +168,31 @@ class _HomePageState extends State<HomePage> {
   void _parseArtistList(List<dynamic> data) {
     final artists =
         data
-            .where((e) => e['artist'] != null)
-            .map(
-              (e) =>
-                  e['artist']
-                      .toString()
-                      .split('~')[0]
-                      .replaceAll(RegExp(r'\s+'), ' ')
-                      .trim()
-                      .toLowerCase(),
-            )
+            .fold(<String>[], (v, e) {
+              if (e['artist'] != null && e['artist'].isNotEmpty) {
+                v.addAll(
+                  splitArtists(
+                    e['artist']
+                        .split('~')[0]
+                        .replaceAll(RegExp(r'\s+'), ' ')
+                        .trim()
+                        .toLowerCase(),
+                  ),
+                );
+              }
+              if (e['channelName'] != null && e['channelName'].isNotEmpty) {
+                v.addAll(
+                  splitArtists(
+                    e['channelName']
+                        .split('~')[0]
+                        .replaceAll(RegExp(r'\s+'), ' ')
+                        .trim()
+                        .toLowerCase(),
+                  ),
+                );
+              }
+              return v;
+            })
             .toSet()
             .toList();
     _recommendedArtistsFuture = getRecommendedArtists(artists, 8);

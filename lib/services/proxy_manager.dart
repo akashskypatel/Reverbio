@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:math';
 
 import 'package:http/http.dart' as http;
@@ -37,7 +36,7 @@ class Proxy {
 
 class ProxyManager {
   ProxyManager() {
-    unawaited(_fetchProxiesIsolate());
+    unawaited(_fetchProxies());
   }
 
   Future<void>? _fetchingList;
@@ -72,99 +71,6 @@ class ProxyManager {
         stackTrace,
       );
     }
-  }
-
-  Future<void> _fetchProxiesIsolate() async {
-    logger.log('Fetching proxies...', null, null);
-    final receivePort = ReceivePort();
-    final isolates =
-        <Future>[]
-          ..add(Isolate.spawn(_fetchOpenProxyListIsolate, receivePort.sendPort))
-          ..add(Isolate.spawn(_fetchSpysMeIsolate, receivePort.sendPort))
-          ..add(Isolate.spawn(_fetchProxyScrapeIsolate, receivePort.sendPort));
-    final expectedMessages = isolates.length;
-    int receivedMessages = 0;
-
-    await Future.wait(isolates);
-    _fetchingList =
-        receivePort.listen((message) {
-          (message as Map).forEach((country, list) {
-            _proxies[country] = _proxies[country] ?? [];
-            for (final proxyMap in list) {
-              final proxy = Proxy(
-                address: proxyMap['address'],
-                country: proxyMap['country'],
-                ssl: proxyMap['ssl'],
-                source: proxyMap['source'],
-              );
-              if (!_proxies[country]!.contains(proxy)) {
-                _proxies[country]!.add(proxy);
-              }
-            }
-          });
-          receivedMessages += 1;
-          if (receivedMessages >= expectedMessages) {
-            receivePort.close();
-          }
-        }).asFuture();
-    await _fetchingList?.whenComplete(() {
-      _fetched = true;
-      logger.log(
-        'Done fetching Proxies. Fetched: ${_proxies.values.fold(0, (v, e) => v + e.length)}',
-        null,
-        null,
-      );
-      _lastFetched = DateTime.now();
-    });
-  }
-
-  void _fetchOpenProxyListIsolate(SendPort sendPort) async {
-    final proxies = <String, List<dynamic>>{};
-    try {
-      logger.log('Fetching from openproxylist...', null, null);
-      const url =
-          'https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt';
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to fetch from openproxylist');
-      }
-      response.body.split('\n').fold(proxies, (v, e) {
-        final rgx = RegExp(
-          r'(.)\s(?<ip>\d+\.\d+\.\d+\.\d+)\:(?<port>\d+)\s(?:(?<responsetime>\d+)(?:ms))\s(?<country>[A-Z]{2})\s(?<isp>.+)$',
-        );
-        final rgxm = rgx.firstMatch(e);
-        Map d = {};
-        if (rgxm != null)
-          d = {
-            'ip': (rgxm.namedGroup('ip') ?? '').trim(),
-            'port': (rgxm.namedGroup('port') ?? '').trim(),
-            'country': (rgxm.namedGroup('country') ?? '').trim(),
-          };
-
-        if (d.isNotEmpty && d['country'].isNotEmpty) {
-          v[d['country']] = v[d['country']] ?? [];
-          v[d['country']]!.add({
-            'source': 'openproxylist',
-            'address': '${d['ip']}:${d['port']}',
-            'country': d['country'],
-            'ssl': true,
-          });
-        }
-        return v;
-      });
-      logger.log(
-        'Proxies fetched: ${proxies.values.fold(0, (v, e) => v + e.length)} from openproxylist',
-        null,
-        null,
-      );
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-    }
-    sendPort.send(proxies);
   }
 
   Future<void> _fetchOpenProxyList() async {
@@ -211,60 +117,6 @@ class ProxyManager {
         stackTrace,
       );
     }
-  }
-
-  void _fetchSpysMeIsolate(SendPort sendPort) async {
-    final proxies = <String, List<dynamic>>{};
-    try {
-      logger.log('Fetching from spys.me...', null, null);
-      const url = 'https://spys.me/proxy.txt';
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to fetch from spys.me');
-      }
-      response.body.split('\n').fold(proxies, (v, e) {
-        final rgx = RegExp(
-          r'(?<ip>\d+\.\d+\.\d+\.\d+)\:(?<port>\d+)\s(?<country>[A-Z]{2})\-(?<anon>[HNA!]{1,2})(?:\s|\-)(?<ssl>[\sS!]*)(?:\s)?(?<google>[\+\-]?)(?:\s)$',
-        );
-        final rgxm = rgx.firstMatch(e);
-        Map d = {};
-        if (rgxm != null)
-          d = {
-            'ip': (rgxm.namedGroup('ip') ?? '').trim(),
-            'port': (rgxm.namedGroup('port') ?? '').trim(),
-            'country': (rgxm.namedGroup('country') ?? '').trim(),
-            'anon': (rgxm.namedGroup('anon') ?? '').trim(),
-            'ssl': (rgxm.namedGroup('ssl') ?? '').trim().isNotEmpty,
-            'google': (rgxm.namedGroup('google') ?? '').trim() == '+',
-          };
-
-        if (d.isNotEmpty &&
-            d['country'].isNotEmpty &&
-            d['ssl'] &&
-            d['google']) {
-          v[d['country']] = v[d['country']] ?? [];
-          v[d['country']]!.add({
-            'source': 'spys.me',
-            'address': '${d['ip']}:${d['port']}',
-            'country': d['country'],
-            'ssl': d['ssl'],
-          });
-        }
-        return v;
-      });
-      logger.log(
-        'Proxies fetched: ${proxies.values.fold(0, (v, e) => v + e.length)} from spys.me',
-        null,
-        null,
-      );
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-    }
-    sendPort.send(proxies);
   }
 
   Future<void> _fetchSpysMe() async {
@@ -316,47 +168,6 @@ class ProxyManager {
         stackTrace,
       );
     }
-  }
-
-  void _fetchProxyScrapeIsolate(SendPort sendPort) async {
-    final proxies = <String, List<dynamic>>{};
-    try {
-      logger.log('Fetching from proxyscrape.com...', null, null);
-      const url =
-          'https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=json';
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to fetch from proxyscrape');
-      }
-      final result = jsonDecode(response.body);
-      (result['proxies'] as List).fold(proxies, (v, e) {
-        if (e['ip_data'] != null &&
-            (e['alive'] ?? false) &&
-            e['ip_data']['countryCode'] != null &&
-            (e['ssl'] ?? false)) {
-          v[e['ip_data']['countryCode']] = v[e['ip_data']['countryCode']] ?? [];
-          v[e['ip_data']['countryCode']]!.add({
-            'source': 'proxyscrape.com',
-            'address': '${e['ip']}:${e['port']}',
-            'country': e['ip_data']['countryCode'],
-            'ssl': e['ssl'],
-          });
-        }
-        return v;
-      });
-      logger.log(
-        'Proxies fetched: ${proxies.values.fold(0, (v, e) => v + e.length)} from proxyscrape.com',
-        null,
-        null,
-      );
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-    }
-    sendPort.send(proxies);
   }
 
   Future<void> _fetchProxyScrape() async {
@@ -426,7 +237,7 @@ class ProxyManager {
             ..findProxy = (_) {
               return 'PROXY ${proxy.address}; DIRECT';
             }
-            ..badCertificateCallback = (_, __, ___) {
+            ..badCertificateCallback = (context, _context, ___) {
               return false;
             };
       ioClient = IOClient(client);
@@ -503,28 +314,20 @@ class ProxyManager {
       if (manifest != null) return manifest;
       if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
         await _fetchProxies();
-      final receivePort = ReceivePort();
-      await Isolate.spawn(_cycleProxiesIsolate, {
-        'sendPort': receivePort.sendPort,
-        'songId': songId,
-      });
-      manifest = await receivePort.first as StreamManifest?;
+      manifest = await _cycleProxies(songId);
       return manifest;
     } catch (_) {
       return null;
     }
   }
 
-  void _cycleProxiesIsolate(dynamic params) async {
-    final SendPort? sendPort = params['sendPort'];
-    final String? songId = params['songId'];
-    if (sendPort == null || songId == null) throw Exception('Invalid params.');
+  Future<StreamManifest?> _cycleProxies(String songId) async {
     StreamManifest? manifest;
     do {
       final proxy = await _randomProxy();
       if (proxy == null) break;
       manifest = await _validateProxy(proxy, songId, 5);
     } while (manifest == null);
-    return sendPort.send(manifest);
+    return manifest;
   }
 }

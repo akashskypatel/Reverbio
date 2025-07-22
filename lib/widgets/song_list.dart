@@ -44,6 +44,7 @@ class SongList extends StatefulWidget {
     this.icon = FluentIcons.music_note_1_24_regular,
     this.future,
     this.inputData,
+    this.expandedActions,
     this.isEditable = false,
   });
 
@@ -55,11 +56,13 @@ class SongList extends StatefulWidget {
   late final List<SongBar> songBars =
       page == 'queue' ? audioHandler.queueSongBars : <SongBar>[];
   final bool isEditable;
+  final List<Widget>? expandedActions;
   @override
   State<SongList> createState() => _SongListState();
 }
 
 class _SongListState extends State<SongList> {
+  late ThemeData _theme;
   List<dynamic> _songsList = [];
   bool isProcessing = true;
   bool loopSongs = false;
@@ -83,6 +86,7 @@ class _SongListState extends State<SongList> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     _songsList = widget.inputData ?? activeQueue['list'] ?? _songsList;
     return SliverMainAxisGroup(
       slivers: [
@@ -91,8 +95,9 @@ class _SongListState extends State<SongList> {
             padding: commonSingleChildScrollViewPadding,
             child: ValueListenableBuilder(
               valueListenable: PM.pluginsDataNotifier,
-              builder: (_, value, __) {
+              builder: (context, value, __) {
                 return SectionHeader(
+                  expandedActions: widget.expandedActions,
                   title: widget.title,
                   actions: [
                     _buildSortSongActionButton(),
@@ -127,7 +132,7 @@ class _SongListState extends State<SongList> {
         else
           ValueListenableBuilder(
             valueListenable: activeQueueLength,
-            builder: (_, value, __) {
+            builder: (context, value, __) {
               if (value != 0) {
                 return _buildSongList();
               } else
@@ -151,13 +156,14 @@ class _SongListState extends State<SongList> {
   Widget _buildShuffleSongActionButton() {
     return IconButton(
       tooltip: context.l10n!.shuffle,
-      color: Theme.of(context).colorScheme.primary,
+      color: _theme.colorScheme.primary,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
       iconSize: listHeaderIconSize,
       onPressed: () {
         _songsList.shuffledWith(widget.songBars);
+        if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
         if (mounted) setState(() {});
       },
     );
@@ -171,7 +177,7 @@ class _SongListState extends State<SongList> {
           children: [
             Icon(
               FluentIcons.mic_sparkle_16_filled,
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(context.l10n!.artist),
@@ -184,7 +190,7 @@ class _SongListState extends State<SongList> {
           children: [
             Icon(
               FluentIcons.music_note_2_16_filled,
-              color: Theme.of(context).colorScheme.primary,
+              color: _theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(context.l10n!.name),
@@ -206,6 +212,8 @@ class _SongListState extends State<SongList> {
         final valueB = b.song[key].toString().toLowerCase();
         return valueA.compareTo(valueB);
       });
+      if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
+      if (mounted) setState(() {});
     }
 
     switch (value) {
@@ -221,10 +229,10 @@ class _SongListState extends State<SongList> {
   Widget _buildSortSongActionButton() {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Theme.of(context).colorScheme.secondaryContainer,
+      color: _theme.colorScheme.secondaryContainer,
       icon: Icon(
         FluentIcons.filter_16_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: listHeaderIconSize,
       ),
       onSelected: _sortMenuItemAction,
@@ -248,7 +256,7 @@ class _SongListState extends State<SongList> {
   Widget _buildAddToQueueActionButton() {
     return IconButton(
       tooltip: context.l10n!.addSongsToQueue,
-      color: Theme.of(context).colorScheme.primary,
+      color: _theme.colorScheme.primary,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.add_circle_24_filled),
@@ -256,10 +264,10 @@ class _SongListState extends State<SongList> {
       onPressed: () {
         if (widget.page != 'queue') {
           addSongsToQueue(widget.songBars);
-          showToast(context, context.l10n!.songAdded);
+          showToast(context.l10n!.songAdded);
         }
         if (audioHandler.queueSongBars.isNotEmpty &&
-            audioHandler.audioPlayer.songValueNotifier.value == null &&
+            audioHandler.songValueNotifier.value == null &&
             widget.songBars.isNotEmpty) {
           audioHandler.queueSong(play: true, skipOnError: true);
         }
@@ -276,13 +284,15 @@ class _SongListState extends State<SongList> {
             'title': widget.title,
             'list': _songsList,
           }, widget.songBars);
-          showToast(context, context.l10n!.queueReplacedByPlaylist);
+          showToast(
+            '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
+          );
         }
         audioHandler.queueSong(play: true, skipOnError: true);
       },
       icon: Icon(
         FluentIcons.play_circle_24_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
         size: listHeaderIconSize,
       ),
     );
@@ -307,10 +317,7 @@ class _SongListState extends State<SongList> {
       child: Center(
         child: Text(
           errorText,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
-            fontSize: 18,
-          ),
+          style: TextStyle(color: _theme.colorScheme.primary, fontSize: 18),
         ),
       ),
     );
@@ -365,7 +372,7 @@ class _SongListState extends State<SongList> {
     return ValueListenableBuilder(
       valueListenable:
           widget.page == 'queue' ? activeQueueLength : _songBarsLength,
-      builder: (_, value, _) {
+      builder: (context, value, _) {
         return SliverReorderableList(
           itemCount: value,
           itemBuilder: (context, index) {
@@ -395,6 +402,8 @@ class _SongListState extends State<SongList> {
                 }
                 widget.songBars.rearrange(oldIndex, newIndex);
                 _songsList.rearrange(oldIndex, newIndex);
+                if (widget.page == 'queue')
+                  updateMediaItemQueue(widget.songBars);
               });
           },
         );

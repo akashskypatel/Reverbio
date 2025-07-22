@@ -104,13 +104,14 @@ class NavigationManager {
 
   static HomePage homePage = HomePage(); //key: homeTabNavigatorKey);
   static LibraryPage libraryPage =
-      LibraryPage(); //key: libraryTabNavigatorKey);
-  static SearchPage searchPage = SearchPage(); //key: searchTabNavigatorKey);
-  static UserSongsPage queuePage = UserSongsPage(
+      const LibraryPage(); //key: libraryTabNavigatorKey);
+  static SearchPage searchPage =
+      const SearchPage(); //key: searchTabNavigatorKey);
+  static UserSongsPage queuePage = const UserSongsPage(
     page: 'queue',
   ); //key: queueTabNavigatorKey,page: 'queue',);
   static SettingsPage settingsPage =
-      SettingsPage(); //key: settingsTabNavigatorKey);
+      const SettingsPage(); //key: settingsTabNavigatorKey);
 
   List<StatefulShellBranch> _onlineRoutes() {
     return [
@@ -144,7 +145,7 @@ class NavigationManager {
             path: '/nowPlaying',
             pageBuilder: (context, GoRouterState state) {
               // Extract passed data (if any)
-              return getPage(child: NowPlayingPage(), state: state);
+              return getPage(child: const NowPlayingPage(), state: state);
             },
           ),
         ],
@@ -228,7 +229,10 @@ class NavigationManager {
                       applicationVersion: appVersion,
                     ),
               ),
-              GoRoute(path: 'about', builder: (context, state) => AboutPage()),
+              GoRoute(
+                path: 'about',
+                builder: (context, state) => const AboutPage(),
+              ),
             ],
           ),
         ],
@@ -245,7 +249,7 @@ class NavigationManager {
             path: homePath,
             pageBuilder: (context, GoRouterState state) {
               return getPage(
-                child: UserSongsPage(page: 'offline'),
+                child: const UserSongsPage(page: 'offline'),
                 state: state,
               );
             },
@@ -269,7 +273,10 @@ class NavigationManager {
                       applicationVersion: appVersion,
                     ),
               ),
-              GoRoute(path: 'about', builder: (context, state) => AboutPage()),
+              GoRoute(
+                path: 'about',
+                builder: (context, state) => const AboutPage(),
+              ),
             ],
           ),
         ],

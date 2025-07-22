@@ -54,9 +54,11 @@ ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
 final logger = Logger();
 final appLinks = AppLinks();
 final pxm = ProxyManager();
+ThemeData? theme;
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
+bool nowPlayingOpen = false;
 Map<String, dynamic> userGeolocation = {};
 
 const appLanguages = <String, String>{
@@ -77,9 +79,19 @@ const appLanguages = <String, String>{
   '한국어': 'ko',
   'Polski': 'pl',
   'Português': 'pt',
+  'Português (Brasil)': 'pt-br',
   'Русский': 'ru',
   'Español': 'es',
+  'فارسی': 'fa',
+  'ગુજરાતી': 'gu',
+  'मराठी': 'mr',
+  'Kiswahili': 'sw',
+  'தமிழ்': 'ta',
+  'తెలుగు': 'te',
+  'ไทย': 'th',
+  'Türkçe': 'tr',
   'Українська': 'uk',
+  'Tiếng Việt': 'vi',
 };
 
 final List<Locale> appSupportedLocales =
@@ -137,6 +149,7 @@ class _ReverbioState extends State<Reverbio> {
           }
           primaryColorSetting = newAccentColor;
         }
+        theme = Theme.of(context);
       });
   }
 
@@ -180,6 +193,7 @@ class _ReverbioState extends State<Reverbio> {
   @override
   void dispose() {
     Hive.close();
+    unawaited(audioHandler.dispose());
     super.dispose();
   }
 
@@ -302,16 +316,13 @@ void handleIncomingLink(Uri? uri) async {
         if (playlist != null) {
           userCustomPlaylists.value = [...userCustomPlaylists.value, playlist];
           addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
-          showToast(
-            NavigationManager().context,
-            '${NavigationManager().context.l10n!.addedSuccess}!',
-          );
+          showToast('${NavigationManager().context.l10n!.addedSuccess}!');
         } else {
-          showToast(NavigationManager().context, 'Invalid playlist data');
+          showToast('Invalid playlist data');
         }
       }
     } catch (e) {
-      showToast(NavigationManager().context, 'Failed to load playlist');
+      showToast('Failed to load playlist');
     }
   }
 }

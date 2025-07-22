@@ -20,15 +20,18 @@
  */
 
 import 'package:audio_service/audio_service.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -49,71 +52,73 @@ class UserSongsPage extends StatefulWidget {
 }
 
 class _UserSongsPageState extends State<UserSongsPage> {
+  late ThemeData _theme;
   bool _isEditEnabled = false;
-
+  late final ValueNotifier<int> _lengthNotifier;
+  late final String _title;
+  late final IconData _icon;
   @override
   void initState() {
     super.initState();
+    _title = getTitle(widget.page);
+    _icon = getIcon(widget.page);
+    _lengthNotifier = getLength(widget.page);
+    _lengthNotifier.addListener(_listener);
   }
 
   @override
   void dispose() {
     super.dispose();
+    _lengthNotifier.removeListener(_listener);
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = getTitle(widget.page, context);
-    final icon = getIcon(widget.page);
-    final songsList = getSongsList(widget.page);
-    final length = getLength(widget.page);
-
+    _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(title), //offlineMode.value ? Text(title) : null,
+        title: Text(_title), //offlineMode.value ? Text(title) : null,
         actions: [
-          if (title == context.l10n!.queue)
+          if (_title == context.l10n!.queue)
             Row(children: [_buildQueueActionsList()]),
-          if (title == context.l10n!.likedSongs)
-            IconButton(
-              iconSize: pageHeaderIconSize,
-              onPressed: () {
-                if (mounted)
-                  setState(() {
-                    _isEditEnabled = !_isEditEnabled;
-                  });
-              },
-              icon: Icon(
-                FluentIcons.re_order_24_filled,
-                color:
-                    _isEditEnabled
-                        ? Theme.of(context).colorScheme.inversePrimary
-                        : Theme.of(context).colorScheme.primary,
-              ),
+          IconButton(
+            iconSize: pageHeaderIconSize,
+            onPressed: () {
+              if (mounted)
+                setState(() {
+                  _isEditEnabled = !_isEditEnabled;
+                });
+            },
+            icon: Icon(
+              _isEditEnabled
+                  ? FluentIcons.edit_off_24_filled
+                  : FluentIcons.edit_line_horizontal_3_24_filled,
+              color: _theme.colorScheme.primary,
             ),
+          ),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
-      body: _buildCustomScrollView(title, icon, songsList, length),
+      body: _buildCustomScrollView(_title, _icon, getSongsList(widget.page)),
     );
   }
 
   Widget _buildQueueActionsList() {
     return ValueListenableBuilder(
       valueListenable: activeQueueLength,
-      builder: (_, value, __) {
+      builder: (context, value, __) {
         return Row(
           children: [
             ValueListenableBuilder<AudioServiceRepeatMode>(
               valueListenable: repeatNotifier,
-              builder: (_, repeatMode, __) {
+              builder: (context, repeatMode, __) {
                 return repeatMode != AudioServiceRepeatMode.none
                     ? IconButton(
                       icon: Icon(
                         repeatMode == AudioServiceRepeatMode.all
                             ? FluentIcons.arrow_repeat_all_24_filled
                             : FluentIcons.arrow_repeat_1_24_filled,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                       ),
                       iconSize: pageHeaderIconSize,
                       onPressed: () {
@@ -128,7 +133,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                     : IconButton(
                       icon: Icon(
                         FluentIcons.arrow_repeat_all_off_24_filled,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                       ),
                       iconSize: pageHeaderIconSize,
                       onPressed: () {
@@ -149,16 +154,16 @@ class _UserSongsPageState extends State<UserSongsPage> {
               iconSize: pageHeaderIconSize,
               tooltip: context.l10n!.addToPlaylist,
               onPressed: value == 0 ? null : _showExistingPlaylists,
-              disabledColor: Theme.of(context).colorScheme.inversePrimary,
-              color: Theme.of(context).colorScheme.primary,
+              disabledColor: _theme.colorScheme.inversePrimary,
+              color: _theme.colorScheme.primary,
               icon: const Icon(Icons.playlist_add),
             ),
             IconButton(
               iconSize: pageHeaderIconSize,
               tooltip: context.l10n!.saveAsPlayList,
               onPressed: value == 0 ? null : _showSaveAsPlaylistDialog,
-              disabledColor: Theme.of(context).colorScheme.inversePrimary,
-              color: Theme.of(context).colorScheme.primary,
+              disabledColor: _theme.colorScheme.inversePrimary,
+              color: _theme.colorScheme.primary,
               icon: const Icon(FluentIcons.add_24_filled),
             ),
             IconButton(
@@ -169,10 +174,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       ? null
                       : () {
                         clearSongQueue();
-                        showToast(context, 'Queue cleared!');
+                        showToast('Queue cleared!');
                       },
-              disabledColor: Theme.of(context).colorScheme.inversePrimary,
-              color: Theme.of(context).colorScheme.primary,
+              disabledColor: _theme.colorScheme.inversePrimary,
+              color: _theme.colorScheme.primary,
               icon: const Icon(Icons.clear_all),
             ),
           ],
@@ -220,7 +225,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         onChanged: filterPlaylists,
                         decoration: const InputDecoration(
                           hintText: 'Search playlists...',
-                          prefixIcon: Icon(Icons.search),
+                          prefixIcon: Icon(FluentIcons.search_24_filled),
                           contentPadding: EdgeInsets.symmetric(horizontal: 8),
                           isDense: true,
                         ),
@@ -231,7 +236,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                     Expanded(
                       child: ValueListenableBuilder(
                         valueListenable: listLengthNotifier,
-                        builder: (_, value, __) {
+                        builder: (context, value, __) {
                           return filteredPlaylists.isEmpty
                               ? const Center(child: Text('No playlists found'))
                               : ListView.builder(
@@ -245,7 +250,6 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                     child: FilledButton(
                                       onPressed: () {
                                         showToast(
-                                          context,
                                           addSongsToPlaylist(
                                             context,
                                             filteredPlaylists[index],
@@ -292,7 +296,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
         builder: (context, setState) {
           final theme = Theme.of(context);
           final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
-
+          final imagePathController = TextEditingController();
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
@@ -303,6 +307,11 @@ class _UserSongsPageState extends State<UserSongsPage> {
                   children: <Widget>[
                     const SizedBox(height: 15),
                     TextField(
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(
+                          RegExp(r'[/\\:*?"<>|&=]'),
+                        ),
+                      ],
                       decoration: InputDecoration(
                         labelText: context.l10n!.customPlaylistName,
                       ),
@@ -311,13 +320,41 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       },
                     ),
                     const SizedBox(height: 7),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: context.l10n!.customPlaylistImgUrl,
-                      ),
-                      onChanged: (value) {
-                        imageUrl = value;
-                      },
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: imagePathController,
+                            decoration: InputDecoration(
+                              labelText: context.l10n!.customPlaylistImgUrl,
+                            ),
+                            onChanged: (value) {
+                              imageUrl = value;
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            final path =
+                                (await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: [
+                                    'jpeg',
+                                    'jpg',
+                                    'png',
+                                    'gif',
+                                    'webp',
+                                    'bmp',
+                                  ],
+                                ))?.paths.first;
+                            imageUrl = path;
+                            if (imageUrl != null)
+                              imagePathController.text = imageUrl!;
+                          },
+                          icon: const Icon(FluentIcons.folder_open_24_filled),
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -346,7 +383,6 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                   ).pop(confirmcontext),
                               onSubmit: () {
                                 showToast(
-                                  context,
                                   createCustomPlaylist(
                                     customPlaylistName,
                                     image: imageUrl,
@@ -360,7 +396,6 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       );
                     else {
                       showToast(
-                        context,
                         createCustomPlaylist(
                           customPlaylistName,
                           image: imageUrl,
@@ -371,10 +406,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       GoRouter.of(context).pop(context);
                     }
                   } else {
-                    showToast(
-                      context,
-                      '${context.l10n!.provideIdOrNameError}.',
-                    );
+                    showToast('${context.l10n!.provideIdOrNameError}.');
                   }
                 },
               ),
@@ -388,28 +420,39 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Widget _buildCustomScrollView(
     String title,
     IconData icon,
-    List songsList,
-    ValueNotifier<int> length,
+    Future songsListFuture,
   ) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: buildPlaylistHeader(title, icon, length),
-          ),
-        ),
-        SongList(
-          page: widget.page,
-          title: getTitle(widget.page, context),
-          isEditable: widget.page == 'queue' || _isEditEnabled,
-          inputData: songsList,
-        ),
-      ],
+    return FutureBuilder(
+      future: songsListFuture,
+      builder: (context, snapshot) {
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: buildPlaylistHeader(title, icon, _lengthNotifier),
+              ),
+            ),
+            ValueListenableBuilder(
+              valueListenable: currentOfflineSongsLength,
+              builder: (context, _context, ___) {
+                return SongList(
+                  page: widget.page,
+                  title: getTitle(widget.page),
+                  isEditable: _isEditEnabled,
+                  future: songsListFuture,
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
-  String getTitle(String page, BuildContext context) {
+  String getTitle(String page) {
+    final context = NavigationManager().context;
     return {
           'liked': context.l10n!.likedSongs,
           'offline': context.l10n!.offlineSongs,
@@ -429,14 +472,14 @@ class _UserSongsPageState extends State<UserSongsPage> {
         FluentIcons.heart_24_regular;
   }
 
-  List getSongsList(String page) {
+  Future<List> getSongsList(String page) {
     return {
-          'liked': userLikedSongsList,
-          'offline': userOfflineSongs,
-          'recents': userRecentlyPlayed,
-          'queue': activeQueue['list'],
+          'liked': Future.value(userLikedSongsList),
+          'offline': getUserOfflineSongs(),
+          'recents': Future.value(userRecentlyPlayed),
+          'queue': Future.value(activeQueue['list'] as List),
         }[page] ??
-        activeQueue['list'];
+        Future.value(activeQueue['list'] as List);
   }
 
   ValueNotifier<int> getLength(String page) {
@@ -463,7 +506,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ValueListenableBuilder(
-            valueListenable: audioHandler.audioPlayer.songValueNotifier,
+            valueListenable: audioHandler.songValueNotifier,
             builder: (context, value, _) {
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -482,7 +525,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                           .value
                           ?.song['title'],
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _theme.colorScheme.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -501,7 +544,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                               ?.song['artist'] ??
                           '',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.secondary,
+                        color: _theme.colorScheme.secondary,
                         fontSize: 14,
                         fontWeight: FontWeight.normal,
                       ),
@@ -526,12 +569,17 @@ class _UserSongsPageState extends State<UserSongsPage> {
     );
   }
 
+  void _listener() {
+    if (mounted) setState(() {});
+  }
+
   Widget _buildPlaylistImage(
     String title,
     IconData icon,
     ValueNotifier<int> length,
   ) {
     final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
+    length.addListener(_listener);
     return ValueListenableBuilder(
       valueListenable: length,
       builder: (context, value, child) {

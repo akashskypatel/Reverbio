@@ -25,6 +25,7 @@ class GenreList extends StatefulWidget {
 }
 
 class _GenreListState extends State<GenreList> {
+  late ThemeData _theme;
   @override
   void initState() {
     super.initState();
@@ -41,6 +42,7 @@ class _GenreListState extends State<GenreList> {
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     return Column(
       children: [
@@ -54,7 +56,7 @@ class _GenreListState extends State<GenreList> {
             behavior: CustomScrollBehavior(),
             child: ValueListenableBuilder(
               valueListenable: widget.searchQueryNotifier,
-              builder: (_, value, __) {
+              builder: (context, value, __) {
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: widget.genres.length,
@@ -84,17 +86,20 @@ class _GenreListState extends State<GenreList> {
   }
 
   List<PopupMenuItem<String>> _buildSortMenuItems(BuildContext context) {
+    final nameIcon =
+        sortAsc
+            ? FluentIcons.text_sort_ascending_16_filled
+            : FluentIcons.text_sort_descending_16_filled;
+    final countIcon =
+        sortAsc
+            ? FluentIcons.chevron_up_16_filled
+            : FluentIcons.chevron_down_16_filled;
     return [
       PopupMenuItem<String>(
         value: 'name',
         child: Row(
           children: [
-            Icon(
-              sortAsc
-                  ? FluentIcons.text_sort_ascending_16_filled
-                  : FluentIcons.text_sort_descending_16_filled,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            Icon(nameIcon, color: _theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(context.l10n!.name),
           ],
@@ -104,12 +109,7 @@ class _GenreListState extends State<GenreList> {
         value: 'count',
         child: Row(
           children: [
-            Icon(
-              sortAsc
-                  ? FluentIcons.chevron_up_16_filled
-                  : FluentIcons.chevron_down_16_filled,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            Icon(countIcon, color: _theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(context.l10n!.count),
           ],
@@ -129,6 +129,7 @@ class _GenreListState extends State<GenreList> {
         else
           return valueB.compareTo(valueA);
       });
+      if (mounted) setState(() {});
     }
 
     if (value == sortCurrent)
@@ -149,10 +150,10 @@ class _GenreListState extends State<GenreList> {
   Widget _buildSortSongActionButton(BuildContext context) {
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Theme.of(context).colorScheme.secondaryContainer,
+      color: _theme.colorScheme.secondaryContainer,
       icon: Icon(
         FluentIcons.filter_16_filled,
-        color: Theme.of(context).colorScheme.primary,
+        color: _theme.colorScheme.primary,
       ),
       iconSize: listHeaderIconSize,
       onSelected: _sortAction,
@@ -190,7 +191,7 @@ class GenreBubble extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: hideNotifier,
       builder:
-          (_, value, __) => Visibility(
+          (context, value, __) => Visibility(
             visible: value,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),

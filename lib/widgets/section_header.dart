@@ -31,17 +31,22 @@ class SectionHeader extends StatefulWidget {
     required this.title,
     this.actions,
     this.autoCloseSeconds = 5,
+    this.actionsExpanded = false,
+    this.expandedActions,
   });
 
   final String title;
   final List<Widget>? actions;
   final int autoCloseSeconds;
+  final bool actionsExpanded;
+  final List<Widget>? expandedActions;
   @override
   State<SectionHeader> createState() => _SectionHeaderState();
 }
 
 class _SectionHeaderState extends State<SectionHeader>
     with TickerProviderStateMixin {
+  late ThemeData _theme;
   bool _expanded = false;
   Timer? _closeTimer;
 
@@ -65,18 +70,19 @@ class _SectionHeaderState extends State<SectionHeader>
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(context);
     return Row(
       children: [
         Flexible(
           fit: FlexFit.tight,
           child: ClipRect(
-            child: SectionTitle(
-              widget.title,
-              Theme.of(context).colorScheme.primary,
-            ),
+            child: SectionTitle(widget.title, _theme.colorScheme.primary),
           ),
         ),
-        if (widget.actions != null && widget.actions!.isNotEmpty)
+
+        if (widget.actions != null &&
+            widget.actions!.isNotEmpty &&
+            !widget.actionsExpanded)
           Padding(
             padding: commonSingleChildScrollViewPadding,
             child: IconButton(
@@ -84,19 +90,25 @@ class _SectionHeaderState extends State<SectionHeader>
                 _expanded
                     ? FluentIcons.dismiss_24_regular
                     : FluentIcons.more_horizontal_28_filled,
-                color: Theme.of(context).colorScheme.primary,
+                color: _theme.colorScheme.primary,
               ),
               onPressed: _toggleExpanded,
             ),
           ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child:
-              _expanded && widget.actions != null
-                  ? Row(children: widget.actions!)
-                  : const SizedBox.shrink(),
-        ),
+        if (widget.actionsExpanded && widget.actions != null)
+          Row(children: widget.actions!),
+        if (!widget.actionsExpanded && widget.actions != null)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child:
+                _expanded && widget.actions != null
+                    ? Row(children: widget.actions!)
+                    : const SizedBox.shrink(),
+          ),
+        if (widget.expandedActions != null &&
+            widget.expandedActions!.isNotEmpty)
+          Row(children: widget.expandedActions!),
       ],
     );
   }
