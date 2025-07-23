@@ -1,6 +1,7 @@
 {
-    "version": "9.6.1",
-    "url": "https://github.com/gokadzev/Musify/releases/download/9.6.1/Musify.apk",
-    "arm64url": "https://github.com/gokadzev/Musify/releases/download/9.6.1/Musify-arm64-v8a.apk",
+    "version": "1.2.0",
+    "url": "https://github.com/akashskypatel/Reverbio/releases/download/v1.2.0/reverbio_1.2.0_android.apk",
+    "amd64url": "https://github.com/akashskypatel/Reverbio/releases/download/v1.2.0/reverbio_1.2.0_win_x64_portable.exe",
+    "arm64url": "https://github.com/akashskypatel/Reverbio/releases/download/v1.2.0/reverbio_1.2.0_android.apk",
     "announcementurl": null
 }
