@@ -18,7 +18,7 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 ## Download
 
 [<img src="/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/akashskypatel/Reverbio/releases/latest)
-[<img src="/repository_files/badge_obtainium_margin.png" alt="Get it on Github" height="80">](http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://app/)
+[<img src="/repository_files/badge_obtainium_margin.png" alt="Get it on Obtainium" height="80">](http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://app/%7B%0A%20%20%22configs%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22id%22%3A%20%22com.akashskypatel.reverbio%22%2C%0A%20%20%20%20%20%20%22url%22%3A%20%22https%3A%2F%2Fgithub.com%2Fakashskypatel%2FReverbio%22%2C%0A%20%20%20%20%20%20%22author%22%3A%20%22akashskypatel%22%2C%0A%20%20%20%20%20%20%22name%22%3A%20%22Reverbio%22%2C%0A%20%20%20%20%20%20%22preferredApkIndex%22%3A%200%2C%0A%20%20%20%20%20%20%22overrideSource%22%3A%20null%2C%0A%20%20%20%20%20%20%22additionalSettings%22%3A%20%22%7B%5C%22includePrereleases%5C%22%3Afalse%7D%22%0A%20%20%20%20%7D%0A%20%20%5D%2C%0A%20%20%22icon%22%3A%20%22https%3A%2F%2Fraw.githubusercontent.com%2Fakashskypatel%2FReverbio%2Frefs%2Fheads%2Fmaster%2Fassets%2Fimages%2Fic_splash.png%22%2C%0A%20%20%22categories%22%3A%20%5B%0A%20%20%20%20%22music%22%0A%20%20%5D%2C%0A%20%20%22description%22%3A%20%7B%0A%20%20%20%20%22en%22%3A%20%22Unlock%20the%20full%20potential%20of%20music%3A%20Stream%20effortlessly%20with%20one%20app%20on%20Mobile%20and%20Desktop%21%22%0A%20%20%7D%0A%7D)
 ---
 
 </center>
