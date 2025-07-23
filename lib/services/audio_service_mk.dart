@@ -89,7 +89,10 @@ class AudioPlayerService {
   bool get playing => _player.state.playing;
   bool get hasNext {
     if (songValueNotifier.value == null) return false;
-    final index = queueIndexOf(songValueNotifier.value!, queue: _queueSongBars);
+    final index = queueIndexOf(
+      songValueNotifier.value!,
+      songBars: _queueSongBars,
+    );
     if (index == -1 || index >= _queueSongBars.length - 1) return false;
     return true;
   }
@@ -97,7 +100,10 @@ class AudioPlayerService {
   //_player.state.playlist.index < _player.state.playlist.medias.length - 1;
   bool get hasPrevious {
     if (songValueNotifier.value == null) return false;
-    final index = queueIndexOf(songValueNotifier.value!, queue: _queueSongBars);
+    final index = queueIndexOf(
+      songValueNotifier.value!,
+      songBars: _queueSongBars,
+    );
     if (index == -1 || index <= 0) return false;
     return true;
   }
@@ -415,6 +421,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   Future<void> close() async {
     await audioPlayer.close();
+    queue.add([]);
     playbackState.add(PlaybackState());
     mediaItem.add(null);
   }
@@ -656,11 +663,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       }
       final songUrl = songBar.song['songUrl'];
       if (songUrl != null) {
-        final audioSource = await buildAudioSource(
-          songBar.song,
-          songUrl,
-          isOffline,
-        );
+        final audioSource = await buildAudioSource(songBar);
         if (play) {
           mediaItem.add(preliminaryTag);
           logger.log('Playing: $songUrl', null, null);
@@ -682,28 +685,28 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     return false;
   }
 
-  Future<Media> buildAudioSource(
-    Map song,
-    String songUrl,
-    bool isOffline,
-  ) async {
-    final extras = songToMediaExtras(song);
+  Future<Media> buildAudioSource(SongBar songBar) async {
+    final extras = songToMediaExtras(songBar.song);
 
-    if (isOffline) {
-      final uri = Uri.file(songUrl);
+    if (songBar.song['offlineAudioPath'] != null &&
+        isFilePath(songBar.song['offlineAudioPath']) &&
+        doesFileExist(songBar.song['offlineAudioPath'])) {
+      final uri = Uri.file(songBar.song['offlineAudioPath']);
       final media = Media(uri.toString(), extras: extras);
       return media;
     }
 
-    final uri = Uri.parse(songUrl);
+    final uri = Uri.parse(songBar.song['songUrl']);
     final audioSource = Media(uri.toString(), extras: extras);
 
     if (!settings.sponsorBlockSupport.value) {
       return audioSource;
     }
 
-    if (song['source'] == 'youtube')
-      song['skipSegments'] = await getSkipSegments(song['ytid']);
+    if (songBar.song['source'] == 'youtube' && !offlineMode.value)
+      songBar.song['skipSegments'] = await getSkipSegments(
+        songBar.song['ytid'],
+      );
     return audioSource;
   }
 
@@ -822,8 +825,8 @@ bool isSongInQueue(SongBar songBar) {
   return inQueue;
 }
 
-int queueIndexOf(SongBar songBar, {List<SongBar>? queue}) {
-  if (queue != null) return queue.indexWhere((e) => e.equals(songBar));
+int queueIndexOf(SongBar songBar, {List<SongBar>? songBars}) {
+  if (songBars != null) return songBars.indexWhere((e) => e.equals(songBar));
   return audioHandler.queueSongBars.indexWhere((e) => e.equals(songBar));
 }
 

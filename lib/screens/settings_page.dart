@@ -20,9 +20,11 @@
  */
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -175,7 +177,6 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
-        /*
         ValueListenableBuilder<bool>(
           valueListenable: offlineMode,
           builder: (context, value, __) {
@@ -184,12 +185,36 @@ class _SettingsPageState extends State<SettingsPage> {
               FluentIcons.cellular_off_24_regular,
               trailing: Switch(
                 value: value,
-                onChanged: (value) => _toggleOfflineMode(context, value),
+                onChanged:
+                    (value) async => await _toggleOfflineMode(context, value),
               ),
             );
           },
         ),
-        */
+        ValueListenableBuilder<bool>(
+          valueListenable: pluginsSupport,
+          builder: (context, value, __) {
+            return CustomBar(
+              context.l10n!.plugins,
+              value
+                  ? FluentIcons.plug_connected_24_regular
+                  : FluentIcons.plug_disconnected_24_regular,
+              borderRadius: commonCustomBarRadiusLast,
+              trailing: Switch(
+                value: value,
+                onChanged: (value) => _togglePluginsSupport(context, value),
+              ),
+              onTap:
+                  value
+                      ? () => _showPluginList(
+                        context,
+                        activatedColor,
+                        inactivatedColor,
+                      )
+                      : null,
+            );
+          },
+        ),
       ],
     );
   }
@@ -292,30 +317,6 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         */
-        ValueListenableBuilder<bool>(
-          valueListenable: pluginsSupport,
-          builder: (context, value, __) {
-            return CustomBar(
-              context.l10n!.plugins,
-              value
-                  ? FluentIcons.plug_connected_24_regular
-                  : FluentIcons.plug_disconnected_24_regular,
-              borderRadius: commonCustomBarRadiusLast,
-              trailing: Switch(
-                value: value,
-                onChanged: (value) => _togglePluginsSupport(context, value),
-              ),
-              onTap:
-                  value
-                      ? () => _showPluginList(
-                        context,
-                        activatedColor,
-                        inactivatedColor,
-                      )
-                      : null,
-            );
-          },
-        ),
         _buildToolsSection(context),
         _buildSponsorSection(context, primaryColor),
       ],
@@ -1050,10 +1051,49 @@ class _SettingsPageState extends State<SettingsPage> {
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _toggleOfflineMode(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'offlineMode', value);
-    offlineMode.value = value;
-    showToast(context.l10n!.restartAppMsg);
+  Future<void> _toggleOfflineMode(BuildContext context, bool value) async {
+    final shouldSave =
+        await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Offline Mode'),
+                content: const Text(
+                  'Offline Mode requires a restart. Are you sure you want to exit?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Exit'),
+                  ),
+                ],
+              ),
+        ) ??
+        false;
+    if (shouldSave) {
+      NavigationManager.router.goNamed('settings');
+      showToast(context.l10n!.restartAppMsg);
+      addOrUpdateData('settings', 'offlineMode', value);
+      offlineMode.value = value;
+      Timer(const Duration(milliseconds: 500), () async => exitApp());
+    }
+  }
+
+  Future<void> exitApp() async {
+    try {
+      await audioHandler.close();
+      if (Platform.isAndroid || Platform.isIOS) {
+        await SystemNavigator.pop();
+      } else {
+        exit(0);
+      }
+    } catch (e) {
+      exit(0);
+    }
   }
 
   void _toggleSponsorBlock(BuildContext context, bool value) {
