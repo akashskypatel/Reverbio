@@ -17,8 +17,8 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 
 ## Download
 
-[<img src="https://github.com/akashskypatel/Reverbio/raw/master/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/akashskypatel/Reverbio/releases/latest)
-
+[<img src="/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/akashskypatel/Reverbio/releases/latest)
+[<img src="/repository_files/badge_obtainium_margin.png" alt="Get it on Github" height="80">](http://apps.obtainium.imranr.dev/redirect.html?r=obtainium://app/)
 ---
 
 </center>
@@ -179,7 +179,7 @@ You can see frequently asked questions and their answers [here](https://github.c
 
 ## Credits
 
-[Musify](https://github.com/gokadzev/Musify) - This project is a spin-off from Musify with added features. This fork adds features like integration of Artist, Album and Song information from MusicBrainz, Artist and Albums liking, user queue management, JavaScript plugin support and more! 
+[Musify](https://github.com/gokadzev/Musify) - This project is a spin-off from Musify with added features and support for Windows! This fork adds features like integration of Artist, Album and Song information from MusicBrainz, Artist and Albums liking, user queue management, JavaScript plugin support and more! 
 
 ---
 
