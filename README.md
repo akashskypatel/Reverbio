@@ -5,7 +5,7 @@
 
 # Reverbio
 
-Unlock the full potential of music: Stream effortlessly with one app on Mobile and Desktop!
+Reverbio: A powerful, ad-free music streaming app with multi-platform support, offline listening, plugins, and the ability to track your favorite songs, artists & albums—no subscriptions needed!
 
 [![Stars](https://img.shields.io/github/stars/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/stargazers)
 [![Forks](https://img.shields.io/github/forks/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/fork)
@@ -25,7 +25,7 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 
 ## Features
 
-
+- Stream from YT out of the box, and anywhere else with Plugins <br/>
 - Online song, artist and playlist search with suggestions <br/>
 - Offline listening support <br/>
 - Import & export your data and never lose it <br/>
