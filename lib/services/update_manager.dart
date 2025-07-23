@@ -41,6 +41,7 @@ const String releasesUrl =
 const String downloadUrlKey = 'android';
 const String downloadAmd64url = 'amd64url';
 const String downloadLatest = 'latest';
+const String downloadObtainium = 'obtainium';
 
 Future<Map<String, dynamic>> getLatestAppVersion() async {
   try {
