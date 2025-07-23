@@ -124,7 +124,9 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 
 Reverbio supports Plugins that let you stream music from any source with the power of JavaScript executed at runtime! With the power of JavaScript plugins, you can play music for endless sources as well as perform other operations on Artist, Albums, Songs, and Playlist data.
 
-[Purchase plugins at my Patreon](https://www.patreon.com/c/AkashSkyPatel/collections)
+[Purchase plugins at my Patreon](https://www.patreon.com/c/AkashSkyPatel/collections)*
+
+*This helps me continue developing this app. But you are free to make your own open source plugin using the guide below.
 
 OR
 
