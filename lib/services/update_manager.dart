@@ -20,12 +20,13 @@
  */
 
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' as io;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:reverbio/API/version.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/router_service.dart';
@@ -37,9 +38,44 @@ const String checkUrl =
     'https://raw.githubusercontent.com/akashskypatel/Reverbio/update/check.json';
 const String releasesUrl =
     'https://api.github.com/repos/akashskypatel/Reverbio/releases/latest';
-const String downloadUrlKey = 'url';
-const String downloadUrlArm64Key = 'arm64url';
-const String downloadFilename = 'Reverbio.apk';
+const String downloadUrlKey = 'android';
+const String downloadAmd64url = 'amd64url';
+const String downloadLatest = 'latest';
+
+Future<Map<String, dynamic>> getLatestAppVersion() async {
+  try {
+    final response = await http.get(Uri.parse(checkUrl));
+
+    if (response.statusCode != 200) {
+      logger.log(
+        'Fetch update API (checkUrl) call returned status code ${response.statusCode}',
+        null,
+        null,
+      );
+      return {
+        'error': 'Error getting lastest app version.',
+        'canUpdate': false,
+      };
+    }
+
+    final map = json.decode(response.body) as Map<String, dynamic>;
+    announcementURL.value = map['announcementurl'];
+    final latestVersion = map['version'].toString();
+    if (isLatestVersionHigher(appVersion, latestVersion)) {
+      return {
+        'message': 'Current version: $appVersion New Version: $latestVersion',
+        'canUpdate': true,
+      };
+    }
+    return {
+      'message': 'You using the latest version: $appVersion',
+      'canUpdate': false,
+    };
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
+    return {'error': 'Error getting lastest app version.', 'canUpdate': false};
+  }
+}
 
 Future<void> checkAppUpdates() async {
   try {
@@ -133,7 +169,7 @@ Future<void> checkAppUpdates() async {
       },
     );
   } catch (e, stackTrace) {
-    logger.log('Error in checkAppUpdates', e, stackTrace);
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
   }
 }
 
@@ -161,19 +197,8 @@ bool isLatestVersionHigher(String appVersion, String latestVersion) {
   return false;
 }
 
-Future<String> getCPUArchitecture() async {
-  final info = await Process.run('uname', ['-m']);
-  final cpu = info.stdout.toString().replaceAll('\n', '');
-
-  return cpu;
-}
-
 Future<String> getDownloadUrl(Map<String, dynamic> map) async {
-  final cpuArchitecture = await getCPUArchitecture();
-  final url =
-      cpuArchitecture == 'aarch64'
-          ? map[downloadUrlArm64Key].toString()
-          : map[downloadUrlKey].toString();
-
-  return url;
+  if (io.Platform.isAndroid) return map[downloadUrlKey].toString();
+  if (io.Platform.isWindows) return map[downloadAmd64url].toString();
+  return map[downloadLatest].toString();
 }

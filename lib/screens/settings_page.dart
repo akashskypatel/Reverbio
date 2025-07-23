@@ -35,7 +35,7 @@ import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
-//import 'package:reverbio/services/update_manager.dart';
+import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_colors.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -47,6 +47,7 @@ import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -324,6 +325,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildToolsSection(BuildContext context) {
+    final _appVersionFuture = getLatestAppVersion();
     return Column(
       children: [
         SectionHeader(title: context.l10n!.tools),
@@ -360,15 +362,48 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         //TODO: Fix downloadAppUpdate
-        /*
         if (!isFdroidBuild)
-          CustomBar(
-            context.l10n!.downloadAppUpdate,
-            FluentIcons.arrow_download_24_filled,
-            borderRadius: commonCustomBarRadiusLast,
-            onTap: () => checkAppUpdates,
+          FutureBuilder(
+            future: _appVersionFuture,
+            builder: (context, snapshot) {
+              Widget trailing = const Spinner();
+              if (snapshot.connectionState == ConnectionState.waiting)
+                trailing = const Spinner();
+              else if (snapshot.hasError ||
+                  snapshot.data == null ||
+                  snapshot.data?['error'] != null)
+                trailing = Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(FluentIcons.error_circle_24_filled),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(snapshot.data?['error'] ?? '', softWrap: true)),
+                  ],
+                );
+              else
+                trailing = Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(child: Text(snapshot.data?['message'] ?? '', softWrap: true)),
+                  ],
+                );
+              return CustomBar(
+                context.l10n!.downloadAppUpdate,
+                FluentIcons.arrow_download_24_filled,
+                borderRadius: commonCustomBarRadiusLast,
+                onTap:
+                    snapshot.data?['canUpdate'] ?? false
+                        ? () async => checkAppUpdates()
+                        : null,
+                trailing: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 125),
+                  child: trailing,
+                ),
+              );
+            },
           ),
-        */
       ],
     );
   }
