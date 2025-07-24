@@ -134,6 +134,7 @@ Available icons
 
 <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
   <foreignObject width="100%" height="100%">
+  <div xmlns="http://www.w3.org/1999/xhtml">
   <style>
   img {
     background-color: red;
@@ -142,6 +143,7 @@ Available icons
     <img 
       src="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=808080#gh-dark-mode-only"
     />
+    </div>
   </foreignObject>
 </svg>
 
