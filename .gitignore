@@ -52,3 +52,5 @@ lib/localization/app_*.dart
 l10nupdate.json
 .env
 .out
+/.vscode/settings.json
+/.vscode/launch.json
