@@ -1195,7 +1195,7 @@ class PluginsManager {
         final jsrt = getJsRuntime(pluginName);
         if (jsrt == null)
           throw Exception(
-            'JavaScript Runtime could nnot be created for: $pluginName, $methodName',
+            'JavaScript Runtime could not be created for: $pluginName, $methodName',
           );
         jsRuntime = jsrt;
       } else

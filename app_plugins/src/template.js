@@ -79,7 +79,7 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       id: "song_list_header",
       type: "SongListHeader",
       context: "song_list",
-      label: "Exmaple Song List Header Button",
+      label: "Example Song List Header Button",
       onPressed: {
         methodName: "exampleFunction",
         isAsync: true,

@@ -456,7 +456,7 @@ class _SearchPageState extends State<SearchPage> {
           entityName[header]?['getLiked'] != null &&
           entityName[header]!['getLiked']!(element) as bool;
       final entityLikeStatus = ValueNotifier(isLiked);
-      final likedLoding = ValueNotifier(false);
+      final likedLoading = ValueNotifier(false);
       list.add(
         SliverToBoxAdapter(
           child: Padding(
@@ -486,7 +486,7 @@ class _SearchPageState extends State<SearchPage> {
                         builder: (context, value, __) {
                           return IconButton(
                             onPressed: () async {
-                              likedLoding.value = true;
+                              likedLoading.value = true;
                               final likeVal =
                                   await entityName[header]?['action'](
                                     element,
@@ -494,7 +494,7 @@ class _SearchPageState extends State<SearchPage> {
                                   );
                               setState(() {
                                 isLiked = entityLikeStatus.value = likeVal;
-                                likedLoding.value = false;
+                                likedLoading.value = false;
                               });
                             },
                             icon: Icon(

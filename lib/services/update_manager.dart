@@ -54,7 +54,7 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
         null,
       );
       return {
-        'error': 'Error getting lastest app version.',
+        'error': 'Error getting latest app version.',
         'canUpdate': false,
       };
     }
@@ -74,7 +74,7 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
     };
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
-    return {'error': 'Error getting lastest app version.', 'canUpdate': false};
+    return {'error': 'Error getting latest app version.', 'canUpdate': false};
   }
 }
 
