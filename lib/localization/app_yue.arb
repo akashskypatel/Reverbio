@@ -187,5 +187,9 @@
   "repeat": "重複",
   "youtubeInaccessible": "嘗試播放 YouTube 串流時出現 403 禁止錯誤。YouTube 可能暫時封鎖咗你嘅 IP 地址。試下轉換網絡或者等一陣再試。",
   "prepareNextSong": "自動準備下一首歌，令切換時播放更流暢",
-  "useProxies": "使用代理伺服器（可能解決YouTube訪問問題）"
+  "useProxies": "使用代理伺服器（可能解決YouTube訪問問題）",
+  "currentVersion": "目前版本",
+  "latestVersion": "最新版本",
+  "latestVersionUsed": "你正在使用最新版本",
+  "errorLatestVersion": "獲取最新應用版本時出錯"
 }

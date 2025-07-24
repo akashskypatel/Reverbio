@@ -187,5 +187,9 @@
   "repeat": "リピート",
   "youtubeInaccessible": "YouTubeストリームの再生時に403禁止エラーが発生しました。YouTubeが一時的にあなたのIPアドレスをブロックした可能性があります。ネットワークを変更するか、しばらくしてから再度お試しください。",
   "prepareNextSong": "次の曲の再生を速くするために自動的に準備",
-  "useProxies": "プロキシサーバーを使用 (YouTubeアクセス問題の解決に役立つ場合があります)"
+  "useProxies": "プロキシサーバーを使用 (YouTubeアクセス問題の解決に役立つ場合があります)",
+  "currentVersion": "現在のバージョン",
+  "latestVersion": "最新バージョン",
+  "latestVersionUsed": "最新バージョンを使用しています",
+  "errorLatestVersion": "アプリの最新バージョンの取得中にエラーが発生しました"
 }

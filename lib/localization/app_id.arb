@@ -187,5 +187,9 @@
   "repeat": "Ulangi",
   "youtubeInaccessible": "Error 403 Terlarang saat mencoba memutar YouTube Stream. YouTube mungkin telah memblokir sementara alamat IP Anda. Coba ubah jaringan Anda atau coba lagi nanti.",
   "prepareNextSong": "Secara otomatis menyiapkan lagu berikutnya untuk pemutaran lebih cepat",
-  "useProxies": "Gunakan server proxy (dapat membantu masalah akses YouTube)"
+  "useProxies": "Gunakan server proxy (dapat membantu masalah akses YouTube)",
+  "currentVersion": "Versi saat ini",
+  "latestVersion": "Versi terbaru",
+  "latestVersionUsed": "Anda menggunakan versi terbaru",
+  "errorLatestVersion": "Kesalahan saat mendapatkan versi aplikasi terbaru"
 }

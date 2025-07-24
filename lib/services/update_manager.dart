@@ -44,6 +44,7 @@ const String downloadLatest = 'latest';
 const String downloadObtainium = 'obtainium';
 
 Future<Map<String, dynamic>> getLatestAppVersion() async {
+  final context = NavigationManager().context;
   try {
     final response = await http.get(Uri.parse(checkUrl));
 
@@ -54,7 +55,7 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
         null,
       );
       return {
-        'error': 'Error getting latest app version.',
+        'error': context.l10n!.errorLatestVersion,
         'canUpdate': false,
       };
     }
@@ -64,17 +65,17 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
     final latestVersion = map['version'].toString();
     if (isLatestVersionHigher(appVersion, latestVersion)) {
       return {
-        'message': 'Current version: $appVersion New Version: $latestVersion',
+        'message': '${context.l10n!.currentVersion}: $appVersion ${context.l10n!.latestVersion}: $latestVersion',
         'canUpdate': true,
       };
     }
     return {
-      'message': 'You using the latest version: $appVersion',
+      'message': '${context.l10n!.latestVersionUsed}: $appVersion',
       'canUpdate': false,
     };
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
-    return {'error': 'Error getting latest app version.', 'canUpdate': false};
+    return {'error': context.l10n!.errorLatestVersion, 'canUpdate': false};
   }
 }
 

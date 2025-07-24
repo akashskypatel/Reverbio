@@ -187,5 +187,9 @@
   "repeat": "重复播放",
   "youtubeInaccessible": "尝试播放 YouTube 流媒体时出现 403 禁止错误。YouTube 可能暂时封锁了您的 IP 地址。请尝试更换网络或稍后再试。",
   "prepareNextSong": "自动准备下一首歌以实现更快播放",
-  "useProxies": "使用代理服务器（可能有助于解决YouTube访问问题）"
+  "useProxies": "使用代理服务器（可能有助于解决YouTube访问问题）",
+  "currentVersion": "当前版本",
+  "latestVersion": "最新版本",
+  "latestVersionUsed": "你正在使用最新版本",
+  "errorLatestVersion": "获取最新应用版本时出错"
 }
