@@ -65,7 +65,7 @@ final audioQualitySetting = ValueNotifier<String>(
   Hive.box('settings').get('audioQuality', defaultValue: 'high'),
 );
 
-final pluginsSupport = ValueNotifier<bool>(
+final enablePlugins = ValueNotifier<bool>(
   Hive.box('settings').get('pluginsSupport', defaultValue: false),
 );
 

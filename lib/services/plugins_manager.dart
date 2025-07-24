@@ -974,60 +974,84 @@ class PluginsManager {
     }
   }
 
-  static void onEntityLiked(dynamic entity) async {
-    if (!pluginsSupport.value || plugins.isEmpty) return;
-    for (final plugin in plugins) {
-      final hook = getHooks(plugin['name'])['onEntityLiked'];
-      queueBackground(
-        pluginName: plugin['name'],
-        methodName: hook['onTrigger']['methodName'],
-        args: [entity],
+  static dynamic triggerHook(dynamic entity, String hookName) async {
+    final hooks = {
+      'onQueueSong': {'isAsync': true, 'isBackground': false},
+      'onEntityLiked': {'isAsync': true, 'isBackground': true},
+      'onPlaylistPlay': {'isAsync': true, 'isBackground': true},
+      'onPlaylistSongAdd': {'isAsync': true, 'isBackground': true},
+      'onPlaylistAdd': {'isAsync': true, 'isBackground': true},
+      'onGetArtistInfo': {'isAsync': true, 'isBackground': false},
+      'onGetSongInfo': {'isAsync': true, 'isBackground': false},
+      'onGetAlbumInfo': {'isAsync': true, 'isBackground': false},
+    };
+    if (!enablePlugins.value || plugins.isEmpty) return;
+    try {
+      for (final plugin in plugins) {
+        final hook = getHooks(plugin['name'])[hookName];
+        final methodName = hook['onTrigger']['methodName'];
+        if (hook == null ||
+            hook.isEmpty ||
+            methodName == null ||
+            methodName.isEmpty)
+          continue;
+        if (hooks[hookName]!['isBackground']!) {
+          queueBackground(
+            pluginName: plugin['name'],
+            methodName: methodName,
+            args: [entity],
+          );
+          continue;
+        }
+        final result =
+            hooks[hookName]!['isAsync']!
+                ? await executeMethodAsync(
+                  pluginName: plugin['name'],
+                  methodName: hook['onTrigger']['methodName'],
+                  args: [entity],
+                )
+                : executeMethod(
+                  pluginName: plugin['name'],
+                  methodName: hook['onTrigger']['methodName'],
+                  args: [entity],
+                );
+        if (result is List) {
+          if (entity is List) {
+            entity = result;
+            continue;
+          } else if (entity is Map) {
+            entity[plugin['name']][hookName] = result;
+            continue;
+          }
+        }
+        if (result is Map) {
+          if (entity is Map) {
+            entity.addAll(entity);
+            continue;
+          } else if (entity is List) {
+            for (final e in entity) {
+              e[plugin['name']][hookName] = result;
+              continue;
+            }
+          }
+        }
+        if (result is String) {
+          showToast('${plugin['name']}: $result');
+          continue;
+        }
+        if (result == null) continue;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
       );
     }
   }
 
-  static dynamic onGetArtistInfo(dynamic artist) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static dynamic onGetSongInfo(dynamic song) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static dynamic onGetAlbumInfo(dynamic album) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static dynamic onSearch(String query) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static dynamic onPlaylistPlay(dynamic playlist) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static dynamic onPlaylistSongAdd(String query) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static dynamic onPlaylistAdd(String query) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static dynamic onQueueSong(String query) async {
-    //TODO implement
-    throw UnimplementedError('Not implemented');
-  }
-
-  static Future<void> getSongUrl(dynamic song, Function fallback) async {
-    if (!pluginsSupport.value || plugins.isEmpty) return await fallback(song);
+  static Future<void> getSongUrl(Map song, Function fallback) async {
+    if (!enablePlugins.value || plugins.isEmpty) return await fallback(song);
     const timeout = Duration(seconds: 5);
     final allFutures = <Future>[];
     void onSuccess(dynamic result) {

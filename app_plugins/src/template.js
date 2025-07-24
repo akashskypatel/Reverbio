@@ -126,17 +126,21 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
   ],
   hooks: {
     onQueueSong: {
-      //This hook is always executed asynchronously in the background
+      //This hook is always executed asynchronously in the main thread
       id: "queue_song",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: false,
       },
     },
     onEntityLiked: {
       //This hook is always executed asynchronously in the background
-      id: "cache_liked",
+      id: "entity_liked",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: true,
       },
     },
     onPlaylistPlay: {
@@ -144,6 +148,8 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       id: "playlist_play",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: true,
       },
     },
     onPlaylistSongAdd: {
@@ -151,6 +157,8 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       id: "playlist_song_add",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: true,
       },
     },
     onPlaylistAdd: {
@@ -158,41 +166,44 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       id: "playlist_add",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: true,
       },
     },
     onGetSongUrl: {
-      //This hook is always executed asynchronously in the foreground
+      //This hook is always executed asynchronously in the main thread
       id: "get_song_url",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: false,
       },
     },
     onGetArtistInfo: {
-      //This hook is always executed asynchronously in the foreground
+      //This hook is always executed asynchronously in the main thread
       id: "get_artist_info",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: false,
       },
     },
     onGetSongInfo: {
-      //This hook is always executed asynchronously in the foreground
+      //This hook is always executed asynchronously in the main thread
       id: "get_song_info",
       onTrigger: {
         methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: false,
       },
     },
     onGetAlbumInfo: {
-      //This hook is always executed asynchronously in the foreground
+      //This hook is always executed asynchronously in the main thread
       id: "get_album_info",
       onTrigger: {
         methodName: "exampleFunction",
-      },
-    },
-    onSearch: {
-      //This hook is always executed asynchronously in the foreground
-      id: "search_query",
-      onTrigger: {
-        methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: false,
       },
     },
   },

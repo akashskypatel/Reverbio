@@ -278,8 +278,9 @@ class _SongListState extends State<SongList> {
   Widget _buildPlayActionButton() {
     return IconButton(
       tooltip: context.l10n!.play,
-      onPressed: () {
+      onPressed: () async {
         if (widget.page != 'queue') {
+          await PM.triggerHook(_songsList, 'onPlaylistPlay');
           setQueueToPlaylist({
             'title': widget.title,
             'list': _songsList,
@@ -288,7 +289,7 @@ class _SongListState extends State<SongList> {
             '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
           );
         }
-        audioHandler.queueSong(play: true, skipOnError: true);
+        await audioHandler.queueSong(play: true, skipOnError: true);
       },
       icon: Icon(
         FluentIcons.play_circle_24_filled,

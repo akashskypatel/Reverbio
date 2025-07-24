@@ -84,6 +84,7 @@ class SongBar extends StatefulWidget {
   ///Returns false if song cannot play
   Future<bool> queueSong({bool play = false}) async {
     try {
+      await PM.triggerHook(song, 'onQueueSong');
       _isLoadingNotifier.value = true;
       if (!isPrimed) unawaited(prepareSong());
       if (play) await _songFutureTracker.completer!.future;

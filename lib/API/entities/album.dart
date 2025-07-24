@@ -64,10 +64,15 @@ Future<Map> getAlbumDetailsById(dynamic albumData) async {
       await getAlbumCoverArt(cached);
       if (cached['list'] == null || cached['list'].isEmpty)
         await getTrackList(cached);
-      else
+      else {
+        await PM.triggerHook(albumData, 'onGetAlbumInfo');
         return cached;
+      }
     }
-    if (ids['mb'] == null) return {};
+    if (ids['mb'] == null) {
+      await PM.triggerHook(albumData, 'onGetAlbumInfo');
+      return {};
+    }
     final album = await mb.releaseGroups.get(
       ids['mb']!,
       inc: ['artists', 'releases', 'annotation', 'tags', 'genres', 'ratings'],
@@ -79,6 +84,7 @@ Future<Map> getAlbumDetailsById(dynamic albumData) async {
     await getTrackList(album);
     cachedAlbumsList.addOrUpdate('id', album['id'], album);
     addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
+    await PM.triggerHook(albumData, 'onGetAlbumInfo');
     return album;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -113,6 +119,7 @@ Future<Map<String, dynamic>> findMBAlbum(
     await getAlbumCoverArt(albums.first);
     cachedAlbumsList.addOrUpdate('id', albums.first['id'], albums.first);
     addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
+    await PM.triggerHook(albums.first, 'onGetAlbumInfo');
     return albums.first;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -269,7 +276,7 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       });
       currentLikedAlbumsLength.value++;
       album['album'] = album['title'];
-      PM.onEntityLiked(album);
+      PM.triggerHook(album, 'onEntityLiked');
     } else {
       userLikedAlbumsList.removeWhere((value) => checkAlbum(album, value));
       currentLikedAlbumsLength.value--;

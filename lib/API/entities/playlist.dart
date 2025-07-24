@@ -11,6 +11,7 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
@@ -122,7 +123,7 @@ Future<String> addYTUserPlaylist(String input, BuildContext context) async {
         _playlist.videoCount == null) {
       return '${context.l10n!.invalidYouTubePlaylist}!';
     }
-
+    PM.triggerHook(_playlist, 'onPlaylistAdd');
     userPlaylists.value = [...userPlaylists.value, playlistId];
     addOrUpdateData('user', 'playlists', userPlaylists.value);
     return '${context.l10n!.addedSuccess}!';
@@ -200,6 +201,7 @@ String addSongInCustomPlaylist(
     )) {
       return context.l10n!.songAlreadyInPlaylist;
     }
+    PM.triggerHook(song, 'onPlaylistSongAdd');
     indexToInsert != null
         ? playlistSongs.insert(indexToInsert, song)
         : playlistSongs.add(song);
@@ -269,7 +271,8 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
     if (ytid == null || ytid.isEmpty) return !add;
     if (add) {
       userLikedPlaylists.addOrUpdate('id', playlistId, playlist);
-      currentLikedPlaylistsLength.value++;
+      currentLikedPlaylistsLength.value = userLikedPlaylists.length;
+      PM.triggerHook(playlist, 'onEntityLiked');
     } else {
       userLikedPlaylists.removeWhere((value) => checkPlaylist(playlist, value));
       currentLikedPlaylistsLength.value--;

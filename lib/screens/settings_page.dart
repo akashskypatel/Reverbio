@@ -193,7 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         ValueListenableBuilder<bool>(
-          valueListenable: pluginsSupport,
+          valueListenable: enablePlugins,
           builder: (context, value, __) {
             return CustomBar(
               context.l10n!.plugins,
@@ -1151,7 +1151,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _togglePluginsSupport(BuildContext context, bool value) {
     addOrUpdateData('settings', 'pluginsSupport', value);
-    pluginsSupport.value = value;
+    enablePlugins.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }
 
