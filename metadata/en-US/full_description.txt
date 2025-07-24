@@ -1,0 +1,54 @@
+Unlock the full potential of music: Stream effortlessly with one app on Mobile and Desktop!
+
+This project is a spin-off from Musify with added features and support for Windows! This fork adds features like integration of Artist, Album and Song information from MusicBrainz, Artist and Albums liking, user queue management, JavaScript plugin support and more! 
+
+- Stream from YT out of the box, and anywhere else with Plugins
+- Online song, artist and playlist search with suggestions
+- Offline listening support
+- Import & export your data and never lose it
+- Add custom playlists with link
+- User song queueu
+- Optimized sound experience
+- SponsorBlock support
+- Lyrics support
+- No ads
+- No subscriptions
+- 31 supported languages
+- Material UI & accent colors & dynamic colors (Android 12+)
+- Android and Windows Support
+- Custom plugin support
+- Like Songs, Albums, Artists and Playlists
+
+Reverbio supports Plugins that let you stream music from any source with the power of JavaScript executed at runtime! With the power of JavaScript plugins, you can play music for endless sources as well as perform other operations on Artist, Albums, Songs, and Playlist data.
+
+Supported Languages:
+  - English
+  - العربية
+  - বাংলা
+  - 简体中文
+  - 繁體中文
+  - 繁體中文 (臺灣)
+  - 廣東話
+  - Français
+  - Deutsch
+  - Ελληνικά
+  - हिन्दी
+  - Bahasa Indonesia
+  - Italiano
+  - 日本語
+  - 한국어
+  - Polski
+  - Português
+  - Português (Brasil)
+  - Русский
+  - Español
+  - فارسی
+  - ગુજરાતી
+  - मराठी
+  - Kiswahili
+  - தமிழ்
+  - తెలుగు
+  - ไทย
+  - Türkçe
+  - Українська
+  - Tiếng Việt

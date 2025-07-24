@@ -358,6 +358,7 @@ bool isImage(String path) {
 
 bool isAudio(String path) {
   const audioExtensions = [
+    '.aac',
     '.adts',
     '.aif',
     '.aiff',
@@ -368,15 +369,16 @@ bool isAudio(String path) {
     '.caf',
     '.cavsvideo',
     '.daud',
+    '.flac',
     '.mp2',
     '.mp3',
     '.m4a',
     '.oga',
+    '.ogg',
     '.oma',
     '.tta',
     '.wav',
     '.wsaud',
-    '.flac',
   ];
   return audioExtensions.contains(extension(path));
 }

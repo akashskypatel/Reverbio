@@ -20,9 +20,11 @@
  */
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -33,7 +35,7 @@ import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
-//import 'package:reverbio/services/update_manager.dart';
+import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_colors.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -45,6 +47,7 @@ import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -175,7 +178,6 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
-        /*
         ValueListenableBuilder<bool>(
           valueListenable: offlineMode,
           builder: (context, value, __) {
@@ -184,12 +186,36 @@ class _SettingsPageState extends State<SettingsPage> {
               FluentIcons.cellular_off_24_regular,
               trailing: Switch(
                 value: value,
-                onChanged: (value) => _toggleOfflineMode(context, value),
+                onChanged:
+                    (value) async => await _toggleOfflineMode(context, value),
               ),
             );
           },
         ),
-        */
+        ValueListenableBuilder<bool>(
+          valueListenable: pluginsSupport,
+          builder: (context, value, __) {
+            return CustomBar(
+              context.l10n!.plugins,
+              value
+                  ? FluentIcons.plug_connected_24_regular
+                  : FluentIcons.plug_disconnected_24_regular,
+              borderRadius: commonCustomBarRadiusLast,
+              trailing: Switch(
+                value: value,
+                onChanged: (value) => _togglePluginsSupport(context, value),
+              ),
+              onTap:
+                  value
+                      ? () => _showPluginList(
+                        context,
+                        activatedColor,
+                        inactivatedColor,
+                      )
+                      : null,
+            );
+          },
+        ),
       ],
     );
   }
@@ -292,30 +318,6 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         */
-        ValueListenableBuilder<bool>(
-          valueListenable: pluginsSupport,
-          builder: (context, value, __) {
-            return CustomBar(
-              context.l10n!.plugins,
-              value
-                  ? FluentIcons.plug_connected_24_regular
-                  : FluentIcons.plug_disconnected_24_regular,
-              borderRadius: commonCustomBarRadiusLast,
-              trailing: Switch(
-                value: value,
-                onChanged: (value) => _togglePluginsSupport(context, value),
-              ),
-              onTap:
-                  value
-                      ? () => _showPluginList(
-                        context,
-                        activatedColor,
-                        inactivatedColor,
-                      )
-                      : null,
-            );
-          },
-        ),
         _buildToolsSection(context),
         _buildSponsorSection(context, primaryColor),
       ],
@@ -323,6 +325,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildToolsSection(BuildContext context) {
+    final _appVersionFuture = getLatestAppVersion();
     return Column(
       children: [
         SectionHeader(title: context.l10n!.tools),
@@ -359,15 +362,48 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         //TODO: Fix downloadAppUpdate
-        /*
         if (!isFdroidBuild)
-          CustomBar(
-            context.l10n!.downloadAppUpdate,
-            FluentIcons.arrow_download_24_filled,
-            borderRadius: commonCustomBarRadiusLast,
-            onTap: () => checkAppUpdates,
+          FutureBuilder(
+            future: _appVersionFuture,
+            builder: (context, snapshot) {
+              Widget trailing = const Spinner();
+              if (snapshot.connectionState == ConnectionState.waiting)
+                trailing = const Spinner();
+              else if (snapshot.hasError ||
+                  snapshot.data == null ||
+                  snapshot.data?['error'] != null)
+                trailing = Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(FluentIcons.error_circle_24_filled),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(snapshot.data?['error'] ?? '', softWrap: true)),
+                  ],
+                );
+              else
+                trailing = Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(child: Text(snapshot.data?['message'] ?? '', softWrap: true)),
+                  ],
+                );
+              return CustomBar(
+                context.l10n!.downloadAppUpdate,
+                FluentIcons.arrow_download_24_filled,
+                borderRadius: commonCustomBarRadiusLast,
+                onTap:
+                    snapshot.data?['canUpdate'] ?? false
+                        ? () async => checkAppUpdates()
+                        : null,
+                trailing: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 125),
+                  child: trailing,
+                ),
+              );
+            },
           ),
-        */
       ],
     );
   }
@@ -1050,10 +1086,49 @@ class _SettingsPageState extends State<SettingsPage> {
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _toggleOfflineMode(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'offlineMode', value);
-    offlineMode.value = value;
-    showToast(context.l10n!.restartAppMsg);
+  Future<void> _toggleOfflineMode(BuildContext context, bool value) async {
+    final shouldSave =
+        await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Offline Mode'),
+                content: const Text(
+                  'Offline Mode requires a restart. Are you sure you want to exit?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Exit'),
+                  ),
+                ],
+              ),
+        ) ??
+        false;
+    if (shouldSave) {
+      NavigationManager.router.goNamed('settings');
+      showToast(context.l10n!.restartAppMsg);
+      addOrUpdateData('settings', 'offlineMode', value);
+      offlineMode.value = value;
+      Timer(const Duration(milliseconds: 500), () async => exitApp());
+    }
+  }
+
+  Future<void> exitApp() async {
+    try {
+      await audioHandler.close();
+      if (Platform.isAndroid || Platform.isIOS) {
+        await SystemNavigator.pop();
+      } else {
+        exit(0);
+      }
+    } catch (e) {
+      exit(0);
+    }
   }
 
   void _toggleSponsorBlock(BuildContext context, bool value) {

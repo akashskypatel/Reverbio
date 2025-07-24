@@ -5,7 +5,6 @@ import java.io.File
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -31,11 +30,17 @@ android {
         versionName = flutter.versionName
     }
 
+    splits {
+      abi {
+        isEnable = true
+        reset()
+        include("armeabi-v7a", "arm64-v8a", "x86_64")
+        isUniversalApk = true
+      }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            //signingConfig = signingConfigs.getByName("debug")
             signingConfig = signingConfigs.create("release") {
               val props = Properties()
               props.load(File(rootDir, "key.properties").inputStream())
@@ -54,9 +59,10 @@ android {
             val buildType = name
             val versionNameStr = versionName
             val versionCodeInt = versionCode
-
+            val abi = outputImpl.filters.find { it.filterType == "ABI" }?.identifier
+                ?: if (outputImpl.filters.isEmpty()) "universal" else "multi"
             outputImpl.outputFileName =
-                "${appName}_${versionNameStr}_android.apk"
+                "${appName}_${versionNameStr}_${abi}_android.apk"
         }
     }
 }

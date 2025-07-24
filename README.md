@@ -5,27 +5,27 @@
 
 # Reverbio
 
-Unlock the full potential of music: Stream effortlessly with one app on Mobile and Desktop!
+Reverbio: A powerful, ad-free music streaming app with multi-platform support, offline listening, plugins, and the ability to track your favorite songs, artists & albums—no subscriptions needed!
 
-[![Stars](https://img.shields.io/github/stars/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/stargazers)
-[![Forks](https://img.shields.io/github/forks/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/fork)
-[![Downloads](https://img.shields.io/github/downloads/akashskypatel/Reverbio/total?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/releases)
-[![GitHub release](https://img.shields.io/github/v/release/akashskypatel/Reverbio?color=D3BEAB)](https://github.com/akashskypatel/Reverbio/releases)
-[![License](https://img.shields.io/github/license/akashskypatel/Reverbio?color=D3BEAB)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/akashskypatel/Reverbio?style=flat-square&color=144DB3)](https://github.com/akashskypatel/Reverbio/stargazers)
+[![Forks](https://img.shields.io/github/forks/akashskypatel/Reverbio?style=flat-square&color=144DB3)](https://github.com/akashskypatel/Reverbio/fork)
+[![Downloads](https://img.shields.io/github/downloads/akashskypatel/Reverbio/total?style=flat-square&color=144DB3)](https://github.com/akashskypatel/Reverbio/releases)
+[![GitHub release](https://img.shields.io/github/v/release/akashskypatel/Reverbio?color=144DB3)](https://github.com/akashskypatel/Reverbio/releases)
+[![License](https://img.shields.io/github/license/akashskypatel/Reverbio?color=144DB3)](LICENSE)
 
 ---
 
 ## Download
 
-[<img src="https://github.com/akashskypatel/Reverbio/raw/master/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/akashskypatel/Reverbio/releases/latest)
-
+[<img src="/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/akashskypatel/Reverbio/releases/latest)
+[<img src="/repository_files/badge_obtainium_margin.png" alt="Get it on Obtainium" height="80">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.akashskypatel.reverbio%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fakashskypatel%2FReverbio%22%2C%22author%22%3A%22akashskypatel%22%2C%22name%22%3A%22Reverbio%22%2C%22preferredApkIndex%22%3A0%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22fallbackToOlderReleases%5C%22%3Atrue%2C%5C%22filterReleaseTitlesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22filterReleaseNotesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22verifyLatestTag%5C%22%3Afalse%2C%5C%22sortMethodChoice%5C%22%3A%5C%22date%5C%22%2C%5C%22useLatestAssetDateAsReleaseDate%5C%22%3Afalse%2C%5C%22releaseTitleAsVersion%5C%22%3Afalse%2C%5C%22trackOnly%5C%22%3Afalse%2C%5C%22versionExtractionRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22matchGroupToUse%5C%22%3A%5C%22%5C%22%2C%5C%22versionDetection%5C%22%3Atrue%2C%5C%22releaseDateAsVersion%5C%22%3Afalse%2C%5C%22useVersionCodeAsOSVersion%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22invertAPKFilter%5C%22%3Afalse%2C%5C%22autoApkFilterByArch%5C%22%3Atrue%2C%5C%22appName%5C%22%3A%5C%22%5C%22%2C%5C%22appAuthor%5C%22%3A%5C%22%5C%22%2C%5C%22shizukuPretendToBeGooglePlay%5C%22%3Afalse%2C%5C%22allowInsecure%5C%22%3Afalse%2C%5C%22exemptFromBackgroundUpdates%5C%22%3Afalse%2C%5C%22skipUpdateNotifications%5C%22%3Afalse%2C%5C%22about%5C%22%3A%5C%22%5C%22%2C%5C%22refreshBeforeDownload%5C%22%3Afalse%2C%5C%22github-creds%5C%22%3A%5C%22%5C%22%7D%22%2C%22overrideSource%22%3A%22GitHub%22%7D)
 ---
 
 </center>
 
 ## Features
 
-
+- Stream from YT out of the box, and anywhere else with Plugins <br/>
 - Online song, artist and playlist search with suggestions <br/>
 - Offline listening support <br/>
 - Import & export your data and never lose it <br/>
@@ -122,7 +122,11 @@ Unlock the full potential of music: Stream effortlessly with one app on Mobile a
 
 ## Plugins
 
-[Purchase plugins at my Patreon](https://www.patreon.com/c/AkashSkyPatel/collections)
+Reverbio supports Plugins that let you stream music from any source with the power of JavaScript executed at runtime! With the power of JavaScript plugins, you can play music for endless sources as well as perform other operations on Artist, Albums, Songs, and Playlist data.
+
+[Purchase plugins at my Patreon](https://www.patreon.com/c/AkashSkyPatel/collections)*
+
+*This helps me continue developing this app. But you are free to make your own open source plugin using the guide below.
 
 OR
 
@@ -179,7 +183,7 @@ You can see frequently asked questions and their answers [here](https://github.c
 
 ## Credits
 
-[Musify](https://github.com/gokadzev/Musify) - This project is a spin-off from Musify with added features. This fork adds features like integration of Artist, Album and Song information from MusicBrainz, Artist and Albums liking, user queue management, JavaScript plugin support and more! 
+[Musify](https://github.com/gokadzev/Musify) - This project is a spin-off from Musify with added features and support for Windows! This fork adds features like integration of Artist, Album and Song information from MusicBrainz, Artist and Albums liking, user queue management, JavaScript plugin support and more! 
 
 ---
 

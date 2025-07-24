@@ -30,6 +30,7 @@ import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
@@ -84,13 +85,14 @@ class _LibraryPageState extends State<LibraryPage> {
       appBar: AppBar(
         title: Text(context.l10n!.library),
         actions: [
-          IconButton(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-            onPressed: _showAddPlaylistDialog,
-            icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
-            iconSize: pageHeaderIconSize,
-          ),
-          _clearFiltersButton(),
+          if (!offlineMode.value)
+            IconButton(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              onPressed: _showAddPlaylistDialog,
+              icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+              iconSize: pageHeaderIconSize,
+            ),
+          if (!offlineMode.value) _clearFiltersButton(),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
@@ -102,7 +104,8 @@ class _LibraryPageState extends State<LibraryPage> {
               child: Column(
                 children: <Widget>[
                   _buildUserPlaylistsSection(primaryColor),
-                  _buildUserLikedPlaylistsSection(primaryColor),
+                  if (!offlineMode.value)
+                    _buildUserLikedPlaylistsSection(primaryColor),
                 ],
               ),
             ),
@@ -114,110 +117,136 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _buildUserPlaylistsSection(Color primaryColor) {
     userPlaylistBars.clear();
-    return Column(
-      children: [
-        PlaylistBar(
-          context.l10n!.recentlyPlayed,
-          onPressed:
-              () => NavigationManager.router.go('/library/userSongs/recents'),
-          cardIcon: FluentIcons.history_24_filled,
-          borderRadius: commonCustomBarRadiusFirst,
-          showBuildActions: false,
-        ),
-        PlaylistBar(
-          context.l10n!.likedSongs,
-          onPressed:
-              () => NavigationManager.router.go('/library/userSongs/liked'),
-          cardIcon: FluentIcons.heart_24_filled,
-          showBuildActions: false,
-        ),
-        PlaylistBar(
-          context.l10n!.likedArtists,
-          onPressed:
-              () => NavigationManager.router.go('/library/userSongs/artists'),
-          cardIcon: FluentIcons.mic_sparkle_24_filled,
-          showBuildActions: false,
-        ),
-        PlaylistBar(
-          context.l10n!.likedAlbums,
-          onPressed:
-              () => NavigationManager.router.go('/library/userSongs/albums'),
-          cardIcon: FluentIcons.cd_16_filled,
-          showBuildActions: false,
-        ),
-        PlaylistBar(
-          context.l10n!.offlineSongs,
-          onPressed:
-              () => NavigationManager.router.go('/library/userSongs/offline'),
-          cardIcon: FluentIcons.cellular_off_24_filled,
-          borderRadius: commonCustomBarRadiusLast,
-          showBuildActions: false,
-        ),
-        _buildSearchBar(),
-        SectionHeader(
-          title: context.l10n!.customPlaylists,
-          actions: [
-            IconButton(
-              padding: const EdgeInsets.only(right: 5),
-              onPressed: _showAddPlaylistDialog,
-              icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
-              iconSize: pageHeaderIconSize,
-            ),
-          ],
-        ),
-        ValueListenableBuilder<List>(
-          valueListenable: userCustomPlaylists,
-          builder: (context, playlists, _) {
-            if (playlists.isEmpty) {
-              return const SizedBox();
-            }
-            return _buildPlaylistListView(context, playlists, 'user-created');
-          },
-        ),
-        ValueListenableBuilder<List>(
-          valueListenable: userPlaylists,
-          builder: (context, playlists, _) {
-            return Column(
-              children: [
-                SectionHeader(
-                  title: context.l10n!.addedPlaylists,
-                  actions: [
-                    IconButton(
-                      padding: const EdgeInsets.only(right: 5),
-                      onPressed: _showAddPlaylistDialog,
-                      icon: Icon(
-                        FluentIcons.add_24_filled,
-                        color: primaryColor,
-                      ),
-                      iconSize: pageHeaderIconSize,
+    return ValueListenableBuilder(
+      valueListenable: offlineMode,
+      builder: (context, value, child) {
+        return Column(
+          children: [
+            if (!offlineMode.value)
+              PlaylistBar(
+                context.l10n!.recentlyPlayed,
+                onPressed:
+                    () => NavigationManager.router.go(
+                      '/library/userSongs/recents',
                     ),
-                  ],
-                ),
-                if (userPlaylists.value.isNotEmpty)
-                  FutureBuilder(
-                    future: getUserYTPlaylists(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: Spinner());
-                      } else if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
-                      } else if (snapshot.hasData &&
-                          snapshot.data!.isNotEmpty) {
-                        return _buildPlaylistListView(
-                          context,
-                          snapshot.data!,
-                          'user-youtube',
-                        );
-                      } else {
-                        return const SizedBox();
-                      }
-                    },
+                cardIcon: FluentIcons.history_24_filled,
+                borderRadius: commonCustomBarRadiusFirst,
+                showBuildActions: false,
+              ),
+            if (!offlineMode.value)
+              PlaylistBar(
+                context.l10n!.likedSongs,
+                onPressed:
+                    () =>
+                        NavigationManager.router.go('/library/userSongs/liked'),
+                cardIcon: FluentIcons.heart_24_filled,
+                showBuildActions: false,
+              ),
+            if (!offlineMode.value)
+              PlaylistBar(
+                context.l10n!.likedArtists,
+                onPressed:
+                    () => NavigationManager.router.go(
+                      '/library/userSongs/artists',
+                    ),
+                cardIcon: FluentIcons.mic_sparkle_24_filled,
+                showBuildActions: false,
+              ),
+            if (!offlineMode.value)
+              PlaylistBar(
+                context.l10n!.likedAlbums,
+                onPressed:
+                    () => NavigationManager.router.go(
+                      '/library/userSongs/albums',
+                    ),
+                cardIcon: FluentIcons.cd_16_filled,
+                showBuildActions: false,
+              ),
+            PlaylistBar(
+              context.l10n!.offlineSongs,
+              onPressed:
+                  () =>
+                      NavigationManager.router.go('/library/userSongs/offline'),
+              cardIcon: FluentIcons.cellular_off_24_filled,
+              borderRadius: commonCustomBarRadiusLast,
+              showBuildActions: false,
+            ),
+            if (!offlineMode.value) ...[
+              _buildSearchBar(),
+              SectionHeader(
+                title: context.l10n!.customPlaylists,
+                actions: [
+                  IconButton(
+                    padding: const EdgeInsets.only(right: 5),
+                    onPressed: _showAddPlaylistDialog,
+                    icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+                    iconSize: pageHeaderIconSize,
                   ),
-              ],
-            );
-          },
-        ),
-      ],
+                ],
+              ),
+              ValueListenableBuilder<List>(
+                valueListenable: userCustomPlaylists,
+                builder: (context, playlists, _) {
+                  if (playlists.isEmpty) {
+                    return const SizedBox();
+                  }
+                  return _buildPlaylistListView(
+                    context,
+                    playlists,
+                    'user-created',
+                  );
+                },
+              ),
+              ValueListenableBuilder<List>(
+                valueListenable: userPlaylists,
+                builder: (context, playlists, _) {
+                  return Column(
+                    children: [
+                      SectionHeader(
+                        title: context.l10n!.addedPlaylists,
+                        actions: [
+                          IconButton(
+                            padding: const EdgeInsets.only(right: 5),
+                            onPressed: _showAddPlaylistDialog,
+                            icon: Icon(
+                              FluentIcons.add_24_filled,
+                              color: primaryColor,
+                            ),
+                            iconSize: pageHeaderIconSize,
+                          ),
+                        ],
+                      ),
+                      if (userPlaylists.value.isNotEmpty)
+                        FutureBuilder(
+                          future: getUserYTPlaylists(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(child: Spinner());
+                            } else if (snapshot.hasError) {
+                              return Center(
+                                child: Text('Error: ${snapshot.error}'),
+                              );
+                            } else if (snapshot.hasData &&
+                                snapshot.data!.isNotEmpty) {
+                              return _buildPlaylistListView(
+                                context,
+                                snapshot.data!,
+                                'user-youtube',
+                              );
+                            } else {
+                              return const SizedBox();
+                            }
+                          },
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 

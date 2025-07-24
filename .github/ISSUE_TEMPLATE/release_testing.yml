@@ -279,6 +279,29 @@ body:
         - label: Confirm About works.
           required: false
 
+  - type: checkboxes
+    id: offlinemode
+    attributes:
+      label: Offline Mode
+      description: Complete or verify all features in Offline Mode Works.
+      options:
+        - label: Toggle offline mode to ON on settings page and confirm the app does not close when cancelling the change.
+          required: false
+        - label: Confirm app closes when confirming offline mode ON.
+          required: false
+        - label: Restart app and confirm only Offline Songs, Queue, and Settings pages show. (Home should be the same as Offline songs).
+          required: false
+        - label: Connfirm offline songs are showed correctly in Offline Songs list.
+          required: false
+        - label: Connfirm offline songs play correctly.
+          required: false
+        - label: Toggle offline mode to OFF on settings page and confirm the app does not close when cancelling the change.
+          required: false
+        - label: Confirm app closes when confirming offline mode OFF.
+          required: false
+        - label: Restart app and confirm it resumes normal Online mode.
+          required: false
+
   - type: dropdown
     id: platform
     attributes:

@@ -44,7 +44,7 @@ class NavigationManager {
     final routes = [
       StatefulShellRoute.indexedStack(
         parentNavigatorKey: parentNavigatorKey,
-        branches: !offlineMode.value ? _onlineRoutes() : _offlineRoutes(),
+        branches: _getBranches(),
         pageBuilder: (
           BuildContext context,
           GoRouterState state,
@@ -112,6 +112,207 @@ class NavigationManager {
   ); //key: queueTabNavigatorKey,page: 'queue',);
   static SettingsPage settingsPage =
       const SettingsPage(); //key: settingsTabNavigatorKey);
+
+  List<StatefulShellBranch> _getBranches() {
+    return [
+      if (!offlineMode.value) ...[
+        StatefulShellBranch(
+          navigatorKey: homeTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'home',
+              path: '/',
+              pageBuilder: (context, GoRouterState state) {
+                return getPage(child: homePage, state: state);
+              },
+            ),
+            GoRoute(
+              name: 'homePage',
+              path: '/home',
+              pageBuilder: (context, GoRouterState state) {
+                return getPage(child: homePage, state: state);
+              },
+            ),
+            GoRoute(
+              name: 'artist',
+              path: '/artist',
+              pageBuilder: (context, GoRouterState state) {
+                // Extract passed data (if any)
+                final artistData = state.extra as dynamic;
+                return getPage(
+                  child: ArtistPage(page: 'artist', artistData: artistData),
+                  state: state,
+                );
+              },
+            ),
+            GoRoute(
+              name: 'nowPlaying',
+              path: '/nowPlaying',
+              pageBuilder: (context, GoRouterState state) {
+                // Extract passed data (if any)
+                return getPage(child: const NowPlayingPage(), state: state);
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: searchTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'search',
+              path: '/search',
+              pageBuilder: (context, GoRouterState state) {
+                return getPage(child: searchPage, state: state);
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: libraryTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'library',
+              path: '/library',
+              pageBuilder: (context, GoRouterState state) {
+                return getPage(child: libraryPage, state: state);
+              },
+              routes: [
+                GoRoute(
+                  name: 'userSongs',
+                  path: '/userSongs/:page',
+                  builder: (context, state) {
+                    switch (state.pathParameters['page']) {
+                      case 'recents':
+                      case 'liked':
+                      case 'offline':
+                        return UserSongsPage(
+                          page: state.pathParameters['page'] ?? '',
+                        );
+                      case 'artists':
+                        return LikedCardsPage(
+                          title: context.l10n!.likedArtists,
+                          page: state.pathParameters['page'] ?? 'artists',
+                          key: ValueKey(DateTime.now()),
+                        );
+                      case 'albums':
+                        return LikedCardsPage(
+                          title: context.l10n!.likedAlbums,
+                          page: state.pathParameters['page'] ?? 'albums',
+                          key: ValueKey(DateTime.now()),
+                        );
+                      default:
+                        return homePage;
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: queueTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'queue',
+              path: '/queue',
+              pageBuilder: (context, GoRouterState state) {
+                return getPage(child: queuePage, state: state);
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: settingsTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'settings',
+              path: '/settings',
+              pageBuilder: (context, state) {
+                return getPage(child: settingsPage, state: state);
+              },
+              routes: [
+                GoRoute(
+                  name: 'license',
+                  path: '/license',
+                  builder:
+                      (context, state) => const LicensePage(
+                        applicationName: 'Reverbio',
+                        applicationVersion: appVersion,
+                      ),
+                ),
+                GoRoute(
+                  name: 'about',
+                  path: '/about',
+                  builder: (context, state) => const AboutPage(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ] else ...[
+        StatefulShellBranch(
+          navigatorKey: homeTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'home',
+              path: '/',
+              builder: (context, state) => const UserSongsPage(page: 'offline'),
+            ),
+            GoRoute(
+              name: 'homePage',
+              path: '/home',
+              builder: (context, state) => const UserSongsPage(page: 'offline'),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: libraryTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'library',
+              path: '/library',
+              builder: (context, state) => const UserSongsPage(page: 'offline'),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: queueTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'queue',
+              path: '/queue',
+              pageBuilder: (context, GoRouterState state) {
+                return getPage(child: queuePage, state: state);
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: settingsTabNavigatorKey,
+          routes: [
+            GoRoute(
+              name: 'settings',
+              path: '/settings',
+              pageBuilder: (context, state) {
+                return getPage(child: settingsPage, state: state);
+              },
+              routes: [
+                GoRoute(
+                  name: 'license',
+                  path: '/license',
+                  builder:
+                      (context, state) => const LicensePage(
+                        applicationName: 'Reverbio',
+                        applicationVersion: appVersion,
+                      ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    ];
+  }
 
   List<StatefulShellBranch> _onlineRoutes() {
     return [

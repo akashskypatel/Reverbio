@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="windows-1252"?>
 <>
   <InputFile>D:\Shared\Projects\Reverbio\build\windows\x64\runner\Release\reverbio.exe</InputFile>
-  <OutputFile>D:\Shared\Projects\Reverbio\build\windows\x64\runner\Release\reverbio_1.2.0_win_x64_portable.exe</OutputFile>
+  <OutputFile>D:\Shared\Projects\Reverbio\build\windows\x64\runner\Release\reverbio_1.2.1_win_x64_portable.exe</OutputFile>
   <Files>
     <Enabled>True</Enabled>
     <DeleteExtractedOnExit>False</DeleteExtractedOnExit>
