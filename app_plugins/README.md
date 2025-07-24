@@ -134,7 +134,6 @@ Available icons
  <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=ffffff">
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=000000">
-  <img src="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true">
 </picture>
 </th></tr>
 <tr><th>add</th><th>
