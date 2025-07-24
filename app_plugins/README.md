@@ -131,10 +131,9 @@ Available icons
 <table>
 <tr><th>Icon Name</th><th>Icon</th></tr>
 <tr><th>access_time</th><th> 
- <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=ffffff">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=000000">
-</picture>
+
+ ![access_time](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true#gh-light-mode-only)<br>![access_time](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=808080#gh-dark-mode-only)
+
 </th></tr>
 <tr><th>add</th><th>
 
