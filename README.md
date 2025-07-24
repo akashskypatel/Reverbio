@@ -7,11 +7,11 @@
 
 Reverbio: A powerful, ad-free music streaming app with multi-platform support, offline listening, plugins, and the ability to track your favorite songs, artists & albums—no subscriptions needed!
 
-[![Stars](https://img.shields.io/github/stars/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/stargazers)
-[![Forks](https://img.shields.io/github/forks/akashskypatel/Reverbio?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/fork)
-[![Downloads](https://img.shields.io/github/downloads/akashskypatel/Reverbio/total?style=flat-square&color=D3BEAB)](https://github.com/akashskypatel/Reverbio/releases)
-[![GitHub release](https://img.shields.io/github/v/release/akashskypatel/Reverbio?color=D3BEAB)](https://github.com/akashskypatel/Reverbio/releases)
-[![License](https://img.shields.io/github/license/akashskypatel/Reverbio?color=D3BEAB)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/akashskypatel/Reverbio?style=flat-square&color=144DB3)](https://github.com/akashskypatel/Reverbio/stargazers)
+[![Forks](https://img.shields.io/github/forks/akashskypatel/Reverbio?style=flat-square&color=144DB3)](https://github.com/akashskypatel/Reverbio/fork)
+[![Downloads](https://img.shields.io/github/downloads/akashskypatel/Reverbio/total?style=flat-square&color=144DB3)](https://github.com/akashskypatel/Reverbio/releases)
+[![GitHub release](https://img.shields.io/github/v/release/akashskypatel/Reverbio?color=144DB3)](https://github.com/akashskypatel/Reverbio/releases)
+[![License](https://img.shields.io/github/license/akashskypatel/Reverbio?color=144DB3)](LICENSE)
 
 ---
 
