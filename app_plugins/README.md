@@ -131,9 +131,14 @@ Available icons
 <table>
 <tr><th>Icon Name</th><th>Icon</th></tr>
 <tr><th>access_time</th><th> 
-
-![access_time_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?raw=true) 
-
+<svg fill="none" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+<foreignObject width="100%" height="100%">
+    <img 
+      src="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?raw=true" 
+      style="filter: brightness(0) invert(0.7) saturate(0);"
+    />
+  </foreignObject>
+</svg>
 </th></tr>
 <tr><th>add</th><th>
 
@@ -577,34 +582,69 @@ hooks: {
 
 ### Available Hooks:
 
-- `onEntityLiked`: Triggered when a artist/song/album is liked. App will pass a JSON object as string containing, depending on requested object, artist name, album name, annd song name.
+#### `onEntityLiked`
+
+Triggered when a artist/song/album is liked. App will pass a JSON object as string containing, depending on requested object, artist name, album name, annd song name.
+
 ``` JSON
 {
-  "id": "mb=abcd1234", //may or may not include MusicBrainz id for requested object
-  "artist": "artist name", //cannot be null
-  "album": "album name", //can be null
-  "song": "song name", //can be null
+  "id": "mb=abcd1234", //may or may not include MusicBrainz, YouTube and Discogs ids in URL parameter format for requested object
+  "artist": "artist name", //guranteed to not be null when entity is artist, song or album
+  "album": "album name", //guranteed to not be null when entity is album
+  "song": "song name", //guranteed to not be null when entity is song
 }
 ```
 
-- `onGetSongUrl`: Triggered when a song URL is requested before playing. App will pass a JSON object as string containing, at a minimum, artist name, song name, and album name (if available and relevant).
+#### `onGetSongUrl`
+
+Triggered when a song URL is requested before playing. App will pass a JSON object as string containing, at a minimum, artist name, song name, and album name (if available and relevant).
+
 ``` JSON
 {
-  "id": "mb=abcd1234", //may or may not include MusicBrainz id for requested object.
-  "artist": "artist name", //cannot be null
+  "id": "mb=abcd1234", //may or may not include MusicBrainz, YouTube and Discogs ids in URL parameter format for requested object.
+  "artist": "artist name", //guranteed to not be null
   "album": "album name", //can be null
-  "song": "song name", //cannot be null
+  "song": "song name", //guranteed to not be null
 }
 ```
 
-- `onQueueSong`: Triggered when user adds a song to the queue
-- `onPlaylistPlay`: Triggered when user plays a playlist
-- `onPlaylistSongAdd`: Triggered when user adds a song to a playlist
-- `onPlaylistAdd`: Triggered when user adds a new playlist
-- `onGetArtistInfo`: Triggered when the app querues artist info
-- `onGetSongInfo`: Triggered when the app querues song info
-- `onGetAlbumInfo`: Triggered when the app querues album info
-- `onSearch`: Triggered when the user executes a search query on the search page
+#### `onQueueSong` 
+
+Triggered when user adds a song to the queue. Data returned by plugin is merged into existing `Map`. 
+
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz, YouTube and Discogs ids in URL parameter format for requested object
+  "artist": "artist name", //guranteed to not be null
+  "album": "album name", //may or maynot be null
+  "song": "song name", //guranteed to not be null
+}
+```
+
+#### `onPlaylistPlay` 
+
+Triggered when user plays a playlist
+
+#### `onPlaylistSongAdd` 
+
+Triggered when user adds a song to a playlist
+
+#### `onPlaylistAdd` 
+
+Triggered when user adds a new playlist
+
+#### `onGetArtistInfo` 
+
+Triggered when the app queries artist info
+
+#### `onGetSongInfo` 
+
+Triggered when the app queries song info
+
+#### `onGetAlbumInfo` 
+
+Triggered when the app queries album info
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
