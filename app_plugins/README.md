@@ -131,14 +131,11 @@ Available icons
 <table>
 <tr><th>Icon Name</th><th>Icon</th></tr>
 <tr><th>access_time</th><th> 
-<svg fill="none" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-<foreignObject width="100%" height="100%">
-    <img 
-      src="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?raw=true" 
-      style="filter: brightness(0) invert(0.7) saturate(0);"
-    />
-  </foreignObject>
-</svg>
+ <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=ffffff">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true&color=000000">
+  <img src="https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?sanitize=true">
+</picture>
 </th></tr>
 <tr><th>add</th><th>
 
