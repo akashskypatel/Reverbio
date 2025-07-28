@@ -4,10 +4,12 @@
     "Akash",
     "Debrid",
     "Discogs",
+    "Fdroid",
     "mbid",
     "MusicBrainz",
     "obtainium",
     "Reverbio",
     "ytid"
-  ]
+  ],
+  "cmake.ignoreCMakeListsMissing": true
 }
