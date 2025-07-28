@@ -22,14 +22,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-void showCustomBottomSheet(BuildContext context, Widget content) {
+void showCustomBottomSheet(
+  BuildContext context,
+  Widget content, {
+  ValueNotifier<bool>? canCloseOnTapOutside,
+}) {
   final size = MediaQuery.sizeOf(context);
 
   Scaffold.of(context).showBottomSheet(
     enableDrag: true,
-    (context) => TapRegion(
+    (ctx) => TapRegion(
       onTapOutside: (event) {
-        GoRouter.of(context).pop();
+        if (canCloseOnTapOutside == null || canCloseOnTapOutside.value)
+          GoRouter.of(ctx).pop(ctx);
       },
       child: Material(
         elevation: 4,
@@ -49,12 +54,12 @@ void showCustomBottomSheet(BuildContext context, Widget content) {
               Padding(
                 padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
                 child: GestureDetector(
-                  onTap: () => GoRouter.of(context).pop(context),
+                  onTap: () => GoRouter.of(ctx).pop(ctx),
                   child: Container(
                     width: 60,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      color: Theme.of(ctx).colorScheme.onSecondaryContainer,
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),

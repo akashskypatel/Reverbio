@@ -54,10 +54,7 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
         null,
         null,
       );
-      return {
-        'error': context.l10n!.errorLatestVersion,
-        'canUpdate': false,
-      };
+      return {'error': context.l10n!.errorLatestVersion, 'canUpdate': false};
     }
 
     final map = json.decode(response.body) as Map<String, dynamic>;
@@ -65,7 +62,8 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
     final latestVersion = map['version'].toString();
     if (isLatestVersionHigher(appVersion, latestVersion)) {
       return {
-        'message': '${context.l10n!.currentVersion}: $appVersion ${context.l10n!.latestVersion}: $latestVersion',
+        'message':
+            '${context.l10n!.currentVersion}: $appVersion ${context.l10n!.latestVersion}: $latestVersion',
         'canUpdate': true,
       };
     }
