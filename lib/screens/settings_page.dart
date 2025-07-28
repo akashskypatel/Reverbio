@@ -20,6 +20,7 @@
  */
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -107,13 +108,14 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         SectionHeader(title: context.l10n!.preferences),
         CustomBar(
-          context.l10n!.accentColor,
-          FluentIcons.color_24_filled,
+          tileName: context.l10n!.accentColor,
+          tileIcon: FluentIcons.color_24_filled,
+          borderRadius: commonCustomBarRadiusFirst,
           onTap: () => _showAccentColorPicker(context),
         ),
         CustomBar(
-          context.l10n!.themeMode,
-          FluentIcons.weather_sunny_28_filled,
+          tileName: context.l10n!.themeMode,
+          tileIcon: FluentIcons.weather_sunny_28_filled,
           onTap:
               () => _showThemeModePicker(
                 context,
@@ -122,15 +124,15 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
         ),
         CustomBar(
-          context.l10n!.client,
-          FluentIcons.device_meeting_room_24_filled,
+          tileName: context.l10n!.client,
+          tileIcon: FluentIcons.device_meeting_room_24_filled,
           onTap:
               () =>
                   _showClientPicker(context, activatedColor, inactivatedColor),
         ),
         CustomBar(
-          context.l10n!.language,
-          FluentIcons.translate_24_filled,
+          tileName: context.l10n!.language,
+          tileIcon: FluentIcons.translate_24_filled,
           onTap:
               () => _showLanguagePicker(
                 context,
@@ -139,8 +141,8 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
         ),
         CustomBar(
-          context.l10n!.audioQuality,
-          FluentIcons.headphones_sound_wave_24_filled,
+          tileName: context.l10n!.audioQuality,
+          tileIcon: FluentIcons.headphones_sound_wave_24_filled,
           onTap:
               () => _showAudioQualityPicker(
                 context,
@@ -149,8 +151,8 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
         ),
         CustomBar(
-          context.l10n!.dynamicColor,
-          FluentIcons.toggle_left_24_filled,
+          tileName: context.l10n!.dynamicColor,
+          tileIcon: FluentIcons.toggle_left_24_filled,
           trailing: Switch(
             value: useSystemColor.value,
             onChanged: (value) => _toggleSystemColor(context, value),
@@ -158,8 +160,8 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         if (themeMode == ThemeMode.dark)
           CustomBar(
-            context.l10n!.pureBlackTheme,
-            FluentIcons.color_background_24_filled,
+            tileName: context.l10n!.pureBlackTheme,
+            tileIcon: FluentIcons.color_background_24_filled,
             trailing: Switch(
               value: usePureBlackColor.value,
               onChanged: (value) => _togglePureBlack(context, value),
@@ -169,8 +171,8 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: predictiveBack,
           builder: (context, value, __) {
             return CustomBar(
-              context.l10n!.predictiveBack,
-              FluentIcons.position_backward_24_filled,
+              tileName: context.l10n!.predictiveBack,
+              tileIcon: FluentIcons.position_backward_24_filled,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _togglePredictiveBack(context, value),
@@ -182,12 +184,11 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: offlineMode,
           builder: (context, value, __) {
             return CustomBar(
-              context.l10n!.offlineMode,
-              FluentIcons.cellular_off_24_regular,
+              tileName: context.l10n!.offlineMode,
+              tileIcon: FluentIcons.cellular_off_24_regular,
               trailing: Switch(
                 value: value,
-                onChanged:
-                    (value) async => await _toggleOfflineMode(context, value),
+                onChanged: (value) async => _toggleOfflineMode(context, value),
               ),
             );
           },
@@ -196,11 +197,11 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: enablePlugins,
           builder: (context, value, __) {
             return CustomBar(
-              context.l10n!.plugins,
-              value
-                  ? FluentIcons.plug_connected_24_regular
-                  : FluentIcons.plug_disconnected_24_regular,
-              borderRadius: commonCustomBarRadiusLast,
+              tileName: context.l10n!.plugins,
+              tileIcon:
+                  value
+                      ? FluentIcons.plug_connected_24_regular
+                      : FluentIcons.plug_disconnected_24_regular,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _togglePluginsSupport(context, value),
@@ -232,8 +233,8 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: sponsorBlockSupport,
           builder: (context, value, __) {
             return CustomBar(
-              context.l10n!.sponsorBlock,
-              FluentIcons.presence_blocked_24_regular,
+              tileName: context.l10n!.sponsorBlock,
+              tileIcon: FluentIcons.presence_blocked_24_regular,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _toggleSponsorBlock(context, value),
@@ -245,8 +246,8 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: skipNonMusic,
           builder: (context, value, __) {
             return CustomBar(
-              context.l10n!.nonMusicBlock,
-              FluentIcons.skip_forward_tab_24_regular,
+              tileName: context.l10n!.nonMusicBlock,
+              tileIcon: FluentIcons.skip_forward_tab_24_regular,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _toggleSkipNonMusic(context, value),
@@ -258,9 +259,8 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: prepareNextSong,
           builder: (context, value, __) {
             return CustomBar(
-              context.l10n!.prepareNextSong,
-              FluentIcons.music_note_2_24_filled,
-              borderRadius: commonCustomBarRadiusLast,
+              tileName: context.l10n!.prepareNextSong,
+              tileIcon: FluentIcons.music_note_2_24_filled,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _togglePrepareNextSong(context, value),
@@ -272,8 +272,8 @@ class _SettingsPageState extends State<SettingsPage> {
           valueListenable: useProxies,
           builder: (context, value, __) {
             return CustomBar(
-              context.l10n!.useProxies,
-              FluentIcons.server_link_24_filled,
+              tileName: context.l10n!.useProxies,
+              tileIcon: FluentIcons.server_link_24_filled,
               borderRadius: commonCustomBarRadiusLast,
               trailing: Switch(
                 value: value,
@@ -330,8 +330,8 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         SectionHeader(title: context.l10n!.tools),
         CustomBar(
-          context.l10n!.clearCache,
-          FluentIcons.broom_24_filled,
+          tileName: context.l10n!.clearCache,
+          tileIcon: FluentIcons.broom_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           onTap: () {
             clearCache();
@@ -339,29 +339,28 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         CustomBar(
-          context.l10n!.clearSearchHistory,
-          FluentIcons.history_24_filled,
+          tileName: context.l10n!.clearSearchHistory,
+          tileIcon: FluentIcons.history_24_filled,
           onTap: () => _showClearSearchHistoryDialog(context),
         ),
         CustomBar(
-          context.l10n!.clearRecentlyPlayed,
-          FluentIcons.receipt_play_24_filled,
+          tileName: context.l10n!.clearRecentlyPlayed,
+          tileIcon: FluentIcons.receipt_play_24_filled,
           onTap: () => _showClearRecentlyPlayedDialog(context),
         ),
         CustomBar(
-          context.l10n!.backupUserData,
-          FluentIcons.cloud_sync_24_filled,
+          tileName: context.l10n!.backupUserData,
+          tileIcon: FluentIcons.cloud_sync_24_filled,
           onTap: () => _backupUserData(context),
         ),
         CustomBar(
-          context.l10n!.restoreUserData,
-          FluentIcons.cloud_add_24_filled,
+          tileName: context.l10n!.restoreUserData,
+          tileIcon: FluentIcons.cloud_add_24_filled,
           onTap: () async {
             final response = await restoreData(context);
             showToast(response);
           },
         ),
-        //TODO: Fix downloadAppUpdate
         if (!isFdroidBuild)
           FutureBuilder(
             future: _appVersionFuture,
@@ -378,7 +377,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     const Icon(FluentIcons.error_circle_24_filled),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(snapshot.data?['error'] ?? '', softWrap: true)),
+                    Expanded(
+                      child: Text(
+                        snapshot.data?['error'] ?? '',
+                        softWrap: true,
+                      ),
+                    ),
                   ],
                 );
               else
@@ -386,12 +390,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(child: Text(snapshot.data?['message'] ?? '', softWrap: true)),
+                    Expanded(
+                      child: Text(
+                        snapshot.data?['message'] ?? '',
+                        softWrap: true,
+                      ),
+                    ),
                   ],
                 );
               return CustomBar(
-                context.l10n!.downloadAppUpdate,
-                FluentIcons.arrow_download_24_filled,
+                tileName: context.l10n!.downloadAppUpdate,
+                tileIcon: FluentIcons.arrow_download_24_filled,
                 borderRadius: commonCustomBarRadiusLast,
                 onTap:
                     snapshot.data?['canUpdate'] ?? false
@@ -413,8 +422,8 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         SectionHeader(title: context.l10n!.becomeSponsor),
         CustomBar(
-          context.l10n!.sponsorProject,
-          FluentIcons.heart_24_filled,
+          tileName: context.l10n!.sponsorProject,
+          tileIcon: FluentIcons.heart_24_filled,
           backgroundColor: primaryColor,
           iconColor: Colors.white,
           textColor: Colors.white,
@@ -430,19 +439,19 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         SectionHeader(title: context.l10n!.others),
         CustomBar(
-          context.l10n!.licenses,
-          FluentIcons.document_24_filled,
+          tileName: context.l10n!.licenses,
+          tileIcon: FluentIcons.document_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           onTap: () => NavigationManager.router.go('/settings/license'),
         ),
         CustomBar(
-          '${context.l10n!.copyLogs} (${logger.getLogCount()})',
-          FluentIcons.error_circle_24_filled,
+          tileName: '${context.l10n!.copyLogs} (${logger.getLogCount()})',
+          tileIcon: FluentIcons.error_circle_24_filled,
           onTap: () async => showToast(await logger.copyLogs(context)),
         ),
         CustomBar(
-          context.l10n!.about,
-          FluentIcons.book_information_24_filled,
+          tileName: context.l10n!.about,
+          tileIcon: FluentIcons.book_information_24_filled,
           borderRadius: commonCustomBarRadiusLast,
           onTap: () => NavigationManager.router.go('/settings/about'),
         ),
@@ -473,7 +482,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 useSystemColor: false,
               );
               showToast(context.l10n!.accentChangeMsg);
-              GoRouter.of(context).pop(context);
+              GoRouter.of(context).pop();
             },
             child: Stack(
               alignment: Alignment.center,
@@ -506,7 +515,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ListView.builder(
         shrinkWrap: true,
         physics: const BouncingScrollPhysics(),
-        padding: commonListViewBottmomPadding,
+        padding: commonListViewBottomPadding,
         itemCount: availableModes.length,
         itemBuilder: (context, index) {
           final mode = availableModes[index];
@@ -520,7 +529,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () {
               addOrUpdateData('settings', 'themeMode', mode.name);
               Reverbio.updateAppState(context, newThemeMode: mode);
-              GoRouter.of(context).pop(context);
+              GoRouter.of(context).pop();
             },
             themeMode == mode ? activatedColor : inactivatedColor,
             borderRadius: borderRadius,
@@ -543,7 +552,7 @@ class _SettingsPageState extends State<SettingsPage> {
           return ListView.builder(
             shrinkWrap: true,
             physics: const BouncingScrollPhysics(),
-            padding: commonListViewBottmomPadding,
+            padding: commonListViewBottomPadding,
             itemCount: availableClients.length,
             itemBuilder: (context, index) {
               final client = availableClients[index];
@@ -586,7 +595,9 @@ class _SettingsPageState extends State<SettingsPage> {
     Color activatedColor,
     Color inactivatedColor,
   ) {
+    final canCloseOnTapOutside = ValueNotifier(true);
     showCustomBottomSheet(
+      canCloseOnTapOutside: canCloseOnTapOutside,
       context,
       StatefulBuilder(
         builder: (context, setState) {
@@ -599,6 +610,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   SectionHeader(
                     title: context.l10n!.plugins,
+                    actionsExpanded: true,
                     actions: [
                       IconButton(
                         onPressed: () async {
@@ -610,7 +622,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         color: _theme.colorScheme.primary,
                       ),
                       IconButton(
-                        onPressed: _showAddPluginDialog,
+                        onPressed: () async {
+                          canCloseOnTapOutside
+                            ..value = false
+                            ..value = await _showAddPluginDialog(context);
+                        },
                         icon: const Icon(FluentIcons.add_24_regular),
                         iconSize: listHeaderIconSize,
                         color: _theme.colorScheme.primary,
@@ -623,15 +639,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       return ListView.builder(
                         shrinkWrap: true,
                         physics: const BouncingScrollPhysics(),
-                        padding: commonListViewBottmomPadding,
+                        padding: commonListViewBottomPadding,
                         itemCount: PM.pluginsData.length,
-                        itemBuilder: (savecontext, index) {
+                        itemBuilder: (context, index) {
                           return BottomSheetBar(
                             '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']})',
-                            onTap:
-                                () => _showPluginSettings(
+                            onTap: () async {
+                              canCloseOnTapOutside
+                                ..value = false
+                                ..value = await _showPluginSettings(
+                                  context,
                                   PM.pluginsData[index]['name'],
-                                ),
+                                );
+                            },
                             _theme.colorScheme.surfaceContainerHigh,
                             borderRadius: getItemBorderRadius(
                               index,
@@ -654,42 +674,50 @@ class _SettingsPageState extends State<SettingsPage> {
                               ),
                               IconButton(
                                 onPressed: () async {
-                                  await showDialog(
-                                    routeSettings: const RouteSettings(
-                                      name: '/confirmation',
-                                    ),
-                                    context: savecontext,
-                                    builder:
-                                        (
-                                          BuildContext confirmcontext,
-                                        ) => ConfirmationDialog(
-                                          title: context.l10n!.removePlugin,
-                                          message:
-                                              context.l10n!.confirmRemovePlugin,
-                                          confirmText: context.l10n!.confirm,
-                                          cancelText: context.l10n!.cancel,
-                                          onCancel:
-                                              () => GoRouter.of(
-                                                savecontext,
-                                              ).pop(confirmcontext),
-                                          onSubmit: () {
-                                            setState(() {
-                                              PM.removePlugin(
-                                                PM.pluginsData[index]['name'],
-                                              );
-                                            });
-                                            addOrUpdateData(
-                                              'settings',
-                                              'pluginsData',
-                                              PM.pluginsData,
-                                            );
-                                            showToast(
-                                              context.l10n!.pluginRemoved,
-                                            );
-                                            GoRouter.of(context).pop(context);
-                                          },
-                                        ),
-                                  );
+                                  canCloseOnTapOutside
+                                    ..value = false
+                                    ..value =
+                                        await showDialog<bool>(
+                                          routeSettings: const RouteSettings(
+                                            name: '/confirmation',
+                                          ),
+                                          context: context,
+                                          builder:
+                                              (context) => ConfirmationDialog(
+                                                title:
+                                                    context.l10n!.removePlugin,
+                                                message:
+                                                    context
+                                                        .l10n!
+                                                        .confirmRemovePlugin,
+                                                confirmText:
+                                                    context.l10n!.confirm,
+                                                cancelText:
+                                                    context.l10n!.cancel,
+                                                onCancel:
+                                                    () =>
+                                                        GoRouter.of(
+                                                          context,
+                                                        ).pop(),
+                                                onSubmit: () {
+                                                  setState(() {
+                                                    PM.removePlugin(
+                                                      PM.pluginsData[index]['name'],
+                                                    );
+                                                  });
+                                                  addOrUpdateData(
+                                                    'settings',
+                                                    'pluginsData',
+                                                    PM.pluginsData,
+                                                  );
+                                                  showToast(
+                                                    context.l10n!.pluginRemoved,
+                                                  );
+                                                  GoRouter.of(context).pop();
+                                                },
+                                              ),
+                                        ) ??
+                                        true;
                                 },
                                 icon: const Icon(FluentIcons.delete_24_regular),
                               ),
@@ -715,258 +743,276 @@ class _SettingsPageState extends State<SettingsPage> {
       await PM.syncPlugins();
   }
 
-  void _showPluginSettings(String pluginName) => showDialog(
-    routeSettings: RouteSettings(name: '/plugins/$pluginName'),
-    context: context,
-    builder: (pluginContext) {
-      try {
-        return StatefulBuilder(
-          builder: (plugincontext, setState) {
-            return AlertDialog(
-              title: Text(pluginName),
-              content: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.6,
-                child: PM.getPluginSettingsWidgets(pluginName, pluginContext),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    PM.restSettings(pluginName);
-                    setState(() {});
-                  },
-                  child: Text(context.l10n!.defaults.toUpperCase()),
-                ),
-                TextButton(
-                  onPressed: () {
-                    GoRouter.of(plugincontext).pop(plugincontext);
-                  },
-                  child: Text(context.l10n!.cancel.toUpperCase()),
-                ),
-                TextButton(
-                  onPressed: () {
-                    PM.saveSettings(pluginName);
-                    GoRouter.of(plugincontext).pop(plugincontext);
-                  },
-                  child: Text(context.l10n!.save.toUpperCase()),
-                ),
-              ],
+  Future<bool> _showPluginSettings(
+    BuildContext context,
+    String pluginName,
+  ) async =>
+      await showDialog<bool>(
+        routeSettings: RouteSettings(name: '/plugins/$pluginName'),
+        context: context,
+        builder: (context) {
+          try {
+            final initSettings = jsonDecode(
+              jsonEncode(PM.getUserSettings(pluginName)),
             );
-          },
-        );
-      } catch (e, stackTrace) {
-        logger.log(
-          'Error in ${stackTrace.getCurrentMethodName()}:',
-          e,
-          stackTrace,
-        );
-        throw ErrorDescription('Error in _showPluginSettings');
-      }
-    },
-  );
-
-  void _showAddPluginDialog() => showDialog(
-    routeSettings: const RouteSettings(name: '/add-plugins'),
-    context: context,
-    builder: (savecontext) {
-      var isOnlineMode = true;
-      final isLoadedNotifier = ValueNotifier(false);
-      var isValid = false;
-      var pluginData = {};
-      final jsUrlNotifier = ValueNotifier('');
-      final urlInputController = TextEditingController();
-      return StatefulBuilder(
-        builder: (context, setState) {
-          final theme = Theme.of(context);
-          final activeButtonBackground = theme.colorScheme.surfaceContainer;
-          final inactiveButtonBackground = theme.colorScheme.secondaryContainer;
-          final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
-
-          return AlertDialog(
-            backgroundColor: dialogBackgroundColor,
-            content: SingleChildScrollView(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.5,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            if (mounted)
-                              setState(() {
-                                isOnlineMode = true;
-                              });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isOnlineMode
-                                    ? inactiveButtonBackground
-                                    : activeButtonBackground,
-                          ),
-                          child: const Icon(FluentIcons.globe_add_24_filled),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (mounted)
-                              setState(() {
-                                isOnlineMode = false;
-                              });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isOnlineMode
-                                    ? activeButtonBackground
-                                    : inactiveButtonBackground,
-                          ),
-                          child: const Icon(FluentIcons.folder_add_24_filled),
-                        ),
-                      ],
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  contentPadding: commonBarContentPadding,
+                  title: Text(pluginName),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: PM.getPluginSettingsWidgets(pluginName, context),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        PM.restSettings(pluginName);
+                        setState(() {});
+                      },
+                      child: Text(context.l10n!.defaults.toUpperCase()),
                     ),
-                    const SizedBox(height: 15),
-                    if (isOnlineMode) ...[
-                      Text(context.l10n!.onlinePlugin),
-                      const SizedBox(height: 7),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                labelText: context.l10n!.pluginURL,
-                              ),
-                              controller: urlInputController,
-                              onChanged: (value) {
-                                jsUrlNotifier.value = value;
+                    TextButton(
+                      onPressed: () {
+                        PM.setUserSettings(pluginName, initSettings);
+                        GoRouter.of(context).pop();
+                      },
+                      child: Text(context.l10n!.cancel.toUpperCase()),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        //PM.saveSettings(pluginName);
+                        GoRouter.of(context).pop();
+                      },
+                      child: Text(context.l10n!.save.toUpperCase()),
+                    ),
+                  ],
+                );
+              },
+            );
+          } catch (e, stackTrace) {
+            logger.log(
+              'Error in ${stackTrace.getCurrentMethodName()}:',
+              e,
+              stackTrace,
+            );
+            throw ErrorDescription('Error in _showPluginSettings');
+          }
+        },
+      ) ??
+      true;
+
+  Future<bool> _showAddPluginDialog(BuildContext context) async =>
+      await showDialog<bool>(
+        routeSettings: const RouteSettings(name: '/add-plugins'),
+        requestFocus: true,
+        context: context,
+        builder: (context) {
+          var isOnlineMode = true;
+          final isLoadedNotifier = ValueNotifier(false);
+          var isValid = false;
+          var pluginData = {};
+          final jsUrlNotifier = ValueNotifier('');
+          final urlInputController = TextEditingController();
+          return StatefulBuilder(
+            builder: (context, setState) {
+              final theme = Theme.of(context);
+              final activeButtonBackground = theme.colorScheme.surfaceContainer;
+              final inactiveButtonBackground =
+                  theme.colorScheme.secondaryContainer;
+              final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
+
+              return AlertDialog(
+                contentPadding: commonBarContentPadding,
+                backgroundColor: dialogBackgroundColor,
+                content: SingleChildScrollView(
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.5,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                if (mounted)
+                                  setState(() {
+                                    isOnlineMode = true;
+                                  });
                               },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    isOnlineMode
+                                        ? inactiveButtonBackground
+                                        : activeButtonBackground,
+                              ),
+                              child: const Icon(
+                                FluentIcons.globe_add_24_filled,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (mounted)
+                                  setState(() {
+                                    isOnlineMode = false;
+                                  });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    isOnlineMode
+                                        ? activeButtonBackground
+                                        : inactiveButtonBackground,
+                              ),
+                              child: const Icon(
+                                FluentIcons.folder_add_24_filled,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
+                        if (isOnlineMode) ...[
+                          Text(context.l10n!.onlinePlugin),
+                          const SizedBox(height: 7),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    labelText: context.l10n!.pluginURL,
+                                  ),
+                                  controller: urlInputController,
+                                  onChanged: (value) {
+                                    jsUrlNotifier.value = value;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              ValueListenableBuilder(
+                                valueListenable: jsUrlNotifier,
+                                builder: (context, value, __) {
+                                  return ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: activeButtonBackground,
+                                    ),
+                                    onPressed:
+                                        value.isNotEmpty
+                                            ? () async {
+                                              pluginData = await PM
+                                                  .getOnlinePlugin(value);
+                                              isValid = pluginData.isNotEmpty;
+                                              isLoadedNotifier.value =
+                                                  pluginData.isNotEmpty;
+                                              if (isLoadedNotifier.value)
+                                                showToast(
+                                                  context.l10n!.pluginLoaded,
+                                                );
+                                              else
+                                                showToast(
+                                                  context.l10n!.pluginFailed,
+                                                );
+                                            }
+                                            : null,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          FluentIcons.arrow_download_24_regular,
+                                        ),
+                                        const SizedBox(width: 7),
+                                        Text(context.l10n!.download),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          Text(context.l10n!.localPlugin),
+                          const SizedBox(height: 7),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: activeButtonBackground,
+                            ),
+                            onPressed: () async {
+                              try {
+                                pluginData = await PM.getLocalPlugin();
+                                isValid = pluginData.isNotEmpty;
+                                isLoadedNotifier.value = pluginData.isNotEmpty;
+                                if (isLoadedNotifier.value)
+                                  showToast(context.l10n!.pluginLoaded);
+                                else
+                                  showToast(context.l10n!.pluginFailed);
+                              } catch (e) {
+                                showToast('Error: $e');
+                                isLoadedNotifier.value = false;
+                              }
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(FluentIcons.folder_open_24_regular),
+                                const SizedBox(width: 7),
+                                Text(context.l10n!.browse),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 7),
+                        ],
+                        ...[
+                          const SizedBox(height: 7),
                           ValueListenableBuilder(
-                            valueListenable: jsUrlNotifier,
-                            builder: (context, value, __) {
-                              return ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: activeButtonBackground,
-                                ),
-                                onPressed:
-                                    value.isNotEmpty
-                                        ? () async {
-                                          pluginData = await PM.getOnlinePlugin(
-                                            value,
-                                          );
-                                          isValid = pluginData.isNotEmpty;
-                                          isLoadedNotifier.value =
-                                              pluginData.isNotEmpty;
-                                          if (isLoadedNotifier.value)
-                                            showToast(
-                                              context.l10n!.pluginLoaded,
-                                            );
-                                          else
-                                            showToast(
-                                              context.l10n!.pluginFailed,
-                                            );
-                                        }
-                                        : null,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      FluentIcons.arrow_download_24_regular,
-                                    ),
-                                    const SizedBox(width: 7),
-                                    Text(context.l10n!.download),
-                                  ],
+                            valueListenable: isLoadedNotifier,
+                            builder: (context, value, child) {
+                              return Visibility(
+                                visible: isValid,
+                                child: Text(
+                                  '${pluginData['name']} (${pluginData['version']})',
                                 ),
                               );
                             },
                           ),
                         ],
-                      ),
-                    ] else ...[
-                      Text(context.l10n!.localPlugin),
-                      const SizedBox(height: 7),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: activeButtonBackground,
-                        ),
-                        onPressed: () async {
-                          try {
-                            pluginData = await PM.getLocalPlugin();
-                            isValid = pluginData.isNotEmpty;
-                            isLoadedNotifier.value = pluginData.isNotEmpty;
-                            if (isLoadedNotifier.value)
-                              showToast(context.l10n!.pluginLoaded);
-                            else
-                              showToast(context.l10n!.pluginFailed);
-                          } catch (e) {
-                            showToast('Error: $e');
-                            isLoadedNotifier.value = false;
-                          }
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(FluentIcons.folder_open_24_regular),
-                            const SizedBox(width: 7),
-                            Text(context.l10n!.browse),
-                          ],
-                        ),
-                      ),
-                    ],
-                    ...[
-                      const SizedBox(height: 7),
-                      ValueListenableBuilder(
-                        valueListenable: isLoadedNotifier,
-                        builder: (context, value, child) {
-                          return Visibility(
-                            visible: isValid,
-                            child: Text(
-                              '${pluginData['name']} (${pluginData['version']})',
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            actions: <Widget>[
-              ValueListenableBuilder(
-                valueListenable: isLoadedNotifier,
-                builder: (context, value, child) {
-                  return TextButton(
-                    onPressed:
-                        value
-                            ? () {
-                              if (isValid) {
-                                setState(() {
-                                  PM.addPluginData(pluginData);
-                                  addOrUpdateData(
-                                    'settings',
-                                    'pluginsData',
-                                    PM.pluginsData,
-                                  );
-                                });
-                                GoRouter.of(context).pop(context);
-                                showToast(context.l10n!.pluginAdded);
-                              }
-                            }
-                            : null,
-                    child: Text(context.l10n!.add.toUpperCase()),
-                  );
-                },
-              ),
-            ],
+                actions: <Widget>[
+                  ValueListenableBuilder(
+                    valueListenable: isLoadedNotifier,
+                    builder: (context, value, child) {
+                      return TextButton(
+                        onPressed:
+                            value
+                                ? () {
+                                  if (isValid) {
+                                    setState(() {
+                                      PM.addPluginData(pluginData);
+                                      addOrUpdateData(
+                                        'settings',
+                                        'pluginsData',
+                                        PM.pluginsData,
+                                      );
+                                    });
+                                    GoRouter.of(context).pop();
+                                    showToast(context.l10n!.pluginAdded);
+                                  }
+                                }
+                                : null,
+                        child: Text(context.l10n!.add.toUpperCase()),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
           );
         },
-      );
-    },
-  );
+      ) ??
+      true;
 
   void _showLanguagePicker(
     BuildContext context,
@@ -986,7 +1032,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ListView.builder(
         shrinkWrap: true,
         physics: const BouncingScrollPhysics(),
-        padding: commonListViewBottmomPadding,
+        padding: commonListViewBottomPadding,
         itemCount: availableLanguages.length,
         itemBuilder: (context, index) {
           final language = availableLanguages[index];
@@ -1007,7 +1053,7 @@ class _SettingsPageState extends State<SettingsPage> {
               addOrUpdateData('settings', 'language', newLocaleFullCode);
               Reverbio.updateAppState(context, newLocale: newLocale);
               showToast(context.l10n!.languageMsg);
-              GoRouter.of(context).pop(context);
+              GoRouter.of(context).pop();
             },
             activeLanguageFullCode == newLocaleFullCode
                 ? activatedColor
@@ -1031,7 +1077,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ListView.builder(
         shrinkWrap: true,
         physics: const BouncingScrollPhysics(),
-        padding: commonListViewBottmomPadding,
+        padding: commonListViewBottomPadding,
         itemCount: availableQualities.length,
         itemBuilder: (context, index) {
           final quality = availableQualities[index];
@@ -1047,7 +1093,7 @@ class _SettingsPageState extends State<SettingsPage> {
               addOrUpdateData('settings', 'audioQuality', quality);
               audioQualitySetting.value = quality;
               showToast(context.l10n!.audioQualityMsg);
-              GoRouter.of(context).pop(context);
+              GoRouter.of(context).pop();
             },
             isCurrentQuality ? activatedColor : inactivatedColor,
             borderRadius: borderRadius,
@@ -1092,6 +1138,7 @@ class _SettingsPageState extends State<SettingsPage> {
           context: context,
           builder:
               (context) => AlertDialog(
+                contentPadding: commonBarContentPadding,
                 title: const Text('Offline Mode'),
                 content: const Text(
                   'Offline Mode requires a restart. Are you sure you want to exit?',
@@ -1213,12 +1260,13 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          contentPadding: commonBarContentPadding,
           content: Text(context.l10n!.folderRestrictions),
           actions: <Widget>[
             TextButton(
               child: Text(context.l10n!.understand.toUpperCase()),
               onPressed: () {
-                GoRouter.of(context).pop(context);
+                GoRouter.of(context).pop();
               },
             ),
           ],

@@ -462,8 +462,9 @@ class _SearchPageState extends State<SearchPage> {
           child: Padding(
             padding: commonSingleChildScrollViewPadding,
             child: CustomBar(
-              query,
-              entityName[header]?['icon'] ?? FluentIcons.search_24_regular,
+              tileName: query,
+              tileIcon:
+                  entityName[header]?['icon'] ?? FluentIcons.search_24_regular,
               borderRadius: borderRadius,
               onTap: () async {
                 await search(data: element);
