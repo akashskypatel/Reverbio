@@ -86,9 +86,11 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   positionDataNotifier: audioHandler.positionDataNotifier,
                 ),
               if (!nowPlayingOpen)
-                if (isLargeScreen(context)) _buildLargeScreenControls(),
+                if (isLargeScreen(context: context))
+                  _buildLargeScreenControls(),
               if (!nowPlayingOpen)
-                if (!isLargeScreen(context)) _buildSmallScreenControls(),
+                if (!isLargeScreen(context: context))
+                  _buildSmallScreenControls(),
             ],
           ),
         ),
@@ -142,7 +144,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
             _buildMetadata(),
             Row(
               children: [
-                if (isLargeScreen(context)) ...[
+                if (isLargeScreen(context: context)) ...[
                   _buildLikeButton(),
                   _buildPreviousButton(context),
                   if (audioHandler.hasPrevious) const SizedBox(width: 10),
