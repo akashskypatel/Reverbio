@@ -98,29 +98,31 @@ class PluginsManager {
       );
       final settings = getUserSettings(_plugin['name']);
       _plugin['settings'] = settings;
-      String jsContent = '';
-      if (isFilePath(settings['source'])) {
-        if (doesFileExist(settings['source'])) {
-          jsContent = await File(settings['source']).readAsString();
+      Map pluginData = {};
+      final source =
+          settings['source'] ?? _plugin['source'] ?? _plugin['originalSource'];
+      if (source != null) {
+        if (isFilePath(source)) {
+          if (doesFileExist(source)) {
+            pluginData = await getLocalPlugin(path: source);
+          }
+        } else if (await checkUrl(source) < 400) {
+          pluginData = await getOnlinePlugin(source);
         }
-      } else if (await checkUrl(settings['source']) < 400) {
-        final uri = Uri.parse(settings['source']);
-        final response = await http.get(uri);
-        jsContent = response.body;
-      }
-      if (jsContent.isNotEmpty) {
-        _pluginsCacheData.removeWhere(
-          (value) => value['name'] == _plugin['name'],
-        );
-        final data = await getPluginData(jsContent);
-        final flutterJs = getJavascriptRuntime();
-        await flutterJs.enableFetch();
-        await flutterJs.enableHandlePromises();
-        final result = flutterJs.evaluate(data['script']);
-        if (!result.isError) {
-          _pluginsCacheData.add(data);
-          flutterJs.dispose();
-          return true;
+        if (pluginData.isNotEmpty) {
+          _pluginsCacheData.removeWhere(
+            (value) => value['name'] == _plugin['name'],
+          );
+          final flutterJs = getJavascriptRuntime();
+          await flutterJs.enableFetch();
+          await flutterJs.enableHandlePromises();
+          final result = flutterJs.evaluate(pluginData['script']);
+          if (!result.isError) {
+            _pluginsCacheData.add(pluginData);
+            flutterJs.dispose();
+            addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+            return true;
+          }
         }
       }
       return false;
@@ -383,16 +385,19 @@ class PluginsManager {
     }
   }
 
-  static Future<Map> getLocalPlugin() async {
+  static Future<Map> getLocalPlugin({String? path}) async {
     try {
       String jsContent = '';
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['js'],
-      );
-      if (result != null && result.files.single.path != null) {
-        jsContent = await File(result.files.single.path!).readAsString();
-        return getPluginData(jsContent);
+      String? filePath;
+      filePath =
+          path ??
+          (await FilePicker.platform.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: ['js'],
+          ))?.files.single.path;
+      if (filePath != null) {
+        jsContent = await File(filePath).readAsString();
+        return getPluginData(jsContent, filePath);
       }
       return {};
     } catch (e, stackTrace) {
@@ -409,7 +414,7 @@ class PluginsManager {
     try {
       final uri = Uri.parse(url);
       final response = await http.get(uri);
-      if (response.statusCode < 400) return getPluginData(response.body);
+      if (response.statusCode < 400) return getPluginData(response.body, url);
       return {};
     } catch (e, stackTrace) {
       logger.log(
@@ -429,7 +434,7 @@ class PluginsManager {
         if (!result.isError) {
           removePlugin(data['name']);
           _pluginsCacheData.add(data);
-          _plugins.add({'name': data['name'], 'script': data['script']});
+          _plugins.add(data);
           pluginsDataNotifier.value = _pluginsCacheData.length;
           _isProcessingNotifiers[data['name']] = ValueNotifier(false);
           _backgroundJobNotifiers[data['name']] = ValueNotifier(-1);
@@ -472,7 +477,7 @@ class PluginsManager {
 
   static void removePlugin(String pluginName) {
     try {
-      if (_isProcessingNotifiers[pluginName]!.value) {
+      if (_isProcessingNotifiers[pluginName]?.value ?? false) {
         final context = NavigationManager().context;
         showToast(
           '${context.l10n!.cannotRemovePlugin} ${context.l10n!.waitForJob}',
@@ -492,7 +497,7 @@ class PluginsManager {
     }
   }
 
-  static Future<Map> getPluginData(String jsContent) async {
+  static Future<Map> getPluginData(String jsContent, String source) async {
     try {
       final script = await _loadValidateDependencies(jsContent);
       if (script.isNotEmpty) {
@@ -514,6 +519,8 @@ class PluginsManager {
             'version': version.stringResult,
             'script': script,
             'manifest': manifest,
+            'originalSource': source,
+            'source': manifest['settings']['source'] ?? source,
             'defaultSettings': manifest['settings'],
             'userSettings': manifest['settings'],
           };
@@ -532,7 +539,7 @@ class PluginsManager {
 
   static void showPluginMethodResult({
     required String pluginName,
-    JsEvalResult? result,
+    dynamic result,
     String? message,
   }) {
     try {
@@ -541,13 +548,12 @@ class PluginsManager {
         showToast('$pluginName: $message ${context.l10n!.failed}.');
         return;
       }
-      final jsResult = tryDecode(result.stringResult);
       final text =
-          jsResult == null
-              ? '$pluginName: ${result.stringResult}'
-              : jsResult['message'] == null
+          result == null
+              ? '$pluginName: $result'
+              : result['message'] == null
               ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
-              : '$pluginName: ${jsResult['message']}';
+              : '$pluginName: ${result['message']}';
       showToast(text);
     } catch (e, stackTrace) {
       logger.log(
@@ -558,9 +564,9 @@ class PluginsManager {
     }
   }
 
-  static Future<bool> validatePlugin(String jsCode) async {
+  static Future<bool> validatePlugin(String jsCode, String source) async {
     try {
-      final data = await getPluginData(jsCode);
+      final data = await getPluginData(jsCode, source);
       return data.isNotEmpty;
     } catch (e, stackTrace) {
       logger.log(
@@ -735,7 +741,7 @@ class PluginsManager {
                         (context, value, __) => ListView(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          padding: commonListViewBottmomPadding,
+                          padding: commonListViewBottomPadding,
                           children:
                               items.isEmpty
                                   ? [
@@ -769,7 +775,9 @@ class PluginsManager {
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['manifest']['widgets'];
-      return List<Map<String, dynamic>>.from(result);
+      final widgets =
+          (result as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      return widgets;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -787,7 +795,8 @@ class PluginsManager {
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['manifest']['hooks'];
-      return Map<String, dynamic>.from(result);
+      final hooks = Map<String, dynamic>.from(result);
+      return hooks;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -795,22 +804,6 @@ class PluginsManager {
         stackTrace,
       );
       return {};
-    }
-  }
-
-  static dynamic getUserSettings(String pluginName) {
-    try {
-      return _pluginsCacheData.firstWhere(
-        (value) => value['name'] == pluginName,
-        orElse: () => {},
-      )['userSettings'];
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-      return null;
     }
   }
 
@@ -843,12 +836,69 @@ class PluginsManager {
     }
   }
 
+  static dynamic getUserSettings(String pluginName) {
+    try {
+      final settings =
+          _pluginsCacheData.firstWhere(
+            (value) => value['name'] == pluginName,
+            orElse: () => {},
+          )['userSettings'];
+      return settings;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      return null;
+    }
+  }
+
   static dynamic getDefaultSettings(String pluginName) {
     try {
-      return _pluginsCacheData.firstWhere(
-        (value) => value['name'] == pluginName,
-        orElse: () => {},
-      )['defaultSettings'];
+      final settings =
+          _pluginsCacheData.firstWhere(
+            (value) => value['name'] == pluginName,
+            orElse: () => {},
+          )['defaultSettings'];
+      return settings;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
+  static dynamic setUserSettings(String pluginName, dynamic settings) {
+    try {
+      _pluginsCacheData
+          .firstWhere(
+            (value) => value['name'] == pluginName,
+            orElse: () => {},
+          )['userSettings']
+          .addAll(settings);
+      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
+  static void updateUserSetting(
+    String pluginName,
+    String key,
+    dynamic setting,
+  ) {
+    //TODO fix updating settings
+    try {
+      final settings = getUserSettings(pluginName);
+      settings[key] = setting;
+      setUserSettings(pluginName, settings);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -870,7 +920,7 @@ class PluginsManager {
       );
       final userSettings = getUserSettings(pluginName);
       if (userSettings != null) (userSettings as Map).addAll(settings);
-      addOrUpdateData('settings', 'pluginsData', pluginsData);
+      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -893,7 +943,7 @@ class PluginsManager {
         (userSettings as Map).clear();
         userSettings.addAll(settings);
       }
-      addOrUpdateData('settings', 'pluginsData', pluginsData);
+      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -919,12 +969,17 @@ class PluginsManager {
       if (!_plugins.map((e) => e['name']).contains(pluginName)) return null;
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
-      final (result, _) = _executeMethod(
+      final (result, runtime) = _executeMethod(
         pluginName: pluginName,
         methodName: methodCall,
       );
-      final data = tryDecode(result?.stringResult);
-      return data ?? result?.stringResult;
+      final data =
+          result?.rawResult is Map
+              ? result?.rawResult
+              : tryDecode(result?.stringResult);
+      runtime?.dispose();
+      return data ??
+          (result?.stringResult == 'null' ? null : result?.stringResult);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -963,7 +1018,9 @@ class PluginsManager {
       jsRuntime.executePendingJob();
       final result = await jsRuntime.handlePromise(promise, timeout: timeout);
       final data = tryDecode(result.stringResult);
-      return data ?? result.stringResult;
+      jsRuntime.dispose();
+      return data ??
+          (result.stringResult == 'null' ? null : result.stringResult);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1036,7 +1093,7 @@ class PluginsManager {
           }
         }
         if (result is String) {
-          showToast('${plugin['name']}: $result');
+          showToast('${plugin['name']} - $methodName: $result');
           continue;
         }
         if (result == null) continue;
