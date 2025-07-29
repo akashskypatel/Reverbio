@@ -198,8 +198,7 @@ List<Map<String, dynamic>> safeConvert(dynamic input) {
 
 bool isLargeScreen({BuildContext? context}) {
   context = context ?? NavigationManager().context;
-  //return MediaQuery.of(context).size.width > 480;
-  return MediaQuery.of(context).size.height < MediaQuery.of(context).size.width;
+  return MediaQuery.of(context).size.height < MediaQuery.of(context).size.width || MediaQuery.of(context).size.width > 540;
 }
 
 List<T> pickRandomItems<T>(List<T> items, int n, {int? seed}) {
