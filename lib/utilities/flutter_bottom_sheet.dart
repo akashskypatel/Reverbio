@@ -34,7 +34,7 @@ void showCustomBottomSheet(
     (ctx) => TapRegion(
       onTapOutside: (event) {
         if (canCloseOnTapOutside == null || canCloseOnTapOutside.value)
-          GoRouter.of(ctx).pop(ctx);
+          GoRouter.of(ctx).pop();
       },
       child: Material(
         elevation: 4,
