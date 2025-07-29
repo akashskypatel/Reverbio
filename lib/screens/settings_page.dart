@@ -755,40 +755,52 @@ class _SettingsPageState extends State<SettingsPage> {
             final initSettings = jsonDecode(
               jsonEncode(PM.getUserSettings(pluginName)),
             );
-            return StatefulBuilder(
-              builder: (context, setState) {
-                return AlertDialog(
-                  contentPadding: commonBarContentPadding,
-                  title: Text(pluginName),
-                  content: SizedBox(
-                    width: MediaQuery.of(context).size.width,
-                    child: PM.getPluginSettingsWidgets(pluginName, context),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        PM.restSettings(pluginName);
-                        setState(() {});
-                      },
-                      child: Text(context.l10n!.defaults.toUpperCase()),
+            return ScaffoldMessenger(
+              child: Builder(
+                builder:
+                    (context) => Scaffold(
+                      backgroundColor: Colors.transparent,
+                      body: StatefulBuilder(
+                        builder: (context, setState) {
+                          return AlertDialog(
+                            contentPadding: commonBarContentPadding,
+                            title: Text(pluginName),
+                            content: SizedBox(
+                              width: MediaQuery.of(context).size.width,
+                              child: PM.getPluginSettingsWidgets(
+                                pluginName,
+                                context,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  PM.restSettings(pluginName);
+                                  if (context.mounted) setState(() {});
+                                },
+                                child: Text(
+                                  context.l10n!.defaults.toUpperCase(),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  PM.setUserSettings(pluginName, initSettings);
+                                  GoRouter.of(context).pop();
+                                },
+                                child: Text(context.l10n!.cancel.toUpperCase()),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  GoRouter.of(context).pop();
+                                },
+                                child: Text(context.l10n!.save.toUpperCase()),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        PM.setUserSettings(pluginName, initSettings);
-                        GoRouter.of(context).pop();
-                      },
-                      child: Text(context.l10n!.cancel.toUpperCase()),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        //PM.saveSettings(pluginName);
-                        GoRouter.of(context).pop();
-                      },
-                      child: Text(context.l10n!.save.toUpperCase()),
-                    ),
-                  ],
-                );
-              },
+              ),
             );
           } catch (e, stackTrace) {
             logger.log(

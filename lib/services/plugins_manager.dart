@@ -568,15 +568,18 @@ class PluginsManager {
     return {};
   }
 
-  static void showPluginMethodResult({
+  static void showPluginMethodResult(
+    BuildContext context, {
     required String pluginName,
     dynamic result,
     String? message,
   }) {
     try {
-      final context = NavigationManager().context;
       if (result == null) {
-        showToast('$pluginName: $message ${context.l10n!.failed}.');
+        showToast(
+          '$pluginName: $message ${context.l10n!.failed}.',
+          context: context,
+        );
         return;
       }
       final text =
@@ -587,7 +590,7 @@ class PluginsManager {
               : result['message'] == null
               ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
               : '$pluginName: ${result['message']}';
-      showToast(text);
+      showToast(text, context: context);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -704,7 +707,11 @@ class PluginsManager {
                   flex: 3,
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    child: WF.getAllSettingsWidgets(pluginName, widgets),
+                    child: WF.getAllSettingsWidgets(
+                      pluginName,
+                      widgets,
+                      context,
+                    ),
                   ),
                 ),
                 SectionHeader(title: context.l10n!.backgroundJobs),

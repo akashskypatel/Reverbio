@@ -137,7 +137,7 @@ class WidgetFactory {
               ])
               : methodData?['methodName'],
     );
-    showToast('$pluginName - $label added to background queue.');
+    showToast('$pluginName - $label added to background queue.', context: context);
     if (context.mounted)
       if (setState != null)
         setState(() {
@@ -183,11 +183,11 @@ class WidgetFactory {
     );
     if (triggerSave) PM.updateUserSetting(pluginName, id, newValue.toString());
     PM.showPluginMethodResult(
+      context,
       pluginName: pluginName,
       message: '${methodData?['methodName']}: $id',
       result: result,
     );
-    showToast('$pluginName - $label added to background queue.');
     if (context.mounted)
       if (setState != null)
         setState(() {
@@ -233,6 +233,7 @@ class WidgetFactory {
     );
     if (triggerSave) PM.updateUserSetting(pluginName, id, newValue.toString());
     PM.showPluginMethodResult(
+      context,
       pluginName: pluginName,
       message: '${methodData?['methodName']}: $id',
       result: result,
@@ -1046,6 +1047,7 @@ class WidgetFactory {
   static Widget getAllSettingsWidgets(
     String pluginName,
     List<Map<String, dynamic>> widgets,
+    BuildContext context,
   ) {
     final radius = {
       0: commonCustomBarRadiusFirst,
@@ -1067,7 +1069,7 @@ class WidgetFactory {
       padding: commonListViewBottomPadding,
       itemCount: widgets.length,
       itemBuilder:
-          (context, index) => getWidget(
+          (_, index) => getWidget(
             pluginName,
             widgets[index],
             context,
