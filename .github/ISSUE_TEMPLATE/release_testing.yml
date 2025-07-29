@@ -291,9 +291,9 @@ body:
           required: false
         - label: Restart app and confirm only Offline Songs, Queue, and Settings pages show. (Home should be the same as Offline songs).
           required: false
-        - label: Connfirm offline songs are showed correctly in Offline Songs list.
+        - label: Confirm offline songs are showed correctly in Offline Songs list.
           required: false
-        - label: Connfirm offline songs play correctly.
+        - label: Confirm offline songs play correctly.
           required: false
         - label: Toggle offline mode to OFF on settings page and confirm the app does not close when cancelling the change.
           required: false
