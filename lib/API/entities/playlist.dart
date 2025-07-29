@@ -123,7 +123,7 @@ Future<String> addYTUserPlaylist(String input, BuildContext context) async {
         _playlist.videoCount == null) {
       return '${context.l10n!.invalidYouTubePlaylist}!';
     }
-    PM.triggerHook(_playlist, 'onPlaylistAdd');
+    PM.triggerHook(returnYTPlaylistLayout(_playlist), 'onPlaylistAdd');
     userPlaylists.value = [...userPlaylists.value, playlistId];
     addOrUpdateData('user', 'playlists', userPlaylists.value);
     return '${context.l10n!.addedSuccess}!';
