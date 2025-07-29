@@ -89,6 +89,42 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       icon: "cloud_sync",
     },
     {
+      id: "icon_button",
+      label: "Example Icon Button",
+      type: "IconButton",
+      context: "settings",
+      onPressed: {
+        methodName: "exampleFunction",
+        isAsync: false,
+        triggerSave: false
+      },
+      icon: "calendar",
+    },
+    {
+      id: "text_button_async",
+      label: "Example Button Http",
+      type: "TextButton",
+      context: "settings",
+      onPressed: {
+        methodName: "exampleHttpGet",
+        isAsync: true,
+        triggerSave: false
+      },
+      icon: "cloud_sync",
+    },
+    {
+      id: "text_button_background",
+      label: "Example Button Background",
+      type: "TextButton",
+      context: "settings",
+      onPressed: {
+        methodName: "exampleHttpGet",
+        isBackground: true,
+        triggerSave: false
+      },
+      icon: "cloud_sync",
+    },
+    {
       id: "song_bar_dropdown",
       type: "SongBarDropDown",
       context: "song_bar",
@@ -326,5 +362,18 @@ function exampleFunction(data) {
 async function exampleFunctionAsync(data) {
   await delay(1);
   return print(data);
+}
+
+async function exampleHttpGet() {
+  const response = await fetch("https://httpbin.org/get");
+  const data = await response.text();
+  print(data);
+}
+
+async function exampleHttpGet() {
+  await delay(2000);
+  const response = await fetch("https://httpbin.org/get");
+  const data = await response.text();
+  print(data);
 }
 //#endregion
