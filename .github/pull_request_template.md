@@ -84,7 +84,7 @@ Complete or verify all features on Liked Songs Page.
 ## Liked Artists page
 
 Complete or verify all features on Liked Artists Page.
-
+ 
 - [ ] Confirm liked Artists show in the list.
 - [ ] Confirm genres for liked artists show in the list.
 - [ ] Confirm searching for genre filters genre list.
@@ -130,9 +130,9 @@ Complete or verify all features on Mini-player.
 - [ ] Confirm song playback slider works.
 - [ ] Confirm song playback controls work:- play, pause, stop, next, previous.
 - [ ] Confirm tapping on like button likes the song.
-- [ ] Confirm closing mini-player works.
 - [ ] Confirm tapping on mini-player artist name open artist page.
 - [ ] Confirm tapping on mini-player blank space or song name opens Now Playing page.
+- [ ] Confirm closing mini-player works.
 
 ## Now Playing Page
 
@@ -157,6 +157,7 @@ Complete or verify all features on Settings Page.
 - [ ] Confirm Pure black theme changes work.
 - [ ] Confirm Predictive Black changes work.
 - [ ] Confirm Offline Mode changes work.
+- [ ] Confirm enabling plugins works.
 - [ ] Confirm Skip Sponsor Segment changes work.
 - [ ] Confirm Skip non-music segment changes work.
 - [ ] Confirm prepare next song works.
@@ -191,7 +192,7 @@ Complete or verify all features for Plugins
 - [ ] Verify plugins can be enables successfully
 - [ ] Verify plugin bottom sheet opens when plugins are enabled
 - [ ] Verify a plugin can be added (use template plugin under /app_plugins/src/template.js)
-- [ ] Verify plugin can be reloaded individually and in batch
+- [ ] Verify plugin can be reloaded individually and in batch. (change plugin version in template plugin to check)
 - [ ] Verify plugin can be deleted
 - [ ] Verify plugin settings page opens when tapping on individual plugin under plugin list
 - [ ] Verify all plugin settings widgets load correctly with default values as defined in template.js manifest
