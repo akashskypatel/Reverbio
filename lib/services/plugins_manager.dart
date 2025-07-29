@@ -101,6 +101,12 @@ class PluginsManager {
           settings['source'] ?? plugin['source'] ?? plugin['originalSource'];
       if (source != null) {
         if (isFilePath(source)) {
+          if (Platform.isAndroid || Platform.isIOS) {
+            showToast(
+              'Cannot reload Plugin from local file source on Mobile. Delete the plugin ${plugin['name']} and re-add it to update it.',
+            );
+            return false;
+          }
           if (doesFileExist(source)) {
             pluginData = await getLocalPlugin(path: source);
           }
@@ -419,18 +425,17 @@ class PluginsManager {
   static Future<Map> getLocalPlugin({String? path}) async {
     try {
       String jsContent = '';
-      String? filePath;
-      filePath =
-          path ??
-          (await FilePicker.platform.pickFiles(
-            type: FileType.custom,
-            allowedExtensions: ['js'],
-          ))?.files.single.path;
-      if (filePath != null) {
-        jsContent = await File(filePath).readAsString();
-        return getPluginData(jsContent, filePath);
+      if (path == null || path.isEmpty) {
+        path =
+            (await FilePicker.platform.pickFiles(
+              type: FileType.custom,
+              allowedExtensions: ['js'],
+            ))?.files.single.path;
+        if (path == null || path.isEmpty) return {};
       }
-      return {};
+      jsContent = await File(path).readAsString();
+      await FilePicker.platform.clearTemporaryFiles();
+      return getPluginData(jsContent, path);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
