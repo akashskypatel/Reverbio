@@ -1,0 +1,332 @@
+name: Release Testing Tasklist
+description: Testing checklist before new release
+title: '[Release] vX.X.X <platform> Testing Checklist'
+labels: ["release"]
+assignees:
+  - akashskypatel
+
+body:
+  - type: checkboxes
+    id: application
+    attributes:
+      label: Application
+      description: Make sure the application launches without errors.
+      options:
+        - label: Make sure the application launches without errors.
+          required: false
+        - label: Verify cache data is created in application directory.
+          required: false
+
+  - type: checkboxes
+    id: homepage
+    attributes:
+      label: Home page
+      description: Complete or verify all features on Home Page.
+      options:
+        - label: Suggested Playlists loads with Image and Labels successfully.
+          required: false
+        - label: Suggested Artists loads with Image and Labels successfully.
+          required: false
+        - label: Recommended for you loads with Image and Labels successfully.
+          required: false
+        - label: Refresh Home Page completes successfully.
+          required: false
+        - label: Liking artist, playlist, and song completes successfully.
+          required: false
+        - label: Recommended for you toolbox opens and closes successfully.
+          required: false
+        - label: Recommended for you songs can be played successfully (if stream found).
+          required: false
+        - label: If song stream found, can be opened in youtube successfully.
+          required: false
+        - label: Recommended for you songs can be queued, played, shuffled, and sorted successfully.
+          required: false
+        - label: A Recommended for you Song can be liked, added to playlist, added to queue, and added to offline successfully.
+          required: false
+        - label: A Recommended for you Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
+          required: false
+        - label: Double tapping a song likes/dislikes a song.
+          required: false
+
+  - type: checkboxes
+    id: searchpage
+    attributes:
+      label: Search page
+      description: Complete or verify all features on Search Page.
+      options:
+        - label: Typing in search bar is successful and shows suggestions successfully.
+          required: false
+        - label: Submitting search query shows search results successfully.
+          required: false
+        - label: Clicking on search suggestions shows search results successfully.
+          required: false
+        - label: Search result pages can successfully be iterated up and down for all search entities.
+          required: false
+        - label: Search result entities can be liked/disliked successfully.
+          required: false
+        - label: Search result songs can be played successfully (if stream found).
+          required: false
+        - label: If song stream found, can be opened in youtube successfully.
+          required: false
+        - label: Song results can be queued, played, shuffled, and sorted successfully.
+          required: false
+        - label: A Song result can be liked, added to playlist, added to queue, and added to offline successfully.
+          required: false
+        - label: A Song result can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
+          required: false
+        - label: Double tapping a song likes/dislikes a song.
+          required: false
+
+  - type: checkboxes
+    id: librarypage
+    attributes:
+      label: Library page
+      description: Complete or verify all features on Library Page.
+      options:
+        - label: Add a custom playlist using YouTube link.
+          required: false
+        - label: Add a local custom playlist.
+          required: false
+        - label: Confirm liked playlist from home page shows under liked playlists.
+          required: false
+        - label: Search for playlist in library and clear searched filter.
+          required: false
+        - label: Remove liked playlist.
+          required: false
+        - label: Remove added playlist.
+          required: false
+        - label: Remove local playlist.
+          required: false
+        - label: Navigate to each library page- Recently Played, Liked Songs, Liked Artists, Liked Albums, and Offline Songs.
+          required: false
+
+  - type: checkboxes
+    id: recentlyplayed
+    attributes:
+      label: Recently Played page
+      description: Complete or verify all features on Recently Played Page.
+      options:
+        - label: Confirm recently played songs show in the list
+          required: false
+
+  - type: checkboxes
+    id: likedsongs
+    attributes:
+      label: Liked Songs page
+      description: Complete or verify all features on Liked Songs Page.
+      options:
+        - label: Confirm liked songs show in the list.
+          required: false
+        - label: Confirm the list can be rearranged.
+          required: false
+
+  - type: checkboxes
+    id: likedartists
+    attributes:
+      label: Liked Artists page
+      description: Complete or verify all features on Liked Artists Page.
+      options:
+        - label: Confirm liked Artists show in the list.
+          required: false
+        - label: Confirm genres for liked artists show in the list.
+          required: false
+        - label: Confirm searching for genre filters genre list.
+          required: false
+        - label: Confirm searching for artist filters artist list.
+          required: false
+        - label: Confirm clicking on genre filters artist list.
+          required: false
+        - label: Confirm clearing filter clears both genres and artist filters.
+          required: false
+        - label: Confirm genre list can be sorted.
+          required: false
+
+  - type: checkboxes
+    id: likedalbums
+    attributes:
+      label: Liked Albums page
+      description: Complete or verify all features on Liked Albums Page.
+      options:
+        - label: Confirm liked Albums show in the list.
+          required: false
+        - label: Confirm genres for liked albums show in the list.
+          required: false
+        - label: Confirm searching for genre filters genre list.
+          required: false
+        - label: Confirm searching for albums filters albums list.
+          required: false
+        - label: Confirm clicking on genre filters albums list.
+          required: false
+        - label: Confirm clearing filter clears both genres and albums filters.
+          required: false
+        - label: Confirm genre list can be sorted.
+          required: false
+
+  - type: checkboxes
+    id: offlinesongs
+    attributes:
+      label: Offline Songs page
+      description: Complete or verify all features on Offline Songs Page.
+      options:
+        - label: Confirm offline songs show in the list.
+          required: false
+
+  - type: checkboxes
+    id: queuepage
+    attributes:
+      label: Song Queue page
+      description: Complete or verify all features on Song Queue Page.
+      options:
+        - label: Confirm queued songs show in the list.
+          required: false
+        - label: Confirm queued songs can be added to existing playlist.
+          required: false
+        - label: Confirm queued songs can be saved as new playlist.
+          required: false
+        - label: Confirm queued songs can be rearranged by dragging and dropping.
+          required: false
+        - label: Confirm queued songs can be sorted, shuffled, and played.
+          required: false
+        - label: Confirm queued songs can be cleared.
+          required: false
+
+  - type: checkboxes
+    id: miniplayer
+    attributes:
+      label: Mini-player
+      description: Complete or verify all features on Mini-player.
+      options:
+        - label: Confirm volume changes work.
+          required: false
+        - label: Confirm song playback slider works.
+          required: false
+        - label: Confirm song playback controls work:- play, pause, stop, next, previous.
+          required: false
+        - label: Confirm tapping on like button likes the song.
+          required: false
+        - label: Confirm closing mini-player works.
+          required: false
+        - label: Confirm tapping on mini-player artist name open artist page.
+          required: false
+        - label: Confirm tapping on mini-player blank space or song name opens Now Playing page.
+          required: false
+
+  - type: checkboxes
+    id: nowplaying
+    attributes:
+      label: Now Playing Page
+      description: Complete or verify all features on Now Playing Page.
+      options:
+        - label: Confirm now playing page shows artwork, controls, and queue (if on large screen mode).
+          required: false
+        - label: Confirm tapping on artwork shows lyrics (if available for song).
+          required: false
+        - label: Confirm tapping on artist name opens artist page.
+          required: false
+        - label: Confirm song controls work.
+          required: false
+        - label: Confirm tapping on like button likes the song.
+          required: false
+
+  - type: checkboxes
+    id: settingspage
+    attributes:
+      label: Settings Page
+      description: Complete or verify all features on Settings Page.
+      options:
+        - label: Confirm Accent Color changes work.
+          required: false
+        - label: Confirm Theme Mode changes work.
+          required: false
+        - label: Confirm Client changes work.
+          required: false
+        - label: Confirm Language changes work.
+          required: false
+        - label: Confirm Audio Quality changes work.
+          required: false
+        - label: Confirm Dynamic Accent Color changes work.
+          required: false
+        - label: Confirm Pure black theme changes work.
+          required: false
+        - label: Confirm Predictive Black changes work.
+          required: false
+        - label: Confirm Offline Mode changes work.
+          required: false
+        - label: Confirm Skip Sponsor Segment changes work.
+          required: false
+        - label: Confirm Skip non-music segment changes work.
+          required: false
+        - label: Confirm prepare next song works.
+          required: false
+        - label: Confirm proxy servers works.
+          required: false
+        - label: Confirm Clear Cache works.
+          required: false
+        - label: Confirm Clear Search History works.
+          required: false
+        - label: Confirm Clear Recently Played works.
+          required: false
+        - label: Confirm Backup user data works.
+          required: false
+        - label: Confirm Restore user data works.
+          required: false
+        - label: Confirm Sponsor the project works.
+          required: false
+        - label: Confirm Licenses works.
+          required: false
+        - label: Confirm Copy Log works.
+          required: false
+        - label: Confirm About works.
+          required: false
+
+  - type: checkboxes
+    id: offlinemode
+    attributes:
+      label: Offline Mode
+      description: Complete or verify all features in Offline Mode Works.
+      options:
+        - label: Toggle offline mode to ON on settings page and confirm the app does not close when cancelling the change.
+          required: false
+        - label: Confirm app closes when confirming offline mode ON.
+          required: false
+        - label: Restart app and confirm only Offline Songs, Queue, and Settings pages show. (Home should be the same as Offline songs).
+          required: false
+        - label: Connfirm offline songs are showed correctly in Offline Songs list.
+          required: false
+        - label: Connfirm offline songs play correctly.
+          required: false
+        - label: Toggle offline mode to OFF on settings page and confirm the app does not close when cancelling the change.
+          required: false
+        - label: Confirm app closes when confirming offline mode OFF.
+          required: false
+        - label: Restart app and confirm it resumes normal Online mode.
+          required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android
+        - Windows
+    validations:
+      required: true
+
+  - type: dropdown
+    id: testspassed
+    attributes:
+      label: Confirm whether or not all tests passed
+      options:
+        - Passed
+        - Not passed
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-information
+    attributes:
+      label: Additional Information
+      description: Add any additional information or context that may be helpful for any tests that failed. Tip - You can attach images or log files by clicking this area to highlight it and then dragging files in.
+    validations:
+      required: false
+  
