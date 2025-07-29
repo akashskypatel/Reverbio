@@ -81,11 +81,7 @@ class CustomBar extends StatelessWidget {
                         if (leading != null)
                           ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth: max(
-                                constraints.maxWidth -
-                                    commonBarContentPadding.horizontal,
-                                0,
-                              ),
+                              maxWidth: max(constraints.maxWidth - 1, 0),
                             ),
                             child: leading,
                           ),
@@ -96,11 +92,7 @@ class CustomBar extends StatelessWidget {
                 builder:
                     (context, constraints) => ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxWidth: max(
-                          (constraints.maxWidth * 0.25) -
-                              commonBarContentPadding.horizontal,
-                          0,
-                        ),
+                        maxWidth: max((constraints.maxWidth * 0.25) - 1, 0),
                       ),
                       child:
                           tileName != null
@@ -118,11 +110,7 @@ class CustomBar extends StatelessWidget {
                 builder:
                     (context, constraints) => ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxWidth: max(
-                          (constraints.maxWidth * 0.75) -
-                              commonBarContentPadding.horizontal * 2,
-                          0,
-                        ),
+                        maxWidth: max((constraints.maxWidth * 0.75) - 1, 0),
                       ),
                       child: trailing,
                     ),

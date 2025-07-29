@@ -361,11 +361,12 @@ class WidgetFactory {
   }) {
     final icon = _iconMap[iconName];
     final button = Align(
-      alignment: Alignment.centerLeft,
+      alignment: isLargeScreen() ? Alignment.centerLeft : Alignment.centerRight,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox.square(dimension: 40),
+          if (label != null && !isLargeScreen()) Expanded(child: Text(softWrap: true, label)),
+          if (isLargeScreen()) const SizedBox.square(dimension: 40),
           IconButton(
             tooltip: label,
             onPressed:
@@ -389,10 +390,14 @@ class WidgetFactory {
     );
     if (menuContext?.toLowerCase() == 'settings')
       return CustomBar(
-        tileName: label ?? '',
-        tileIcon: icon ?? FluentIcons.shifts_availability_24_filled,
+        tileName: isLargeScreen() ? label ?? '' : null,
+        tileIcon:
+            isLargeScreen()
+                ? icon ?? FluentIcons.shifts_availability_24_filled
+                : null,
         borderRadius: borderRadius,
-        trailing: button,
+        leading: !isLargeScreen() ? button : null,
+        trailing: isLargeScreen() ? button : null,
       );
     return button;
   }
@@ -455,7 +460,10 @@ class WidgetFactory {
                   _resetFieldButton(resetField, value != defaultValue),
                   Expanded(
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment:
+                          isLargeScreen()
+                              ? Alignment.centerLeft
+                              : Alignment.centerRight,
                       child: Switch(
                         thumbIcon: thumbIcon,
                         value: value,
@@ -560,68 +568,74 @@ class WidgetFactory {
               controller.text != defaultValue,
             ),
             Expanded(
-              child: TextField(
-                decoration:
-                    !isLargeScreen()
-                        ? InputDecoration(
-                          label: Text(label),
-                          labelStyle: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        )
-                        : const InputDecoration(),
-                focusNode: focusNode,
-                controller: controller,
-                onEditingComplete: () {
-                  _method(
-                    pluginName: pluginName,
-                    methodData: onEditingCompleteData,
-                    id: id,
-                    label: label,
-                    newValue: controller.text,
-                    context: context,
-                    setState: _setState,
-                    notifier: controller,
-                  );
-                  focusNode.unfocus();
-                },
-                onChanged:
-                    (newValue) => _method(
+              child: Align(
+                alignment:
+                    isLargeScreen()
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                child: TextField(
+                  decoration:
+                      !isLargeScreen()
+                          ? InputDecoration(
+                            label: Text(label),
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          )
+                          : const InputDecoration(),
+                  focusNode: focusNode,
+                  controller: controller,
+                  onEditingComplete: () {
+                    _method(
                       pluginName: pluginName,
-                      methodData: onChangedData,
+                      methodData: onEditingCompleteData,
                       id: id,
                       label: label,
                       newValue: controller.text,
                       context: context,
                       setState: _setState,
                       notifier: controller,
-                    ),
-                onTapOutside: (event) {
-                  _method(
-                    pluginName: pluginName,
-                    methodData: onTapOutsideData,
-                    id: id,
-                    label: label,
-                    newValue: controller.text,
-                    context: context,
-                    setState: _setState,
-                    notifier: controller,
-                  );
-                  focusNode.unfocus();
-                },
-                onSubmitted: (newValue) {
-                  _method(
-                    pluginName: pluginName,
-                    methodData: onSubmittedData,
-                    id: id,
-                    label: label,
-                    newValue: controller.text,
-                    context: context,
-                    setState: _setState,
-                    notifier: controller,
-                  );
-                  focusNode.unfocus();
-                },
+                    );
+                    focusNode.unfocus();
+                  },
+                  onChanged:
+                      (newValue) => _method(
+                        pluginName: pluginName,
+                        methodData: onChangedData,
+                        id: id,
+                        label: label,
+                        newValue: controller.text,
+                        context: context,
+                        setState: _setState,
+                        notifier: controller,
+                      ),
+                  onTapOutside: (event) {
+                    _method(
+                      pluginName: pluginName,
+                      methodData: onTapOutsideData,
+                      id: id,
+                      label: label,
+                      newValue: controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: controller,
+                    );
+                    focusNode.unfocus();
+                  },
+                  onSubmitted: (newValue) {
+                    _method(
+                      pluginName: pluginName,
+                      methodData: onSubmittedData,
+                      id: id,
+                      label: label,
+                      newValue: controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: controller,
+                    );
+                    focusNode.unfocus();
+                  },
+                ),
               ),
             ),
           ],
@@ -720,6 +734,7 @@ class WidgetFactory {
                   ),
                 ),
                 menuStyle: MenuStyle(
+                  alignment: Alignment.bottomCenter,
                   shape: WidgetStateProperty.all(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -811,30 +826,36 @@ class WidgetFactory {
     IconData? icon,
   }) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: isLargeScreen() ? Alignment.centerLeft : Alignment.centerRight,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox.square(dimension: 40),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-            ),
-            onPressed:
-                () => _method(
-                  pluginName: pluginName,
-                  methodData: methodData,
-                  id: label,
-                  label: label,
-                  context: context,
-                ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) Icon(icon),
-                const SizedBox(width: 7),
-                Text(label),
-              ],
+          if (isLargeScreen()) const SizedBox.square(dimension: 40),
+          Expanded(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
+              ),
+              onPressed:
+                  () => _method(
+                    pluginName: pluginName,
+                    methodData: methodData,
+                    id: label,
+                    label: label,
+                    context: context,
+                  ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null)
+                    Padding(
+                      padding: const EdgeInsetsGeometry.directional(end: 7),
+                      child: Icon(icon),
+                    ),
+                  Expanded(child: Text(softWrap: true, label)),
+                ],
+              ),
             ),
           ),
         ],
