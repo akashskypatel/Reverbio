@@ -33,7 +33,7 @@ typedef PM = PluginsManager;
 class WidgetFactory {
   WidgetFactory._();
 
-  static final Map<String, IconData> _iconMap = {
+  static const Map<String, IconData> _iconMap = {
     'access_time': FluentIcons.access_time_24_filled,
     'add': FluentIcons.add_24_filled,
     'alert': FluentIcons.alert_24_filled,
@@ -359,35 +359,27 @@ class WidgetFactory {
     Function? getDataFn,
     String? label,
   }) {
+    final isSettings = menuContext?.toLowerCase() == 'settings';
     final icon = _iconMap[iconName];
-    final button = Align(
-      alignment: isLargeScreen() ? Alignment.centerLeft : Alignment.centerRight,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (label != null && !isLargeScreen()) Expanded(child: Text(softWrap: true, label)),
-          if (isLargeScreen()) const SizedBox.square(dimension: 40),
-          IconButton(
-            tooltip: label,
-            onPressed:
-                () => _method(
-                  pluginName: pluginName,
-                  methodData: methodData,
-                  id: id,
-                  label: label ?? '',
-                  context: context,
-                  methodParamBuilder:
-                      () => PM.buildMethodCall(
-                        methodData?['methodName'],
-                        getDataFn != null ? [getDataFn()] : null,
-                      ),
+    final button = IconButton(
+      tooltip: label,
+      onPressed:
+          () => _method(
+            pluginName: pluginName,
+            methodData: methodData,
+            id: id,
+            label: label ?? '',
+            context: context,
+            methodParamBuilder:
+                () => PM.buildMethodCall(
+                  methodData?['methodName'],
+                  getDataFn != null ? [getDataFn()] : null,
                 ),
-            icon: Icon(icon, color: Theme.of(context).colorScheme.primary),
-            iconSize: size,
           ),
-        ],
-      ),
+      icon: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      iconSize: size,
     );
+
     if (menuContext?.toLowerCase() == 'settings')
       return CustomBar(
         tileName: isLargeScreen() ? label ?? '' : null,
@@ -396,8 +388,44 @@ class WidgetFactory {
                 ? icon ?? FluentIcons.shifts_availability_24_filled
                 : null,
         borderRadius: borderRadius,
-        leading: !isLargeScreen() ? button : null,
-        trailing: isLargeScreen() ? button : null,
+        leading:
+            !isLargeScreen()
+                ? Align(
+                  alignment:
+                      isLargeScreen()
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (label != null && !isLargeScreen() && isSettings)
+                        Expanded(child: Text(softWrap: true, label)),
+                      if (isLargeScreen() && isSettings)
+                        const SizedBox.square(dimension: 40),
+                      button,
+                    ],
+                  ),
+                )
+                : null,
+        trailing:
+            isLargeScreen()
+                ? Align(
+                  alignment:
+                      isLargeScreen()
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (label != null && !isLargeScreen() && isSettings)
+                        Expanded(child: Text(softWrap: true, label)),
+                      if (isLargeScreen() && isSettings)
+                        const SizedBox.square(dimension: 40),
+                      button,
+                    ],
+                  ),
+                )
+                : null,
       );
     return button;
   }
@@ -1000,6 +1028,21 @@ class WidgetFactory {
     }
   }
 
+  static const pluginWidgets = {
+    'TextInput': {'context': 'settings'},
+    'TextButton': {'context': 'settings'},
+    'Switch': {'context': 'settings'},
+    'DropDownMenu': {'context': 'settings'},
+    'IconButton': {'context': 'any'},
+    'SongBarDropDown': {'context': 'song_bar'},
+    'SongListHeader': {'context': 'song_list'},
+    'AlbumPageHeader': {'context': 'album_header'},
+    'ArtistPageHeader': {'context': 'artist_header'},
+    'AlbumsPageHeader': {'context': 'albums_header'},
+    'ArtistsPageHeader': {'context': 'artists_header'},
+    'PlaylistPageHeader': {'context': 'playlist_header'},
+  };
+
   static Widget getAllSettingsWidgets(
     String pluginName,
     List<Map<String, dynamic>> widgets,
@@ -1008,6 +1051,16 @@ class WidgetFactory {
       0: commonCustomBarRadiusFirst,
       widgets.length - 1: commonCustomBarRadiusLast,
     };
+
+    widgets =
+        widgets
+            .where(
+              (e) => [
+                'settings',
+                'any',
+              ].contains(pluginWidgets[e['type']]?['context']),
+            )
+            .toList();
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
