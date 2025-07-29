@@ -187,5 +187,9 @@
   "repeat": "Repetir",
   "youtubeInaccessible": "Error 403 Prohibido al intentar reproducir la transmisión de YouTube. YouTube puede haber bloqueado temporalmente tu dirección IP. Intenta cambiar de red o vuelve a intentarlo más tarde.",
   "prepareNextSong": "Preparar automáticamente la siguiente canción para una reproducción más rápida",
-  "useProxies": "Usar servidores proxy (puede ayudar con problemas de acceso a YouTube)"
+  "useProxies": "Usar servidores proxy (puede ayudar con problemas de acceso a YouTube)",
+  "currentVersion": "Versión actual",
+  "latestVersion": "Última versión",
+  "latestVersionUsed": "Estás usando la última versión",
+  "errorLatestVersion": "Error al obtener la última versión de la aplicación"
 }

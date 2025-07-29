@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *     https://ko-fi.com/akashskypatel
 */
 
@@ -24,21 +24,26 @@ var self = globalThis;
 //#region MANIFEST
 // ====== Dependency Manifest ======
 const __PLUGIN_DEPENDENCY_MANIFEST__ = {
-  name: "RealDebridClient",
+  name: "TemplatePlugin",
   version: "1.0.0",
   //Only UMD (Universal Module Definition) ES2023 JavaScript dependencies are compatible
   dependencies: [
-    {
-      name: "ExampleDependency",
-      url: "https://Example.com/ExampleDependency.js",
-      text_input: "",
-      drop_down: "",
-      switch: true,
-      
-    },
+    /*
+      {
+        name: "ExampleDependency",
+        url: "https://Example.com/ExampleDependency.js",
+        text_input: "",
+        drop_down: "",
+        switch: true,
+        
+      },
+    */
   ],
-  settings: {    
-    source: "C:\\reverbio_plugin.js", //TODO add automatic plugin update from source
+  settings: {
+    //source: "C:\\reverbio_plugin.js", //local or remote source of the plugin where the file will be loaded from by Reverbio when checking for updates
+    text_input: "default value", //default value declaration: key should be same as id of referenced widget
+    drop_down: "Two", //default value declaration: key should be same as id of referenced widget
+    switch: true, //default value declaration: key should be same as id of referenced widget
   },
   widgets: [
     {
@@ -46,8 +51,16 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       label: "Example Text Input",
       type: "TextInput",
       context: "settings",
-      onTapOutside: { methodName: "updateSettings", isAsync: false },
-      onSubmitted: { methodName: "updateSettings", isAsync: false },
+      onTapOutside: {
+        methodName: "updateSettings",
+        isAsync: false,
+        triggerSave: true
+      },
+      onSubmitted: {
+        methodName: "updateSettings",
+        isAsync: false,
+        triggerSave: true
+      },
       icon: "key",
     },
     {
@@ -56,7 +69,11 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       type: "DropDownMenu",
       context: "settings",
       options: ["One", "Two", "Three"],
-      onSelected: { methodName: "updateSettings", isAsync: false },
+      onSelected: {
+        methodName: "updateSettings",
+        isAsync: false,
+        triggerSave: true
+      },
       icon: "headphones_wave",
     },
     {
@@ -64,7 +81,47 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       label: "Example Switch",
       type: "Switch",
       context: "settings",
-      onChanged: { methodName: "updateSettings", isAsync: false },
+      onChanged: {
+        methodName: "updateSettings",
+        isAsync: false,
+        triggerSave: true
+      },
+      icon: "cloud_sync",
+    },
+    {
+      id: "icon_button",
+      label: "Example Icon Button",
+      type: "IconButton",
+      context: "settings",
+      onPressed: {
+        methodName: "exampleFunction",
+        isAsync: false,
+        triggerSave: false
+      },
+      icon: "calendar",
+    },
+    {
+      id: "text_button_async",
+      label: "Example Button Http",
+      type: "TextButton",
+      context: "settings",
+      onPressed: {
+        methodName: "exampleHttpGet",
+        isAsync: true,
+        triggerSave: false
+      },
+      icon: "cloud_sync",
+    },
+    {
+      id: "text_button_background",
+      label: "Example Button Background",
+      type: "TextButton",
+      context: "settings",
+      onPressed: {
+        methodName: "exampleHttpGet",
+        isBackground: true,
+        triggerSave: false
+      },
       icon: "cloud_sync",
     },
     {
@@ -72,14 +129,18 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       type: "SongBarDropDown",
       context: "song_bar",
       label: "Example Song Bar Dropdown Menu Button",
-      onTap: { methodName: "exampleFunction", isAsync: true, isBackground: true },
+      onTap: {
+        methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: true
+      },
       icon: "cloud_up",
     },
     {
       id: "song_list_header",
       type: "SongListHeader",
       context: "song_list",
-      label: "Exmaple Song List Header Button",
+      label: "Example Song List Header Button",
       onPressed: {
         methodName: "exampleFunction",
         isAsync: true,
@@ -112,6 +173,30 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
       icon: "cloud_up",
     },
     {
+      id: "albums_header",
+      type: "AlbumsPageHeader",
+      context: "albums_header",
+      label: "Example Albums Header Button",
+      onPressed: {
+        methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: true,
+      },
+      icon: "cloud_up",
+    },
+    {
+      id: "artists_header",
+      type: "ArtistsPageHeader",
+      context: "artists_header",
+      label: "Example Artists Header Button",
+      onPressed: {
+        methodName: "exampleFunction",
+        isAsync: true,
+        isBackground: true,
+      },
+      icon: "cloud_up",
+    },
+    {
       id: "playlist_header",
       type: "PlaylistPageHeader",
       context: "playlist_header",
@@ -125,20 +210,83 @@ const __PLUGIN_DEPENDENCY_MANIFEST__ = {
     },
   ],
   hooks: {
-    onEntityLiked: {
-      id: "cache_liked",
+    onQueueSong: {
+      //This hook is always executed asynchronously in the main thread
+      id: "queue_song",
       onTrigger: {
-        methodName: "exampleFunction",
-        //changing these values will not make a difference. This hook is always executed asynchronously in the background
+        methodName: "exampleFunctionAsync",
+        isAsync: true,
+        isBackground: false,
+      },
+    },
+    onEntityLiked: {
+      //This hook is always executed asynchronously in the background
+      id: "entity_liked",
+      onTrigger: {
+        methodName: "exampleFunctionAsync",
+        isAsync: true,
+        isBackground: true,
+      },
+    },
+    onPlaylistPlay: {
+      //This hook is always executed asynchronously in the background
+      id: "playlist_play",
+      onTrigger: {
+        methodName: "exampleFunctionAsync",
+        isAsync: true,
+        isBackground: true,
+      },
+    },
+    onPlaylistSongAdd: {
+      //This hook is always executed asynchronously in the background
+      id: "playlist_song_add",
+      onTrigger: {
+        methodName: "exampleFunctionAsync",
+        isAsync: true,
+        isBackground: true,
+      },
+    },
+    onPlaylistAdd: {
+      //This hook is always executed asynchronously in the background
+      id: "playlist_add",
+      onTrigger: {
+        methodName: "exampleFunctionAsync",
         isAsync: true,
         isBackground: true,
       },
     },
     onGetSongUrl: {
+      //This hook is always executed asynchronously in the main thread
       id: "get_song_url",
       onTrigger: {
-        methodName: "exampleFunction",
-        //changing these values will not make a difference. This hook is always executed asynchronously in the foreground
+        methodName: "exampleFunctionAsync",
+        isAsync: true,
+        isBackground: false,
+      },
+    },
+    onGetArtistInfo: {
+      //This hook is always executed asynchronously in the main thread
+      id: "get_artist_info",
+      onTrigger: {
+        methodName: "exampleFunctionAsync",
+        isAsync: true,
+        isBackground: false,
+      },
+    },
+    onGetSongInfo: {
+      //This hook is always executed asynchronously in the main thread
+      id: "get_song_info",
+      onTrigger: {
+        methodName: "exampleFunctionAsync",
+        isAsync: true,
+        isBackground: false,
+      },
+    },
+    onGetAlbumInfo: {
+      //This hook is always executed asynchronously in the main thread
+      id: "get_album_info",
+      onTrigger: {
+        methodName: "exampleFunctionAsync",
         isAsync: true,
         isBackground: false,
       },
@@ -178,6 +326,7 @@ function loadSettings(defaults, user) {
   manifest["settings"] = {};
   updateSettings(defaults);
   updateSettings(user);
+  print(`Plugin ${pluginName()} (${pluginVersion()}) Loaded.`);
 }
 
 function print(message) {
@@ -186,7 +335,6 @@ function print(message) {
   );
 }
 
-print(`Plugin ${pluginName()} (${pluginVersion()}) Loaded.`);
 
 //#endregion
 
@@ -201,10 +349,31 @@ typeof globalThis !== 'undefined' ? globalThis : global || self, global.ExampleD
 
 ExampleDependency = global.ExampleDependency;
 
+function delay(delayInMs) {
+  return new Promise((resolve) => setTimeout(resolve, delayInMs));
+}
 
 //#region CustomFunctions
 //Define your custom functions here
-function exampleFunction() {
-    return 'Hello World!';
+function exampleFunction(data) {
+  return print(data);
+}
+
+async function exampleFunctionAsync(data) {
+  await delay(1);
+  return print(data);
+}
+
+async function exampleHttpGet() {
+  const response = await fetch("https://httpbin.org/get");
+  const data = await response.text();
+  print(data);
+}
+
+async function exampleHttpGet() {
+  await delay(2000);
+  const response = await fetch("https://httpbin.org/get");
+  const data = await response.text();
+  print(data);
 }
 //#endregion

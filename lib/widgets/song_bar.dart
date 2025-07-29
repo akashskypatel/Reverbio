@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -84,6 +84,7 @@ class SongBar extends StatefulWidget {
   ///Returns false if song cannot play
   Future<bool> queueSong({bool play = false}) async {
     try {
+      await PM.triggerHook(song, 'onQueueSong');
       _isLoadingNotifier.value = true;
       if (!isPrimed) unawaited(prepareSong());
       if (play) await _songFutureTracker.completer!.future;
@@ -358,87 +359,6 @@ class _SongBarState extends State<SongBar> {
     );
   }
 
-  /*
-  Widget _buildOfflineArtwork(String artworkPath, double size) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ClipRRect(
-        borderRadius: commonBarRadius,
-        child: Image.file(File(artworkPath), fit: BoxFit.cover),
-      ),
-    );
-  }
-
-  Widget _buildOnlineArtwork(
-    String lowResImageUrl,
-    double size,
-    bool isDurationAvailable,
-    Color primaryColor,
-  ) {
-    return Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        if (lowResImageUrl.isEmpty)
-          _buildNoArtworkCard(size, isDurationAvailable)
-        else
-          BaseCard(
-            icon: FluentIcons.music_note_2_24_filled,
-            size: size,
-            paddingValue: 0,
-            loadingWidget: const Spinner(),
-            imageUrl: lowResImageUrl,
-            imageOverlayMask: true,
-          ),
-        if (isDurationAvailable)
-          SizedBox(
-            width: size - 10,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '(${formatDuration(widget.song['duration'])})',
-                style: TextStyle(
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildNoArtworkCard(double size, bool isDurationAvailable) {
-    return Stack(
-      children: [
-        SizedBox(
-          width: size,
-          height: size,
-          child: BaseCard(
-            icon: FluentIcons.music_note_2_24_filled,
-            size: size,
-            paddingValue: 0,
-            loadingWidget: const Spinner(),
-            imageOverlayMask: true,
-          ),
-        ),
-        if (isDurationAvailable)
-          SizedBox(
-            width: size,
-            height: size,
-            child: ClipRRect(
-              borderRadius: commonBarRadius,
-              child: Container(
-                color: Colors.black.withValues(
-                  alpha: 0.8,
-                ), // Translucent overlay
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-*/
   void _showContextMenu(BuildContext context, TapDownDetails details) async {
     try {
       //TODO: fix positioning to account for navigation rail on large screen

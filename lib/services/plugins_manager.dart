@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_js/extensions/fetch.dart';
 import 'package:flutter_js/flutter_js.dart';
@@ -55,12 +56,13 @@ class PluginsManager {
   static final Map _futures = {};
   static final Map _activeJob = {};
   static final Map _completed = {};
-  static final Map<String, ValueNotifier<int>> _backgroundJobNotifiers = {};
+  static final Map<String, ValueNotifier<UniqueKey?>> _backgroundJobNotifiers =
+      {};
   static final Map<String, ValueNotifier<bool>> _isProcessingNotifiers = {};
 
   static Map<String, ValueNotifier<bool>> get isProcessing =>
       _isProcessingNotifiers;
-  static Map<String, ValueNotifier<int>> get backgroundJobNotifier =>
+  static Map<String, ValueNotifier<UniqueKey?>> get backgroundJobNotifier =>
       _backgroundJobNotifiers;
   static List<Map> get plugins => _plugins;
 
@@ -80,47 +82,42 @@ class PluginsManager {
 
   static Future<void> initialize() async {
     await reloadPlugins();
-    await syncPlugins();
   }
 
-  static Future<bool> syncPlugin(Map _plugin) async {
-    if (_isProcessingNotifiers[_plugin['name']]!.value) {
+  static Future<bool> syncPlugin(Map plugin) async {
+    if (_isProcessingNotifiers[plugin['name']]!.value) {
       final context = NavigationManager().context;
       showToast(
-        '${_plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
+        '${plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
       return false;
     }
     try {
-      _plugin = _plugins.firstWhere(
-        (value) => value['name'] == _plugin['name'],
-      );
-      final settings = getUserSettings(_plugin['name']);
-      _plugin['settings'] = settings;
-      String jsContent = '';
-      if (isFilePath(settings['source'])) {
-        if (doesFileExist(settings['source'])) {
-          jsContent = await File(settings['source']).readAsString();
+      plugin = _plugins.firstWhere((value) => value['name'] == plugin['name']);
+      final settings = getUserSettings(plugin['name']);
+      plugin['settings'] = settings;
+      Map pluginData = {};
+      final source =
+          settings['source'] ?? plugin['source'] ?? plugin['originalSource'];
+      if (source != null) {
+        if (isFilePath(source)) {
+          if (doesFileExist(source)) {
+            pluginData = await getLocalPlugin(path: source);
+          }
+        } else if (await checkUrl(source) < 400) {
+          pluginData = await getOnlinePlugin(source);
         }
-      } else if (await checkUrl(settings['source']) < 400) {
-        final uri = Uri.parse(settings['source']);
-        final response = await http.get(uri);
-        jsContent = response.body;
-      }
-      if (jsContent.isNotEmpty) {
-        _pluginsCacheData.removeWhere(
-          (value) => value['name'] == _plugin['name'],
-        );
-        final data = await getPluginData(jsContent);
-        final flutterJs = getJavascriptRuntime();
-        await flutterJs.enableFetch();
-        await flutterJs.enableHandlePromises();
-        final result = flutterJs.evaluate(data['script']);
-        if (!result.isError) {
-          _pluginsCacheData.add(data);
-          (_plugin['runtime'] as JavascriptRuntime).dispose();
-          _plugin['runtime'] = flutterJs;
-          return true;
+        if (pluginData.isNotEmpty) {
+          final flutterJs = getJavascriptRuntime();
+          await flutterJs.enableFetch();
+          await flutterJs.enableHandlePromises();
+          final result = flutterJs.evaluate(pluginData['script']);
+          if (!result.isError) {
+            flutterJs.dispose();
+            await addPlugin(pluginData);
+            addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+            return true;
+          }
         }
       }
       return false;
@@ -148,6 +145,25 @@ class PluginsManager {
     }
   }
 
+  static Future<void> addPlugin(Map plugin) async {
+    try {
+      removePlugin(plugin['name']);
+      _pluginsCacheData.add(plugin);
+      _plugins.add(plugin);
+      _isProcessingNotifiers[plugin['name']] = ValueNotifier(false);
+      _backgroundJobNotifiers[plugin['name']] = ValueNotifier(null);
+      _futures[plugin['name']] = [];
+      _completed[plugin['name']] = [];
+      _activeJob[plugin['name']] = null;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
   static Future<void> reloadPlugins() async {
     try {
       _plugins.clear();
@@ -156,17 +172,9 @@ class PluginsManager {
             .where((value) => value['name'] == _plugin['name'])
             .toList()
             .isEmpty) {
-          final flutterJs = getJavascriptRuntime()..evaluate(_plugin['script']);
-          _plugins.add({'name': _plugin['name'], 'runtime': flutterJs});
-          await flutterJs.enableFetch();
-          await flutterJs.enableHandlePromises();
-          _executeMethod(
-            methodName:
-                'loadSettings(${getDefaultSettings(_plugin['name'])},${getUserSettings(_plugin['name'])})',
-            runtime: flutterJs,
-          );
+          _plugins.add(_plugin);
           _isProcessingNotifiers[_plugin['name']] = ValueNotifier(false);
-          _backgroundJobNotifiers[_plugin['name']] = ValueNotifier(-1);
+          _backgroundJobNotifiers[_plugin['name']] = ValueNotifier(null);
           _futures[_plugin['name']] = [];
           _completed[_plugin['name']] = [];
           _activeJob[_plugin['name']] = null;
@@ -276,8 +284,13 @@ class PluginsManager {
       if (!_activeJob[pluginName]['cancel']) {
         _backgroundJobNotifiers[pluginName]!.value =
             _activeJob[pluginName]['id'];
-        final jsRuntime =
-            _activeJob[pluginName]['runtime'] as JavascriptRuntime;
+        final jsRuntime = getJsRuntime(pluginName);
+        if (jsRuntime == null)
+          throw Exception(
+            'There was an error executing background job for: $pluginName',
+          );
+        await jsRuntime.enableFetch();
+        await jsRuntime.enableHandlePromises();
         _activeJob[pluginName]['started'] = DateTime.now();
         _activeJob[pluginName]['status'] = 'running';
         JsEvalResult? asyncResult;
@@ -316,6 +329,7 @@ class PluginsManager {
             showToast('${context.l10n!.jobError}: ${asyncResult.stringResult}');
           }
         }
+        jsRuntime.dispose();
       } else {
         _backgroundJobNotifiers[pluginName]!.value =
             _activeJob[pluginName]['id'];
@@ -328,7 +342,7 @@ class PluginsManager {
         Map<String, dynamic>.from(_activeJob[pluginName]),
       );
       _activeJob[pluginName] = null;
-      _backgroundJobNotifiers[pluginName]!.value = -1;
+      _backgroundJobNotifiers[pluginName]!.value = null;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -337,6 +351,20 @@ class PluginsManager {
       );
     }
     return unawaited(_executeBackground(pluginName));
+  }
+
+  static void removeBackgroundJob(String pluginName, Map list, UniqueKey id) {
+    try {
+      list[pluginName].removeWhere(
+        (e) => e['id'] == id && e['status'] != 'running',
+      );
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   static void queueBackground({
@@ -352,16 +380,14 @@ class PluginsManager {
         orElse: () => {},
       );
       if (_plugin.isEmpty) return;
-      final jsRuntime = _plugin['runtime'] as JavascriptRuntime;
-      _backgroundJobNotifiers[pluginName]!.value =
-          _futures.length + _completed.length + 1;
+      final key = UniqueKey();
+      _backgroundJobNotifiers[pluginName]!.value = key;
       if (!_futures.containsKey(pluginName)) _futures[pluginName] = [];
       _futures[pluginName].add({
-        'id': _futures.length + _completed.length + 1,
+        'id': key,
         'code': buildMethodCall(methodName, args),
         'message': message ?? pluginName,
         'plugin': pluginName,
-        'runtime': jsRuntime,
         'priority': priority,
         'status': 'queued',
         'created': DateTime.now(),
@@ -371,11 +397,14 @@ class PluginsManager {
         'error': false,
         'result': null,
       });
-      _futures[pluginName].sort(
-        (a, b) =>
-            (int.tryParse(b['priority']) ?? 0) -
-            (int.tryParse(a['priority']) ?? 0),
-      );
+      _futures[pluginName].sort((a, b) {
+        try {
+          return ((b['priority'] as int?) ?? 0) -
+              ((a['priority'] as int?) ?? 0);
+        } catch (_) {
+          return 0;
+        }
+      });
       if (!_isProcessingNotifiers[pluginName]!.value)
         unawaited(_executeBackground(pluginName));
     } catch (e, stackTrace) {
@@ -387,16 +416,19 @@ class PluginsManager {
     }
   }
 
-  static Future<Map> getLocalPlugin() async {
+  static Future<Map> getLocalPlugin({String? path}) async {
     try {
       String jsContent = '';
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['js'],
-      );
-      if (result != null && result.files.single.path != null) {
-        jsContent = await File(result.files.single.path!).readAsString();
-        return getPluginData(jsContent);
+      String? filePath;
+      filePath =
+          path ??
+          (await FilePicker.platform.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: ['js'],
+          ))?.files.single.path;
+      if (filePath != null) {
+        jsContent = await File(filePath).readAsString();
+        return getPluginData(jsContent, filePath);
       }
       return {};
     } catch (e, stackTrace) {
@@ -413,7 +445,7 @@ class PluginsManager {
     try {
       final uri = Uri.parse(url);
       final response = await http.get(uri);
-      if (response.statusCode < 400) return getPluginData(response.body);
+      if (response.statusCode < 400) return getPluginData(response.body, url);
       return {};
     } catch (e, stackTrace) {
       logger.log(
@@ -433,10 +465,10 @@ class PluginsManager {
         if (!result.isError) {
           removePlugin(data['name']);
           _pluginsCacheData.add(data);
-          _plugins.add({'name': data['name'], 'runtime': flutterJs});
+          _plugins.add(data);
           pluginsDataNotifier.value = _pluginsCacheData.length;
           _isProcessingNotifiers[data['name']] = ValueNotifier(false);
-          _backgroundJobNotifiers[data['name']] = ValueNotifier(-1);
+          _backgroundJobNotifiers[data['name']] = ValueNotifier(null);
           _futures[data['name']] = [];
           _completed[data['name']] = [];
           _activeJob[data['name']] = null;
@@ -476,7 +508,7 @@ class PluginsManager {
 
   static void removePlugin(String pluginName) {
     try {
-      if (_isProcessingNotifiers[pluginName]!.value) {
+      if (_isProcessingNotifiers[pluginName]?.value ?? false) {
         final context = NavigationManager().context;
         showToast(
           '${context.l10n!.cannotRemovePlugin} ${context.l10n!.waitForJob}',
@@ -485,12 +517,7 @@ class PluginsManager {
       }
       _clearBackgroundJobData(pluginName);
       _pluginsCacheData.removeWhere((value) => value['name'] == pluginName);
-      _plugins.removeWhere((value) {
-        if (value['name'] == pluginName) {
-          (value['runtime'] as JavascriptRuntime).dispose();
-        }
-        return value['name'] == pluginName;
-      });
+      _plugins.removeWhere((value) => value['name'] == pluginName);
       pluginsDataNotifier.value = _pluginsCacheData.length;
     } catch (e, stackTrace) {
       logger.log(
@@ -501,7 +528,7 @@ class PluginsManager {
     }
   }
 
-  static Future<Map> getPluginData(String jsContent) async {
+  static Future<Map> getPluginData(String jsContent, String source) async {
     try {
       final script = await _loadValidateDependencies(jsContent);
       if (script.isNotEmpty) {
@@ -523,6 +550,8 @@ class PluginsManager {
             'version': version.stringResult,
             'script': script,
             'manifest': manifest,
+            'originalSource': source,
+            'source': manifest['settings']['source'] ?? source,
             'defaultSettings': manifest['settings'],
             'userSettings': manifest['settings'],
           };
@@ -539,25 +568,29 @@ class PluginsManager {
     return {};
   }
 
-  static void showPluginMethodResult({
+  static void showPluginMethodResult(
+    BuildContext context, {
     required String pluginName,
-    JsEvalResult? result,
+    dynamic result,
     String? message,
   }) {
     try {
-      final context = NavigationManager().context;
       if (result == null) {
-        showToast('$pluginName: $message ${context.l10n!.failed}.');
+        showToast(
+          '$pluginName: $message ${context.l10n!.failed}.',
+          context: context,
+        );
         return;
       }
-      final jsResult = tryDecode(result.stringResult);
       final text =
-          jsResult == null
-              ? '$pluginName: ${result.stringResult}'
-              : jsResult['message'] == null
+          result == null
+              ? '$pluginName: $result'
+              : result is String
+              ? result
+              : result['message'] == null
               ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
-              : '$pluginName: ${jsResult['message']}';
-      showToast(text);
+              : '$pluginName: ${result['message']}';
+      showToast(text, context: context);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -567,9 +600,9 @@ class PluginsManager {
     }
   }
 
-  static Future<bool> validatePlugin(String jsCode) async {
+  static Future<bool> validatePlugin(String jsCode, String source) async {
     try {
-      final data = await getPluginData(jsCode);
+      final data = await getPluginData(jsCode, source);
       return data.isNotEmpty;
     } catch (e, stackTrace) {
       logger.log(
@@ -674,16 +707,37 @@ class PluginsManager {
                   flex: 3,
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    child: WF.getAllSettingsWidgets(pluginName, widgets),
+                    child: WF.getAllSettingsWidgets(
+                      pluginName,
+                      widgets,
+                      context,
+                    ),
                   ),
                 ),
                 SectionHeader(title: context.l10n!.backgroundJobs),
-                Flexible(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: getPluginJobList(pluginName),
+                if (_isProcessingNotifiers[pluginName] != null &&
+                    _backgroundJobNotifiers[pluginName] != null)
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: ValueListenableBuilder(
+                        valueListenable: _isProcessingNotifiers[pluginName]!,
+                        builder: (context, value, __) {
+                          return ValueListenableBuilder(
+                            valueListenable:
+                                _backgroundJobNotifiers[pluginName]!,
+                            builder: (context, value, __) {
+                              return getPluginJobList(pluginName, context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  Card(
+                    child: ListTile(title: Text(context.l10n!.nothingInQueue)),
                   ),
-                ),
               ],
             ),
       );
@@ -697,69 +751,106 @@ class PluginsManager {
     }
   }
 
-  static Widget getPluginJobList(String pluginName) {
-    try {
-      final items = <Widget>[
-        if (_activeJob[pluginName] != null)
-          Card(
-            child: ListTile(
-              title: Text(
-                '${_activeJob[pluginName]!['message']} Priority: ${_activeJob[pluginName]!['priority']}',
-              ),
-              trailing: const SizedBox(
-                width: 24,
-                height: 24,
-                child: Spinner(),
-              ), //const Icon(Icons.bolt),
+  static List<Widget> _getJobList(
+    String pluginName,
+    BuildContext context,
+    void Function(void Function()) setState,
+  ) {
+    return <Widget>[
+      if (_activeJob[pluginName] != null)
+        Card(
+          child: ListTile(
+            title: Text(
+              '${_activeJob[pluginName]!['message']} Priority: ${_activeJob[pluginName]!['priority']}',
             ),
-          ),
-        ..._completed[pluginName].map((job) {
-          final result = tryDecode(job['result']) ?? {};
-          return Card(
-            child: ListTile(
-              title: Text(
-                '${job['message']} Priority: ${job['priority']}, ${result['message']}',
-              ),
-              trailing: const Icon(Icons.check),
-            ),
-          );
-        }),
-        ..._futures[pluginName].map(
-          (job) => Card(
-            child: ListTile(
-              title: Text('${job['message']} Priority: ${job['priority']}'),
-              trailing: const Icon(Icons.access_time),
+            trailing: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: commonBarContentPadding,
+                  child: SizedBox.square(dimension: 20, child: Spinner()),
+                ),
+                IconButton(
+                  icon: Icon(size: 24, FluentIcons.dismiss_24_regular),
+                  onPressed: null,
+                ),
+              ],
             ),
           ),
         ),
-      ];
-      return StatefulBuilder(
-        builder:
-            (context, setState) => ValueListenableBuilder(
-              valueListenable: _isProcessingNotifiers[pluginName]!,
-              builder:
-                  (context, value, __) => ValueListenableBuilder(
-                    valueListenable: _backgroundJobNotifiers[pluginName]!,
-                    builder:
-                        (context, value, __) => ListView(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: commonListViewBottmomPadding,
-                          children:
-                              items.isEmpty
-                                  ? [
-                                    Card(
-                                      child: ListTile(
-                                        title: Text(
-                                          context.l10n!.nothingInQueue,
-                                        ),
-                                      ),
-                                    ),
-                                  ]
-                                  : items,
-                        ),
-                  ),
+      ..._futures[pluginName].map(
+        (job) => Card(
+          child: ListTile(
+            title: Text('${job['message']} Priority: ${job['priority']}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: commonBarContentPadding,
+                  child: Icon(size: 24, FluentIcons.clock_24_regular),
+                ),
+                IconButton(
+                  icon: const Icon(size: 24, FluentIcons.dismiss_24_regular),
+                  onPressed: () {
+                    removeBackgroundJob(pluginName, _futures, job['id']);
+                    if (context.mounted) setState(() {});
+                  },
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+      ..._completed[pluginName].map((job) {
+        final result = tryDecode(job['result']) ?? {};
+        return Card(
+          child: ListTile(
+            title: Text(
+              '${job['message']} Priority: ${job['priority']}, ${result['message']}',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: commonBarContentPadding,
+                  child: Icon(size: 24, FluentIcons.checkmark_24_filled),
+                ),
+                IconButton(
+                  icon: const Icon(size: 24, FluentIcons.dismiss_24_regular),
+                  onPressed: () {
+                    removeBackgroundJob(pluginName, _completed, job['id']);
+                    if (context.mounted) setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    ];
+  }
+
+  static Widget getPluginJobList(String pluginName, BuildContext context) {
+    try {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final items = _getJobList(pluginName, context, setState);
+          return ListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: commonListViewBottomPadding,
+            children:
+                items.isEmpty
+                    ? [
+                      Card(
+                        child: ListTile(
+                          title: Text(context.l10n!.nothingInQueue),
+                        ),
+                      ),
+                    ]
+                    : items,
+          );
+        },
       );
     } catch (e, stackTrace) {
       logger.log(
@@ -778,7 +869,9 @@ class PluginsManager {
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['manifest']['widgets'];
-      return List<Map<String, dynamic>>.from(result);
+      final widgets =
+          (result as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      return widgets;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -796,7 +889,8 @@ class PluginsManager {
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['manifest']['hooks'];
-      return Map<String, dynamic>.from(result);
+      final hooks = Map<String, dynamic>.from(result);
+      return hooks;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -807,12 +901,25 @@ class PluginsManager {
     }
   }
 
-  static dynamic getUserSettings(String pluginName) {
+  static JavascriptRuntime? getJsRuntime(String pluginName) {
     try {
-      return _pluginsCacheData.firstWhere(
-        (value) => value['name'] == pluginName,
-        orElse: () => {},
-      )['userSettings'];
+      final jsRuntime = getJavascriptRuntime();
+      unawaited(jsRuntime.enableFetch());
+      unawaited(jsRuntime.enableHandlePromises());
+      final script =
+          _plugins.firstWhere((value) => value['name'] == pluginName)['script']
+              as String;
+      final result = jsRuntime.evaluate(script);
+      if (result.isError)
+        throw Exception(
+          'Could not create JavaScript Runtime for: $pluginName. There was an error in the script. ${result.stringResult}',
+        );
+      _executeMethod(
+        methodName:
+            'loadSettings(${getDefaultSettings(pluginName)},${getUserSettings(pluginName)})',
+        runtime: jsRuntime,
+      );
+      return jsRuntime;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -823,28 +930,69 @@ class PluginsManager {
     }
   }
 
-  static JavascriptRuntime getJsRuntime(String pluginName) {
+  static dynamic getUserSettings(String pluginName) {
     try {
-      return _plugins.firstWhere(
+      final settings =
+          _pluginsCacheData.firstWhere(
             (value) => value['name'] == pluginName,
-          )['runtime']
-          as JavascriptRuntime;
+            orElse: () => {},
+          )['userSettings'];
+      return settings;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
-      return getJavascriptRuntime();
+      return null;
     }
   }
 
   static dynamic getDefaultSettings(String pluginName) {
     try {
-      return _pluginsCacheData.firstWhere(
-        (value) => value['name'] == pluginName,
-        orElse: () => {},
-      )['defaultSettings'];
+      final settings =
+          _pluginsCacheData.firstWhere(
+            (value) => value['name'] == pluginName,
+            orElse: () => {},
+          )['defaultSettings'];
+      return settings;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
+  static dynamic setUserSettings(String pluginName, dynamic settings) {
+    try {
+      _pluginsCacheData
+          .firstWhere(
+            (value) => value['name'] == pluginName,
+            orElse: () => {},
+          )['userSettings']
+          .addAll(settings);
+      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
+  static void updateUserSetting(
+    String pluginName,
+    String key,
+    dynamic setting,
+  ) {
+    //TODO fix updating settings
+    try {
+      final settings = getUserSettings(pluginName);
+      settings[key] = setting;
+      setUserSettings(pluginName, settings);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -866,7 +1014,7 @@ class PluginsManager {
       );
       final userSettings = getUserSettings(pluginName);
       if (userSettings != null) (userSettings as Map).addAll(settings);
-      addOrUpdateData('settings', 'pluginsData', pluginsData);
+      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -889,7 +1037,7 @@ class PluginsManager {
         (userSettings as Map).clear();
         userSettings.addAll(settings);
       }
-      addOrUpdateData('settings', 'pluginsData', pluginsData);
+      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -915,12 +1063,17 @@ class PluginsManager {
       if (!_plugins.map((e) => e['name']).contains(pluginName)) return null;
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
-      final (result, _) = _executeMethod(
+      final (result, runtime) = _executeMethod(
         pluginName: pluginName,
         methodName: methodCall,
       );
-      final data = tryDecode(result?.stringResult);
-      return data ?? result?.stringResult;
+      final data =
+          result?.rawResult is Map
+              ? result?.rawResult
+              : tryDecode(result?.stringResult);
+      runtime?.dispose();
+      return data ??
+          (result?.stringResult == 'null' ? null : result?.stringResult);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -935,6 +1088,7 @@ class PluginsManager {
     required String pluginName,
     required String methodName,
     List<dynamic>? args,
+    Duration? timeout,
   }) async {
     try {
       if (_isProcessingNotifiers[pluginName]!.value) {
@@ -948,11 +1102,19 @@ class PluginsManager {
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
       final jsRuntime = getJsRuntime(pluginName);
+      if (jsRuntime == null)
+        throw Exception(
+          'Invalid JavaScript Runtime for: $pluginName, $methodName',
+        );
+      await jsRuntime.enableFetch();
+      await jsRuntime.enableHandlePromises();
       final promise = await jsRuntime.evaluateAsync(methodCall);
       jsRuntime.executePendingJob();
-      final result = await jsRuntime.handlePromise(promise);
+      final result = await jsRuntime.handlePromise(promise, timeout: timeout);
       final data = tryDecode(result.stringResult);
-      return data ?? result.stringResult;
+      jsRuntime.dispose();
+      return data ??
+          (result.stringResult == 'null' ? null : result.stringResult);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -963,20 +1125,84 @@ class PluginsManager {
     }
   }
 
-  static void onEntityLiked(dynamic entity) async {
-    if (!pluginsSupport.value || plugins.isEmpty) return;
-    for (final plugin in plugins) {
-      final hook = getHooks(plugin['name'])['onEntityLiked'];
-      queueBackground(
-        pluginName: plugin['name'],
-        methodName: hook['onTrigger']['methodName'],
-        args: [entity],
+  static dynamic triggerHook(dynamic entity, String hookName) async {
+    final hooks = {
+      'onQueueSong': {'isAsync': true, 'isBackground': false},
+      'onEntityLiked': {'isAsync': true, 'isBackground': true},
+      'onPlaylistPlay': {'isAsync': true, 'isBackground': true},
+      'onPlaylistSongAdd': {'isAsync': true, 'isBackground': true},
+      'onPlaylistAdd': {'isAsync': true, 'isBackground': true},
+      'onGetArtistInfo': {'isAsync': true, 'isBackground': false},
+      'onGetSongInfo': {'isAsync': true, 'isBackground': false},
+      'onGetAlbumInfo': {'isAsync': true, 'isBackground': false},
+    };
+    if (!enablePlugins.value || plugins.isEmpty) return;
+    try {
+      for (final plugin in plugins) {
+        final hook = getHooks(plugin['name'])[hookName];
+        final methodName = hook['onTrigger']['methodName'];
+        if (hook == null ||
+            hook.isEmpty ||
+            methodName == null ||
+            methodName.isEmpty)
+          continue;
+        if (hooks[hookName]!['isBackground']!) {
+          queueBackground(
+            pluginName: plugin['name'],
+            methodName: methodName,
+            args: [entity],
+          );
+          continue;
+        }
+        final result =
+            hooks[hookName]!['isAsync']!
+                ? await executeMethodAsync(
+                  pluginName: plugin['name'],
+                  methodName: hook['onTrigger']['methodName'],
+                  args: [entity],
+                )
+                : executeMethod(
+                  pluginName: plugin['name'],
+                  methodName: hook['onTrigger']['methodName'],
+                  args: [entity],
+                );
+        if (result is List) {
+          if (entity is List) {
+            entity = result;
+            continue;
+          } else if (entity is Map) {
+            entity[plugin['name']][hookName] = result;
+            continue;
+          }
+        }
+        if (result is Map) {
+          if (entity is Map) {
+            entity.addAll(entity);
+            continue;
+          } else if (entity is List) {
+            for (final e in entity) {
+              e[plugin['name']][hookName] = result;
+              continue;
+            }
+          }
+        }
+        if (result is String) {
+          showToast('${plugin['name']} - $methodName: $result');
+          continue;
+        }
+        if (result == null) continue;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
       );
     }
   }
 
-  static Future<void> getSongUrl(dynamic song, Function fallback) async {
-    if (!pluginsSupport.value || plugins.isEmpty) return await fallback(song);
+  static Future<void> getSongUrl(Map song, Function fallback) async {
+    if (!enablePlugins.value || plugins.isEmpty) return await fallback(song);
     const timeout = Duration(seconds: 5);
     final allFutures = <Future>[];
     void onSuccess(dynamic result) {
@@ -1117,7 +1343,12 @@ class PluginsManager {
           orElse: () => {},
         );
         if (_plugin.isEmpty) return (null, null);
-        jsRuntime = _plugin['runtime'] as JavascriptRuntime;
+        final jsrt = getJsRuntime(pluginName);
+        if (jsrt == null)
+          throw Exception(
+            'JavaScript Runtime could not be created for: $pluginName, $methodName',
+          );
+        jsRuntime = jsrt;
       } else
       // if only [runtime] provided
       if ((script == null || script.isEmpty) &&
@@ -1186,6 +1417,7 @@ class PluginsManager {
     String? pluginName,
     JavascriptRuntime? runtime,
     List<dynamic>? args,
+    Duration? timeout,
   }) async {
     try {
       final (jsResult, jsRuntime) = _executeMethod(
@@ -1196,10 +1428,7 @@ class PluginsManager {
         args: args,
       );
       if (jsResult == null || jsRuntime == null) return (null, jsRuntime);
-      final result = await jsRuntime.handlePromise(
-        jsResult,
-        timeout: const Duration(seconds: 60),
-      );
+      final result = await jsRuntime.handlePromise(jsResult, timeout: timeout);
       return (result, jsRuntime);
     } catch (e, stackTrace) {
       logger.log(

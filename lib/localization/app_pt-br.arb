@@ -187,5 +187,9 @@
   "repeat": "Repetir",
   "youtubeInaccessible": "Erro 403 Forbidden ao tentar reproduzir stream do YouTube. O YouTube pode ter bloqueado temporariamente seu endereço IP. Tente mudar sua rede ou tente novamente mais tarde.",
   "prepareNextSong": "Preparar automaticamente a próxima música para reprodução mais rápida na próxima música",
-  "useProxies": "Usar servidores proxy (pode ajudar em problemas de acesso ao YouTube)"
+  "useProxies": "Usar servidores proxy (pode ajudar em problemas de acesso ao YouTube)",
+  "currentVersion": "Versão atual",
+  "latestVersion": "Última versão",
+  "latestVersionUsed": "Você está usando a versão mais recente",
+  "errorLatestVersion": "Erro ao obter a versão mais recente do aplicativo"
 }

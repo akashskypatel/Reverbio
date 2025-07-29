@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -232,10 +232,10 @@ class _BaseCardState extends State<BaseCard> {
       final images = parseImage(widget.inputData) ?? [];
       if (images.isEmpty) return _buildNoArtworkCard(context);
       for (final path in images) {
-        if (isFilePath(path) && doesFileExist(path)) return _buildFileArtworkCard(path, context);
-        final imageUrl = Uri.parse(path);
-        if (await checkUrl(imageUrl.toString()) <= 300)
-          return _buildOnilneArtworkCard(imageUrl, context);
+        if (isFilePath(path) && doesFileExist(path)) {
+          return _buildFileArtworkCard(path, context);
+        } else if (await checkUrl(path) <= 300)
+          return _buildOnlineArtworkCard(Uri.parse(path), context);
       }
       return _buildNoArtworkCard(context);
     } catch (e, stackTrace) {
@@ -272,7 +272,7 @@ class _BaseCardState extends State<BaseCard> {
     );
   }
 
-  Widget _buildOnilneArtworkCard(Uri imageUrl, BuildContext context) {
+  Widget _buildOnlineArtworkCard(Uri imageUrl, BuildContext context) {
     return CachedNetworkImage(
       key: Key(imageUrl.toString()),
       imageUrl: imageUrl.toString(),

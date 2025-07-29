@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -359,7 +359,7 @@ class _LibraryPageState extends State<LibraryPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: bars.length,
-      padding: commonListViewBottmomPadding,
+      padding: commonListViewBottomPadding,
       itemBuilder: (BuildContext context, index) {
         return bars[index];
       },

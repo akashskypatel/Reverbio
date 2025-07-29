@@ -196,8 +196,10 @@ List<Map<String, dynamic>> safeConvert(dynamic input) {
   return [];
 }
 
-bool isLargeScreen(BuildContext context) =>
-    MediaQuery.of(context).size.width > 480;
+bool isLargeScreen({BuildContext? context}) {
+  context = context ?? NavigationManager().context;
+  return MediaQuery.of(context).size.height < MediaQuery.of(context).size.width || MediaQuery.of(context).size.width > 540;
+}
 
 List<T> pickRandomItems<T>(List<T> items, int n, {int? seed}) {
   if (n >= items.length) {
@@ -433,7 +435,8 @@ List<String>? parseImage(dynamic obj) {
   if (obj is Map && obj['offlineArtworkPath'] != null) {
     if (obj['offlineArtworkPath'] is String)
       images.add(obj['offlineArtworkPath']);
-    else if (obj['offlineArtworkPath'] is Map || obj['offlineArtworkPath'] is List) {
+    else if (obj['offlineArtworkPath'] is Map ||
+        obj['offlineArtworkPath'] is List) {
       final res = _parseImagePath(obj['offlineArtworkPath']);
       images.addAll(res);
     }

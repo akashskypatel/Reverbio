@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/plugins_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 
 typedef PM = PluginsManager;
@@ -32,7 +33,7 @@ typedef PM = PluginsManager;
 class WidgetFactory {
   WidgetFactory._();
 
-  static final Map<String, IconData> _iconMap = {
+  static const Map<String, IconData> _iconMap = {
     'access_time': FluentIcons.access_time_24_filled,
     'add': FluentIcons.add_24_filled,
     'alert': FluentIcons.alert_24_filled,
@@ -84,6 +85,235 @@ class WidgetFactory {
     return '$methodName({"$id": "$value"})';
   }
 
+  static Widget _resetFieldButton(VoidCallback onPressed, bool isEnabled) {
+    return isEnabled
+        ? IconButton(
+          onPressed: isEnabled ? onPressed : null,
+          icon: const Icon(FluentIcons.arrow_undo_24_regular),
+        )
+        : isLargeScreen()
+        ? const SizedBox.square(dimension: 40)
+        : const SizedBox.shrink();
+  }
+
+  static final void Function({
+    required String pluginName,
+    required String id,
+    required String label,
+    required BuildContext context,
+    dynamic methodData,
+    dynamic newValue,
+    void Function(void Function())? setState,
+    dynamic notifier,
+    Function? methodParamBuilder,
+  })
+  _methodBackground = ({
+    required pluginName,
+    required id,
+    required label,
+    required context,
+    methodData,
+    newValue,
+    setState,
+    notifier,
+    methodParamBuilder,
+  }) {
+    PM.queueBackground(
+      pluginName: pluginName,
+      priority:
+          methodData['priority'] != null
+              ? (methodData['priority'] is String
+                  ? (int.tryParse(methodData['priority']) ?? 0)
+                  : (methodData['priority'] is int
+                      ? methodData['priority']
+                      : 0))
+              : 0,
+      methodName:
+          methodParamBuilder != null
+              ? methodParamBuilder()
+              : newValue != null
+              ? PM.buildMethodCall(methodData?['methodName'], [
+                '{"$id": "$newValue"}',
+              ])
+              : methodData?['methodName'],
+    );
+    showToast('$pluginName - $label added to background queue.', context: context);
+    if (context.mounted)
+      if (setState != null)
+        setState(() {
+          notifier?.value = newValue;
+        });
+      else
+        notifier?.value = newValue;
+  };
+
+  static final void Function({
+    required String pluginName,
+    required String id,
+    required String label,
+    required BuildContext context,
+    dynamic methodData,
+    dynamic newValue,
+    void Function(void Function())? setState,
+    dynamic notifier,
+    Function? methodParamBuilder,
+  })
+  _methodAsync = ({
+    required pluginName,
+    required id,
+    required label,
+    required context,
+    methodData,
+    newValue,
+    setState,
+    notifier,
+    methodParamBuilder,
+  }) async {
+    final triggerSave = methodData?['triggerSave'] ?? false;
+    final result = await PM.executeMethodAsync(
+      pluginName: pluginName,
+      methodName:
+          methodParamBuilder != null
+              ? methodParamBuilder()
+              : newValue != null
+              ? PM.buildMethodCall(methodData?['methodName'], [
+                '{"$id": "$newValue"}',
+              ])
+              : methodData?['methodName'],
+    );
+    if (triggerSave) PM.updateUserSetting(pluginName, id, newValue.toString());
+    PM.showPluginMethodResult(
+      context,
+      pluginName: pluginName,
+      message: '${methodData?['methodName']}: $id',
+      result: result,
+    );
+    if (context.mounted)
+      if (setState != null)
+        setState(() {
+          notifier?.value = newValue;
+        });
+      else
+        notifier?.value = newValue;
+  };
+
+  static final void Function({
+    required String pluginName,
+    required String id,
+    required String label,
+    required BuildContext context,
+    dynamic methodData,
+    dynamic newValue,
+    void Function(void Function())? setState,
+    dynamic notifier,
+    Function? methodParamBuilder,
+  })
+  _methodSync = ({
+    required pluginName,
+    required id,
+    required label,
+    required context,
+    methodData,
+    newValue,
+    setState,
+    notifier,
+    methodParamBuilder,
+  }) {
+    final triggerSave = methodData?['triggerSave'] ?? false;
+    final result = PM.executeMethod(
+      pluginName: pluginName,
+      methodName:
+          methodParamBuilder != null
+              ? methodParamBuilder()
+              : newValue != null
+              ? PM.buildMethodCall(methodData?['methodName'], [
+                '{"$id": "$newValue"}',
+              ])
+              : methodData?['methodName'],
+    );
+    if (triggerSave) PM.updateUserSetting(pluginName, id, newValue.toString());
+    PM.showPluginMethodResult(
+      context,
+      pluginName: pluginName,
+      message: '${methodData?['methodName']}: $id',
+      result: result,
+    );
+    if (context.mounted)
+      if (setState != null)
+        setState(() {
+          if (notifier is TextEditingController) {
+            notifier.text = newValue;
+          } else if (notifier is ValueNotifier)
+            notifier.value = newValue;
+        });
+      else {
+        if (notifier is TextEditingController) {
+          notifier.text = newValue;
+        } else if (notifier is ValueNotifier)
+          notifier.value = newValue;
+      }
+  };
+
+  static final void Function({
+    required String pluginName,
+    required String id,
+    required String label,
+    required BuildContext context,
+    dynamic methodData,
+    dynamic newValue,
+    void Function(void Function())? setState,
+    dynamic notifier,
+    Function? methodParamBuilder,
+  })
+  _method = ({
+    required pluginName,
+    required id,
+    required label,
+    required context,
+    methodData,
+    newValue,
+    setState,
+    notifier,
+    methodParamBuilder,
+  }) {
+    if (methodData == null) return;
+    if (methodData['isBackground'] ?? false)
+      return _methodBackground(
+        pluginName: pluginName,
+        id: id,
+        label: label,
+        context: context,
+        methodData: methodData,
+        newValue: newValue,
+        setState: setState,
+        notifier: notifier,
+        methodParamBuilder: methodParamBuilder,
+      );
+    if (methodData['isAsync'] ?? false)
+      return _methodAsync(
+        pluginName: pluginName,
+        id: id,
+        label: label,
+        context: context,
+        methodData: methodData,
+        newValue: newValue,
+        setState: setState,
+        notifier: notifier,
+        methodParamBuilder: methodParamBuilder,
+      );
+    return _methodSync(
+      pluginName: pluginName,
+      id: id,
+      label: label,
+      context: context,
+      methodData: methodData,
+      newValue: newValue,
+      setState: setState,
+      notifier: notifier,
+      methodParamBuilder: methodParamBuilder,
+    );
+  };
+
   static Widget _getSongBarMenuItem({
     required String pluginName,
     required String id,
@@ -94,61 +324,25 @@ class WidgetFactory {
     Function? getDataFn,
   }) {
     final icon = _iconMap[iconName];
-    final isBackground =
-        methodData == null ? false : methodData['isBackground'];
     return PopupMenuItem<String>(
       onTap:
-          methodData == null
-              ? null
-              : isBackground
-              ? () {
-                final data = getDataFn != null ? [getDataFn()] : null;
-                PM.queueBackground(
-                  pluginName: pluginName,
-                  methodName: PM.buildMethodCall(
-                    methodData['methodName'],
-                    data,
-                  ),
-                  message: '$pluginName - $label',
-                );
-                showToast('$pluginName - $label added to background queue.');
-              }
-              : methodData['isAsync']
-              ? () async {
-                final data = getDataFn != null ? [getDataFn()] : null;
-                final result = await PM.executeMethodAsync(
-                  pluginName: pluginName,
-                  methodName: PM.buildMethodCall(
-                    methodData['methodName'],
-                    data,
-                  ),
-                );
-                PM.showPluginMethodResult(
-                  pluginName: pluginName,
-                  message: methodData['methodName'],
-                  result: result,
-                );
-              }
-              : () {
-                final data = getDataFn != null ? [getDataFn()] : null;
-                final (result, _) = PM.executeMethod(
-                  pluginName: pluginName,
-                  methodName: PM.buildMethodCall(
-                    methodData['methodName'],
-                    data,
-                  ),
-                );
-                PM.showPluginMethodResult(
-                  pluginName: pluginName,
-                  message: methodData['methodName'],
-                  result: result,
-                );
-              },
+          () => _method(
+            pluginName: pluginName,
+            methodData: methodData,
+            id: id,
+            label: label,
+            context: context,
+            methodParamBuilder:
+                () => PM.buildMethodCall(
+                  methodData?['methodName'],
+                  getDataFn != null ? [getDataFn()] : null,
+                ),
+          ),
       child: Row(
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
-          Text(label),
+          Expanded(child: Text(label, softWrap: true)),
         ],
       ),
     );
@@ -166,78 +360,88 @@ class WidgetFactory {
     Function? getDataFn,
     String? label,
   }) {
+    final isSettings = menuContext?.toLowerCase() == 'settings';
     final icon = _iconMap[iconName];
     final button = IconButton(
       tooltip: label,
       onPressed:
-          methodData == null
-              ? null
-              : methodData['isBackground'] ?? false
-              ? () {
-                final data = getDataFn != null ? [getDataFn()] : null;
-                PM.queueBackground(
-                  pluginName: pluginName,
-                  methodName: PM.buildMethodCall(
-                    methodData['methodName'],
-                    data,
-                  ),
-                );
-                showToast('$pluginName - $label added to background queue.');
-              }
-              : methodData['isAsync'] ?? false
-              ? () async {
-                final data = getDataFn != null ? [getDataFn()] : null;
-                final (result, _) = await PM.executeMethodAsync(
-                  pluginName: pluginName,
-                  methodName: PM.buildMethodCall(
-                    methodData['methodName'],
-                    data,
-                  ),
-                );
-                PM.showPluginMethodResult(
-                  pluginName: pluginName,
-                  message: methodData['methodName'],
-                  result: result,
-                );
-              }
-              : () {
-                final data = getDataFn != null ? [getDataFn()] : null;
-                final (result, _) = PM.executeMethod(
-                  pluginName: pluginName,
-                  methodName: PM.buildMethodCall(
-                    methodData['methodName'],
-                    data,
-                  ),
-                );
-                PM.showPluginMethodResult(
-                  pluginName: pluginName,
-                  message: methodData['methodName'],
-                  result: result,
-                );
-              },
+          () => _method(
+            pluginName: pluginName,
+            methodData: methodData,
+            id: id,
+            label: label ?? '',
+            context: context,
+            methodParamBuilder:
+                () => PM.buildMethodCall(
+                  methodData?['methodName'],
+                  getDataFn != null ? [getDataFn()] : null,
+                ),
+          ),
       icon: Icon(icon, color: Theme.of(context).colorScheme.primary),
       iconSize: size,
     );
+
     if (menuContext?.toLowerCase() == 'settings')
       return CustomBar(
-        label ?? '',
-        icon ?? FluentIcons.shifts_availability_24_filled,
+        tileName: isLargeScreen() ? label ?? '' : null,
+        tileIcon:
+            isLargeScreen()
+                ? icon ?? FluentIcons.shifts_availability_24_filled
+                : null,
         borderRadius: borderRadius,
-        trailing: button,
+        leading:
+            !isLargeScreen()
+                ? Align(
+                  alignment:
+                      isLargeScreen()
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (label != null && !isLargeScreen() && isSettings)
+                        Expanded(child: Text(softWrap: true, label)),
+                      if (isLargeScreen() && isSettings)
+                        const SizedBox.square(dimension: 40),
+                      button,
+                    ],
+                  ),
+                )
+                : null,
+        trailing:
+            isLargeScreen()
+                ? Align(
+                  alignment:
+                      isLargeScreen()
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (label != null && !isLargeScreen() && isSettings)
+                        Expanded(child: Text(softWrap: true, label)),
+                      if (isLargeScreen() && isSettings)
+                        const SizedBox.square(dimension: 40),
+                      button,
+                    ],
+                  ),
+                )
+                : null,
       );
     return button;
   }
 
-  static Widget _getSwitchWidget({
+  static Widget _buildSwitch({
     required String pluginName,
     required String id,
     required String label,
     required BuildContext context,
-    BorderRadius borderRadius = commonCustomBarRadius,
-    String? iconName,
     Map? methodData,
   }) {
-    final defaultValue = PM.getUserSettings(pluginName)[id] == 'true';
+    final defaultValue =
+        PM.getUserSettings(pluginName)[id] is String
+            ? PM.getUserSettings(pluginName)[id] == 'true'
+            : (PM.getUserSettings(pluginName)[id] ?? false);
     final thumbIcon =
         WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
           WidgetState.selected: Icon(
@@ -250,69 +454,222 @@ class WidgetFactory {
           ),
         });
     final switchNotifier = ValueNotifier(defaultValue);
+    void Function(void Function())? _setState;
+    void resetField() {
+      if (switchNotifier.value != defaultValue) {
+        _method(
+          pluginName: pluginName,
+          methodData: methodData,
+          id: id,
+          label: label,
+          newValue: defaultValue,
+          context: context,
+          setState: _setState,
+          notifier: switchNotifier,
+        );
+      }
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        _setState = setState;
+        return ValueListenableBuilder(
+          valueListenable: switchNotifier,
+          builder:
+              (context, value, __) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isLargeScreen())
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsetsGeometry.directional(end: 10),
+                        child: Text(softWrap: true, label),
+                      ),
+                    ),
+                  _resetFieldButton(resetField, value != defaultValue),
+                  Expanded(
+                    child: Align(
+                      alignment:
+                          isLargeScreen()
+                              ? Alignment.centerLeft
+                              : Alignment.centerRight,
+                      child: Switch(
+                        thumbIcon: thumbIcon,
+                        value: value,
+                        onChanged:
+                            (newValue) => _method(
+                              pluginName: pluginName,
+                              methodData: methodData,
+                              id: id,
+                              label: label,
+                              newValue: newValue,
+                              context: context,
+                              setState: _setState,
+                              notifier: switchNotifier,
+                            ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+        );
+      },
+    );
+  }
+
+  static Widget _getSwitchWidget({
+    required String pluginName,
+    required String id,
+    required String label,
+    required BuildContext context,
+    BorderRadius borderRadius = commonCustomBarRadius,
+    String? iconName,
+    Map? methodData,
+  }) {
     final icon = _iconMap[iconName];
     return CustomBar(
-      label,
-      icon ?? FluentIcons.shifts_availability_24_filled,
+      tileName: isLargeScreen() ? label : null,
+      tileIcon:
+          isLargeScreen()
+              ? icon ?? FluentIcons.shifts_availability_24_filled
+              : null,
       borderRadius: borderRadius,
-      trailing: ValueListenableBuilder(
-        valueListenable: switchNotifier,
-        builder:
-            (context, value, __) => Switch(
-              thumbIcon: thumbIcon,
-              value: value,
-              onChanged:
-                  methodData == null
-                      ? null
-                      : methodData['isBackground'] ?? false
-                      ? (newValue) {
-                        PM.queueBackground(
-                          pluginName: pluginName,
-                          methodName: _buildSettingsMethodCall(
-                            methodName: methodData['methodName'],
-                            value: newValue.toString(),
-                            id: id,
-                          ),
-                        );
-                        showToast(
-                          '$pluginName - $label added to background queue.',
-                        );
-                      }
-                      : methodData['isAsync'] ?? false
-                      ? (newValue) async {
-                        final (result, _) = await PM.executeMethodAsync(
-                          pluginName: pluginName,
-                          methodName: _buildSettingsMethodCall(
-                            methodName: methodData['methodName'],
-                            value: newValue.toString(),
-                            id: id,
-                          ),
-                        );
-                        PM.showPluginMethodResult(
-                          pluginName: pluginName,
-                          message: methodData['methodName'],
-                          result: result,
-                        );
-                        switchNotifier.value = newValue;
-                      }
-                      : (newValue) {
-                        final (result, _) = PM.executeMethod(
-                          pluginName: pluginName,
-                          methodName: _buildSettingsMethodCall(
-                            methodName: methodData['methodName'],
-                            value: newValue.toString(),
-                            id: id,
-                          ),
-                        );
-                        PM.showPluginMethodResult(
-                          pluginName: pluginName,
-                          message: methodData['methodName'],
-                          result: result,
-                        );
-                        switchNotifier.value = newValue;
-                      },
+      trailing:
+          isLargeScreen()
+              ? _buildSwitch(
+                pluginName: pluginName,
+                id: id,
+                label: label,
+                context: context,
+                methodData: methodData,
+              )
+              : null,
+      leading:
+          !isLargeScreen()
+              ? _buildSwitch(
+                pluginName: pluginName,
+                id: id,
+                label: label,
+                context: context,
+                methodData: methodData,
+              )
+              : null,
+    );
+  }
+
+  static Widget _getTextField({
+    required String pluginName,
+    required String id,
+    required String label,
+    required BuildContext context,
+    Map? onChangedData,
+    Map? onSubmittedData,
+    Map? onTapOutsideData,
+    Map? onEditingCompleteData,
+  }) {
+    final defaultValue = PM.getUserSettings(pluginName)[id] ?? '';
+    final controller = TextEditingController(text: defaultValue as String);
+    final focusNode = FocusNode();
+    void Function(void Function())? _setState;
+    void resetField(methodData) {
+      if (controller.value.text != defaultValue) {
+        _method(
+          pluginName: pluginName,
+          methodData: methodData,
+          id: id,
+          label: label,
+          newValue: defaultValue,
+          context: context,
+          setState: _setState,
+          notifier: controller,
+        );
+      }
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        _setState = setState;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _resetFieldButton(
+              () => resetField(onSubmittedData),
+              controller.text != defaultValue,
             ),
-      ),
+            Expanded(
+              child: Align(
+                alignment:
+                    isLargeScreen()
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                child: TextField(
+                  decoration:
+                      !isLargeScreen()
+                          ? InputDecoration(
+                            label: Text(label),
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          )
+                          : const InputDecoration(),
+                  focusNode: focusNode,
+                  controller: controller,
+                  onEditingComplete: () {
+                    _method(
+                      pluginName: pluginName,
+                      methodData: onEditingCompleteData,
+                      id: id,
+                      label: label,
+                      newValue: controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: controller,
+                    );
+                    focusNode.unfocus();
+                  },
+                  onChanged:
+                      (newValue) => _method(
+                        pluginName: pluginName,
+                        methodData: onChangedData,
+                        id: id,
+                        label: label,
+                        newValue: controller.text,
+                        context: context,
+                        setState: _setState,
+                        notifier: controller,
+                      ),
+                  onTapOutside: (event) {
+                    _method(
+                      pluginName: pluginName,
+                      methodData: onTapOutsideData,
+                      id: id,
+                      label: label,
+                      newValue: controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: controller,
+                    );
+                    focusNode.unfocus();
+                  },
+                  onSubmitted: (newValue) {
+                    _method(
+                      pluginName: pluginName,
+                      methodData: onSubmittedData,
+                      id: id,
+                      label: label,
+                      newValue: controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: controller,
+                    );
+                    focusNode.unfocus();
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -320,6 +677,7 @@ class WidgetFactory {
     required String pluginName,
     required String id,
     required String label,
+    required BuildContext context,
     BorderRadius borderRadius = commonCustomBarRadius,
     String? iconName,
     Map? onChangedData,
@@ -327,221 +685,113 @@ class WidgetFactory {
     Map? onTapOutsideData,
     Map? onEditingCompleteData,
   }) {
-    final defaultValue = PM.getUserSettings(pluginName)[id];
-    final controller = TextEditingController(text: defaultValue as String);
-    final focusNode = FocusNode();
     final icon = _iconMap[iconName];
     return CustomBar(
-      label,
-      icon ?? FluentIcons.text_add_20_filled,
+      tileName: isLargeScreen() ? label : null,
+      tileIcon: isLargeScreen() ? icon ?? FluentIcons.list_24_filled : null,
       borderRadius: borderRadius,
-      trailing: LayoutBuilder(
-        builder:
-            (context, constraints) => ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: constraints.maxWidth * 0.65,
-                minWidth: constraints.maxWidth * 0.65,
-              ),
-              child: TextField(
-                focusNode: focusNode,
+      leading:
+          !isLargeScreen()
+              ? _getTextField(
+                pluginName: pluginName,
+                id: id,
+                label: label,
+                context: context,
+                onChangedData: onChangedData,
+                onSubmittedData: onSubmittedData,
+                onTapOutsideData: onTapOutsideData,
+                onEditingCompleteData: onEditingCompleteData,
+              )
+              : null,
+      trailing:
+          isLargeScreen()
+              ? _getTextField(
+                pluginName: pluginName,
+                id: id,
+                label: label,
+                context: context,
+                onChangedData: onChangedData,
+                onSubmittedData: onSubmittedData,
+                onTapOutsideData: onTapOutsideData,
+                onEditingCompleteData: onEditingCompleteData,
+              )
+              : null,
+    );
+  }
+
+  static Widget _buildDropdownMenu({
+    required String pluginName,
+    required String id,
+    required String label,
+    required List<dynamic> options,
+    required BuildContext context,
+    Map? methodData,
+  }) {
+    final defaultValue = PM.getUserSettings(pluginName)[id];
+    final controller = TextEditingController(text: defaultValue as String);
+    void Function(void Function())? _setState;
+    void resetField() {
+      if (controller.value.text != defaultValue) {
+        _method(
+          pluginName: pluginName,
+          methodData: methodData,
+          id: id,
+          label: label,
+          newValue: defaultValue,
+          context: context,
+          setState: _setState,
+          notifier: controller,
+        );
+      }
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        _setState = setState;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _resetFieldButton(resetField, controller.text != defaultValue),
+            Expanded(
+              child: DropdownMenu<String>(
                 controller: controller,
-                onEditingComplete:
-                    onEditingCompleteData == null
-                        ? null
-                        : onEditingCompleteData['isBackground'] ?? false
-                        ? () {
-                          PM.queueBackground(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onEditingCompleteData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          showToast(
-                            '$pluginName - $label added to background queue.',
-                          );
-                        }
-                        : onEditingCompleteData['isAsync'] ?? false
-                        ? () async {
-                          final (result, _) = await PM.executeMethodAsync(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onEditingCompleteData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onEditingCompleteData['methodName'],
-                            result: result,
-                          );
-                        }
-                        : () {
-                          final (result, _) = PM.executeMethod(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onEditingCompleteData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onEditingCompleteData['methodName'],
-                            result: result,
-                          );
-                        },
-                onChanged:
-                    onChangedData == null
-                        ? null
-                        : onChangedData['isBackground'] ?? false
-                        ? (event) {
-                          PM.queueBackground(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onChangedData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          showToast(
-                            '$pluginName - $label added to background queue.',
-                          );
-                        }
-                        : onChangedData['isAsync'] ?? false
-                        ? (event) async {
-                          final (result, _) = await PM.executeMethodAsync(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onChangedData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onChangedData['methodName'],
-                            result: result,
-                          );
-                        }
-                        : (value) {
-                          final (result, _) = PM.executeMethod(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onChangedData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onChangedData['methodName'],
-                            result: result,
-                          );
-                        },
-                onTapOutside:
-                    onTapOutsideData == null
-                        ? null
-                        : onTapOutsideData['isBackground'] ?? false
-                        ? (event) {
-                          PM.queueBackground(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onTapOutsideData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          showToast(
-                            '$pluginName - $label added to background queue.',
-                          );
-                        }
-                        : onTapOutsideData['isAsync'] ?? false
-                        ? (event) async {
-                          final (result, _) = await PM.executeMethodAsync(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onTapOutsideData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onTapOutsideData['methodName'],
-                            result: result,
-                          );
-                          focusNode.unfocus();
-                        }
-                        : (event) {
-                          final (result, _) = PM.executeMethod(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onTapOutsideData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onTapOutsideData['methodName'],
-                            result: result,
-                          );
-                          focusNode.unfocus();
-                        },
-                onSubmitted:
-                    onSubmittedData == null
-                        ? null
-                        : onSubmittedData['isBackground'] ?? false
-                        ? (value) {
-                          PM.queueBackground(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onSubmittedData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          showToast(
-                            '$pluginName - $label added to background queue.',
-                          );
-                        }
-                        : onSubmittedData['isAsync'] ?? false
-                        ? (value) async {
-                          final (result, _) = await PM.executeMethodAsync(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onSubmittedData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onSubmittedData['methodName'],
-                            result: result,
-                          );
-                        }
-                        : (value) {
-                          final (result, _) = PM.executeMethod(
-                            pluginName: pluginName,
-                            methodName: _buildSettingsMethodCall(
-                              methodName: onSubmittedData['methodName'],
-                              value: controller.text,
-                              id: id,
-                            ),
-                          );
-                          PM.showPluginMethodResult(
-                            pluginName: pluginName,
-                            message: onSubmittedData['methodName'],
-                            result: result,
-                          );
-                        },
+                label: isLargeScreen() ? null : Text(label),
+                inputDecorationTheme: InputDecorationTheme(
+                  filled: true,
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                menuStyle: MenuStyle(
+                  alignment: Alignment.bottomCenter,
+                  shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                initialSelection: defaultValue,
+                onSelected:
+                    (newValue) => _method(
+                      pluginName: pluginName,
+                      methodData: methodData,
+                      id: id,
+                      label: label,
+                      newValue: newValue,
+                      context: context,
+                      setState: _setState,
+                      notifier: controller,
+                    ),
+                dropdownMenuEntries: _getDropdownMenuItems(
+                  id: id,
+                  pluginName: pluginName,
+                  options: options,
+                ),
               ),
             ),
-      ),
+          ],
+        );
+      },
     );
   }
 
@@ -550,70 +800,38 @@ class WidgetFactory {
     required String id,
     required String label,
     required List<dynamic> options,
+    required BuildContext context,
     BorderRadius borderRadius = commonCustomBarRadius,
     String? iconName,
     Map? methodData,
   }) {
-    final defaultValue = PM.getUserSettings(pluginName)[id];
     final icon = _iconMap[iconName];
     return CustomBar(
-      label,
-      icon ?? FluentIcons.list_24_filled,
+      tileName: isLargeScreen() ? label : null,
+      tileIcon: isLargeScreen() ? icon ?? FluentIcons.list_24_filled : null,
       borderRadius: borderRadius,
-      trailing: DropdownMenu<String>(
-        initialSelection: defaultValue,
-        onSelected:
-            methodData == null
-                ? null
-                : methodData['isBackground'] ?? false
-                ? (value) {
-                  PM.queueBackground(
-                    pluginName: pluginName,
-                    methodName: _buildSettingsMethodCall(
-                      methodName: methodData['methodName'],
-                      value: value.toString(),
-                      id: id,
-                    ),
-                  );
-                  showToast('$pluginName - $label added to background queue.');
-                }
-                : methodData['isAsync'] ?? false
-                ? (value) async {
-                  final (result, _) = await PM.executeMethodAsync(
-                    pluginName: pluginName,
-                    methodName: _buildSettingsMethodCall(
-                      methodName: methodData['methodName'],
-                      value: value.toString(),
-                      id: id,
-                    ),
-                  );
-                  PM.showPluginMethodResult(
-                    pluginName: pluginName,
-                    message: methodData['methodName'],
-                    result: result,
-                  );
-                }
-                : (value) {
-                  final (result, _) = PM.executeMethod(
-                    pluginName: pluginName,
-                    methodName: _buildSettingsMethodCall(
-                      methodName: methodData['methodName'],
-                      value: value.toString(),
-                      id: id,
-                    ),
-                  );
-                  PM.showPluginMethodResult(
-                    pluginName: pluginName,
-                    message: methodData['methodName'],
-                    result: result,
-                  );
-                },
-        dropdownMenuEntries: _getDropdownMenuItems(
-          id: id,
-          pluginName: pluginName,
-          options: options,
-        ),
-      ),
+      leading:
+          !isLargeScreen()
+              ? _buildDropdownMenu(
+                pluginName: pluginName,
+                id: id,
+                label: label,
+                context: context,
+                options: options,
+                methodData: methodData,
+              )
+              : null,
+      trailing:
+          isLargeScreen()
+              ? _buildDropdownMenu(
+                pluginName: pluginName,
+                id: id,
+                label: label,
+                context: context,
+                options: options,
+                methodData: methodData,
+              )
+              : null,
     );
   }
 
@@ -629,61 +847,86 @@ class WidgetFactory {
     return items;
   }
 
+  static Widget _buildTextButton({
+    required Map methodData,
+    required String pluginName,
+    required String label,
+    required BuildContext context,
+    IconData? icon,
+  }) {
+    return Align(
+      alignment: isLargeScreen() ? Alignment.centerLeft : Alignment.centerRight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLargeScreen()) const SizedBox.square(dimension: 40),
+          Expanded(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
+              ),
+              onPressed:
+                  () => _method(
+                    pluginName: pluginName,
+                    methodData: methodData,
+                    id: label,
+                    label: label,
+                    context: context,
+                  ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null)
+                    Padding(
+                      padding: const EdgeInsetsGeometry.directional(end: 7),
+                      child: Icon(icon),
+                    ),
+                  Expanded(child: Text(softWrap: true, label)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget _getTextButtonWidget({
     required Map methodData,
     required String pluginName,
     required String label,
+    required BuildContext context,
     BorderRadius borderRadius = commonCustomBarRadiusFirst,
     String? backgroundColor,
     String? iconName,
   }) {
     final icon = _iconMap[iconName];
     return CustomBar(
-      label,
-      icon ?? FluentIcons.cursor_hover_24_filled,
+      tileName: isLargeScreen() ? label : null,
+      tileIcon:
+          isLargeScreen() ? icon ?? FluentIcons.cursor_hover_24_filled : null,
       borderRadius: borderRadius,
-      trailing: ElevatedButton(
-        onPressed:
-            methodData['isBackground'] ?? false
-                ? () {
-                  PM.queueBackground(
-                    pluginName: pluginName,
-                    methodName: methodData['methodName'],
-                  );
-                  showToast('$pluginName - $label added to background queue.');
-                }
-                : methodData['isAsync'] ?? false
-                ? () async {
-                  final (result, _) = await PM.executeMethodAsync(
-                    pluginName: pluginName,
-                    methodName: methodData['methodName'],
-                  );
-                  PM.showPluginMethodResult(
-                    pluginName: pluginName,
-                    message: methodData['methodName'],
-                    result: result,
-                  );
-                }
-                : () {
-                  final (result, _) = PM.executeMethod(
-                    pluginName: pluginName,
-                    methodName: methodData['methodName'],
-                  );
-                  PM.showPluginMethodResult(
-                    pluginName: pluginName,
-                    message: methodData['methodName'],
-                    result: result,
-                  );
-                },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) Icon(icon),
-            const SizedBox(width: 7),
-            Text(label),
-          ],
-        ),
-      ),
+      leading:
+          !isLargeScreen()
+              ? _buildTextButton(
+                methodData: methodData,
+                pluginName: pluginName,
+                label: label,
+                context: context,
+                icon: icon,
+              )
+              : null,
+      trailing:
+          isLargeScreen()
+              ? _buildTextButton(
+                methodData: methodData,
+                pluginName: pluginName,
+                label: label,
+                context: context,
+                icon: icon,
+              )
+              : null,
     );
   }
 
@@ -699,6 +942,7 @@ class WidgetFactory {
         return _getTextInputWidget(
           id: widget['id'],
           label: widget['label'],
+          context: context,
           onTapOutsideData: widget['onTapOutside'],
           onSubmittedData: widget['onSubmitted'],
           pluginName: pluginName,
@@ -707,6 +951,7 @@ class WidgetFactory {
         );
       case 'TextButton':
         return _getTextButtonWidget(
+          context: context,
           backgroundColor: widget['backgroundColor'],
           iconName: widget['icon'],
           label: widget['label'],
@@ -719,6 +964,7 @@ class WidgetFactory {
           pluginName: pluginName,
           id: widget['id'],
           label: widget['label'],
+          context: context,
           options: widget['options'],
           methodData: widget['onSelected'],
           iconName: widget['icon'],
@@ -783,21 +1029,47 @@ class WidgetFactory {
     }
   }
 
+  static const pluginWidgets = {
+    'TextInput': {'context': 'settings'},
+    'TextButton': {'context': 'settings'},
+    'Switch': {'context': 'settings'},
+    'DropDownMenu': {'context': 'settings'},
+    'IconButton': {'context': 'any'},
+    'SongBarDropDown': {'context': 'song_bar'},
+    'SongListHeader': {'context': 'song_list'},
+    'AlbumPageHeader': {'context': 'album_header'},
+    'ArtistPageHeader': {'context': 'artist_header'},
+    'AlbumsPageHeader': {'context': 'albums_header'},
+    'ArtistsPageHeader': {'context': 'artists_header'},
+    'PlaylistPageHeader': {'context': 'playlist_header'},
+  };
+
   static Widget getAllSettingsWidgets(
     String pluginName,
     List<Map<String, dynamic>> widgets,
+    BuildContext context,
   ) {
     final radius = {
       0: commonCustomBarRadiusFirst,
       widgets.length - 1: commonCustomBarRadiusLast,
     };
+
+    widgets =
+        widgets
+            .where(
+              (e) => [
+                'settings',
+                'any',
+              ].contains(pluginWidgets[e['type']]?['context']),
+            )
+            .toList();
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: commonListViewBottmomPadding,
+      padding: commonListViewBottomPadding,
       itemCount: widgets.length,
       itemBuilder:
-          (context, index) => getWidget(
+          (_, index) => getWidget(
             pluginName,
             widgets[index],
             context,

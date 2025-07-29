@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ const String downloadLatest = 'latest';
 const String downloadObtainium = 'obtainium';
 
 Future<Map<String, dynamic>> getLatestAppVersion() async {
+  final context = NavigationManager().context;
   try {
     final response = await http.get(Uri.parse(checkUrl));
 
@@ -53,10 +54,7 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
         null,
         null,
       );
-      return {
-        'error': 'Error getting lastest app version.',
-        'canUpdate': false,
-      };
+      return {'error': context.l10n!.errorLatestVersion, 'canUpdate': false};
     }
 
     final map = json.decode(response.body) as Map<String, dynamic>;
@@ -64,17 +62,18 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
     final latestVersion = map['version'].toString();
     if (isLatestVersionHigher(appVersion, latestVersion)) {
       return {
-        'message': 'Current version: $appVersion New Version: $latestVersion',
+        'message':
+            '${context.l10n!.currentVersion}: $appVersion ${context.l10n!.latestVersion}: $latestVersion',
         'canUpdate': true,
       };
     }
     return {
-      'message': 'You using the latest version: $appVersion',
+      'message': '${context.l10n!.latestVersionUsed}: $appVersion',
       'canUpdate': false,
     };
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
-    return {'error': 'Error getting lastest app version.', 'canUpdate': false};
+    return {'error': context.l10n!.errorLatestVersion, 'canUpdate': false};
   }
 }
 

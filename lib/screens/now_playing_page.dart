@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -64,7 +64,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   @override
   Widget build(BuildContext context) {
-    _isLargeScreen = isLargeScreen(context);
+    _isLargeScreen = isLargeScreen(context: context);
     final size = MediaQuery.sizeOf(context);
     _theme = Theme.of(context);
     const adjustedIconSize = 43.0;
@@ -151,7 +151,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       _buildOfflineButton(songOfflineStatus, _primaryColor, iconSize),
       if (!offlineMode.value)
         _buildAddToPlaylistButton(_primaryColor, iconSize),
-      if (audioHandler.queueSongBars.isNotEmpty && !isLargeScreen(context))
+      if (audioHandler.queueSongBars.isNotEmpty &&
+          !isLargeScreen(context: context))
         _buildQueueButton(context, _primaryColor, iconSize),
       if (!offlineMode.value) ...[
         _buildLyricsButton(_primaryColor, iconSize),
@@ -335,7 +336,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         ListView.builder(
           shrinkWrap: true,
           physics: const BouncingScrollPhysics(),
-          padding: commonListViewBottmomPadding,
+          padding: commonListViewBottomPadding,
           itemCount: audioHandler.queueSongBars.length,
           itemBuilder: (BuildContext context, int index) {
             return audioHandler.queueSongBars[index];

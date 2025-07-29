@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -456,14 +456,15 @@ class _SearchPageState extends State<SearchPage> {
           entityName[header]?['getLiked'] != null &&
           entityName[header]!['getLiked']!(element) as bool;
       final entityLikeStatus = ValueNotifier(isLiked);
-      final likedLoding = ValueNotifier(false);
+      final likedLoading = ValueNotifier(false);
       list.add(
         SliverToBoxAdapter(
           child: Padding(
             padding: commonSingleChildScrollViewPadding,
             child: CustomBar(
-              query,
-              entityName[header]?['icon'] ?? FluentIcons.search_24_regular,
+              tileName: query,
+              tileIcon:
+                  entityName[header]?['icon'] ?? FluentIcons.search_24_regular,
               borderRadius: borderRadius,
               onTap: () async {
                 await search(data: element);
@@ -486,7 +487,7 @@ class _SearchPageState extends State<SearchPage> {
                         builder: (context, value, __) {
                           return IconButton(
                             onPressed: () async {
-                              likedLoding.value = true;
+                              likedLoading.value = true;
                               final likeVal =
                                   await entityName[header]?['action'](
                                     element,
@@ -494,7 +495,7 @@ class _SearchPageState extends State<SearchPage> {
                                   );
                               setState(() {
                                 isLiked = entityLikeStatus.value = likeVal;
-                                likedLoding.value = false;
+                                likedLoading.value = false;
                               });
                             },
                             icon: Icon(

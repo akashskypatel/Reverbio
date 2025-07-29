@@ -6,10 +6,9 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
+    <li><a href="#before-you-begin">Before you begin</a></li>
     <li><a href="#overview">Overview</a></li>
-    <li>
-      <a href="#plugin-architecture">Plugin Architecture</a>
-    </li>
+    <li><a href="#plugin-architecture">Plugin Architecture</a></li>
     <li><a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#plugin-template">Plugin Template</a></li>
@@ -49,6 +48,11 @@
     <li><a href="#distribution">Distribution</a></li>
   </ol>
 </details>
+
+
+## Before you begin
+
+Please make sure you refer to Reverbio source code if you have any questions about how the app functions. Modifying data that is required by the Reverbio to function may cause unexpected behavior or even cause the app to crash. 
 
 ## Overview
 
@@ -132,7 +136,7 @@ Available icons
 <tr><th>Icon Name</th><th>Icon</th></tr>
 <tr><th>access_time</th><th> 
 
-![access_time_24_filled](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?raw=true) 
+![access_time](https://github.com/microsoft/fluentui-system-icons/raw/main/assets/Access%20Time/SVG/ic_fluent_access_time_24_filled.svg?raw=true)
 
 </th></tr>
 <tr><th>add</th><th>
@@ -577,8 +581,185 @@ hooks: {
 
 ### Available Hooks:
 
-- `onEntityLiked`: Triggered when a artist/song/album is liked
-- `onGetSongUrl`: Triggered when a song URL is requested before playing
+#### `onEntityLiked`
+
+Triggered when a artist/song/album is liked. App will pass a JSON object as string containing, depending on requested object, artist name, album name, and song name.
+
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz, YouTube or Discogs ids in URL parameter format for requested object
+  "artist": "artist name", //guaranteed to not be null when entity is artist, song or album
+  "album": "album name", //guaranteed to not be null when entity is album
+  "song": "song name", //guaranteed to not be null when entity is song
+}
+```
+
+#### `onGetSongUrl`
+
+Triggered when a song URL is requested before playing. App will pass a JSON object as string containing, at a minimum, artist name, song name, and album name (if available and relevant).
+
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz and YouTube ids in URL parameter format for requested object.
+  "artist": "artist name", //guaranteed to not be null
+  "album": "album name", //can be null
+  "song": "song name", //guaranteed to not be null
+}
+```
+
+#### `onQueueSong` 
+
+Triggered when user adds a song to the queue. Data returned by plugin is merged into existing `Map`, which means any modified fields by the plugin will replace existing data.
+
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz and YouTube ids in URL parameter format for requested object
+  "artist": "artist name", //guaranteed to not be null
+  "album": "album name", //may or may not be null
+  "song": "song name", //guaranteed to not be null
+}
+```
+
+#### `onPlaylistPlay` 
+
+Triggered when user plays a playlist. This is a one way method from Reverbio -> Plugin, meaning method is always called in the background and any returned data by the plugin is ignored by Reverbio.
+``` JSON
+//YouTube Playlist structure
+{
+  "id": "yt=KJHlakZOIhs",
+  "ytid": "KJHlakZOIhs",
+  "title": "Playlist Title",
+  "image": "http://youtube.com/exampleimage.jpg",
+  "lowResImage": "http://youtube.com/exampleimage.jpg",
+  "highResImage": "http://youtube.com/exampleimage.jpg",
+  "source": "user-youtube",
+  "primary-type": "playlist",
+  "list": [
+    {
+      "id": "mb=abcd1234&yt=JKGHsd879", //may or may not include MusicBrainz and YouTube ids in URL parameter format for requested object
+      "artist": "artist name", //guaranteed to not be null
+      "album": "album name", //may or may not be null
+      "song": "song name", //guaranteed to not be null
+    },
+    ...
+  ],
+}
+//User created playlist
+{
+  "id": "uc=playlist_title",
+  "title": "Playlist Title",
+  "source": "user-created",
+  "primary-type": "playlist",
+  "image": "http://youtube.com/exampleimage.jpg", //may be local file path instead of URL
+  "list": [
+    {
+      "id": "mb=abcd1234&yt=JKGHsd879", //may or may not include MusicBrainz and YouTube ids in URL parameter format for requested object
+      "artist": "artist name", //guaranteed to not be null
+      "album": "album name", //may or may not be null
+      "song": "song name", //guaranteed to not be null
+    },
+    ...
+  ],
+}
+```
+
+#### `onPlaylistSongAdd` 
+
+Triggered when user adds a song to a playlist. This is a one way method from Reverbio -> Plugin, meaning method is always called in the background and any returned data by the plugin is ignored by Reverbio.
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz and YouTube ids in URL parameter format for requested object
+  "artist": "artist name", //guaranteed to not be null
+  "album": "album name", //may or may not be null
+  "song": "song name", //guaranteed to not be null
+}
+```
+
+#### `onPlaylistAdd` 
+
+Triggered when user adds a new playlist. This is a one way method from Reverbio -> Plugin, meaning method is always called in the background and any returned data by the plugin is ignored by Reverbio.
+``` JSON
+//YouTube Playlist
+{
+  "id": "yt=KJHlakZOIhs",
+  "ytid": "KJHlakZOIhs",
+  "title": "Playlist Title",
+  "image": "http://youtube.com/exampleimage.jpg",
+  "lowResImage": "http://youtube.com/exampleimage.jpg",
+  "highResImage": "http://youtube.com/exampleimage.jpg",
+  "source": "user-youtube",
+  "primary-type": "playlist",
+  "list": [
+    {
+      "id": "mb=abcd1234&yt=JKGHsd879", //may or may not include MusicBrainz and YouTube ids in URL parameter format for requested object
+      "artist": "artist name", //guaranteed to not be null
+      "album": "album name", //may or may not be null
+      "song": "song name", //guaranteed to not be null
+    },
+    ...
+  ],
+}
+```
+
+#### `onGetArtistInfo` 
+
+Triggered when the app queries artist info. Data returned by plugin is merged into existing `Map`, which means any modified fields by the plugin will replace existing data.
+``` JSON
+{
+  "id": "mb=abcd1234&dc=15698654&yt=UCWOVPbJfZ", //may or may not include MusicBrainz, YouTube, and Discogs ids in URL parameter format for requested object
+  "artist": "artist name",
+  "musicbrainzName": "artist name",
+  "discogsName": "artist name",
+  "musicbrainz": {
+    //See MusicBrainz Artist API documentation for additional details. https://musicbrainz.org/doc/MusicBrainz_API
+  },
+  "discogs": {
+    //See Discogs Recording API documentation for additional details. https://www.discogs.com/developers
+  },
+  "youtube": {
+    "url": "https://www.youtube.com/channel/UCWOVPbJfZ",
+    "bannerUrl": "https://img.youtube.com/vi/dhldbymXK-8/sddefault.jpg",
+    "id": "UCWOVPbJfZ",
+    "logoUrl": "https://img.youtube.com/vi/dhldbymXK-8/sddefault.jpg",
+    "subscribersCount": 1234,
+    "title": "channel title",
+  },
+  "primary-type": "artist",
+  "cachedAt": "2025-07-24T19:23:50.871Z",
+}
+```
+
+#### `onGetSongInfo` 
+
+Triggered when the app queries song info. Data returned by plugin is merged into existing `Map`, which means any modified fields by the plugin will replace existing data.
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz and YouTube ids in URL parameter format for requested object
+  "artist": "artist name", //guaranteed to not be null
+  "song": "song name", //guaranteed to not be null
+  "rid": "abcd1234", //MusicBrainz recording id
+  "mbid": "abcd1234", //MusicBrainz recording id
+  "mbidType": "recording",
+  "duration": 162,
+  "primary-type": "song",
+  "cachedAt": "2025-07-24T19:23:50.871Z",
+  //See MusicBrainz Recording API documentation for additional details. https://musicbrainz.org/doc/MusicBrainz_API
+}
+```
+
+#### `onGetAlbumInfo` 
+
+Triggered when the app queries album info. Data returned by plugin is merged into existing `Map`, which means any modified fields by the plugin will replace existing data.
+``` JSON
+{
+  "id": "mb=abcd1234", //may or may not include MusicBrainz id in URL parameter format for requested object
+  "artist": "artist name", //guaranteed to not be null
+  "title": "album name", //guaranteed to not be null
+  "album": "album name", //guaranteed to not be null
+  //See MusicBrainz Release-group API documentation for additional details. https://musicbrainz.org/doc/MusicBrainz_API
+}
+```
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Plugin Lifecycle

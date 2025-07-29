@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -41,6 +41,32 @@ Map<String, dynamic> returnYtSongLayout(int index, Video song) {
     'channelId': song.channelId.value,
     'views': song.engagement.viewCount,
     'isError': false,
+  };
+}
+
+Map<String, dynamic> returnYTPlaylistLayout(Playlist playlist) {
+  return {
+    'id': 'yt=${playlist.id.value}',
+    'ytid': playlist.id.value,
+    'url': playlist.url,
+    'author': playlist.author,
+    'description': playlist.description,
+    'title': playlist.title,
+    'videoCount': playlist.videoCount,
+    'engagement': {
+      'avgRating': playlist.engagement.avgRating,
+      'dislikeCount': playlist.engagement.dislikeCount,
+      'likeCount': playlist.engagement.likeCount,
+      'viewCount': playlist.engagement.viewCount,
+    },
+    'images': {
+      'highResUrl': playlist.thumbnails.highResUrl,
+      'lowResUrl': playlist.thumbnails.lowResUrl,
+      'maxResUrl': playlist.thumbnails.maxResUrl,
+      'mediumResUrl': playlist.thumbnails.mediumResUrl,
+      'standardResUrl': playlist.thumbnails.standardResUrl,
+      'videoId': playlist.thumbnails.videoId,
+    },
   };
 }
 

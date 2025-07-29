@@ -1,3 +1,15 @@
 {
-  "commentTranslate.hover.enabled": false
+  "commentTranslate.hover.enabled": false,
+  "cSpell.words": [
+    "Akash",
+    "Debrid",
+    "Discogs",
+    "Fdroid",
+    "mbid",
+    "MusicBrainz",
+    "obtainium",
+    "Reverbio",
+    "ytid"
+  ],
+  "cmake.ignoreCMakeListsMissing": true
 }

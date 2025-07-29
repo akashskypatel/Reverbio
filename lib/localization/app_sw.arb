@@ -187,5 +187,9 @@
   "repeat": "Rudia",
   "youtubeInaccessible": "Hitilafu 403 Forbidden wakati wa kujaribu kucheza mkondo wa YouTube. YouTube inaweza kuwa imefunga muda wa anwani yako ya IP. Jaribu kubadilisha mtandao wako au jaribu tena baada ya muda.",
   "prepareNextSong": "Andaa wimbo ujao kiotomatiki kwa uchezaji wa haraka kwenye wimbo ujao",
-  "useProxies": "Tumia seva za wakala (inaweza kusaidia masuala ya ufikiaji wa YouTube)"
+  "useProxies": "Tumia seva za wakala (inaweza kusaidia masuala ya ufikiaji wa YouTube)",
+  "currentVersion": "Toleo la sasa",
+  "latestVersion": "Toleo mpya",
+  "latestVersionUsed": "Unatumia toleo la hivi karibuni",
+  "errorLatestVersion": "Hitilafu wakati wa kupata toleo jipya la programu"
 }

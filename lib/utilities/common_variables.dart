@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ const commonCustomBarRadiusLast = BorderRadius.vertical(
   bottom: Radius.circular(18),
 );
 
-const commonListViewBottmomPadding = EdgeInsets.only(bottom: 8);
+const commonListViewBottomPadding = EdgeInsets.only(bottom: 8);
 
 const commonBarContentPadding = EdgeInsets.symmetric(
   vertical: 12,

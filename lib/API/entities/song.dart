@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -115,7 +115,7 @@ Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
       userLikedSongsList.add(song);
       currentLikedSongsLength.value = userLikedSongsList.length;
       song['song'] = song['title'];
-      PM.onEntityLiked(song);
+      PM.triggerHook(song, 'onEntityLiked');
     } else {
       userLikedSongsList.removeWhere((s) => checkSong(s, song));
       currentLikedSongsLength.value = userLikedSongsList.length;
@@ -353,12 +353,14 @@ Future<dynamic> findMBSong(dynamic song) async {
     final cached = _getCachedSong(song);
     if (cached != null) {
       song.addAll(Map<String, dynamic>.from(cached));
+      await PM.triggerHook(song, 'onGetSongInfo');
       return song;
     }
     song['id'] = parseEntityId(song);
     final ids = Uri.parse('?${song['id']}').queryParameters;
     if (ids['mb'] != null && song['mbidType'] == 'recording') {
       song.addAll(await getSongByRecordingDetails(song));
+      await PM.triggerHook(song, 'onGetSongInfo');
       return song;
     }
     final iArtist = song['artist'].toString();
@@ -422,6 +424,7 @@ Future<dynamic> findMBSong(dynamic song) async {
       if (checkTitleAndArtist(song, recording)) {
         recording = await getSongByRecordingDetails(recording);
         song.addAll(recording);
+        await PM.triggerHook(song, 'onGetSongInfo');
         return song;
       }
     }

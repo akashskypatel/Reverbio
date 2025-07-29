@@ -187,5 +187,9 @@
   "repeat": "Lặp lại",
   "youtubeInaccessible": "Lỗi 403 Forbidden khi phát luồng YouTube. YouTube có thể đã tạm thời chặn địa chỉ IP của bạn. Hãy thử đổi mạng hoặc thử lại sau.",
   "prepareNextSong": "Tự động chuẩn bị bài hát tiếp theo để phát nhanh hơn",
-  "useProxies": "Sử dụng máy chủ proxy (có thể giúp giải quyết vấn đề truy cập YouTube)"
+  "useProxies": "Sử dụng máy chủ proxy (có thể giúp giải quyết vấn đề truy cập YouTube)",
+  "currentVersion": "Phiên bản hiện tại",
+  "latestVersion": "Phiên bản mới nhất",
+  "latestVersionUsed": "Bạn đang sử dụng phiên bản mới nhất",
+  "errorLatestVersion": "Lỗi khi lấy phiên bản ứng dụng mới nhất"
 }

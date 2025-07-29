@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,27 +19,31 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 
 class CustomBar extends StatelessWidget {
-  CustomBar(
+  CustomBar({
     this.tileName,
-    this.tileIcon, {
+    this.tileIcon,
     super.key,
     this.onTap,
     this.onLongPress,
+    this.leading,
     this.trailing,
     this.backgroundColor,
     this.iconColor,
     this.textColor,
     this.borderRadius = BorderRadius.zero,
   });
-  final ValueNotifier<bool> _isLoadingNotifieir = ValueNotifier(false);
-  final String tileName;
-  final IconData tileIcon;
+  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
+  final String? tileName;
+  final IconData? tileIcon;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final Widget? leading;
   final Widget? trailing;
   final Color? backgroundColor;
   final Color? iconColor;
@@ -47,7 +51,7 @@ class CustomBar extends StatelessWidget {
   final BorderRadius borderRadius;
 
   bool isLoading(bool isLoading) {
-    _isLoadingNotifieir.value = isLoading;
+    _isLoadingNotifier.value = isLoading;
     return isLoading;
   }
 
@@ -68,12 +72,49 @@ class CustomBar extends StatelessWidget {
             onLongPress: onLongPress,
             child: ListTile(
               minTileHeight: 45,
-              leading: Icon(tileIcon, color: iconColor),
-              title: Text(
-                tileName,
-                style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
+              leading: LayoutBuilder(
+                builder:
+                    (context, constraints) => Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (tileIcon != null) Icon(tileIcon, color: iconColor),
+                        if (leading != null)
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: max(constraints.maxWidth - 1, 0),
+                            ),
+                            child: leading,
+                          ),
+                      ],
+                    ),
               ),
-              trailing: trailing,
+              title: LayoutBuilder(
+                builder:
+                    (context, constraints) => ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: max((constraints.maxWidth * 0.25) - 1, 0),
+                      ),
+                      child:
+                          tileName != null
+                              ? Text(
+                                tileName!,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                              )
+                              : const SizedBox.shrink(),
+                    ),
+              ),
+              trailing: LayoutBuilder(
+                builder:
+                    (context, constraints) => ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: max((constraints.maxWidth * 0.75) - 1, 0),
+                      ),
+                      child: trailing,
+                    ),
+              ),
             ),
           ),
         ),

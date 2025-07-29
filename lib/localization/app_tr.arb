@@ -187,5 +187,9 @@
   "repeat": "Tekrarla",
   "youtubeInaccessible": "YouTube akışını oynatmaya çalışırken 403 Yasak hatası. YouTube IP adresinizi geçici olarak engellemiş olabilir. Ağınızı değiştirmeyi deneyin veya bir süre sonra tekrar deneyin.",
   "prepareNextSong": "Bir sonraki şarkıyı daha hızlı çalmak için otomatik olarak hazırla",
-  "useProxies": "Proxy sunucuları kullan (YouTube erişim sorunlarına yardımcı olabilir)"
+  "useProxies": "Proxy sunucuları kullan (YouTube erişim sorunlarına yardımcı olabilir)",
+  "currentVersion": "Mevcut sürüm",
+  "latestVersion": "En son sürüm",
+  "latestVersionUsed": "En son sürümü kullanıyorsunuz",
+  "errorLatestVersion": "Uygulamanın en son sürümü alınırken hata"
 }

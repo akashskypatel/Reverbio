@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
         'primary-type': 'artist',
       });
       currentLikedArtistsLength.value++;
-      PM.onEntityLiked(artist);
+      PM.triggerHook(artist, 'onEntityLiked');
     } else {
       userLikedArtistsList.removeWhere((value) => checkArtist(artist, value));
       currentLikedArtistsLength.value--;
@@ -84,7 +84,10 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
   try {
     final id = parseEntityId(artistData);
     final ids = Uri.parse('?$id').queryParameters;
-    if (ids['mb'] == null) return {};
+    if (ids['mb'] == null) {
+      await PM.triggerHook(artistData, 'onGetArtistInfo');
+      return {};
+    }
     if (!refresh) {
       final cached = _getCachedArtist(id);
       if (cached != null) {
@@ -92,6 +95,7 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
           cached['youtube'] = await _parseYTRelations(
             List.from(cached['musicbrainz']?['relations'] ?? []),
           );
+        await PM.triggerHook(artistData, 'onGetArtistInfo');
         return cached;
       }
     }
@@ -115,6 +119,7 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
       dcRes: dcRes,
       ytRes: ytRes,
     );
+    await PM.triggerHook(artistData, 'onGetArtistInfo');
     return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -245,6 +250,7 @@ Future<dynamic> searchArtistsDetails(
         if (uncached.contains(artist['name'].toLowerCase()) ||
             uncached.contains(artist['sort-name'].toLowerCase())) {
           artist['primary-type'] = 'artist';
+          await PM.triggerHook(artist, 'onGetArtistInfo');
           result.add(artist);
         }
       }

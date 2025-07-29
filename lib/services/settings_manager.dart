@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2025 Akashy Patel
+ *     Copyright (C) 2025 Akash Patel
  *
  *     Reverbio is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ final audioQualitySetting = ValueNotifier<String>(
   Hive.box('settings').get('audioQuality', defaultValue: 'high'),
 );
 
-final pluginsSupport = ValueNotifier<bool>(
+final enablePlugins = ValueNotifier<bool>(
   Hive.box('settings').get('pluginsSupport', defaultValue: false),
 );
 
