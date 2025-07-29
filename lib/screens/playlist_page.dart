@@ -241,7 +241,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   dynamic _getPlaylistData() {
     final data =
         ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page) ||
-                _playlist['isAlbum']
+                (_playlist['isAlbum'] ?? false)
             ? {
               ...(_playlist as Map),
               'album': _playlist['title'],
