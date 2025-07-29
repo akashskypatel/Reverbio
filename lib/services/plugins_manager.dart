@@ -56,12 +56,13 @@ class PluginsManager {
   static final Map _futures = {};
   static final Map _activeJob = {};
   static final Map _completed = {};
-  static final Map<String, ValueNotifier<int>> _backgroundJobNotifiers = {};
+  static final Map<String, ValueNotifier<UniqueKey?>> _backgroundJobNotifiers =
+      {};
   static final Map<String, ValueNotifier<bool>> _isProcessingNotifiers = {};
 
   static Map<String, ValueNotifier<bool>> get isProcessing =>
       _isProcessingNotifiers;
-  static Map<String, ValueNotifier<int>> get backgroundJobNotifier =>
+  static Map<String, ValueNotifier<UniqueKey?>> get backgroundJobNotifier =>
       _backgroundJobNotifiers;
   static List<Map> get plugins => _plugins;
 
@@ -81,26 +82,23 @@ class PluginsManager {
 
   static Future<void> initialize() async {
     await reloadPlugins();
-    await syncPlugins();
   }
 
-  static Future<bool> syncPlugin(Map _plugin) async {
-    if (_isProcessingNotifiers[_plugin['name']]!.value) {
+  static Future<bool> syncPlugin(Map plugin) async {
+    if (_isProcessingNotifiers[plugin['name']]!.value) {
       final context = NavigationManager().context;
       showToast(
-        '${_plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
+        '${plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
       return false;
     }
     try {
-      _plugin = _plugins.firstWhere(
-        (value) => value['name'] == _plugin['name'],
-      );
-      final settings = getUserSettings(_plugin['name']);
-      _plugin['settings'] = settings;
+      plugin = _plugins.firstWhere((value) => value['name'] == plugin['name']);
+      final settings = getUserSettings(plugin['name']);
+      plugin['settings'] = settings;
       Map pluginData = {};
       final source =
-          settings['source'] ?? _plugin['source'] ?? _plugin['originalSource'];
+          settings['source'] ?? plugin['source'] ?? plugin['originalSource'];
       if (source != null) {
         if (isFilePath(source)) {
           if (doesFileExist(source)) {
@@ -110,16 +108,13 @@ class PluginsManager {
           pluginData = await getOnlinePlugin(source);
         }
         if (pluginData.isNotEmpty) {
-          _pluginsCacheData.removeWhere(
-            (value) => value['name'] == _plugin['name'],
-          );
           final flutterJs = getJavascriptRuntime();
           await flutterJs.enableFetch();
           await flutterJs.enableHandlePromises();
           final result = flutterJs.evaluate(pluginData['script']);
           if (!result.isError) {
-            _pluginsCacheData.add(pluginData);
             flutterJs.dispose();
+            await addPlugin(pluginData);
             addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
             return true;
           }
@@ -150,6 +145,25 @@ class PluginsManager {
     }
   }
 
+  static Future<void> addPlugin(Map plugin) async {
+    try {
+      removePlugin(plugin['name']);
+      _pluginsCacheData.add(plugin);
+      _plugins.add(plugin);
+      _isProcessingNotifiers[plugin['name']] = ValueNotifier(false);
+      _backgroundJobNotifiers[plugin['name']] = ValueNotifier(null);
+      _futures[plugin['name']] = [];
+      _completed[plugin['name']] = [];
+      _activeJob[plugin['name']] = null;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
   static Future<void> reloadPlugins() async {
     try {
       _plugins.clear();
@@ -158,9 +172,9 @@ class PluginsManager {
             .where((value) => value['name'] == _plugin['name'])
             .toList()
             .isEmpty) {
-          _plugins.add({'name': _plugin['name'], 'script': _plugin['script']});
+          _plugins.add(_plugin);
           _isProcessingNotifiers[_plugin['name']] = ValueNotifier(false);
-          _backgroundJobNotifiers[_plugin['name']] = ValueNotifier(-1);
+          _backgroundJobNotifiers[_plugin['name']] = ValueNotifier(null);
           _futures[_plugin['name']] = [];
           _completed[_plugin['name']] = [];
           _activeJob[_plugin['name']] = null;
@@ -328,7 +342,7 @@ class PluginsManager {
         Map<String, dynamic>.from(_activeJob[pluginName]),
       );
       _activeJob[pluginName] = null;
-      _backgroundJobNotifiers[pluginName]!.value = -1;
+      _backgroundJobNotifiers[pluginName]!.value = null;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -337,6 +351,20 @@ class PluginsManager {
       );
     }
     return unawaited(_executeBackground(pluginName));
+  }
+
+  static void removeBackgroundJob(String pluginName, Map list, UniqueKey id) {
+    try {
+      list[pluginName].removeWhere(
+        (e) => e['id'] == id && e['status'] != 'running',
+      );
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   static void queueBackground({
@@ -352,11 +380,11 @@ class PluginsManager {
         orElse: () => {},
       );
       if (_plugin.isEmpty) return;
-      _backgroundJobNotifiers[pluginName]!.value =
-          _futures.length + _completed.length + 1;
+      final key = UniqueKey();
+      _backgroundJobNotifiers[pluginName]!.value = key;
       if (!_futures.containsKey(pluginName)) _futures[pluginName] = [];
       _futures[pluginName].add({
-        'id': _futures.length + _completed.length + 1,
+        'id': key,
         'code': buildMethodCall(methodName, args),
         'message': message ?? pluginName,
         'plugin': pluginName,
@@ -369,11 +397,14 @@ class PluginsManager {
         'error': false,
         'result': null,
       });
-      _futures[pluginName].sort(
-        (a, b) =>
-            (int.tryParse(b['priority']) ?? 0) -
-            (int.tryParse(a['priority']) ?? 0),
-      );
+      _futures[pluginName].sort((a, b) {
+        try {
+          return ((b['priority'] as int?) ?? 0) -
+              ((a['priority'] as int?) ?? 0);
+        } catch (_) {
+          return 0;
+        }
+      });
       if (!_isProcessingNotifiers[pluginName]!.value)
         unawaited(_executeBackground(pluginName));
     } catch (e, stackTrace) {
@@ -437,7 +468,7 @@ class PluginsManager {
           _plugins.add(data);
           pluginsDataNotifier.value = _pluginsCacheData.length;
           _isProcessingNotifiers[data['name']] = ValueNotifier(false);
-          _backgroundJobNotifiers[data['name']] = ValueNotifier(-1);
+          _backgroundJobNotifiers[data['name']] = ValueNotifier(null);
           _futures[data['name']] = [];
           _completed[data['name']] = [];
           _activeJob[data['name']] = null;
@@ -551,6 +582,8 @@ class PluginsManager {
       final text =
           result == null
               ? '$pluginName: $result'
+              : result is String
+              ? result
               : result['message'] == null
               ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
               : '$pluginName: ${result['message']}';
@@ -675,12 +708,29 @@ class PluginsManager {
                   ),
                 ),
                 SectionHeader(title: context.l10n!.backgroundJobs),
-                Flexible(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: getPluginJobList(pluginName),
+                if (_isProcessingNotifiers[pluginName] != null &&
+                    _backgroundJobNotifiers[pluginName] != null)
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: ValueListenableBuilder(
+                        valueListenable: _isProcessingNotifiers[pluginName]!,
+                        builder: (context, value, __) {
+                          return ValueListenableBuilder(
+                            valueListenable:
+                                _backgroundJobNotifiers[pluginName]!,
+                            builder: (context, value, __) {
+                              return getPluginJobList(pluginName, context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  Card(
+                    child: ListTile(title: Text(context.l10n!.nothingInQueue)),
                   ),
-                ),
               ],
             ),
       );
@@ -694,69 +744,106 @@ class PluginsManager {
     }
   }
 
-  static Widget getPluginJobList(String pluginName) {
-    try {
-      final items = <Widget>[
-        if (_activeJob[pluginName] != null)
-          Card(
-            child: ListTile(
-              title: Text(
-                '${_activeJob[pluginName]!['message']} Priority: ${_activeJob[pluginName]!['priority']}',
-              ),
-              trailing: const SizedBox(
-                width: 24,
-                height: 24,
-                child: Spinner(),
-              ), //const Icon(Icons.bolt),
+  static List<Widget> _getJobList(
+    String pluginName,
+    BuildContext context,
+    void Function(void Function()) setState,
+  ) {
+    return <Widget>[
+      if (_activeJob[pluginName] != null)
+        Card(
+          child: ListTile(
+            title: Text(
+              '${_activeJob[pluginName]!['message']} Priority: ${_activeJob[pluginName]!['priority']}',
             ),
-          ),
-        ..._completed[pluginName].map((job) {
-          final result = tryDecode(job['result']) ?? {};
-          return Card(
-            child: ListTile(
-              title: Text(
-                '${job['message']} Priority: ${job['priority']}, ${result['message']}',
-              ),
-              trailing: const Icon(FluentIcons.check_24_regular),
-            ),
-          );
-        }),
-        ..._futures[pluginName].map(
-          (job) => Card(
-            child: ListTile(
-              title: Text('${job['message']} Priority: ${job['priority']}'),
-              trailing: const Icon(FluentIcons.clock_24_regular),
+            trailing: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: commonBarContentPadding,
+                  child: SizedBox.square(dimension: 20, child: Spinner()),
+                ),
+                Padding(
+                  padding: commonBarContentPadding,
+                  child: Icon(size: 24, FluentIcons.dismiss_24_regular),
+                ),
+              ],
             ),
           ),
         ),
-      ];
-      return StatefulBuilder(
-        builder:
-            (context, setState) => ValueListenableBuilder(
-              valueListenable: _isProcessingNotifiers[pluginName]!,
-              builder:
-                  (context, value, __) => ValueListenableBuilder(
-                    valueListenable: _backgroundJobNotifiers[pluginName]!,
-                    builder:
-                        (context, value, __) => ListView(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: commonListViewBottomPadding,
-                          children:
-                              items.isEmpty
-                                  ? [
-                                    Card(
-                                      child: ListTile(
-                                        title: Text(
-                                          context.l10n!.nothingInQueue,
-                                        ),
-                                      ),
-                                    ),
-                                  ]
-                                  : items,
-                        ),
-                  ),
+      ..._futures[pluginName].map(
+        (job) => Card(
+          child: ListTile(
+            title: Text('${job['message']} Priority: ${job['priority']}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: commonBarContentPadding,
+                  child: Icon(size: 24, FluentIcons.clock_24_regular),
+                ),
+                IconButton(
+                  icon: const Icon(size: 24, FluentIcons.dismiss_24_regular),
+                  onPressed: () {
+                    removeBackgroundJob(pluginName, _completed, job['id']);
+                    if (context.mounted) setState(() {});
+                  },
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+      ..._completed[pluginName].map((job) {
+        final result = tryDecode(job['result']) ?? {};
+        return Card(
+          child: ListTile(
+            title: Text(
+              '${job['message']} Priority: ${job['priority']}, ${result['message']}',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: commonBarContentPadding,
+                  child: Icon(size: 24, FluentIcons.checkmark_24_filled),
+                ),
+                IconButton(
+                  icon: const Icon(size: 24, FluentIcons.dismiss_24_regular),
+                  onPressed: () {
+                    removeBackgroundJob(pluginName, _completed, job['id']);
+                    if (context.mounted) setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    ];
+  }
+
+  static Widget getPluginJobList(String pluginName, BuildContext context) {
+    try {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final items = _getJobList(pluginName, context, setState);
+          return ListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: commonListViewBottomPadding,
+            children:
+                items.isEmpty
+                    ? [
+                      Card(
+                        child: ListTile(
+                          title: Text(context.l10n!.nothingInQueue),
+                        ),
+                      ),
+                    ]
+                    : items,
+          );
+        },
       );
     } catch (e, stackTrace) {
       logger.log(

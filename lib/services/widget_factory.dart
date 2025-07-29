@@ -91,7 +91,9 @@ class WidgetFactory {
           onPressed: isEnabled ? onPressed : null,
           icon: const Icon(FluentIcons.arrow_undo_24_regular),
         )
-        : isLargeScreen() ? const SizedBox.square(dimension: 40) : const SizedBox.shrink();
+        : isLargeScreen()
+        ? const SizedBox.square(dimension: 40)
+        : const SizedBox.shrink();
   }
 
   static final void Function({
@@ -118,6 +120,14 @@ class WidgetFactory {
   }) {
     PM.queueBackground(
       pluginName: pluginName,
+      priority:
+          methodData['priority'] != null
+              ? (methodData['priority'] is String
+                  ? (int.tryParse(methodData['priority']) ?? 0)
+                  : (methodData['priority'] is int
+                      ? methodData['priority']
+                      : 0))
+              : 0,
       methodName:
           methodParamBuilder != null
               ? methodParamBuilder()
@@ -350,23 +360,32 @@ class WidgetFactory {
     String? label,
   }) {
     final icon = _iconMap[iconName];
-    final button = IconButton(
-      tooltip: label,
-      onPressed:
-          () => _method(
-            pluginName: pluginName,
-            methodData: methodData,
-            id: id,
-            label: label ?? '',
-            context: context,
-            methodParamBuilder:
-                () => PM.buildMethodCall(
-                  methodData?['methodName'],
-                  getDataFn != null ? [getDataFn()] : null,
+    final button = Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox.square(dimension: 40),
+          IconButton(
+            tooltip: label,
+            onPressed:
+                () => _method(
+                  pluginName: pluginName,
+                  methodData: methodData,
+                  id: id,
+                  label: label ?? '',
+                  context: context,
+                  methodParamBuilder:
+                      () => PM.buildMethodCall(
+                        methodData?['methodName'],
+                        getDataFn != null ? [getDataFn()] : null,
+                      ),
                 ),
+            icon: Icon(icon, color: Theme.of(context).colorScheme.primary),
+            iconSize: size,
           ),
-      icon: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      iconSize: size,
+        ],
+      ),
     );
     if (menuContext?.toLowerCase() == 'settings')
       return CustomBar(
@@ -537,9 +556,9 @@ class WidgetFactory {
           mainAxisSize: MainAxisSize.min,
           children: [
             _resetFieldButton(
-                () => resetField(onSubmittedData),
-                controller.text != defaultValue,
-              ),
+              () => resetField(onSubmittedData),
+              controller.text != defaultValue,
+            ),
             Expanded(
               child: TextField(
                 decoration:
@@ -784,6 +803,45 @@ class WidgetFactory {
     return items;
   }
 
+  static Widget _buildTextButton({
+    required Map methodData,
+    required String pluginName,
+    required String label,
+    required BuildContext context,
+    IconData? icon,
+  }) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox.square(dimension: 40),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+            ),
+            onPressed:
+                () => _method(
+                  pluginName: pluginName,
+                  methodData: methodData,
+                  id: label,
+                  label: label,
+                  context: context,
+                ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) Icon(icon),
+                const SizedBox(width: 7),
+                Text(label),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget _getTextButtonWidget({
     required Map methodData,
     required String pluginName,
@@ -795,27 +853,30 @@ class WidgetFactory {
   }) {
     final icon = _iconMap[iconName];
     return CustomBar(
-      tileName: label,
-      tileIcon: icon ?? FluentIcons.cursor_hover_24_filled,
+      tileName: isLargeScreen() ? label : null,
+      tileIcon:
+          isLargeScreen() ? icon ?? FluentIcons.cursor_hover_24_filled : null,
       borderRadius: borderRadius,
-      trailing: ElevatedButton(
-        onPressed:
-            () => _method(
-              pluginName: pluginName,
-              methodData: methodData,
-              id: label,
-              label: label,
-              context: context,
-            ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) Icon(icon),
-            const SizedBox(width: 7),
-            Text(label),
-          ],
-        ),
-      ),
+      leading:
+          !isLargeScreen()
+              ? _buildTextButton(
+                methodData: methodData,
+                pluginName: pluginName,
+                label: label,
+                context: context,
+                icon: icon,
+              )
+              : null,
+      trailing:
+          isLargeScreen()
+              ? _buildTextButton(
+                methodData: methodData,
+                pluginName: pluginName,
+                label: label,
+                context: context,
+                icon: icon,
+              )
+              : null,
     );
   }
 
