@@ -770,9 +770,9 @@ class PluginsManager {
                   padding: commonBarContentPadding,
                   child: SizedBox.square(dimension: 20, child: Spinner()),
                 ),
-                Padding(
-                  padding: commonBarContentPadding,
-                  child: Icon(size: 24, FluentIcons.dismiss_24_regular),
+                IconButton(
+                  icon: Icon(size: 24, FluentIcons.dismiss_24_regular),
+                  onPressed: null,
                 ),
               ],
             ),
@@ -792,7 +792,7 @@ class PluginsManager {
                 IconButton(
                   icon: const Icon(size: 24, FluentIcons.dismiss_24_regular),
                   onPressed: () {
-                    removeBackgroundJob(pluginName, _completed, job['id']);
+                    removeBackgroundJob(pluginName, _futures, job['id']);
                     if (context.mounted) setState(() {});
                   },
                 ),
