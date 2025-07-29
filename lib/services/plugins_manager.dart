@@ -540,7 +540,7 @@ class PluginsManager {
           script: script,
           methodName: 'pluginVersion',
         );
-        final manifest = _extractManifest(script);
+        final manifest = jsonDecode(jsonEncode(_extractManifest(script)));
         if (name != null &&
             !name.isError &&
             version != null &&
@@ -552,8 +552,8 @@ class PluginsManager {
             'manifest': manifest,
             'originalSource': source,
             'source': manifest['settings']['source'] ?? source,
-            'defaultSettings': manifest['settings'],
-            'userSettings': manifest['settings'],
+            'defaultSettings': jsonDecode(jsonEncode(manifest['settings'])),
+            'userSettings': jsonDecode(jsonEncode(manifest['settings'])),
           };
           return data;
         }
@@ -988,7 +988,6 @@ class PluginsManager {
     String key,
     dynamic setting,
   ) {
-    //TODO fix updating settings
     try {
       final settings = getUserSettings(pluginName);
       settings[key] = setting;
@@ -1026,16 +1025,11 @@ class PluginsManager {
 
   static void restSettings(String pluginName) {
     try {
-      final (result, _) = _executeMethod(
-        pluginName: pluginName,
-        methodName: 'pluginSettings',
-      );
-      if (result == null || result.isError) return;
-      final settings = getDefaultSettings(pluginName);
+      final defaultSettings = getDefaultSettings(pluginName);
       final userSettings = getUserSettings(pluginName);
-      if (userSettings != null && settings != null) {
-        (userSettings as Map).clear();
-        userSettings.addAll(settings);
+      if (userSettings != null && defaultSettings != null) {
+        userSettings.clear();
+        userSettings.addAll(defaultSettings);
       }
       addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
     } catch (e, stackTrace) {
