@@ -196,5 +196,14 @@
   "spotifyNotice": "Devido às limitações legais do Spotify, o Reverbio não pode se conectar diretamente ao Spotify para importar playlists. Use um desses serviços de exportação para exportar suas playlists para o formato CSV e, em seguida, faça o upload para o Reverbio. Certifique-se de incluir Artista, Música (Faixa), Álbum e ISRC, se disponível, em sua exportação.",
   "import": "Importar",
   "importPlaylists": "Importar playlists",
-  "importNotice": "Devido às restrições legais de vários serviços de streaming pagos, o Reverbio não pode se conectar diretamente aos serviços de streaming para importar playlists. Use um desses serviços de exportação para exportar suas playlists para o formato CSV e, em seguida, faça o upload para o Reverbio. Você pode importar uma playlist de qualquer serviço, desde que o arquivo esteja no formato CSV, com cabeçalhos, e o arquivo contenha, no mínimo, Artista e Música. Inclua ISRC (se disponível) para uma análise mais precisa dos dados da música."
+  "importNotice": "Devido às restrições legais de vários serviços de streaming pagos, o Reverbio não pode se conectar diretamente aos serviços de streaming para importar playlists. Use um desses serviços de exportação para exportar suas playlists para o formato CSV e, em seguida, faça o upload para o Reverbio. Você pode importar uma playlist de qualquer serviço, desde que o arquivo esteja no formato CSV, com cabeçalhos, e o arquivo contenha, no mínimo, Artista e Música. Inclua ISRC (se disponível) para uma análise mais precisa dos dados da música.",
+  "addedPlaylistFiles": "Arquivos adicionados como playlists",
+  "addedSomePlaylistFiles": "Adicionados alguns arquivos como playlists antes que um erro ocorresse. Consulte os logs para mais detalhes. Arquivos adicionados",
+  "imported": "Importado",
+  "invalidPlaylistData": "Dados de playlist inválidos",
+  "failedToLoadPlaylist": "Falha ao carregar playlist",
+  "queueCleared": "Fila limpa!",
+  "cannotReloadLocalPlugin": "Não é possível recarregar o Plugin de um arquivo local no Mobile. Exclua o plugin e adicione-o novamente para atualizá-lo. Nome do plugin",
+  "addedBackgroundJob": "adicionado à fila em segundo plano",
+  "updated": "Atualizado"
 }

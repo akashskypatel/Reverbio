@@ -196,5 +196,14 @@
   "spotifyNotice": "En raison des limitations légales de Spotify, Reverbio ne peut pas se connecter directement à Spotify pour importer des playlists. Veuillez utiliser l'un de ces services d'exportation pour exporter vos playlists au format CSV, puis les télécharger sur Reverbio. Assurez-vous d'inclure l'Artiste, le Titre (Piste), l'Album et l'ISRC si disponible dans votre exportation.",
   "import": "Importer",
   "importPlaylists": "Importer des playlists",
-  "importNotice": "En raison des restrictions légales de divers services de streaming payants, Reverbio ne peut pas se connecter directement aux services de streaming pour importer des playlists. Veuillez utiliser l'un de ces services d'exportation pour exporter vos playlists au format CSV, puis les télécharger sur Reverbio. Vous pouvez importer une playlist à partir de n'importe quel service tant que le fichier est au format CSV, avec des en-têtes, et que le fichier contient au minimum l'Artiste et le Titre. Incluez l'ISRC (si disponible) pour une analyse plus précise des données musicales."
+  "importNotice": "En raison des restrictions légales de divers services de streaming payants, Reverbio ne peut pas se connecter directement aux services de streaming pour importer des playlists. Veuillez utiliser l'un de ces services d'exportation pour exporter vos playlists au format CSV, puis les télécharger sur Reverbio. Vous pouvez importer une playlist à partir de n'importe quel service tant que le fichier est au format CSV, avec des en-têtes, et que le fichier contient au minimum l'Artiste et le Titre. Incluez l'ISRC (si disponible) pour une analyse plus précise des données musicales.",
+  "addedPlaylistFiles": "Fichiers ajoutés en tant que playlists",
+  "addedSomePlaylistFiles": "Certains fichiers ont été ajoutés en tant que playlists avant qu'une erreur ne se produise. Veuillez consulter les journaux pour plus de détails. Fichiers ajoutés",
+  "imported": "Importé",
+  "invalidPlaylistData": "Données de playlist non valides",
+  "failedToLoadPlaylist": "Échec du chargement de la playlist",
+  "queueCleared": "File d'attente vidée !",
+  "cannotReloadLocalPlugin": "Impossible de recharger le plugin à partir d'un fichier local sur mobile. Supprimez le plugin et ajoutez-le à nouveau pour le mettre à jour. Nom du plugin",
+  "addedBackgroundJob": "ajouté à la file d'attente en arrière-plan",
+  "updated": "Mis à jour"
 }

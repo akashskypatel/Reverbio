@@ -631,7 +631,7 @@ Future<bool> uploadCsvPlaylist(BuildContext context) async {
           rows.first.map((e) => _standardizeFieldName(e.toString())).toList();
       if (!headers.contains('artist') || !headers.contains('title')) {
         logger.log(
-          '${file.path} does not contain required fields Artist, Song Title, and ISRC (if possible): $headers',
+          'File does not contain required fields Artist, Song Title, and ISRC (if possible): ${file.path} - $headers',
           null,
           null,
         );
@@ -658,14 +658,14 @@ Future<bool> uploadCsvPlaylist(BuildContext context) async {
           findPlaylistByName(baseFileName) == null
               ? baseFileName
               : incrementFileName(baseFileName);
-      createCustomPlaylist('$playlistName (Imported)', context, songList: list);
+      createCustomPlaylist('$playlistName (${context.l10n!.imported})', context, songList: list);
       count++;
     }
-    showToast('Added files as Playlists: $count/$fileCount', context: context);
+    showToast('${context.l10n!.addedPlaylistFiles}: $count/$fileCount', context: context);
     unawaited(clearFilePickerTempFiles());
   } catch (e, stackTrace) {
     showToast(
-      'Added some files as Playlists before error an error occurred. Please see logs for more details. Files added: $count/$fileCount',
+      '${context.l10n!.addedSomePlaylistFiles}: $count/$fileCount',
       context: context,
     );
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

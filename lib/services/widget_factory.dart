@@ -138,7 +138,7 @@ class WidgetFactory {
               : methodData?['methodName'],
     );
     showToast(
-      '$pluginName - $label added to background queue.',
+      '$pluginName - $label ${context.l10n!.addedBackgroundJob}',
       context: context,
     );
     if (context.mounted)

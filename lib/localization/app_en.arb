@@ -196,5 +196,14 @@
   "spotifyNotice": "Due to Spotify's legal limitations Reverbio cannot connect directly to Spotify to import playlists. Please use one of these exporting services to export your playlists to CSV format, then upload them to Reverbio. Be sure to include Artist, Song (Track) name, Album, and ISRC if available in your export.",
   "import": "Import",
   "importPlaylists": "Import Playlists",
-  "importNotice": "Due to various paid streaming services' legal restrictions Reverbio cannot connect directly to the streaming services to import playlists. Please use one of these exporting services to export your playlists to CSV format, then upload them to Reverbio. You can import a playlist from any service as long as the file is in CSV format, with headers, and the file contains, at a minimum, Artist, and Song. Include ISRC (if available) for more accurate song data parsing."
+  "importNotice": "Due to various paid streaming services' legal restrictions Reverbio cannot connect directly to the streaming services to import playlists. Please use one of these exporting services to export your playlists to CSV format, then upload them to Reverbio. You can import a playlist from any service as long as the file is in CSV format, with headers, and the file contains, at a minimum, Artist, and Song. Include ISRC (if available) for more accurate song data parsing.",
+  "addedPlaylistFiles": "Added files as Playlists",
+  "addedSomePlaylistFiles": "Added some files as Playlists before error an error occurred. Please see logs for more details. Files added",
+  "imported": "Imported",
+  "invalidPlaylistData": "Invalid playlist data",
+  "failedToLoadPlaylist": "Failed to load playlist",
+  "queueCleared": "Queue cleared!",
+  "cannotReloadLocalPlugin": "Cannot reload Plugin from local file source on Mobile. Delete the plugin and re-add it to update it. Plugin name",
+  "addedBackgroundJob": "added to background queue",
+  "updated": "Updated"
 }

@@ -196,5 +196,14 @@
   "spotifyNotice": "Do hạn chế pháp lý của Spotify, Reverbio không thể kết nối trực tiếp với Spotify để nhập danh sách phát. Vui lòng sử dụng một trong các dịch vụ xuất này để xuất danh sách phát của bạn sang định dạng CSV, sau đó tải lên Reverbio. Đảm bảo bao gồm Nghệ sĩ, Tên bài hát (Track), Album và ISRC (nếu có) trong bản xuất của bạn.",
   "import": "Nhập",
   "importPlaylists": "Nhập danh sách phát",
-  "importNotice": "Do hạn chế pháp lý của các dịch vụ phát trực tuyến trả phí khác nhau, Reverbio không thể kết nối trực tiếp với các dịch vụ phát trực tuyến để nhập danh sách phát. Vui lòng sử dụng một trong các dịch vụ xuất này để xuất danh sách phát của bạn sang định dạng CSV, sau đó tải lên Reverbio. Bạn có thể nhập danh sách phát từ bất kỳ dịch vụ nào miễn là tệp ở định dạng CSV, có tiêu đề và tệp chứa ít nhất Nghệ sĩ và Bài hát. Bao gồm ISRC (nếu có) để phân tích dữ liệu bài hát chính xác hơn."
+  "importNotice": "Do hạn chế pháp lý của các dịch vụ phát trực tuyến trả phí khác nhau, Reverbio không thể kết nối trực tiếp với các dịch vụ phát trực tuyến để nhập danh sách phát. Vui lòng sử dụng một trong các dịch vụ xuất này để xuất danh sách phát của bạn sang định dạng CSV, sau đó tải lên Reverbio. Bạn có thể nhập danh sách phát từ bất kỳ dịch vụ nào miễn là tệp ở định dạng CSV, có tiêu đề và tệp chứa ít nhất Nghệ sĩ và Bài hát. Bao gồm ISRC (nếu có) để phân tích dữ liệu bài hát chính xác hơn.",
+  "addedPlaylistFiles": "Đã thêm tệp dưới dạng danh sách phát",
+  "addedSomePlaylistFiles": "Đã thêm một số tệp dưới dạng danh sách phát trước khi xảy ra lỗi. Vui lòng xem nhật ký để biết thêm chi tiết. Tệp đã thêm",
+  "imported": "Đã nhập",
+  "invalidPlaylistData": "Dữ liệu danh sách phát không hợp lệ",
+  "failedToLoadPlaylist": "Không tải được danh sách phát",
+  "queueCleared": "Đã xóa hàng đợi!",
+  "cannotReloadLocalPlugin": "Không thể tải lại Plugin từ nguồn tệp cục bộ trên Di động. Xóa plugin và thêm lại để cập nhật. Tên plugin",
+  "addedBackgroundJob": "đã thêm vào hàng đợi nền",
+  "updated": "Đã cập nhật"
 }

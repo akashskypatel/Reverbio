@@ -196,5 +196,14 @@
   "spotifyNotice": "由於Spotify的法律限制，Reverbio無法直接連接Spotify來導入播放清單。請使用以下其中一個導出服務將你的播放清單導出為CSV格式，然後上傳到Reverbio。確保你的導出包含藝人、歌曲（曲目）名稱、專輯和ISRC（如果有的話）。",
   "import": "導入",
   "importPlaylists": "導入播放清單",
-  "importNotice": "由於各種付費串流服務的法律限制，Reverbio無法直接連接串流服務來導入播放清單。請使用以下其中一個導出服務將你的播放清單導出為CSV格式，然後上傳到Reverbio。只要檔案是CSV格式、有標題，並且檔案至少包含藝人和歌曲名稱，你就可以從任何服務導入播放清單。包含ISRC（如果有的話）可以更準確解析歌曲數據。"
+  "importNotice": "由於各種付費串流服務的法律限制，Reverbio無法直接連接串流服務來導入播放清單。請使用以下其中一個導出服務將你的播放清單導出為CSV格式，然後上傳到Reverbio。只要檔案是CSV格式、有標題，並且檔案至少包含藝人和歌曲名稱，你就可以從任何服務導入播放清單。包含ISRC（如果有的話）可以更準確解析歌曲數據。",
+  "addedPlaylistFiles": "已將檔案加入為播放清單",
+  "addedSomePlaylistFiles": "錯誤發生前已將部分檔案加入為播放清單。詳情請查看日誌。已加入檔案",
+  "imported": "已導入",
+  "invalidPlaylistData": "無效的播放清單數據",
+  "failedToLoadPlaylist": "載入播放清單失敗",
+  "queueCleared": "已清除隊列！",
+  "cannotReloadLocalPlugin": "無法在行動裝置上從本地檔案來源重新載入插件。請刪除插件並重新添加以更新。插件名稱",
+  "addedBackgroundJob": "已加入背景隊列",
+  "updated": "已更新"
 }

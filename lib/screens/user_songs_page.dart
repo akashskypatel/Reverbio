@@ -174,7 +174,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       ? null
                       : () {
                         clearSongQueue();
-                        showToast('Queue cleared!');
+                        showToast(context.l10n!.queueCleared);
                       },
               disabledColor: _theme.colorScheme.inversePrimary,
               color: _theme.colorScheme.primary,

@@ -672,7 +672,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   await _reloadPlugins(PM.pluginsData[index]);
                                   setState(() {});
                                   showToast(
-                                    '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) updated!',
+                                    '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) ${context.l10n!.updated}!',
                                   );
                                 },
                                 icon: const Icon(

@@ -85,8 +85,8 @@ class PluginsManager {
   }
 
   static Future<bool> syncPlugin(Map plugin) async {
+    final context = NavigationManager().context;
     if (_isProcessingNotifiers[plugin['name']]!.value) {
-      final context = NavigationManager().context;
       showToast(
         '${plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
@@ -103,7 +103,7 @@ class PluginsManager {
         if (isFilePath(source)) {
           if (Platform.isAndroid || Platform.isIOS) {
             showToast(
-              'Cannot reload Plugin from local file source on Mobile. Delete the plugin ${plugin['name']} and re-add it to update it.',
+              '${context.l10n!.cannotReloadLocalPlugin}: ${plugin['name']}',
             );
             return false;
           }
