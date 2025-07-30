@@ -198,7 +198,9 @@ List<Map<String, dynamic>> safeConvert(dynamic input) {
 
 bool isLargeScreen({BuildContext? context}) {
   context = context ?? NavigationManager().context;
-  return MediaQuery.of(context).size.height < MediaQuery.of(context).size.width || MediaQuery.of(context).size.width > 540;
+  return MediaQuery.of(context).size.height <
+          MediaQuery.of(context).size.width ||
+      MediaQuery.of(context).size.width > 540;
 }
 
 List<T> pickRandomItems<T>(List<T> items, int n, {int? seed}) {
@@ -508,4 +510,36 @@ Future<Uri?> getValidImage(dynamic obj) async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
   }
   return null;
+}
+
+int? parseTimeStringToSeconds(String timeString) {
+  if (!timeString.contains(':') && int.tryParse(timeString) == null)
+    return null;
+  final parts =
+      timeString
+          .split(':')
+          .reversed
+          .toList(); // Reverse to [seconds, minutes, hours]
+  if (parts.isEmpty || parts.length > 3) {
+    return null;
+  }
+
+  int seconds = 0;
+  for (int i = 0; i < parts.length; i++) {
+    final value = int.tryParse(parts[i]) ?? 0;
+    seconds +=
+        value *
+        (i == 0
+            ? 1
+            : i == 1
+            ? 60
+            : 3600);
+  }
+  return seconds;
+}
+
+Duration? tryParseDuration(String timeString) {
+  final seconds = parseTimeStringToSeconds(timeString);
+  if (seconds == null) return null;
+  return Duration(seconds: seconds);
 }

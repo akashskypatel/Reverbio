@@ -22,10 +22,14 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/settings_manager.dart';
@@ -489,4 +493,69 @@ bool checkEntityId(String id, String otherId) {
     return ids.values.any((i) => otherId.contains(i));
   }
   return id.contains(otherId) || otherId.contains(id);
+}
+
+Future<void> clearFilePickerTempFiles() async {
+  try {
+    await FilePicker.platform.clearTemporaryFiles();
+  } catch (_) {}
+}
+
+String incrementFileName(String input) {
+  try {
+    final regex = RegExp(r'\((\d+)\)$');
+    final match = regex.firstMatch(input);
+
+    if (match != null) {
+      final number = int.parse(match.group(1)!);
+      final incremented = number + 1;
+      return input.replaceRange(match.start, match.end, '($incremented)');
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return '$input (1)';
+}
+
+Future<File> copyFileToDir(
+  String path,
+  String dir, {
+  int maxAttempts = 100,
+}) async {
+  try {
+    await Directory(dir).create(recursive: true);
+
+    final ext = extension(path);
+    String fileName = basenameWithoutExtension(path);
+    File targetFile = File('$dir/$fileName$ext');
+
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (!await targetFile.exists()) {
+        return await File(path).copy(targetFile.path);
+      }
+      // Increment filename and update target path
+      fileName = incrementFileName(fileName);
+      targetFile = File('$dir/$fileName$ext');
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return File(path);
+}
+
+Future<String?> pickImageFile({int maxAttempts = 100}) async {
+  final _dir = await getApplicationSupportDirectory();
+  final _artworkDirPath = '${_dir.path}/artworks';
+  await Directory(_artworkDirPath).create(recursive: true);
+
+  final file =
+      (await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp'],
+      ))?.files.first;
+  if (file == null || file.path == null) return null;
+
+  final copy = await copyFileToDir(file.path!, _artworkDirPath);
+
+  return copy.path;
 }

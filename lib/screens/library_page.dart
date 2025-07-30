@@ -19,7 +19,6 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +27,7 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
@@ -36,6 +36,7 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
+import 'package:reverbio/widgets/playlist_import.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -393,42 +394,61 @@ class _LibraryPageState extends State<LibraryPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            if (mounted)
-                              setState(() {
-                                isYouTubeMode = true;
-                                id = '';
-                                customPlaylistName = '';
-                                imageUrl = null;
-                              });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isYouTubeMode
-                                    ? inactiveButtonBackground
-                                    : activeButtonBackground,
+                        Tooltip(
+                          message: context.l10n!.youtubePlaylistLinkOrId,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (mounted)
+                                setState(() {
+                                  isYouTubeMode = true;
+                                  id = '';
+                                  customPlaylistName = '';
+                                  imageUrl = null;
+                                });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isYouTubeMode
+                                      ? inactiveButtonBackground
+                                      : activeButtonBackground,
+                            ),
+                            child: const Icon(FluentIcons.globe_add_24_filled),
                           ),
-                          child: const Icon(FluentIcons.globe_add_24_filled),
                         ),
                         const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (mounted)
-                              setState(() {
-                                isYouTubeMode = false;
-                                id = '';
-                                customPlaylistName = '';
-                                imageUrl = null;
-                              });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isYouTubeMode
-                                    ? activeButtonBackground
-                                    : inactiveButtonBackground,
+                        Tooltip(
+                          message: context.l10n!.customPlaylists,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (mounted)
+                                setState(() {
+                                  isYouTubeMode = false;
+                                  id = '';
+                                  customPlaylistName = '';
+                                  imageUrl = null;
+                                });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isYouTubeMode
+                                      ? activeButtonBackground
+                                      : inactiveButtonBackground,
+                            ),
+                            child: const Icon(FluentIcons.person_add_24_filled),
                           ),
-                          child: const Icon(FluentIcons.person_add_24_filled),
+                        ),
+                        const SizedBox(width: 10),
+                        Tooltip(
+                          message: context.l10n!.importPlaylists,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (mounted) showPlaylistImporter(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: activeButtonBackground,
+                            ),
+                            child: const Icon(FluentIcons.table_add_24_filled),
+                          ),
                         ),
                       ],
                     ),
@@ -472,18 +492,7 @@ class _LibraryPageState extends State<LibraryPage> {
                           ),
                           IconButton(
                             onPressed: () async {
-                              final path =
-                                  (await FilePicker.platform.pickFiles(
-                                    type: FileType.custom,
-                                    allowedExtensions: [
-                                      'jpeg',
-                                      'jpg',
-                                      'png',
-                                      'gif',
-                                      'webp',
-                                      'bmp',
-                                    ],
-                                  ))?.paths.first;
+                              final path = await pickImageFile();
                               imageUrl = path;
                               if (imageUrl != null)
                                 imagePathController.text = imageUrl!;
@@ -530,7 +539,7 @@ class _LibraryPageState extends State<LibraryPage> {
                                     context,
                                   ),
                                 );
-                                GoRouter.of(context).pop(context);
+                                GoRouter.of(context).pop();
                               },
                             ),
                       );
@@ -542,7 +551,7 @@ class _LibraryPageState extends State<LibraryPage> {
                           context,
                         ),
                       );
-                      GoRouter.of(context).pop(context);
+                      GoRouter.of(context).pop();
                     }
                   } else {
                     showToast('${context.l10n!.provideIdOrNameError}.');
