@@ -85,7 +85,11 @@ body:
       options:
         - label: Add a custom playlist using YouTube link.
           required: false
-        - label: Add a local custom playlist.
+        - label: Add a local custom playlist without image.
+          required: false
+        - label: Add a local custom playlist with image.
+          required: false
+        - label: Add a imported playlist from csv file.
           required: false
         - label: Confirm liked playlist from home page shows under liked playlists.
           required: false
