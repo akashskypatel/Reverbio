@@ -15,6 +15,7 @@ dependencies:
   app_links: ^6.4.0
   audio_service: ^0.18.17
   cached_network_image: ^3.4.1
+  csv: ^6.0.0
   discogs_api_client: ^0.1.6
   dynamic_color: ^1.7.0
   file_picker: ^10.1.2
