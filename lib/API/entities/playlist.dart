@@ -614,6 +614,7 @@ Future<bool> uploadCsvPlaylist(BuildContext context) async {
     final _importsDirPath = '${_dir.path}/imports';
     final files =
         (await FilePicker.platform.pickFiles(
+          allowMultiple: true,
           type: FileType.custom,
           allowedExtensions: ['csv'],
         ))?.files;
@@ -658,10 +659,17 @@ Future<bool> uploadCsvPlaylist(BuildContext context) async {
           findPlaylistByName(baseFileName) == null
               ? baseFileName
               : incrementFileName(baseFileName);
-      createCustomPlaylist('$playlistName (${context.l10n!.imported})', context, songList: list);
+      createCustomPlaylist(
+        '$playlistName (${context.l10n!.imported})',
+        context,
+        songList: list,
+      );
       count++;
     }
-    showToast('${context.l10n!.addedPlaylistFiles}: $count/$fileCount', context: context);
+    showToast(
+      '${context.l10n!.addedPlaylistFiles}: $count/$fileCount',
+      context: context,
+    );
     unawaited(clearFilePickerTempFiles());
   } catch (e, stackTrace) {
     showToast(
