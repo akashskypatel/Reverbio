@@ -194,5 +194,7 @@
   "errorLatestVersion": "獲取最新應用版本時出錯",
   "importSpotifyPlaylists": "導入Spotify播放清單",
   "spotifyNotice": "由於Spotify嘅法律限制，Reverbio無法直接連接Spotify來導入播放清單。請使用以下其中一個導出服務將你嘅播放清單導出為CSV格式，然後上傳到Reverbio。確保你嘅導出包含藝人、歌曲（曲目）名稱、專輯同ISRC（如果有嘅話）。",
-  "import": "導入"
+  "import": "導入",
+  "importPlaylists": "導入播放清單",
+  "importNotice": "由於各種付費串流服務嘅法律限制，Reverbio無法直接連接串流服務來導入播放清單。請使用以下其中一個導出服務將你嘅播放清單導出為CSV格式，然後上傳到Reverbio。只要檔案係CSV格式、有標題，同埋檔案至少包含藝人同歌曲名稱，你就可以從任何服務導入播放清單。包含ISRC（如果有嘅話）可以更準確解析歌曲數據。"
 }

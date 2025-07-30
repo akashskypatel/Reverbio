@@ -194,5 +194,7 @@
   "errorLatestVersion": "Erreur lors de la récupération de la dernière version de l'application",
   "importSpotifyPlaylists": "Importer des playlists Spotify",
   "spotifyNotice": "En raison des limitations légales de Spotify, Reverbio ne peut pas se connecter directement à Spotify pour importer des playlists. Veuillez utiliser l'un de ces services d'exportation pour exporter vos playlists au format CSV, puis les télécharger sur Reverbio. Assurez-vous d'inclure l'Artiste, le Titre (Piste), l'Album et l'ISRC si disponible dans votre exportation.",
-  "import": "Importer"
+  "import": "Importer",
+  "importPlaylists": "Importer des playlists",
+  "importNotice": "En raison des restrictions légales de divers services de streaming payants, Reverbio ne peut pas se connecter directement aux services de streaming pour importer des playlists. Veuillez utiliser l'un de ces services d'exportation pour exporter vos playlists au format CSV, puis les télécharger sur Reverbio. Vous pouvez importer une playlist à partir de n'importe quel service tant que le fichier est au format CSV, avec des en-têtes, et que le fichier contient au minimum l'Artiste et le Titre. Incluez l'ISRC (si disponible) pour une analyse plus précise des données musicales."
 }

@@ -194,5 +194,7 @@
   "errorLatestVersion": "Kesalahan saat mendapatkan versi aplikasi terbaru",
   "importSpotifyPlaylists": "Impor playlist Spotify",
   "spotifyNotice": "Karena batasan hukum Spotify, Reverbio tidak dapat terhubung langsung ke Spotify untuk mengimpor playlist. Silakan gunakan salah satu layanan ekspor ini untuk mengekspor playlist Anda ke format CSV, lalu unggah ke Reverbio. Pastikan untuk menyertakan Artis, Judul Lagu (Track), Album, dan ISRC jika tersedia dalam ekspor Anda.",
-  "import": "Impor"
+  "import": "Impor",
+  "importPlaylists": "Impor Daftar Putar",
+  "importNotice": "Karena pembatasan hukum dari berbagai layanan streaming berbayar, Reverbio tidak dapat terhubung langsung ke layanan streaming untuk mengimpor daftar putar. Silakan gunakan salah satu layanan ekspor ini untuk mengekspor daftar putar Anda ke format CSV, lalu unggah ke Reverbio. Anda dapat mengimpor daftar putar dari layanan apa pun selama file dalam format CSV, dengan header, dan file tersebut berisi, minimal, Artis dan Lagu. Sertakan ISRC (jika tersedia) untuk penguraian data lagu yang lebih akurat."
 }
