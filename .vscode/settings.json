@@ -7,11 +7,13 @@
     "Discogs",
     "Exportify",
     "Fdroid",
+    "isrc",
     "mbid",
     "MusicBrainz",
     "obtainium",
     "Reverbio",
     "Spotlistr",
+    "webp",
     "ytid"
   ],
   "cmake.ignoreCMakeListsMissing": true
