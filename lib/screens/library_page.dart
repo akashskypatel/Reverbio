@@ -104,9 +104,8 @@ class _LibraryPageState extends State<LibraryPage> {
               padding: commonSingleChildScrollViewPadding,
               child: Column(
                 children: <Widget>[
-                  _buildUserPlaylistsSection(primaryColor),
                   if (!offlineMode.value)
-                    _buildUserLikedPlaylistsSection(primaryColor),
+                    _buildUserPlaylistsSection(primaryColor),
                 ],
               ),
             ),
@@ -117,7 +116,6 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Widget _buildUserPlaylistsSection(Color primaryColor) {
-    userPlaylistBars.clear();
     return ValueListenableBuilder(
       valueListenable: offlineMode,
       builder: (context, value, child) {
@@ -244,6 +242,22 @@ class _LibraryPageState extends State<LibraryPage> {
                   );
                 },
               ),
+              ValueListenableBuilder(
+                valueListenable: currentLikedPlaylistsLength,
+                builder: (context, value, __) {
+                  return Column(
+                    children: [
+                      SectionHeader(title: context.l10n!.likedPlaylists),
+                      if (userLikedPlaylists.isNotEmpty)
+                        _buildPlaylistListView(
+                          context,
+                          userLikedPlaylists,
+                          'youtube',
+                        ),
+                    ],
+                  );
+                },
+              ),
             ],
           ],
         );
@@ -281,7 +295,7 @@ class _LibraryPageState extends State<LibraryPage> {
       }
     } else {
       for (final widget in userPlaylistBars) {
-        final searchStr = widget.playlistData?['title'] ?? '';
+        final searchStr = widget.playlistTitle;
         if (searchStr.isNotEmpty && !searchStr.toLowerCase().contains(query)) {
           widget.setVisibility(false);
           isFilteredNotifier.value = true;
@@ -305,28 +319,14 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  Widget _buildUserLikedPlaylistsSection(Color primaryColor) {
-    return ValueListenableBuilder(
-      valueListenable: currentLikedPlaylistsLength,
-      builder: (context, value, __) {
-        return Column(
-          children: [
-            SectionHeader(title: context.l10n!.likedPlaylists),
-            if (userLikedPlaylists.isNotEmpty)
-              _buildPlaylistListView(context, userLikedPlaylists, 'youtube'),
-          ],
-        );
-      },
-    );
-  }
-
   void _buildPlaylistBars(List playlists) {
-    userPlaylistBars.clear();
     for (final playlist in playlists) {
       if (playlist['source'] == null) playlist['source'] = 'user-liked';
       userPlaylistBars.add(
         PlaylistBar(
-          key: ValueKey(playlist['ytid'] ?? playlist['title']),
+          key: ValueKey(
+            playlist['id'] ?? playlist['ytid'] ?? playlist['title'],
+          ),
           playlist['title'],
           playlistId: playlist['ytid'],
           playlistArtwork: playlist['image'],
@@ -347,6 +347,7 @@ class _LibraryPageState extends State<LibraryPage> {
     List playlists,
     String source,
   ) {
+    userPlaylistBars.removeWhere((e) => e.playlistData?['source'] == source);
     _buildPlaylistBars(playlists);
     final bars =
         userPlaylistBars
