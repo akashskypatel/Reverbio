@@ -191,5 +191,8 @@
   "currentVersion": "Toleo la sasa",
   "latestVersion": "Toleo mpya",
   "latestVersionUsed": "Unatumia toleo la hivi karibuni",
-  "errorLatestVersion": "Hitilafu wakati wa kupata toleo jipya la programu"
+  "errorLatestVersion": "Hitilafu wakati wa kupata toleo jipya la programu",
+  "importSpotifyPlaylists": "Ingiza orodha ya kucheza ya Spotify",
+  "spotifyNotice": "Kwa sababu ya vikwazo vya kisheria vya Spotify, Reverbio haiwezi kuunganisha moja kwa moja na Spotify kuagiza orodha za kucheza. Tafadhali tumia moja ya huduma hizi za uhamishaji ili kuhamisha orodha yako kucheza kwa umbizo la CSV, kisha upakie kwa Reverbio. Hakikisha unajumuisha Msanii, Wimbo (Wimbo), Albamu na ISRC ikiwa inapatikana kwenye uhamishaji wako.",
+  "import": "Ingiza"
 }

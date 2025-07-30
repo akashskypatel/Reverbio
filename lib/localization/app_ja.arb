@@ -191,5 +191,8 @@
   "currentVersion": "現在のバージョン",
   "latestVersion": "最新バージョン",
   "latestVersionUsed": "最新バージョンを使用しています",
-  "errorLatestVersion": "アプリの最新バージョンの取得中にエラーが発生しました"
+  "errorLatestVersion": "アプリの最新バージョンの取得中にエラーが発生しました",
+  "importSpotifyPlaylists": "Spotifyプレイリストをインポート",
+  "spotifyNotice": "Spotifyの法的制限により、ReverbioはプレイリストをインポートするためにSpotifyに直接接続できません。これらのエクスポートサービスのいずれかを使用して、プレイリストをCSV形式にエクスポートし、Reverbioにアップロードしてください。エクスポートには、アーティスト名、曲名（トラック名）、アルバム名、および可能であればISRCを含めてください。",
+  "import": "インポート"
 }

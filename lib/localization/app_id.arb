@@ -191,5 +191,8 @@
   "currentVersion": "Versi saat ini",
   "latestVersion": "Versi terbaru",
   "latestVersionUsed": "Anda menggunakan versi terbaru",
-  "errorLatestVersion": "Kesalahan saat mendapatkan versi aplikasi terbaru"
+  "errorLatestVersion": "Kesalahan saat mendapatkan versi aplikasi terbaru",
+  "importSpotifyPlaylists": "Impor playlist Spotify",
+  "spotifyNotice": "Karena batasan hukum Spotify, Reverbio tidak dapat terhubung langsung ke Spotify untuk mengimpor playlist. Silakan gunakan salah satu layanan ekspor ini untuk mengekspor playlist Anda ke format CSV, lalu unggah ke Reverbio. Pastikan untuk menyertakan Artis, Judul Lagu (Track), Album, dan ISRC jika tersedia dalam ekspor Anda.",
+  "import": "Impor"
 }

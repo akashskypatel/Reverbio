@@ -191,5 +191,8 @@
   "currentVersion": "Phiên bản hiện tại",
   "latestVersion": "Phiên bản mới nhất",
   "latestVersionUsed": "Bạn đang sử dụng phiên bản mới nhất",
-  "errorLatestVersion": "Lỗi khi lấy phiên bản ứng dụng mới nhất"
+  "errorLatestVersion": "Lỗi khi lấy phiên bản ứng dụng mới nhất",
+  "importSpotifyPlaylists": "Nhập playlist từ Spotify",
+  "spotifyNotice": "Do hạn chế pháp lý của Spotify, Reverbio không thể kết nối trực tiếp với Spotify để nhập danh sách phát. Vui lòng sử dụng một trong các dịch vụ xuất này để xuất danh sách phát của bạn sang định dạng CSV, sau đó tải lên Reverbio. Đảm bảo bao gồm Nghệ sĩ, Tên bài hát (Track), Album và ISRC (nếu có) trong bản xuất của bạn.",
+  "import": "Nhập"
 }

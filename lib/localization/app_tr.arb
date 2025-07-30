@@ -191,5 +191,8 @@
   "currentVersion": "Mevcut sürüm",
   "latestVersion": "En son sürüm",
   "latestVersionUsed": "En son sürümü kullanıyorsunuz",
-  "errorLatestVersion": "Uygulamanın en son sürümü alınırken hata"
+  "errorLatestVersion": "Uygulamanın en son sürümü alınırken hata",
+  "importSpotifyPlaylists": "Spotify çalma listelerini içe aktar",
+  "spotifyNotice": "Spotify'nin yasal sınırlamaları nedeniyle Reverbio, çalma listelerini içe aktarmak için doğrudan Spotify'a bağlanamaz. Lütfen çalma listelerinizi CSV formatında dışa aktarmak için bu dışa aktarma hizmetlerinden birini kullanın ve ardından bunları Reverbio'ya yükleyin. Dışa aktarımınızda Sanatçı, Şarkı (Parça) adı, Albüm ve ISRC (varsa) bilgilerini eklediğinizden emin olun.",
+  "import": "İçe aktar"
 }

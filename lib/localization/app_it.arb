@@ -191,5 +191,8 @@
   "currentVersion": "Versione attuale",
   "latestVersion": "Ultima versione",
   "latestVersionUsed": "Stai utilizzando l'ultima versione",
-  "errorLatestVersion": "Errore durante il recupero dell'ultima versione dell'app"
+  "errorLatestVersion": "Errore durante il recupero dell'ultima versione dell'app",
+  "importSpotifyPlaylists": "Importa playlist Spotify",
+  "spotifyNotice": "A causa delle limitazioni legali di Spotify, Reverbio non può connettersi direttamente a Spotify per importare le playlist. Utilizza uno di questi servizi di esportazione per esportare le tue playlist in formato CSV, quindi caricale su Reverbio. Assicurati di includere Artista, Nome canzone (Traccia), Album e ISRC se disponibile nella tua esportazione.",
+  "import": "Importa"
 }

@@ -191,5 +191,8 @@
   "currentVersion": "目前版本",
   "latestVersion": "最新版本",
   "latestVersionUsed": "你正在使用最新版本",
-  "errorLatestVersion": "獲取最新應用版本時出錯"
+  "errorLatestVersion": "獲取最新應用版本時出錯",
+  "importSpotifyPlaylists": "導入Spotify播放清單",
+  "spotifyNotice": "由於Spotify的法律限制，Reverbio無法直接連接Spotify來導入播放清單。請使用以下其中一個導出服務將你的播放清單導出為CSV格式，然後上傳到Reverbio。確保你的導出包含藝人、歌曲（曲目）名稱、專輯和ISRC（如果有的話）。",
+  "import": "導入"
 }
