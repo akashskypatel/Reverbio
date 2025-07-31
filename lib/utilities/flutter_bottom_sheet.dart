@@ -33,7 +33,7 @@ void showCustomBottomSheet(
     enableDrag: true,
     (ctx) => TapRegion(
       onTapOutside: (event) {
-        if (canCloseOnTapOutside == null || canCloseOnTapOutside.value)
+        if ((canCloseOnTapOutside == null || canCloseOnTapOutside.value) && GoRouter.of(ctx).canPop())
           GoRouter.of(ctx).pop();
       },
       child: Material(
