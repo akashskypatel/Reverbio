@@ -30,6 +30,7 @@ import 'package:flutter_js/extensions/fetch.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -434,7 +435,7 @@ class PluginsManager {
         if (path == null || path.isEmpty) return {};
       }
       jsContent = await File(path).readAsString();
-      await FilePicker.platform.clearTemporaryFiles();
+      unawaited(clearFilePickerTempFiles());
       return getPluginData(jsContent, path);
     } catch (e, stackTrace) {
       logger.log(
