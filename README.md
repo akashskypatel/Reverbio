@@ -41,6 +41,7 @@ Reverbio: A powerful, ad-free music streaming app with multi-platform support, o
 - Android and Windows Support <br/>
 - Custom plugin support <br/>
 - Like Songs, Albums, Artists and Playlists <br/>
+- (New) Import playlists from any music service using CSV files!
 
 <details>
 <summary>Supported Languages</summary>
