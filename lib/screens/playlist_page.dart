@@ -362,8 +362,10 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
                           if (index != -1) {
                             final newPlaylist = {
+                              'id': 'uc=${customPlaylistName.replaceAll(r'\s+', '_')}',
                               'title': customPlaylistName,
                               'source': 'user-created',
+                              'primary-type': 'playlist',
                               if (imageUrl != null) 'image': imageUrl,
                               'list': widget.playlistData['list'],
                             };
@@ -375,13 +377,13 @@ class _PlaylistPageState extends State<PlaylistPage> {
                             addOrUpdateData(
                               'user',
                               'customPlaylists',
-                              userCustomPlaylists,
+                              updatedPlaylists,
                             );
                             _playlist = newPlaylist;
                             showToast(context.l10n!.playlistUpdated);
                           }
 
-                          GoRouter.of(context).pop(context);
+                          GoRouter.of(context).pop();
                         });
                     },
                   ),

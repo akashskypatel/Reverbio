@@ -30,6 +30,7 @@ import 'package:flutter_js/extensions/fetch.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -85,8 +86,8 @@ class PluginsManager {
   }
 
   static Future<bool> syncPlugin(Map plugin) async {
+    final context = NavigationManager().context;
     if (_isProcessingNotifiers[plugin['name']]!.value) {
-      final context = NavigationManager().context;
       showToast(
         '${plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
@@ -103,7 +104,7 @@ class PluginsManager {
         if (isFilePath(source)) {
           if (Platform.isAndroid || Platform.isIOS) {
             showToast(
-              'Cannot reload Plugin from local file source on Mobile. Delete the plugin ${plugin['name']} and re-add it to update it.',
+              '${context.l10n!.cannotReloadLocalPlugin}: ${plugin['name']}',
             );
             return false;
           }
@@ -434,7 +435,7 @@ class PluginsManager {
         if (path == null || path.isEmpty) return {};
       }
       jsContent = await File(path).readAsString();
-      await FilePicker.platform.clearTemporaryFiles();
+      unawaited(clearFilePickerTempFiles());
       return getPluginData(jsContent, path);
     } catch (e, stackTrace) {
       logger.log(

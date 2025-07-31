@@ -303,10 +303,8 @@ class _BaseCardState extends State<BaseCard> {
             ),
           ),
         Align(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            direction: Axis.vertical,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Icon(
                 widget.icon,

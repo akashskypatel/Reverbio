@@ -346,6 +346,45 @@ Future<dynamic> getSongByRecordingDetails(
   return recording;
 }
 
+Future<dynamic> findSongByIsrc(dynamic song) async {
+  final id = parseEntityId(song);
+  final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
+  final rcdId = song is Map ? (song['rid'] ?? ids['mb']) : ids['mb'];
+  final isrc = song is Map ? song['isrc'] : null;
+  if (isrc == null) return song;
+  final cached = _getCachedSong(song);
+  if (cached != null) {
+    song.addAll(Map<String, dynamic>.from(cached));
+    return song;
+  } else if (rcdId != null)
+    return getSongByRecordingDetails(song);
+  else if (isrc == null)
+    return findMBSong(song);
+  else
+    try {
+      final qry = 'isrc:$isrc';
+      final qryResult =
+          (await mb.recordings.search(qry, limit: 100))?['recordings'] ?? [];
+      final recordings = List<Map<String, dynamic>>.from(qryResult);
+      for (dynamic recording in recordings) {
+        recording['artist'] = combineArtists(recording);
+        if ((recording['isrcs'] as List).contains(isrc)) {
+          recording = await getSongByRecordingDetails(recording);
+          song.addAll(recording);
+          await PM.triggerHook(song, 'onGetSongInfo');
+          return song;
+        }
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  return song;
+}
+
 Future<dynamic> findMBSong(dynamic song) async {
   try {
     song['originalTitle'] = song['title'];
@@ -362,6 +401,8 @@ Future<dynamic> findMBSong(dynamic song) async {
       song.addAll(await getSongByRecordingDetails(song));
       await PM.triggerHook(song, 'onGetSongInfo');
       return song;
+    } else if (song['isrc'] != null && song['isrc'].isNotEmpty) {
+      return await findSongByIsrc(song);
     }
     final iArtist = song['artist'].toString();
     final iTitle = song['title'].toString().replaceAll(
@@ -386,11 +427,11 @@ Future<dynamic> findMBSong(dynamic song) async {
         artistId =
             Uri.parse('?${artistInfo['id']}').queryParameters['mb'] ?? '';
     } else {
-      for (final artsts in artists) {
+      for (final artists in artists) {
         artistQry =
             artistQry.isNotEmpty
-                ? '$artistQry OR artist:\'${artsts.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\''
-                : 'artist:\'${artsts.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\'';
+                ? '$artistQry OR artist:\'${artists.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\''
+                : 'artist:\'${artists.replaceAll(specialRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim()}\'';
       }
       artistQry = '($artistQry)';
     }
@@ -649,9 +690,7 @@ Future<void> getExistingOfflineSongs() async {
     if (Directory(_audioDirPath).existsSync())
       await for (final file in Directory(_audioDirPath).list()) {
         if (file is File && isAudio(file.path)) {
-          final filename = basename(
-            file.path,
-          ).replaceAll(extension(basename(file.path)), '');
+          final filename = basenameWithoutExtension(file.path);
           final ids = Uri.parse('?$filename').queryParameters;
           if (ids['mb'] != null && ids['mb']!.isNotEmpty) {
             if (!userOfflineSongs.any((e) => e['id'].contains(ids['mb']))) {

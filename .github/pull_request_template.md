@@ -60,7 +60,9 @@ Complete or verify all features on Search Page.
 Complete or verify all features on Library Page.
 
 - [ ] Add a custom playlist using YouTube link.
-- [ ] Add a local custom playlist.
+- [ ] Add a local custom playlist without image.
+- [ ] Add a local custom playlist with image.
+- [ ] Add a imported playlist from csv file.
 - [ ] Confirm liked playlist from home page shows under liked playlists.
 - [ ] Search for playlist in library and clear searched filter.
 - [ ] Remove liked playlist.

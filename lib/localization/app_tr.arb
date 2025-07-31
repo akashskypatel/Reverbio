@@ -191,5 +191,19 @@
   "currentVersion": "Mevcut sürüm",
   "latestVersion": "En son sürüm",
   "latestVersionUsed": "En son sürümü kullanıyorsunuz",
-  "errorLatestVersion": "Uygulamanın en son sürümü alınırken hata"
+  "errorLatestVersion": "Uygulamanın en son sürümü alınırken hata",
+  "importSpotifyPlaylists": "Spotify çalma listelerini içe aktar",
+  "spotifyNotice": "Spotify'nin yasal sınırlamaları nedeniyle Reverbio, çalma listelerini içe aktarmak için doğrudan Spotify'a bağlanamaz. Lütfen çalma listelerinizi CSV formatında dışa aktarmak için bu dışa aktarma hizmetlerinden birini kullanın ve ardından bunları Reverbio'ya yükleyin. Dışa aktarımınızda Sanatçı, Şarkı (Parça) adı, Albüm ve ISRC (varsa) bilgilerini eklediğinizden emin olun.",
+  "import": "İçe aktar",
+  "importPlaylists": "Çalma listelerini içe aktar",
+  "importNotice": "Çeşitli ücretli akış hizmetlerinin yasal kısıtlamaları nedeniyle Reverbio, çalma listelerini içe aktarmak için doğrudan akış hizmetlerine bağlanamaz. Lütfen çalma listelerinizi CSV formatında dışa aktarmak için bu dışa aktarma hizmetlerinden birini kullanın ve ardından bunları Reverbio'ya yükleyin. Dosya CSV formatında olduğu, başlıkları içerdiği ve dosyada en az Sanatçı ve Şarkı bilgileri bulunduğu sürece herhangi bir hizmetten çalma listesi içe aktarabilirsiniz. Daha doğru şarkı verisi ayrıştırması için ISRC'yi (varsa) ekleyin.",
+  "addedPlaylistFiles": "Dosyalar çalma listesi olarak eklendi",
+  "addedSomePlaylistFiles": "Bir hata oluşmadan önce bazı dosyalar çalma listesi olarak eklendi. Daha fazla ayrıntı için günlükleri inceleyin. Eklenen dosyalar",
+  "imported": "İçe aktarıldı",
+  "invalidPlaylistData": "Geçersiz çalma listesi verisi",
+  "failedToLoadPlaylist": "Çalma listesi yüklenemedi",
+  "queueCleared": "Sıra temizlendi!",
+  "cannotReloadLocalPlugin": "Mobil cihazda yerel dosya kaynağından eklenti yeniden yüklenemez. Güncellemek için eklentiyi silin ve yeniden ekleyin. Eklenti adı",
+  "addedBackgroundJob": "arka plan kuyruğuna eklendi",
+  "updated": "Güncellendi"
 }

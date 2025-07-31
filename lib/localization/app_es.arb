@@ -191,5 +191,19 @@
   "currentVersion": "Versión actual",
   "latestVersion": "Última versión",
   "latestVersionUsed": "Estás usando la última versión",
-  "errorLatestVersion": "Error al obtener la última versión de la aplicación"
+  "errorLatestVersion": "Error al obtener la última versión de la aplicación",
+  "importSpotifyPlaylists": "Importar listas de Spotify",
+  "spotifyNotice": "Debido a las limitaciones legales de Spotify, Reverbio no puede conectarse directamente a Spotify para importar listas de reproducción. Utilice uno de estos servicios de exportación para exportar sus listas a formato CSV y luego súbalas a Reverbio. Asegúrese de incluir Artista, Canción (Pista), Álbum e ISRC si está disponible en su exportación.",
+  "import": "Importar",
+  "importPlaylists": "Importar listas de reproducción",
+  "importNotice": "Debido a las restricciones legales de varios servicios de transmisión pagos, Reverbio no puede conectarse directamente a los servicios de transmisión para importar listas de reproducción. Utilice uno de estos servicios de exportación para exportar sus listas a formato CSV y luego súbalas a Reverbio. Puede importar una lista de reproducción de cualquier servicio siempre que el archivo esté en formato CSV, con encabezados, y el archivo contenga, como mínimo, Artista y Canción. Incluya ISRC (si está disponible) para un análisis más preciso de los datos de las canciones.",
+  "addedPlaylistFiles": "Archivos añadidos como listas de reproducción",
+  "addedSomePlaylistFiles": "Se añadieron algunos archivos como listas de reproducción antes de que ocurriera un error. Consulte los registros para más detalles. Archivos añadidos",
+  "imported": "Importado",
+  "invalidPlaylistData": "Datos de lista de reproducción no válidos",
+  "failedToLoadPlaylist": "Error al cargar la lista de reproducción",
+  "queueCleared": "¡Cola vaciada!",
+  "cannotReloadLocalPlugin": "No se puede recargar el complemento desde un archivo local en móvil. Elimina el complemento y vuelve a añadirlo para actualizarlo. Nombre del complemento",
+  "addedBackgroundJob": "añadido a la cola en segundo plano",
+  "updated": "Actualizado"
 }

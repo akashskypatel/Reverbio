@@ -47,6 +47,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
+import 'package:reverbio/widgets/playlist_import.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -345,7 +346,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         CustomBar(
           tileName: context.l10n!.clearRecentlyPlayed,
-          tileIcon: FluentIcons.receipt_play_24_filled,
+          tileIcon: FluentIcons.text_grammar_dismiss_24_filled,
           onTap: () => _showClearRecentlyPlayedDialog(context),
         ),
         CustomBar(
@@ -360,6 +361,11 @@ class _SettingsPageState extends State<SettingsPage> {
             final response = await restoreData(context);
             showToast(response);
           },
+        ),
+        CustomBar(
+          tileName: context.l10n!.importPlaylists,
+          tileIcon: FluentIcons.table_add_24_filled,
+          onTap: () => showPlaylistImporter(context),
         ),
         if (!isFdroidBuild)
           FutureBuilder(
@@ -495,7 +501,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           : color,
                 ),
                 if (isSelected)
-                  Icon(Icons.check, color: _theme.colorScheme.onPrimary),
+                  Icon(
+                    FluentIcons.checkmark_24_filled,
+                    color: _theme.colorScheme.onPrimary,
+                  ),
               ],
             ),
           );
@@ -663,7 +672,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   await _reloadPlugins(PM.pluginsData[index]);
                                   setState(() {});
                                   showToast(
-                                    '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) updated!',
+                                    '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) ${context.l10n!.updated}!',
                                   );
                                 },
                                 icon: const Icon(

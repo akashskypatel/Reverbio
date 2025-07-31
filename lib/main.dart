@@ -304,6 +304,7 @@ Future<void> initialisation() async {
 }
 
 void handleIncomingLink(Uri? uri) async {
+  final context = NavigationManager().context;
   if (uri != null && uri.scheme == 'reverbio' && uri.host == 'playlist') {
     try {
       if (uri.pathSegments[0] == 'custom') {
@@ -316,13 +317,13 @@ void handleIncomingLink(Uri? uri) async {
         if (playlist != null) {
           userCustomPlaylists.value = [...userCustomPlaylists.value, playlist];
           addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
-          showToast('${NavigationManager().context.l10n!.addedSuccess}!');
+          showToast(context.l10n!.addedSuccess);
         } else {
-          showToast('Invalid playlist data');
+          showToast(context.l10n!.invalidPlaylistData);
         }
       }
     } catch (e) {
-      showToast('Failed to load playlist');
+      showToast(context.l10n!.failedToLoadPlaylist);
     }
   }
 }
