@@ -165,7 +165,6 @@ class _SongBarState extends State<SongBar> {
     final ids = Uri.parse('?${parseEntityId(widget.song)}').queryParameters;
     if ((ids['mb'] == null || widget.song['mbid'] == null) &&
         _songMetadataFuture == null) {
-      //TODO: streamline
       widget.song['primary-type'] = widget.song['primary-type'] ?? 'song';
       _songMetadataFuture =
           widget.song['primary-type'].toLowerCase() != 'single'
