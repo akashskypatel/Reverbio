@@ -47,6 +47,9 @@ MediaItem mapToMediaItem(Map song) {
                 : (isUrl(imagePath) ? Uri.parse(imagePath) : null))
             : null,
     extras: {
+      'duration': (song['duration'] ?? 0) * 1000,
+      'android.media.metadata.ART_URI': imagePath,
+      'android.media.metadata.ALBUM_ART_URI': imagePath,
       'artistId': song['artistId'] ?? '',
       'lowResImage': song['lowResImage'] ?? '',
       'ytid': song['ytid'] ?? '',
