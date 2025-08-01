@@ -29,7 +29,8 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         android:extractNativeLibs="true"
-        tools:replace="android:extractNativeLibs">
+        tools:replace="android:extractNativeLibs"
+        android:appCategory="audio" >
         <!-- AudioServiceActivity -->
         <activity
             android:name="com.ryanheise.audioservice.AudioServiceActivity"
@@ -41,7 +42,6 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
@@ -86,8 +86,13 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
-
         <meta-data android:name="com.google.android.gms.car.application"
-          android:resource="@xml/automotive_app_desc"/>
+            android:resource="@xml/automotive_app_desc"/>
+        <meta-data
+            android:name="android.media.browseable"
+            android:value="true" />
+        <meta-data
+            android:name="androidx.car.app.TintableAttributionIcon"
+            android:resource="@drawable/ic_status_icon" />
     </application>
 </manifest>
