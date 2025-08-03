@@ -27,6 +27,8 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 
 class BottomNavigationPage extends StatefulWidget {
@@ -132,10 +134,6 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
         };
   }
 
-  bool _isLargeScreen(BuildContext context) {
-    return MediaQuery.of(context).size.width >= 600;
-  }
-
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
@@ -157,12 +155,13 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
     try {
       return LayoutBuilder(
         builder: (context, constraints) {
-          final isLargeScreen = _isLargeScreen(context);
           return Scaffold(
             body: Row(
               children: [
-                if (isLargeScreen)
+                if (isLargeScreen())
                   NavigationRail(
+                    minExtendedWidth: navigationRailWidth,
+                    minWidth: navigationRailWidth,
                     labelType: NavigationRailLabelType.selected,
                     destinations: destinations,
                     selectedIndex: _selectedIndex.value,
@@ -205,7 +204,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
               ],
             ),
             bottomNavigationBar:
-                !isLargeScreen
+                !isLargeScreen()
                     ? NavigationBar(
                       selectedIndex: selectedIndex,
                       labelBehavior:
