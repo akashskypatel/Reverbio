@@ -58,20 +58,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   late bool _isLargeScreen;
   
   @override
-  void deactivate() {
-    nowPlayingOpen = false;
-    super.deactivate();
-  }
-
-  @override
-  void didChangeDependencies() {
-    nowPlayingOpen = false;
-    super.didChangeDependencies();
-  }
-  
-  @override
   void dispose() {
-    nowPlayingOpen = false;
     super.dispose();
   }
 
@@ -96,7 +83,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           iconSize: pageHeaderIconSize,
           splashColor: Colors.transparent,
           onPressed: () {
-            nowPlayingOpen = !nowPlayingOpen;
+            nowPlayingOpen.value = !nowPlayingOpen.value;
             GoRouter.of(context).pop(context);
           },
         ),

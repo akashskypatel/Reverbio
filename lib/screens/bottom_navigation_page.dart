@@ -43,7 +43,7 @@ class BottomNavigationPage extends StatefulWidget {
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
   late ThemeData _theme;
-  bool showMiniPlayer = false;
+  final ValueNotifier<bool> showMiniPlayer = ValueNotifier(false);
   @override
   void initState() {
     super.initState();
@@ -53,12 +53,12 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
           switch (state) {
             case AudioPlayerState.playing:
             case AudioPlayerState.paused:
-              showMiniPlayer = true;
+              showMiniPlayer.value = true;
               break;
             case AudioPlayerState.stopped:
             case AudioPlayerState.uninitialized:
             case AudioPlayerState.initialized:
-              showMiniPlayer = false;
+              showMiniPlayer.value = false;
               break;
           }
         });
@@ -137,7 +137,6 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
-    showMiniPlayer = !nowPlayingOpen;
     final destinations =
         _getNavigationDestinations(context).values
             .map(
@@ -183,22 +182,32 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(fit: FlexFit.tight, child: widget.child),
-                      if (showMiniPlayer)
-                        ValueListenableBuilder(
-                          valueListenable: audioHandler.songValueNotifier,
-                          builder:
-                              (_, value, child) =>
-                                  value != null && !nowPlayingOpen
-                                      ? MiniPlayer(
-                                        context: context,
-                                        mediaItem: value.mediaItem,
-                                        closeButton:
-                                            _buildMiniPlayerCloseButton(
-                                              context,
-                                            ),
-                                      )
-                                      : const SizedBox.shrink(),
-                        ),
+                      ValueListenableBuilder(
+                        valueListenable: audioHandler.songValueNotifier,
+                        builder: (_, value, child) {
+                          showMiniPlayer.value =
+                              value != null && !nowPlayingOpen.value;
+                          return ValueListenableBuilder(
+                            valueListenable: showMiniPlayer,
+                            builder:
+                                (_, __, ___) => ValueListenableBuilder(
+                                  valueListenable: nowPlayingOpen,
+                                  builder:
+                                      (_, __, ___) =>
+                                          value != null && showMiniPlayer.value
+                                              ? MiniPlayer(
+                                                context: context,
+                                                mediaItem: value.mediaItem,
+                                                closeButton:
+                                                    _buildMiniPlayerCloseButton(
+                                                      context,
+                                                    ),
+                                              )
+                                              : const SizedBox.shrink(),
+                                ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -253,7 +262,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
         audioHandler.close();
         if (mounted)
           setState(() {
-            showMiniPlayer = false;
+            showMiniPlayer.value = false;
           });
       },
       icon: Icon(

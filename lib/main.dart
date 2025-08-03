@@ -58,7 +58,7 @@ ThemeData? theme;
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
-bool nowPlayingOpen = false;
+final ValueNotifier<bool> nowPlayingOpen = ValueNotifier(false);
 Map<String, dynamic> userGeolocation = {};
 
 const appLanguages = <String, String>{

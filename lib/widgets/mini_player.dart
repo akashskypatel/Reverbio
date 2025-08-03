@@ -28,12 +28,12 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
+import 'package:reverbio/screens/now_playing_page.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
-//import 'package:reverbio/widgets/song_artwork.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 const double playerHeight = 120;
@@ -74,9 +74,11 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
     return GestureDetector(
       onTap: () async {
-        if (!nowPlayingOpen) {
-          nowPlayingOpen = !nowPlayingOpen;
-          await context.push('/nowPlaying');
+        if (!nowPlayingOpen.value) {
+          nowPlayingOpen.value = !nowPlayingOpen.value;
+          await Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(builder: (context) => const NowPlayingPage()),
+          );
         }
       },
       child: Container(
@@ -85,15 +87,15 @@ class _MiniPlayerState extends State<MiniPlayer> {
         child: ClipRRect(
           child: Column(
             children: [
-              if (!nowPlayingOpen)
+              if (!nowPlayingOpen.value)
                 PositionSlider(
                   closeButton: widget.closeButton,
                   positionDataNotifier: audioHandler.positionDataNotifier,
                 ),
-              if (!nowPlayingOpen)
+              if (!nowPlayingOpen.value)
                 if (isLargeScreen(context: context))
                   _buildLargeScreenControls(),
-              if (!nowPlayingOpen)
+              if (!nowPlayingOpen.value)
                 if (!isLargeScreen(context: context))
                   _buildSmallScreenControls(),
             ],
