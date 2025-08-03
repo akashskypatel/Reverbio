@@ -38,6 +38,7 @@ import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
@@ -458,57 +459,84 @@ class _SearchPageState extends State<SearchPage> {
       final entityLikeStatus = ValueNotifier(isLiked);
       final likedLoading = ValueNotifier(false);
       list.add(
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: commonSingleChildScrollViewPadding,
-            child: CustomBar(
-              tileName: query,
-              tileIcon:
-                  entityName[header]?['icon'] ?? FluentIcons.search_24_regular,
-              borderRadius: borderRadius,
-              onTap: () async {
-                await search(data: element);
-                _inputNode.unfocus();
-              },
-              onLongPress: () async {
-                final confirm = await _showConfirmationDialog(context) ?? false;
-                if (confirm) {
-                  if (mounted)
-                    setState(() {
-                      searchHistory.remove(query);
-                    });
-                  addOrUpdateData('user', 'searchHistory', searchHistory);
-                }
-              },
-              trailing:
-                  entityName[header]?['action'] != null
-                      ? ValueListenableBuilder(
-                        valueListenable: entityLikeStatus,
-                        builder: (context, value, __) {
-                          return IconButton(
-                            onPressed: () async {
-                              likedLoading.value = true;
-                              final likeVal =
-                                  await entityName[header]?['action'](
-                                    element,
-                                    !value,
-                                  );
-                              setState(() {
-                                isLiked = entityLikeStatus.value = likeVal;
-                                likedLoading.value = false;
-                              });
-                            },
-                            icon: Icon(
-                              value
-                                  ? FluentIcons.heart_24_filled
-                                  : FluentIcons.heart_24_regular,
-                            ),
-                          );
-                        },
-                      )
-                      : null,
-            ),
-          ),
+        StatefulBuilder(
+          builder: (ctx, setState) {
+            return SliverToBoxAdapter(
+              child: Padding(
+                padding: commonSingleChildScrollViewPadding,
+                child: GestureDetector(
+                  onDoubleTapDown: (details) async {
+                    likedLoading.value = true;
+                    final like = await entityName[header]?['action'](
+                      element,
+                      !entityLikeStatus.value,
+                    );
+                    if (ctx.mounted)
+                      setState(() {
+                        isLiked = entityLikeStatus.value = like;
+                        likedLoading.value = false;
+                      });
+                    AnimatedHeart.show(
+                      context: context,
+                      details: details,
+                      like: like,
+                    );
+                  },
+                  child: CustomBar(
+                    tileName: query,
+                    tileIcon:
+                        entityName[header]?['icon'] ??
+                        FluentIcons.search_24_regular,
+                    borderRadius: borderRadius,
+                    onTap: () async {
+                      await search(data: element);
+                      _inputNode.unfocus();
+                    },
+                    onLongPress: () async {
+                      final confirm =
+                          await _showConfirmationDialog(ctx) ?? false;
+                      if (confirm) {
+                        if (ctx.mounted)
+                          setState(() {
+                            searchHistory.remove(query);
+                          });
+                        addOrUpdateData('user', 'searchHistory', searchHistory);
+                      }
+                    },
+                    trailing:
+                        entityName[header]?['action'] != null
+                            ? ValueListenableBuilder(
+                              valueListenable: entityLikeStatus,
+                              builder: (context, value, __) {
+                                return IconButton(
+                                  onPressed: () async {
+                                    likedLoading.value = true;
+                                    final likeVal =
+                                        await entityName[header]?['action'](
+                                          element,
+                                          !value,
+                                        );
+                                    if (context.mounted)
+                                      setState(() {
+                                        isLiked =
+                                            entityLikeStatus.value = likeVal;
+                                        likedLoading.value = false;
+                                      });
+                                  },
+                                  icon: Icon(
+                                    isLiked
+                                        ? FluentIcons.heart_24_filled
+                                        : FluentIcons.heart_24_regular,
+                                  ),
+                                );
+                              },
+                            )
+                            : null,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       );
       index++;

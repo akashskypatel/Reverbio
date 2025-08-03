@@ -144,7 +144,7 @@ class _SongBarState extends State<SongBar> {
   Future<dynamic>? _songMetadataFuture;
   dynamic loadedSong = false;
 
-  TapDownDetails? doubleTapdetails;
+  TapDownDetails? doubleTapDetails;
 
   late final songLikeStatus = ValueNotifier<bool>(
     isSongAlreadyLiked(widget.song),
@@ -198,10 +198,7 @@ class _SongBarState extends State<SongBar> {
           padding: commonBarPadding,
           //TODO: add left/right sliding action to add song to queue or to offline
           child: GestureDetector(
-            onDoubleTapDown: (details) {
-              doubleTapdetails = details;
-              likeItem();
-            },
+            onDoubleTapDown: likeItem,
             onSecondaryTapDown: (details) {
               _showContextMenu(context, details);
             },
@@ -280,17 +277,6 @@ class _SongBarState extends State<SongBar> {
             ),
           ),
         ),
-        ValueListenableBuilder(
-          valueListenable: isLikedAnimationPlaying,
-          builder:
-              (context, value, __) =>
-                  isLikedAnimationPlaying.value && doubleTapdetails != null
-                      ? AnimatedHeart(
-                        like: songLikeStatus.value,
-                        position: doubleTapdetails!.localPosition,
-                      )
-                      : const SizedBox.shrink(),
-        ),
       ],
     );
   }
@@ -312,17 +298,11 @@ class _SongBarState extends State<SongBar> {
     );
   }
 
-  void likeItem() {
+  void likeItem(TapDownDetails details) {
     final isLiked = isSongAlreadyLiked(widget.song);
     updateSongLikeStatus(widget.song, !isLiked);
     songLikeStatus.value = !isLiked;
-    _startLikeAnimationTimer();
-  }
-
-  Future<void> _startLikeAnimationTimer() async {
-    isLikedAnimationPlaying.value = true;
-    await Future.delayed(AnimatedHeart.duration);
-    isLikedAnimationPlaying.value = false;
+    AnimatedHeart.show(context: context, details: details, like: !isLiked);
   }
 
   Widget _buildAlbumArt(Color primaryColor) {

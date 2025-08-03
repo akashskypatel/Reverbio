@@ -28,15 +28,11 @@ void showCustomBottomSheet(
   ValueNotifier<bool>? canCloseOnTapOutside,
 }) {
   final size = MediaQuery.sizeOf(context);
-
-  Scaffold.of(context).showBottomSheet(
-    enableDrag: true,
-    (ctx) => TapRegion(
-      onTapOutside: (event) {
-        if ((canCloseOnTapOutside == null || canCloseOnTapOutside.value) && GoRouter.of(ctx).canPop())
-          GoRouter.of(ctx).pop();
-      },
-      child: Material(
+  showModalBottomSheet(
+    isScrollControlled: true,
+    context: context,
+    builder: (context) {
+      return Material(
         elevation: 4,
         borderRadius: BorderRadius.circular(10),
         clipBehavior: Clip.antiAlias,
@@ -54,12 +50,12 @@ void showCustomBottomSheet(
               Padding(
                 padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
                 child: GestureDetector(
-                  onTap: () => GoRouter.of(ctx).pop(ctx),
+                  onTap: () => GoRouter.of(context).pop(),
                   child: Container(
                     width: 60,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: Theme.of(ctx).colorScheme.onSecondaryContainer,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -72,7 +68,7 @@ void showCustomBottomSheet(
             ],
           ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
