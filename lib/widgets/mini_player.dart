@@ -28,7 +28,6 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
-import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
@@ -40,9 +39,15 @@ import 'package:reverbio/widgets/spinner.dart';
 const double playerHeight = 120;
 
 class MiniPlayer extends StatefulWidget {
-  MiniPlayer({super.key, required this.mediaItem, required this.closeButton});
+  MiniPlayer({
+    super.key,
+    required this.context,
+    required this.mediaItem,
+    required this.closeButton,
+  });
   final MediaItem mediaItem;
   final Widget closeButton;
+  final BuildContext context;
 
   @override
   _MiniPlayerState createState() => _MiniPlayerState();
@@ -370,15 +375,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
         try {
           if (!mounted || artistData == null || artistData.isEmpty)
             throw Exception();
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) =>
-                      ArtistPage(page: '/artist', artistData: artistData),
-              settings: RouteSettings(name: '/artist?${artistData['id']}'),
-            ),
-          );
+          await widget.context.push('/artist', extra: artistData);
         } catch (_) {}
       },
       child: Text(

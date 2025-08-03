@@ -56,6 +56,19 @@ class NowPlayingPage extends StatefulWidget {
 class _NowPlayingPageState extends State<NowPlayingPage> {
   late ThemeData _theme;
   late bool _isLargeScreen;
+  
+  @override
+  void deactivate() {
+    nowPlayingOpen = false;
+    super.deactivate();
+  }
+
+  @override
+  void didChangeDependencies() {
+    nowPlayingOpen = false;
+    super.didChangeDependencies();
+  }
+  
   @override
   void dispose() {
     nowPlayingOpen = false;

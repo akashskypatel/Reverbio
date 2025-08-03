@@ -187,9 +187,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                         ValueListenableBuilder(
                           valueListenable: audioHandler.songValueNotifier,
                           builder:
-                              (context, value, child) =>
+                              (_, value, child) =>
                                   value != null && !nowPlayingOpen
                                       ? MiniPlayer(
+                                        context: context,
                                         mediaItem: value.mediaItem,
                                         closeButton:
                                             _buildMiniPlayerCloseButton(
