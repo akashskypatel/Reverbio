@@ -43,7 +43,7 @@ class BottomNavigationPage extends StatefulWidget {
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
   late ThemeData _theme;
-  final ValueNotifier<bool> showMiniPlayer = ValueNotifier(false);
+  final showMiniPlayer = ValueNotifier(false);
   @override
   void initState() {
     super.initState();
@@ -165,10 +165,6 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                     destinations: destinations,
                     selectedIndex: _selectedIndex.value,
                     onDestinationSelected: (index) {
-                      /* widget.child.goBranch(
-                            index,
-                            initialLocation: index == widget.child.currentIndex,
-                          ); */
                       _onDestinationSelected(index, context);
                       if (mounted)
                         setState(() {
