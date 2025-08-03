@@ -33,17 +33,54 @@ body:
           required: false
         - label: Liking artist, playlist, and song completes successfully.
           required: false
-        - label: Recommended for you toolbox opens and closes successfully.
+        - label: Navigating to an playlist page to confirm artwork, playlist name and song list loads.
           required: false
-        - label: Recommended for you songs can be played successfully (if stream found).
+        - label: Navigating to an artist page and confirm functionality below.
+          required: false
+  
+  - type: checkboxes
+    id: artistpage
+    attributes:
+      label: Artist Page
+      description: Complete or verify all features on Artist Page functions.
+      options:
+        - label: Navigating to an artist opens artist details page with artwork and artist name.
+          required: false
+        - label: Artist page loads with genres, albums, other releases, and singles.
+          required: false
+        - label: Navigating to an album page and an other release page to make sure they load as described below.
+          required: false
+  
+  - type: checkboxes
+    id: albumpage
+    attributes:
+      label: Album Page
+      description: Complete or verify all features on Album Page functions.
+      options:
+        - label: Navigating to an album opens album details page.
+          required: false
+        - label: album page loads with Album artwork, name, song count and song list.
+          required: false
+
+  - type: checkboxes
+    id: songlist
+    attributes:
+      label: Song List component
+      description: Complete or verify all features on Song list component functions.
+      options:
+        - label: Song list loads with song artwork, name, artist name, and duration.
+          required: false
+        - label: Toolbox opens and closes successfully.
+          required: false
+        - label: Songs can be played successfully (if stream found).
           required: false
         - label: If song stream found, can be opened in youtube successfully.
           required: false
-        - label: Recommended for you songs can be queued, played, shuffled, and sorted successfully.
+        - label: Songs can be queued, played, shuffled, and sorted successfully.
           required: false
-        - label: A Recommended for you Song can be liked, added to playlist, added to queue, and added to offline successfully.
+        - label: Song can be liked, added to playlist, added to queue, and added to offline successfully.
           required: false
-        - label: A Recommended for you Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
+        - label: Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
           required: false
         - label: Double tapping a song likes/dislikes a song.
           required: false
@@ -63,18 +100,6 @@ body:
         - label: Search result pages can successfully be iterated up and down for all search entities.
           required: false
         - label: Search result entities can be liked/disliked successfully.
-          required: false
-        - label: Search result songs can be played successfully (if stream found).
-          required: false
-        - label: If song stream found, can be opened in youtube successfully.
-          required: false
-        - label: Song results can be queued, played, shuffled, and sorted successfully.
-          required: false
-        - label: A Song result can be liked, added to playlist, added to queue, and added to offline successfully.
-          required: false
-        - label: A Song result can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
-          required: false
-        - label: Double tapping a song likes/dislikes a song.
           required: false
 
   - type: checkboxes
