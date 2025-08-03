@@ -31,12 +31,35 @@ Complete or verify all features on Home Page.
 - [ ] Recommended for you loads with Image and Labels successfully.
 - [ ] Refresh Home Page completes successfully.
 - [ ] Liking artist, playlist, and song completes successfully.
-- [ ] Recommended for you toolbox opens and closes successfully.
-- [ ] Recommended for you songs can be played successfully (if stream found).
+- [ ] Navigating to an playlist page to confirm artwork, playlist name and song list loads.
+- [ ] Navigating to an artist page and confirm functionality below.
+
+## Artist Page
+
+Complete or verify all features on Artist Page functions.
+
+- [ ] Navigating to an artist opens artist details page with artwork and artist name.
+- [ ] Artist page loads with genres, albums, other releases, and singles.
+- [ ] Navigating to an album page and an other release page to make sure they load as described below.
+
+## Album Page
+
+Complete or verify all features on Album Page functions.
+
+- [ ] Navigating to an album opens album details page.
+- [ ] album page loads with Album artwork, name, song count and song list.
+
+## Song List component
+
+Complete or verify all features on Song list component functions.
+
+- [ ] Song list loads with song artwork, name, artist name, and duration.
+- [ ] Toolbox opens and closes successfully.
+- [ ] Songs can be played successfully (if stream found).
 - [ ] If song stream found, can be opened in youtube successfully.
-- [ ] Recommended for you songs can be queued, played, shuffled, and sorted successfully.
-- [ ] A Recommended for you Song can be liked, added to playlist, added to queue, and added to offline successfully.
-- [ ] A Recommended for you Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
+- [ ] Songs can be queued, played, shuffled, and sorted successfully.
+- [ ] Song can be liked, added to playlist, added to queue, and added to offline successfully.
+- [ ] Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
 - [ ] Double tapping a song likes/dislikes a song.
 
 ## Search page
@@ -48,12 +71,6 @@ Complete or verify all features on Search Page.
 - [ ] Clicking on search suggestions shows search results successfully.
 - [ ] Search result pages can successfully be iterated up and down for all search entities.
 - [ ] Search result entities can be liked/disliked successfully.
-- [ ] Search result songs can be played successfully (if stream found).
-- [ ] If song stream found, can be opened in youtube successfully.
-- [ ] Song results can be queued, played, shuffled, and sorted successfully.
-- [ ] A Song result can be liked, added to playlist, added to queue, and added to offline successfully.
-- [ ] A Song result can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
-- [ ] Double tapping a song likes/dislikes a song.
 
 ## Library page
 
