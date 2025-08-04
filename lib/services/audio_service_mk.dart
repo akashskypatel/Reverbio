@@ -635,7 +635,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
           song['skipSegments'] != null &&
           song['skipSegments'].isNotEmpty) {
         final checkSegment =
-            (song['skipSegments'] as List<Map<String, dynamic>>)
+            List<Map<String, dynamic>>.from(song['skipSegments'])
                 .where(
                   (e) =>
                       e['start']! <= value.position.inMicroseconds &&

@@ -59,6 +59,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   
   @override
   void dispose() {
+    nowPlayingOpen.value = false;
     super.dispose();
   }
 
@@ -84,7 +85,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           splashColor: Colors.transparent,
           onPressed: () {
             nowPlayingOpen.value = !nowPlayingOpen.value;
-            GoRouter.of(context).pop(context);
+            GoRouter.of(context).pop();
           },
         ),
         actions: [

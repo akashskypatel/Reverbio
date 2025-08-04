@@ -481,7 +481,7 @@ class PositionSlider extends StatelessWidget {
 
   void _showVolumeSlider(BuildContext context) => showDialog(
     context: context,
-    builder: (BuildContext savecontext) {
+    builder: (_) {
       int _duelCommandment = audioHandler.volume.toInt();
       return StatefulBuilder(
         builder: (context, setState) {
@@ -509,8 +509,8 @@ class PositionSlider extends StatelessWidget {
                         icon: const Icon(FluentIcons.speaker_0_24_regular),
                       ),
                     ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.15,
+                    Expanded(
+                      //width: MediaQuery.of(context).size.width * 0.25,
                       child: Slider(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         value: _duelCommandment.toDouble(),
