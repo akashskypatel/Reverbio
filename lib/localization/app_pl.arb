@@ -208,5 +208,8 @@
   "updated": "Zaktualizowano",
   "autoCacheOffline": "Automatycznie udostępniaj odtwarzane utwory w trybie offline",
   "storageWarning": "Ostrzeżenie: Ta opcja zużyje dużo miejsca. Upewnij się, że twoje urządzenie ma wystarczająco dużo miejsca przed włączeniem!",
-  "autoCacheOfflinePlaylist": "Automatycznie udostępniaj utwory z tej playlisty w trybie offline podczas odtwarzania"
+  "autoCacheOfflinePlaylist": "Automatycznie udostępniaj utwory z tej playlisty w trybie offline podczas odtwarzania",
+  "urlError": "Nie można rozpoznać adresu URL utworu",
+  "playlistAutoOfflineEnabled": "Automatyczne offline playlisty włączone",
+  "playlistAutoOfflineDisabled": "Automatyczne offline playlisty wyłączone"
 }

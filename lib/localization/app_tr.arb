@@ -208,5 +208,8 @@
   "updated": "Güncellendi",
   "autoCacheOffline": "Dinlenen şarkıları otomatik olarak çevrimdışı kullanılabilir yap",
   "storageWarning": "Uyarı: Bu seçenek çok fazla depolama alanı kullanacaktır. Etkinleştirmeden önce cihazınızda yeterli depolama alanı olduğundan emin olun!",
-  "autoCacheOfflinePlaylist": "Bu çalma listesindeki şarkıları dinlenirken otomatik olarak çevrimdışı kullanılabilir yap"
+  "autoCacheOfflinePlaylist": "Bu çalma listesindeki şarkıları dinlenirken otomatik olarak çevrimdışı kullanılabilir yap",
+  "urlError": "Şarkı URL'si çözülemedi",
+  "playlistAutoOfflineEnabled": "Çalma listesi otomatik çevrimdışı etkin",
+  "playlistAutoOfflineDisabled": "Çalma listesi otomatik çevrimdışı devre dışı"
 }

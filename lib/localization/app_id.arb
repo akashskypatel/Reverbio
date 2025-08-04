@@ -208,5 +208,8 @@
   "updated": "Diperbarui",
   "autoCacheOffline": "Otomatis membuat lagu yang sedang didengarkan tersedia secara offline",
   "storageWarning": "Peringatan: Opsi ini akan menggunakan banyak penyimpanan. Pastikan perangkat Anda memiliki cukup penyimpanan sebelum mengaktifkannya!",
-  "autoCacheOfflinePlaylist": "Otomatis buat lagu dalam daftar putar ini tersedia offline saat didengarkan"
+  "autoCacheOfflinePlaylist": "Otomatis buat lagu dalam daftar putar ini tersedia offline saat didengarkan",
+  "urlError": "URL lagu tidak dapat diselesaikan",
+  "playlistAutoOfflineEnabled": "Playlist otomatis offline diaktifkan",
+  "playlistAutoOfflineDisabled": "Playlist otomatis offline dinonaktifkan"
 }

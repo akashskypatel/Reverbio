@@ -208,5 +208,8 @@
   "updated": "Aktualisiert",
   "autoCacheOffline": "Automatisch offline verfügbare Songs zwischenspeichern",
   "storageWarning": "Warnung: Diese Option verbraucht viel Speicherplatz. Bitte stellen Sie sicher, dass Ihr Gerät über genügend Speicher verfügt, bevor Sie sie aktivieren!",
-  "autoCacheOfflinePlaylist": "Songs in dieser Playlist beim Abspielen automatisch offline verfügbar machen"
+  "autoCacheOfflinePlaylist": "Songs in dieser Playlist beim Abspielen automatisch offline verfügbar machen",
+  "urlError": "Song-URL konnte nicht aufgelöst werden",
+  "playlistAutoOfflineEnabled": "Automatische Offline-Speicherung für Playlists aktiviert",
+  "playlistAutoOfflineDisabled": "Automatische Offline-Speicherung für Playlists deaktiviert"
 }

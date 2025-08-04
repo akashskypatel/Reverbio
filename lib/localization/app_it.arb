@@ -208,5 +208,8 @@
   "updated": "Aggiornato",
   "autoCacheOffline": "Rendi automaticamente disponibili offline le canzoni in ascolto",
   "storageWarning": "Attenzione: Questa opzione utilizzerà molto spazio di archiviazione. Assicurati che il tuo dispositivo abbia spazio sufficiente prima di abilitarla!",
-  "autoCacheOfflinePlaylist": "Rendi automaticamente disponibili offline le canzoni di questa playlist quando vengono ascoltate"
+  "autoCacheOfflinePlaylist": "Rendi automaticamente disponibili offline le canzoni di questa playlist quando vengono ascoltate",
+  "urlError": "L'URL della canzone non può essere risolto",
+  "playlistAutoOfflineEnabled": "Playlist auto offline abilitata",
+  "playlistAutoOfflineDisabled": "Playlist auto offline disabilitata"
 }

@@ -208,5 +208,8 @@
   "updated": "Đã cập nhật",
   "autoCacheOffline": "Tự động lưu bài hát đang nghe để sử dụng ngoại tuyến",
   "storageWarning": "Cảnh báo: Tùy chọn này sẽ sử dụng nhiều dung lượng lưu trữ. Hãy đảm bảo thiết bị của bạn có đủ dung lượng trước khi bật!",
-  "autoCacheOfflinePlaylist": "Tự động lưu bài hát trong danh sách phát này để sử dụng ngoại tuyến khi nghe"
+  "autoCacheOfflinePlaylist": "Tự động lưu bài hát trong danh sách phát này để sử dụng ngoại tuyến khi nghe",
+  "urlError": "Không thể phân giải URL bài hát",
+  "playlistAutoOfflineEnabled": "Đã bật tự động phát danh sách ngoại tuyến",
+  "playlistAutoOfflineDisabled": "Đã tắt tự động phát danh sách ngoại tuyến"
 }
