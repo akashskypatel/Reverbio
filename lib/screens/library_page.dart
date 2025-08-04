@@ -167,6 +167,15 @@ class _LibraryPageState extends State<LibraryPage> {
                   () =>
                       NavigationManager.router.go('/library/userSongs/offline'),
               cardIcon: FluentIcons.cellular_off_24_filled,
+              showBuildActions: false,
+            ),
+            PlaylistBar(
+              context.l10n!.offlinePlaylists,
+              onPressed:
+                  () => NavigationManager.router.go(
+                    '/library/userSongs/offlinePlaylists',
+                  ),
+              cardIcon: FluentIcons.arrow_download_24_filled,
               borderRadius: commonCustomBarRadiusLast,
               showBuildActions: false,
             ),
@@ -307,6 +316,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildSearchBar() {
     return CustomSearchBar(
       //loadingProgressNotifier: _fetchingSongs,
+      searchDelayMs: 0,
       controller: _searchBar,
       focusNode: _inputNode,
       labelText: '${context.l10n!.search}...',
@@ -371,7 +381,7 @@ class _LibraryPageState extends State<LibraryPage> {
   void _showAddPlaylistDialog() => showDialog(
     routeSettings: const RouteSettings(name: '/save-playlist'),
     context: context,
-    builder: (BuildContext savecontext) {
+    builder: (savecontext) {
       var id = '';
       var customPlaylistName = '';
       var isYouTubeMode = true;
@@ -523,15 +533,12 @@ class _LibraryPageState extends State<LibraryPage> {
                         ),
                         context: savecontext,
                         builder:
-                            (BuildContext confirmcontext) => ConfirmationDialog(
+                            (confirmcontext) => ConfirmationDialog(
                               message:
                                   '${context.l10n!.playlistAlreadyExists}. ${context.l10n!.overwriteExistingPlaylist}',
                               confirmText: context.l10n!.confirm,
                               cancelText: context.l10n!.cancel,
-                              onCancel:
-                                  () => GoRouter.of(
-                                    savecontext,
-                                  ).pop(confirmcontext),
+                              onCancel: () => GoRouter.of(savecontext).pop(),
                               onSubmit: () {
                                 showToast(
                                   createCustomPlaylist(

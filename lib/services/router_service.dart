@@ -30,6 +30,7 @@ import 'package:reverbio/screens/home_page.dart';
 import 'package:reverbio/screens/library_page.dart';
 import 'package:reverbio/screens/liked_entities_page.dart';
 import 'package:reverbio/screens/now_playing_page.dart';
+import 'package:reverbio/screens/offline_playlists_page.dart';
 import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/screens/settings_page.dart';
 import 'package:reverbio/screens/user_songs_page.dart';
@@ -198,6 +199,10 @@ class NavigationManager {
                         return LikedCardsPage(
                           title: context.l10n!.likedAlbums,
                           page: state.pathParameters['page'] ?? 'albums',
+                          key: ValueKey(DateTime.now()),
+                        );
+                      case 'offlinePlaylists':
+                        return OfflinePlaylistsPage(
                           key: ValueKey(DateTime.now()),
                         );
                       default:
@@ -391,6 +396,10 @@ class NavigationManager {
                       return LikedCardsPage(
                         title: context.l10n!.likedAlbums,
                         page: state.pathParameters['page'] ?? 'albums',
+                        key: ValueKey(DateTime.now()),
+                      );
+                    case 'offlinePlaylists':
+                      return OfflinePlaylistsPage(
                         key: ValueKey(DateTime.now()),
                       );
                     default:

@@ -288,7 +288,7 @@ Future<void> initialization() async {
     activeQueueLength.value = audioHandler.queueSongBars.length;
 
     await PM.initialize();
-
+    postUpdate();
     try {
       // Listen to incoming links while app is running
       appLinks.uriLinkStream.listen(

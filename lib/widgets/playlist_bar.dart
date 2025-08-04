@@ -96,8 +96,7 @@ class PlaylistBar extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         settings: RouteSettings(
-                          name:
-                              'playlist?yt=${playlistId ?? playlistData?['id']}',
+                          name: 'playlist?id=${playlistData?['id']}',
                         ),
                         builder:
                             (context) => PlaylistPage(
@@ -151,18 +150,43 @@ class PlaylistBar extends StatelessWidget {
   }
 
   Widget _buildAlbumArt() {
-    return BaseCard(
-      icon: cardIcon,
-      size: artworkSize,
-      showIconLabel: false,
-      inputData:
-          playlistData ??
-          {
-            'title': playlistTitle,
-            'ytid': playlistId,
-            'image': playlistArtwork,
-            'primary-type': 'playlist',
-          },
+    return FutureBuilder(
+      future: getPlaylistInfo(
+        playlistData ??
+            {
+              'title': playlistTitle,
+              'ytid': playlistId,
+              'image': playlistArtwork,
+              'primary-type': 'playlist',
+            },
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.hasError ||
+            !snapshot.hasData ||
+            snapshot.connectionState == ConnectionState.waiting ||
+            snapshot.data == null ||
+            snapshot.data!.isEmpty)
+          return BaseCard(
+            icon: cardIcon,
+            size: artworkSize,
+            showIconLabel: false,
+            inputData:
+                playlistData ??
+                {
+                  'title': playlistTitle,
+                  'ytid': playlistId,
+                  'image': playlistArtwork,
+                  'primary-type': 'playlist',
+                },
+          );
+        else
+          return BaseCard(
+            icon: cardIcon,
+            size: artworkSize,
+            showIconLabel: false,
+            inputData: snapshot.data,
+          );
+      },
     );
   }
 
