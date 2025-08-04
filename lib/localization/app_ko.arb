@@ -205,5 +205,8 @@
   "queueCleared": "대기열 비움!",
   "cannotReloadLocalPlugin": "모바일에서는 로컬 파일 소스에서 플러그인을 다시 로드할 수 없습니다. 플러그인을 삭제하고 다시 추가하여 업데이트하세요. 플러그인 이름",
   "addedBackgroundJob": "백그라운드 대기열에 추가됨",
-  "updated": "업데이트됨"
+  "updated": "업데이트됨",
+  "autoCacheOffline": "듣고 있는 음악을 자동으로 오프라인에서 사용 가능하게 함",
+  "storageWarning": "경고: 이 옵션은 많은 저장 공간을 사용합니다. 활성화하기 전에 기기에 충분한 저장 공간이 있는지 확인하세요!",
+  "autoCacheOfflinePlaylist": "이 재생목록의 음악을 들을 때 자동으로 오프라인에서 사용 가능하게 함"
 }

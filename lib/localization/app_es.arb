@@ -205,5 +205,8 @@
   "queueCleared": "¡Cola vaciada!",
   "cannotReloadLocalPlugin": "No se puede recargar el complemento desde un archivo local en móvil. Elimina el complemento y vuelve a añadirlo para actualizarlo. Nombre del complemento",
   "addedBackgroundJob": "añadido a la cola en segundo plano",
-  "updated": "Actualizado"
+  "updated": "Actualizado",
+  "autoCacheOffline": "Hacer que las canciones que se escuchan estén disponibles automáticamente sin conexión",
+  "storageWarning": "Advertencia: Esta opción utilizará mucho almacenamiento. ¡Asegúrese de que su dispositivo tenga suficiente espacio antes de activarla!",
+  "autoCacheOfflinePlaylist": "Hacer que las canciones de esta lista de reproducción estén disponibles automáticamente sin conexión cuando se escuchen"
 }

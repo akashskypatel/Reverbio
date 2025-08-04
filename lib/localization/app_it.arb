@@ -205,5 +205,8 @@
   "queueCleared": "Coda svuotata!",
   "cannotReloadLocalPlugin": "Impossibile ricaricare il plugin da un file locale su Mobile. Elimina il plugin e aggiungilo nuovamente per aggiornarlo. Nome plugin",
   "addedBackgroundJob": "aggiunto alla coda in background",
-  "updated": "Aggiornato"
+  "updated": "Aggiornato",
+  "autoCacheOffline": "Rendi automaticamente disponibili offline le canzoni in ascolto",
+  "storageWarning": "Attenzione: Questa opzione utilizzerà molto spazio di archiviazione. Assicurati che il tuo dispositivo abbia spazio sufficiente prima di abilitarla!",
+  "autoCacheOfflinePlaylist": "Rendi automaticamente disponibili offline le canzoni di questa playlist quando vengono ascoltate"
 }

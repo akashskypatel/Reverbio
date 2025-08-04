@@ -205,5 +205,8 @@
   "queueCleared": "Kolejka wyczyszczona!",
   "cannotReloadLocalPlugin": "Nie można przeładować wtyczki z lokalnego pliku na urządzeniu mobilnym. Usuń wtyczkę i dodaj ją ponownie, aby zaktualizować. Nazwa wtyczki",
   "addedBackgroundJob": "dodano do kolejki w tle",
-  "updated": "Zaktualizowano"
+  "updated": "Zaktualizowano",
+  "autoCacheOffline": "Automatycznie udostępniaj odtwarzane utwory w trybie offline",
+  "storageWarning": "Ostrzeżenie: Ta opcja zużyje dużo miejsca. Upewnij się, że twoje urządzenie ma wystarczająco dużo miejsca przed włączeniem!",
+  "autoCacheOfflinePlaylist": "Automatycznie udostępniaj utwory z tej playlisty w trybie offline podczas odtwarzania"
 }

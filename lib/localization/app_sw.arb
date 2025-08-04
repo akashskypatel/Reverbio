@@ -205,5 +205,8 @@
   "queueCleared": "Foleni imefutwa!",
   "cannotReloadLocalPlugin": "Haiwezi kupakia tena programu-jalizi kutoka kwa faili ya ndani kwenye Rununu. Futa programu-jalizi na uongeze tena kusasisha. Jina la programu-jalizi",
   "addedBackgroundJob": "imeongezwa kwenye foleni ya nyuma",
-  "updated": "ImeSasishwa"
+  "updated": "ImeSasishwa",
+  "autoCacheOffline": "Fanya muziki unaosikilizwa ipasavyo kwa kiotomatiki bila mtandao",
+  "storageWarning": "Onyo: Chaguo hili litatumia kumbukumbu nyingi. Hakikisha kifaa chako kina kumbukumbu ya kutosha kabla ya kuwezesha!",
+  "autoCacheOfflinePlaylist": "Fanya muziki katika orodha hii ya kucheza ipatikanayo kiotomatiki bila mtandao unaposikilizwa"
 }

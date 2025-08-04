@@ -205,5 +205,8 @@
   "queueCleared": "已清除隊列！",
   "cannotReloadLocalPlugin": "無法在流動裝置上從本地檔案來源重新載入插件。請刪除插件並重新添加以更新。插件名稱",
   "addedBackgroundJob": "已加入背景隊列",
-  "updated": "已更新"
+  "updated": "已更新",
+  "autoCacheOffline": "自動將正在收聽嘅歌曲設為離線可用",
+  "storageWarning": "警告：此選項會使用大量儲存空間。啟用前請確保你嘅裝置有足夠空間！",
+  "autoCacheOfflinePlaylist": "當收聽時，自動將此播放清單嘅歌曲設為離線可用"
 }

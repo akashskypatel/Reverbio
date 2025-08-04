@@ -205,5 +205,8 @@
   "queueCleared": "Fila limpa!",
   "cannotReloadLocalPlugin": "Não é possível recarregar o Plugin de um ficheiro local no Telemóvel. Elimine o plugin e adicione-o novamente para atualizá-lo. Nome do plugin",
   "addedBackgroundJob": "adicionado à fila em segundo plano",
-  "updated": "Atualizado"
+  "updated": "Atualizado",
+  "autoCacheOffline": "Disponibilizar automaticamente músicas a serem ouvidas offline",
+  "storageWarning": "Aviso: Esta opção irá utilizar muito armazenamento. Certifique-se de que o seu dispositivo tem espaço suficiente antes de ativar!",
+  "autoCacheOfflinePlaylist": "Disponibilizar automaticamente músicas desta playlist offline quando forem ouvidas"
 }

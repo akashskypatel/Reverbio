@@ -205,5 +205,8 @@
   "queueCleared": "Queue cleared!",
   "cannotReloadLocalPlugin": "Cannot reload Plugin from local file source on Mobile. Delete the plugin and re-add it to update it. Plugin name",
   "addedBackgroundJob": "added to background queue",
-  "updated": "Updated"
+  "updated": "Updated",
+  "autoCacheOffline": "Automatically make songs being listened to available offline",
+  "storageWarning": "Warning: This options will use a lot of storage. Please make sure your device has enough storage before enabling!",
+  "autoCacheOfflinePlaylist": "Automatically make songs in this playlist available offline when being listened to"
 }
