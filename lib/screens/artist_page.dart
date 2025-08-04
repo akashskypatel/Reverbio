@@ -60,6 +60,9 @@ class _ArtistPageState extends State<ArtistPage> {
   dynamic albums;
   dynamic others;
   dynamic singles;
+  late final likeStatus = ValueNotifier(
+    isArtistAlreadyLiked(widget.artistData),
+  );
 
   @override
   void initState() {
@@ -83,6 +86,7 @@ class _ArtistPageState extends State<ArtistPage> {
           iconSize: pageHeaderIconSize,
         ),
         actions: [
+          _buildLikeButton(),
           _buildSyncButton(),
           ...PM.getWidgetsByType(_getArtistData, 'ArtistPageHeader', context),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
@@ -112,6 +116,30 @@ class _ArtistPageState extends State<ArtistPage> {
         setState(() {
           widget.artistData.addAll(data);
         });
+      },
+    );
+  }
+
+  Widget _buildLikeButton() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: likeStatus,
+      builder: (context, value, __) {
+        return IconButton(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          icon:
+              value
+                  ? const Icon(FluentIcons.heart_24_filled)
+                  : const Icon(FluentIcons.heart_24_regular),
+          iconSize: pageHeaderIconSize,
+          onPressed: () {
+            updateArtistLikeStatus(widget.artistData, !likeStatus.value);
+            if (mounted)
+              setState(() {
+                likeStatus.value = !likeStatus.value;
+              });
+          },
+        );
       },
     );
   }
