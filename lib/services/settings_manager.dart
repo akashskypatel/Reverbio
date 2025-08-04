@@ -106,3 +106,11 @@ final prepareNextSong = ValueNotifier<bool>(
 final useProxies = ValueNotifier<bool>(
   Hive.box('settings').get('useProxies', defaultValue: true),
 );
+
+final autoCacheOffline = ValueNotifier<bool>(
+  Hive.box('settings').get('autoCacheOffline', defaultValue: false),
+);
+
+final postUpdateRun = Hive.box(
+  'settings',
+).get('postUpdateRun', defaultValue: {}) as Map;

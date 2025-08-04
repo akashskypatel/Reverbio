@@ -153,7 +153,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         CustomBar(
           tileName: context.l10n!.dynamicColor,
-          tileIcon: FluentIcons.toggle_left_24_filled,
+          tileIcon: FluentIcons.inking_tool_accent_24_filled,
           trailing: Switch(
             value: useSystemColor.value,
             onChanged: (value) => _toggleSystemColor(context, value),
@@ -186,7 +186,7 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (context, value, __) {
             return CustomBar(
               tileName: context.l10n!.offlineMode,
-              tileIcon: FluentIcons.cellular_off_24_regular,
+              tileIcon: FluentIcons.cellular_off_24_filled,
               trailing: Switch(
                 value: value,
                 onChanged: (value) async => _toggleOfflineMode(context, value),
@@ -195,14 +195,29 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         ValueListenableBuilder<bool>(
+          valueListenable: autoCacheOffline,
+          builder: (context, value, __) {
+            return CustomBar(
+              tileName: context.l10n!.autoCacheOffline,
+              tileIcon: FluentIcons.data_bar_vertical_arrow_down_24_filled,
+              trailing: Switch(
+                value: value,
+                onChanged:
+                    (value) => _showAutoCacheOfflineDialog(context, value),
+              ),
+            );
+          },
+        ),
+        ValueListenableBuilder<bool>(
           valueListenable: enablePlugins,
           builder: (context, value, __) {
             return CustomBar(
+              borderRadius: commonCustomBarRadiusLast,
               tileName: context.l10n!.plugins,
               tileIcon:
                   value
                       ? FluentIcons.plug_connected_24_regular
-                      : FluentIcons.plug_disconnected_24_regular,
+                      : FluentIcons.plug_disconnected_24_filled,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _togglePluginsSupport(context, value),
@@ -1232,6 +1247,33 @@ class _SettingsPageState extends State<SettingsPage> {
     addOrUpdateData('settings', 'useProxies', value);
     useProxies.value = value;
     showToast(context.l10n!.settingChangedMsg);
+  }
+
+  void _toggleAutoCacheOffline(BuildContext context, bool value) {
+    addOrUpdateData('settings', 'autoCacheOffline', value);
+    autoCacheOffline.value = value;
+    showToast(context.l10n!.settingChangedMsg);
+  }
+
+  void _showAutoCacheOfflineDialog(BuildContext context, bool value) async {
+    if (!value)
+      _toggleAutoCacheOffline(context, value);
+    else {
+      final enable =
+          await showDialog<bool>(
+            context: context,
+            builder:
+                (context) => ConfirmationDialog(
+                  confirmText: context.l10n!.confirm,
+                  cancelText: context.l10n!.cancel,
+                  message: context.l10n!.storageWarning,
+                  onCancel: () => Navigator.pop(context, false),
+                  onSubmit: () => Navigator.pop(context, true),
+                ),
+          ) ??
+          false;
+      if (enable) _toggleAutoCacheOffline(context, enable);
+    }
   }
 
   void _showClearSearchHistoryDialog(BuildContext context) {

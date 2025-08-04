@@ -33,9 +33,11 @@ import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
+import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/formatter.dart';
@@ -491,7 +493,7 @@ Future<StreamManifest> getSongManifest(String songId) async {
     return manifest;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow; // Rethrow the exception to allow the caller to handle it
+    rethrow;
   }
 }
 
@@ -507,9 +509,12 @@ Future<void> getSongUrl(dynamic song) async {
     return;
   }
   await PM.getSongUrl(song, getSongYoutubeUrl);
+  if (autoCacheOffline.value || (song['autoCacheOffline'] ?? false))
+    unawaited(makeSongOffline(song));
 }
 
 Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
+  final context = NavigationManager().context;
   try {
     if (song == null) return '';
     if (song['mbid'] == null) await findMBSong(song);
@@ -529,19 +534,19 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
       }
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
-      song['error'] = 'Could not find YoutTube stream for this song.';
+      song['error'] = context.l10n!.errorCouldNotFindAStream;
       song['isError'] = true;
       return '';
     }
     //check if url resolves
     if (await checkUrl(song['songUrl']) >= 400) {
-      song['error'] = 'Song url could not be resolved.';
+      song['error'] = context.l10n!.urlError;
       song['isError'] = true;
       return '';
     }
     return song['songUrl'];
   } catch (e, stackTrace) {
-    song['error'] = 'Song url could not be resolved.';
+    song['error'] = context.l10n!.urlError;
     song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return '';
