@@ -58,7 +58,7 @@ ThemeData? theme;
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
-bool nowPlayingOpen = false;
+final nowPlayingOpen = ValueNotifier(false);
 Map<String, dynamic> userGeolocation = {};
 
 const appLanguages = <String, String>{
@@ -237,12 +237,12 @@ class _ReverbioState extends State<Reverbio> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initialisation();
+  await initialization();
 
   runApp(const Reverbio());
 }
 
-Future<void> initialisation() async {
+Future<void> initialization() async {
   try {
     await Hive.initFlutter('reverbio');
 
@@ -257,11 +257,13 @@ Future<void> initialisation() async {
 
     audioHandler = await AudioService.init(
       builder: ReverbioAudioHandler.new,
-      config: const AudioServiceConfig(
+      config: AudioServiceConfig(
         androidNotificationChannelId: 'com.akashskypatel.reverbio',
         androidNotificationChannelName: 'Reverbio',
-        androidNotificationIcon: 'drawable/ic_launcher_foreground',
+        androidNotificationIcon: 'drawable/ic_notification',
         androidShowNotificationBadge: true,
+        androidNotificationOngoing: true,
+        notificationColor: theme?.colorScheme.primary ?? Colors.blue.shade900,
       ),
     );
 

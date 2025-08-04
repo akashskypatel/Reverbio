@@ -32,6 +32,7 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class BaseCard extends StatefulWidget {
@@ -155,29 +156,34 @@ class _BaseCardState extends State<BaseCard> {
             visible: value,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
-              child: GestureDetector(
-                onTap: widget.onPressed,
-                child: SizedBox(
-                  width: widget.size,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(borderRadius),
-                        clipBehavior: Clip.antiAlias,
-                        child: SizedBox(
-                          width: widget.size,
-                          height: widget.size,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(borderRadius),
-                              color: colorScheme.secondary,
-                            ),
-                            child: Stack(
-                              children: [
-                                if (mounted)
-                                  FutureBuilder(
+              child: SizedBox(
+                width: widget.size,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      clipBehavior: Clip.antiAlias,
+                      child: SizedBox(
+                        width: widget.size,
+                        height: widget.size,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(borderRadius),
+                            color: colorScheme.secondary,
+                          ),
+                          child: Stack(
+                            children: [
+                              if (mounted)
+                                GestureDetector(
+                                  onDoubleTapDown:
+                                      (details) => _toggleLike(
+                                        context,
+                                        details: details,
+                                      ),
+                                  onTap: widget.onPressed,
+                                  child: FutureBuilder(
                                     initialData:
                                         widget.loadingWidget != null
                                             ? SizedBox(
@@ -203,17 +209,16 @@ class _BaseCardState extends State<BaseCard> {
                                       return snapshot.data!;
                                     },
                                   ),
-                                if (widget.showLabel) _buildLabel(),
-                                if (widget.showLike) _buildLiked(),
-                              ],
-                            ),
+                                ),
+                              if (widget.showLabel) _buildLabel(),
+                              if (widget.showLike) _buildLiked(),
+                            ],
                           ),
                         ),
                       ),
-                      if (widget.showOverflowLabel)
-                        _buildOverflowLabel(context),
-                    ],
-                  ),
+                    ),
+                    if (widget.showOverflowLabel) _buildOverflowLabel(context),
+                  ],
                 ),
               ),
             ),
@@ -373,9 +378,11 @@ class _BaseCardState extends State<BaseCard> {
     );
   }
 
-  void _toggleLike(BuildContext context) async {
+  void _toggleLike(BuildContext context, {TapDownDetails? details}) async {
     final liked = await _updateLikeStatus();
     isLikedNotifier.value = liked;
+    if (details != null)
+      AnimatedHeart.show(context: context, details: details, like: liked);
   }
 
   Future<bool> _updateLikeStatus() async {

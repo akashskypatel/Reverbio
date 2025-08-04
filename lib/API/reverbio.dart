@@ -417,7 +417,7 @@ Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
       final data = List.from(jsonDecode(res.body));
       final segments =
           data.map((obj) {
-            return {
+            return <String, dynamic>{
               'category': obj['category'],
               'start':
                   ((double.tryParse(
@@ -434,7 +434,7 @@ Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
                       .toInt(),
             };
           }).toList();
-      return List.from(segments);
+      return List<Map<String, dynamic>>.from(segments);
     } else {
       return [];
     }

@@ -1053,13 +1053,6 @@ class PluginsManager {
     List<dynamic>? args,
   }) {
     try {
-      if (_isProcessingNotifiers[pluginName]!.value) {
-        final context = NavigationManager().context;
-        showToast(
-          '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
-        );
-        return;
-      }
       if (!_plugins.map((e) => e['name']).contains(pluginName)) return null;
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
@@ -1091,13 +1084,6 @@ class PluginsManager {
     Duration? timeout,
   }) async {
     try {
-      if (_isProcessingNotifiers[pluginName]!.value) {
-        final context = NavigationManager().context;
-        showToast(
-          '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
-        );
-        return;
-      }
       if (!_plugins.map((e) => e['name']).contains(pluginName)) return null;
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
@@ -1203,7 +1189,7 @@ class PluginsManager {
 
   static Future<void> getSongUrl(Map song, Function fallback) async {
     if (!enablePlugins.value || plugins.isEmpty) return await fallback(song);
-    const timeout = Duration(seconds: 5);
+    const timeout = Duration(seconds: 10);
     final allFutures = <Future>[];
     void onSuccess(dynamic result) {
       var songUrl = '';

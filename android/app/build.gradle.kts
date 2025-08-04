@@ -28,6 +28,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders += mapOf(
+            "carTemplateEnabled" to "true",
+            "appAuthRedirectScheme" to "com.your.package"
+        )
     }
 
     splits {
@@ -72,5 +76,8 @@ flutter {
 }
 
 dependencies {
+    implementation("androidx.media:media:1.6.0")
+    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("com.google.android.gms:play-services-base:18.2.0")
     implementation("com.github.fast-development.android-js-runtimes:fastdev-jsruntimes-jsc:0.3.5")
 }

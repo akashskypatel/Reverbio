@@ -47,3 +47,5 @@ const commonBarContentPadding = EdgeInsets.symmetric(
   horizontal: 10,
 );
 final specialRegex = RegExp(r'''[+\-\—\–&,|!(){}[\]^"~*?:\\']''');
+
+const navigationRailWidth = 80.0;

@@ -1178,7 +1178,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ) ??
         false;
     if (shouldSave) {
-      NavigationManager.router.goNamed('settings');
       showToast(context.l10n!.restartAppMsg);
       addOrUpdateData('settings', 'offlineMode', value);
       offlineMode.value = value;

@@ -20,9 +20,11 @@
  */
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -54,6 +56,7 @@ class AudioPlayerService {
     MediaKit.ensureInitialized();
     _initialize();
   }
+
   static final Player _player = Player();
   static bool _isShuffleEnabled = false;
   static double _volume = settings.volume.toDouble();
@@ -83,7 +86,8 @@ class AudioPlayerService {
 
   List<SongBar> get queueSongBars => _queueSongBars;
   AudioPlayerState get playerState => _playerState;
-  AudioProcessingState get state => _processingState;
+  AudioProcessingState get processingState => _processingState;
+  PlayerState get state => _player.state;
   static Player get player => _player;
   bool get shuffleModeEnabled => _isShuffleEnabled;
   bool get playing => _player.state.playing;
@@ -97,7 +101,6 @@ class AudioPlayerService {
     return true;
   }
 
-  //_player.state.playlist.index < _player.state.playlist.medias.length - 1;
   bool get hasPrevious {
     if (songValueNotifier.value == null) return false;
     final index = queueIndexOf(
@@ -108,7 +111,6 @@ class AudioPlayerService {
     return true;
   }
 
-  //_player.state.playlist.index > 0;
   int get currentIndex => _player.state.playlist.index;
   Duration get position => _player.state.position;
   Duration get duration => _player.state.duration;
@@ -183,12 +185,8 @@ class AudioPlayerService {
         );
       }
     });
-    /*
-    _player.stream.playlist.listen((playlist) {
-      _indexController.add(playlist.index);
-    });
-    */
-    setVolume(_volume);
+    unawaited(setAudioDevice());
+    unawaited(setVolume(_volume));
   }
 
   void _updateProcessingState(AudioProcessingState newState) {
@@ -301,15 +299,20 @@ class AudioPlayerService {
   void skipToPrevious(int index) {
     _indexController.add(index);
   }
+
+  Future<void> setAudioDevice({AudioDevice? audioDevice}) async {
+    await _player.setAudioDevice(audioDevice ?? AudioDevice.auto());
+  }
 }
 
-class ReverbioAudioHandler extends BaseAudioHandler {
+class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   ReverbioAudioHandler() {
     _setupEventSubscriptions();
+    if (Platform.isAndroid || Platform.isIOS) unawaited(getSession());
     _updatePlaybackState();
   }
   final AudioPlayerService audioPlayer = AudioPlayerService();
-
+  audio_session.AudioSession? _session;
   Timer? _sleepTimer;
   bool sleepTimerExpired = false;
   late bool wasPlayingBeforeCall = false;
@@ -321,11 +324,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   late final StreamSubscription<Playlist?> _sequenceStateSubscription;
   late final StreamSubscription<PositionData> _positionDataSubscription;
   late final StreamSubscription<MediaItem?> _mediaItemSubscription;
-
+  late final StreamSubscription<audio_session.AudioInterruptionEvent>
+  _sessionEventStream;
+  late final StreamSubscription<audio_session.AudioDevicesChangedEvent>
+  _sessionDeviceEventStream;
   final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
     PositionData(Duration.zero, Duration.zero, Duration.zero),
   );
-
   Duration get position => audioPlayer.position;
   Duration get duration => audioPlayer.duration;
   bool get hasNext => audioPlayer.hasNext;
@@ -336,9 +341,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       audioPlayer.playerStateStream;
   double get volume => audioPlayer.volume;
   Stream<PositionData> get positionDataStream => audioPlayer.positionDataStream;
-  AudioProcessingState get state => audioPlayer.state;
+  AudioProcessingState get state => audioPlayer.processingState;
   bool get playing => audioPlayer.playing;
   Stream<Duration> get positionStream => audioPlayer.positionStream;
+  bool cachedIsPlaying = false;
 
   Future<void> dispose() async {
     await _playbackEventSubscription.cancel();
@@ -348,7 +354,30 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _sequenceStateSubscription.cancel();
     await _positionDataSubscription.cancel();
     await _mediaItemSubscription.cancel();
+    await _sessionEventStream.cancel();
+    await _sessionDeviceEventStream.cancel();
     await audioPlayer.dispose();
+  }
+
+  Future<audio_session.AudioSession> getSession() async {
+    if (_session == null) {
+      _session = await audio_session.AudioSession.instance;
+      await _session!.configure(
+        const audio_session.AudioSessionConfiguration.music(),
+      );
+      _sessionEventStream = _session!.interruptionEventStream.listen(
+        _handleSessionEventChange,
+      );
+      _sessionDeviceEventStream = _session!.devicesChangedEventStream.listen(
+        _handleDeviceEventChange,
+      );
+    }
+    return _session!;
+  }
+
+  Future<bool> sessionActive({bool active = true}) async {
+    return (!Platform.isAndroid && !Platform.isIOS) ||
+        await (await getSession()).setActive(active);
   }
 
   @override
@@ -358,13 +387,33 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   @override
-  Future<void> play() => audioPlayer.play();
+  Future<void> play() async {
+    if (await sessionActive()) {
+      await audioPlayer.play();
+      _updatePlaybackState();
+    }
+  }
+
   @override
-  Future<void> pause() => audioPlayer.pause();
+  Future<void> pause() async {
+    await audioPlayer.pause();
+    _updatePlaybackState();
+    await sessionActive(active: false);
+  }
+
   @override
-  Future<void> stop() => audioPlayer.stop();
+  Future<void> stop() async {
+    await audioPlayer.stop();
+    _updatePlaybackState();
+    await sessionActive(active: false);
+  }
+
   @override
-  Future<void> seek(Duration position) => audioPlayer.seek(position);
+  Future<void> seek(Duration position) async {
+    await audioPlayer.seek(position);
+    _updatePlaybackState();
+  }
+
   @override
   Future<void> skipToNext({bool play = true}) async {
     final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
@@ -378,7 +427,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       await queueSong(songBar: queueSongBars[index + 1], play: play);
       audioPlayer.skipToNext(index + 1);
     }
-    return;
+    _updatePlaybackState();
   }
 
   @override
@@ -394,13 +443,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       await queueSong(songBar: queueSongBars[index - 1], play: play);
       audioPlayer.skipToPrevious(index - 1);
     }
-    return;
+    _updatePlaybackState();
   }
 
   @override
   Future<void> skipToQueueItem(int index, {bool play = true}) async {
     index = min(index, queueSongBars.length - 1);
     await queueSong(songBar: queueSongBars[index], play: play);
+    _updatePlaybackState();
   }
 
   Future<void> skipToRandom({bool play = true}) async {
@@ -409,30 +459,116 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       queueSongBars.length - 1,
     );
     await queueSong(songBar: queueSongBars[index], play: play);
+    _updatePlaybackState();
   }
 
   @override
-  Future<void> fastForward() =>
-      seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
+  Future<void> fastForward() async {
+    await seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
+    _updatePlaybackState();
+  }
 
   @override
-  Future<void> rewind() =>
-      seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
+  Future<void> rewind() async {
+    await seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
+    _updatePlaybackState();
+  }
+
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) async {
+    return queueSongBars.map((songBar) => songBar.mediaItem).toList();
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) async {
+    try {
+      return queueSongBars
+          .firstWhere((songBar) => songBar.mediaItem.id == mediaId)
+          .mediaItem;
+    } catch (e) {
+      return null;
+    }
+  }
 
   Future<void> close() async {
     await audioPlayer.close();
     queue.add([]);
     playbackState.add(PlaybackState());
     mediaItem.add(null);
+    await sessionActive(active: false);
   }
 
   Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
   Future<void> seekToStart() => audioPlayer.seekToStart();
 
+  Future<void> _handleDeviceEventChange(
+    audio_session.AudioDevicesChangedEvent event,
+  ) async {
+    AudioDevice? audioDevice;
+    try {
+      final currentDevice = audioPlayer.state.audioDevice;
+      if (event.devicesAdded.isNotEmpty) {
+        final outputs =
+            event.devicesAdded.where((e) => e.isOutput).toList()
+              ..sort((a, b) => b.id.compareTo(a.id));
+        if (outputs.isNotEmpty && currentDevice.name != outputs.first.name) {
+          audioDevice = AudioDevice(outputs.first.name, outputs.first.name);
+        }
+      } else if (event.devicesRemoved.isNotEmpty) {
+        final outputs =
+            (await (await getSession()).getDevices())
+                .where((e) => e.isOutput)
+                .toList()
+              ..sort((a, b) => b.id.compareTo(a.id));
+        if (outputs.isNotEmpty && currentDevice.name != outputs.first.name)
+          audioDevice = AudioDevice(outputs.first.name, outputs.first.name);
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
+    }
+    await audioPlayer.setAudioDevice(audioDevice: audioDevice);
+  }
+
+  void _handleSessionEventChange(audio_session.AudioInterruptionEvent event) {
+    if (event.begin) {
+      switch (event.type) {
+        case audio_session.AudioInterruptionType.duck:
+          // Another app started playing audio and we should duck.
+          if (audioPlayer.playing) unawaited(setVolume(audioPlayer.volume / 2));
+          break;
+        case audio_session.AudioInterruptionType.pause:
+        case audio_session.AudioInterruptionType.unknown:
+          // Another app started playing audio and we should pause.
+          if (audioPlayer.playing) unawaited(pause());
+          break;
+      }
+    } else {
+      switch (event.type) {
+        case audio_session.AudioInterruptionType.duck:
+          // The interruption ended and we should unduck.
+          if (audioPlayer.playing) unawaited(setVolume(audioPlayer.volume * 2));
+          break;
+        case audio_session.AudioInterruptionType.pause:
+          // The interruption ended and we should resume.
+          if(cachedIsPlaying) unawaited(play());
+        case audio_session.AudioInterruptionType.unknown:
+          // The interruption ended but we should not resume.
+          break;
+      }
+    }
+  }
+
   void _handlePlaybackEvent(bool playing) {
     try {
       if (playing &&
-          audioPlayer.state == AudioProcessingState.completed &&
+          audioPlayer.processingState == AudioProcessingState.completed &&
           !sleepTimerExpired) {
         skipToNext();
       }
@@ -446,38 +582,20 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _updatePlaybackState();
   }
 
-  void _handleMediaItemChange(MediaItem mediaitem) {
-    mediaItem.add(mediaitem);
+  void _handleMediaItemChange(MediaItem _mediaItem) {
+    mediaItem.add(_mediaItem);
+    _updatePlaybackState();
   }
 
   void _handleDurationChange(Duration? duration) {
-    try {
-      /*
-      final index = audioPlayer.currentIndex;
-      if (queue.value.isNotEmpty) {
-        final newQueue = List<MediaItem>.from(queue.value);
-        final oldMediaItem = newQueue[index];
-        final newMediaItem = oldMediaItem.copyWith(duration: duration);
-        newQueue[index] = newMediaItem;
-        queue.add(newQueue);
-        mediaItem.add(newMediaItem);
-      }
-      */
-    } catch (e, stackTrace) {
+    try {} catch (e, stackTrace) {
       logger.log('Error handling duration change', e, stackTrace);
     }
     _updatePlaybackState();
   }
 
   void _handleCurrentSongIndexChanged(int? index) {
-    try {
-      /*
-      if (index != null && queue.value.isNotEmpty) {
-        final playlist = queue.value;
-        mediaItem.add(playlist[index]);
-      }
-      */
-    } catch (e, stackTrace) {
+    try {} catch (e, stackTrace) {
       logger.log('Error handling current song index change', e, stackTrace);
     }
     _updatePlaybackState();
@@ -485,16 +603,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void _handleSequenceStateChange(Playlist? playlist) {
     try {
-      /*
-      final sequence = playlist?.medias;
-      if (sequence != null && sequence.isNotEmpty) {
-        final items =
-            sequence
-                .map((source) => extrasToMediaItem(source.extras ?? {}))
-                .toList();
-        queue.add(items); 
-      }
-      */
       settings.shuffleNotifier.value = audioPlayer.shuffleModeEnabled;
     } catch (e, stackTrace) {
       logger.log('Error handling sequence state change', e, stackTrace);
@@ -527,7 +635,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           song['skipSegments'] != null &&
           song['skipSegments'].isNotEmpty) {
         final checkSegment =
-            (song['skipSegments'] as List<Map<String, dynamic>>)
+            List<Map<String, dynamic>>.from(song['skipSegments'])
                 .where(
                   (e) =>
                       e['start']! <= value.position.inMicroseconds &&
@@ -572,28 +680,29 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   void _updatePlaybackState() {
-    final hasPreviousOrNext = hasPrevious || hasNext;
+    mediaItem.add(songValueNotifier.value?.mediaItem);
+    cachedIsPlaying = audioPlayer.playing;
     playbackState.add(
       playbackState.value.copyWith(
         controls: [
-          if (hasPreviousOrNext)
-            MediaControl.skipToPrevious
-          else
-            MediaControl.rewind,
+          if (hasPrevious) MediaControl.skipToPrevious else MediaControl.rewind,
           if (audioPlayer.playing) MediaControl.pause else MediaControl.play,
-          if (hasPreviousOrNext)
-            MediaControl.skipToNext
-          else
-            MediaControl.fastForward,
+          if (hasNext) MediaControl.skipToNext else MediaControl.fastForward,
           MediaControl.stop,
         ],
         systemActions: const {
+          MediaAction.play,
+          MediaAction.pause,
+          MediaAction.stop,
           MediaAction.seek,
+          MediaAction.skipToNext,
+          MediaAction.skipToPrevious,
+          MediaAction.skipToQueueItem,
           MediaAction.seekForward,
           MediaAction.seekBackward,
         },
         androidCompactActionIndices: const [0, 1, 2],
-        processingState: audioPlayer.state,
+        processingState: _getProcessingState(),
         repeatMode: settings.repeatNotifier.value,
         shuffleMode:
             audioPlayer.shuffleModeEnabled
@@ -606,6 +715,18 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         queueIndex: audioPlayer.currentIndex,
       ),
     );
+  }
+
+  AudioProcessingState _getProcessingState() {
+    if (audioPlayer.processingState == AudioProcessingState.error) {
+      return AudioProcessingState.error;
+    } else if (!audioPlayer.playing) {
+      return AudioProcessingState.ready;
+    } else if (audioPlayer.processingState == AudioProcessingState.buffering) {
+      return AudioProcessingState.buffering;
+    } else {
+      return AudioProcessingState.ready;
+    }
   }
 
   Future<bool> queueSong({
@@ -623,9 +744,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       songBar = queueSongBars[index];
       final isError =
           songBar.song.containsKey('isError') ? songBar.song['isError'] : false;
-      /* if (index < queueSongBars.length) {
-        isError = !(await queueSongBars[index].queueSong(play: play));
-      } */
       // Prepare next song
       if (prepareNextSong.value) {
         final newIndex =
