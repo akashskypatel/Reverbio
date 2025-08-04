@@ -54,41 +54,43 @@ bool youtubeValidate(String url) {
 
 String parseEntityId(dynamic entity) {
   dynamic ids;
-  String songId =
+  String entityId =
       entity is String
           ? entity
           : entity['id'] ??
               entity['mbid'] ??
               entity['ytid'] ??
               entity['dcid'] ??
+              entity['ucid'] ??
               '';
   final mbRx = RegExp(
     r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
     caseSensitive: false,
   );
-  if (songId.contains('=')) {
-    ids = Uri.parse('?$songId').queryParameters;
-    songId = Uri(
+  if (entityId.contains('=')) {
+    ids = Uri.parse('?$entityId').queryParameters;
+    entityId = Uri(
       host: '',
       queryParameters: ids,
     ).toString().replaceAll('?', '').replaceAll('//', '');
-  } else if (mbRx.hasMatch(songId)) {
-    songId = 'mb=$songId';
-  } else if (int.tryParse(songId) != null) {
-    songId = 'dc=$songId';
-  } else if (songId.isNotEmpty) {
-    songId = 'yt=$songId';
+  } else if (mbRx.hasMatch(entityId)) {
+    entityId = 'mb=$entityId';
+  } else if (int.tryParse(entityId) != null) {
+    entityId = 'dc=$entityId';
+  } else if (entityId.startsWith('UC-')) {
+    entityId = 'uc=$entityId';
+  } else if (entityId.isNotEmpty) {
+    entityId = 'yt=$entityId';
   }
-  ids = Uri.parse('?$songId').queryParameters;
+  ids = Uri.parse('?$entityId').queryParameters;
   if (entity is Map) {
-    entity =
-        Map<String, dynamic>.from(entity)
-          ..addAll(<String, dynamic>{'id': songId})
-          ..addAll(<String, dynamic>{'ytid': ids['yt']})
-          ..addAll(<String, dynamic>{'mbid': ids['mb']})
-          ..addAll(<String, dynamic>{'dcid': ids['dc']});
+    entity['id'] = entityId;
+    if (ids['yt'] != null) entity['ytid'] = ids['yt'];
+    if (ids['mb'] != null) entity['mbid'] = ids['mb'];
+    if (ids['dc'] != null) entity['dcid'] = ids['dc'];
+    if (ids['uc'] != null) entity['ucid'] = ids['uc'];
   }
-  return songId;
+  return entityId;
 }
 
 String? combineArtists(dynamic value) {
