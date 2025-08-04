@@ -180,29 +180,17 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                       Flexible(fit: FlexFit.tight, child: widget.child),
                       ValueListenableBuilder(
                         valueListenable: audioHandler.songValueNotifier,
-                        builder: (_, value, child) {
-                          showMiniPlayer.value =
-                              value != null && !nowPlayingOpen.value;
-                          return ValueListenableBuilder(
-                            valueListenable: showMiniPlayer,
-                            builder:
-                                (_, __, ___) => ValueListenableBuilder(
-                                  valueListenable: nowPlayingOpen,
-                                  builder:
-                                      (_, __, ___) =>
-                                          value != null && showMiniPlayer.value
-                                              ? MiniPlayer(
-                                                context: context,
-                                                mediaItem: value.mediaItem,
-                                                closeButton:
-                                                    _buildMiniPlayerCloseButton(
-                                                      context,
-                                                    ),
-                                              )
-                                              : const SizedBox.shrink(),
-                                ),
-                          );
-                        },
+                        builder:
+                            (context, value, child) =>
+                                value != null
+                                    ? MiniPlayer(
+                                      context: context,
+                                      mediaItem: value.mediaItem,
+                                      closeButton: _buildMiniPlayerCloseButton(
+                                        context,
+                                      ),
+                                    )
+                                    : const SizedBox.shrink(),
                       ),
                     ],
                   ),

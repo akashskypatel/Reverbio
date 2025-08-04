@@ -498,6 +498,8 @@ Future<StreamManifest> getSongManifest(String songId) async {
 const Duration _cacheDuration = Duration(hours: 3);
 
 Future<void> getSongUrl(dynamic song) async {
+  song['isError'] = false;
+  song?.remove('error');
   final offlinePath = await getOfflinePath(song);
   if (song['mbid'] == null) await findMBSong(song);
   if (offlinePath != null) {
@@ -765,6 +767,10 @@ Future<void> removeSongFromOffline(dynamic song) async {
   song['id'] = parseEntityId(song);
   unawaited(_deleteRelatedFiles(_audioDirPath, song));
   unawaited(_deleteRelatedFiles(_artworkDirPath, song));
+  song?.remove('offlineAudioPath');
+  song?.remove('offlineArtworkPath');
+  song?.remove('songUrl');
+  song['isOffline'] = false;
   userOfflineSongs.removeWhere((s) => checkSong(song, s));
   currentOfflineSongsLength.value = userOfflineSongs.length;
   addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);

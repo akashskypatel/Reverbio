@@ -744,9 +744,6 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
       songBar = queueSongBars[index];
       final isError =
           songBar.song.containsKey('isError') ? songBar.song['isError'] : false;
-      /* if (index < queueSongBars.length) {
-        isError = !(await queueSongBars[index].queueSong(play: play));
-      } */
       // Prepare next song
       if (prepareNextSong.value) {
         final newIndex =
