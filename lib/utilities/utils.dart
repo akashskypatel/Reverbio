@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
@@ -542,4 +543,8 @@ Duration? tryParseDuration(String timeString) {
   final seconds = parseTimeStringToSeconds(timeString);
   if (seconds == null) return null;
   return Duration(seconds: seconds);
+}
+
+String stableHash(String input) {
+  return sha256.convert(utf8.encode(input)).toString();
 }
