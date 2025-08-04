@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "ఈ ప్లేలిస్ట్‌లోని పాటలను విన్నప్పుడు స్వయంచాలకంగా ఆఫ్‌లైన్‌లో అందుబాటులోకి తెచ్చు",
   "urlError": "పాట URLని పరిష్కరించలేకపోయాం",
   "playlistAutoOfflineEnabled": "ప్లేలిస్ట్ ఆటో ఆఫ్‌లైన్ ప్రారంభించబడింది",
-  "playlistAutoOfflineDisabled": "ప్లేలిస్ట్ ఆటో ఆఫ్‌లైన్ నిలిపివేయబడింది"
+  "playlistAutoOfflineDisabled": "ప్లేలిస్ట్ ఆటో ఆఫ్‌లైన్ నిలిపివేయబడింది",
+  "offlinePlaylists": "ఆఫ్‌లైన్ ప్లేలిస్ట్‌లు"
 }

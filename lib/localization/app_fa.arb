@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "ذخیره خودکار آهنگ‌های این لیست پخش برای استفاده آفلاین هنگام پخش",
   "urlError": "نشانی آهنگ قابل حل نبود",
   "playlistAutoOfflineEnabled": "ذخیره خودکار آفلاین لیست پخش فعال شد",
-  "playlistAutoOfflineDisabled": "ذخیره خودکار آفلاین لیست پخش غیرفعال شد"
+  "playlistAutoOfflineDisabled": "ذخیره خودکار آفلاین لیست پخش غیرفعال شد",
+  "offlinePlaylists": "لیست‌های پخش آفلاین"
 }

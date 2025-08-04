@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Songs in dieser Playlist beim Abspielen automatisch offline verfügbar machen",
   "urlError": "Song-URL konnte nicht aufgelöst werden",
   "playlistAutoOfflineEnabled": "Automatische Offline-Speicherung für Playlists aktiviert",
-  "playlistAutoOfflineDisabled": "Automatische Offline-Speicherung für Playlists deaktiviert"
+  "playlistAutoOfflineDisabled": "Automatische Offline-Speicherung für Playlists deaktiviert",
+  "offlinePlaylists": "Offline-Playlists"
 }

@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Otomatis buat lagu dalam daftar putar ini tersedia offline saat didengarkan",
   "urlError": "URL lagu tidak dapat diselesaikan",
   "playlistAutoOfflineEnabled": "Playlist otomatis offline diaktifkan",
-  "playlistAutoOfflineDisabled": "Playlist otomatis offline dinonaktifkan"
+  "playlistAutoOfflineDisabled": "Playlist otomatis offline dinonaktifkan",
+  "offlinePlaylists": "Daftar putar offline"
 }

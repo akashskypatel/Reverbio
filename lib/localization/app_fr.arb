@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Rendre automatiquement disponibles hors ligne les chansons de cette playlist lorsqu'elles sont écoutées",
   "urlError": "L'URL de la chanson n'a pas pu être résolue",
   "playlistAutoOfflineEnabled": "Playlist automatique hors ligne activée",
-  "playlistAutoOfflineDisabled": "Playlist automatique hors ligne désactivée"
+  "playlistAutoOfflineDisabled": "Playlist automatique hors ligne désactivée",
+  "offlinePlaylists": "Playlists hors ligne"
 }

@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "이 재생목록의 음악을 들을 때 자동으로 오프라인에서 사용 가능하게 함",
   "urlError": "노래 URL을 확인할 수 없음",
   "playlistAutoOfflineEnabled": "플레이리스트 자동 오프라인 활성화됨",
-  "playlistAutoOfflineDisabled": "플레이리스트 자동 오프라인 비활성화됨"
+  "playlistAutoOfflineDisabled": "플레이리스트 자동 오프라인 비활성화됨",
+  "offlinePlaylists": "오프라인 재생목록"
 }

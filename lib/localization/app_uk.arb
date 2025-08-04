@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Автоматично робити пісні з цього плейлиста доступними офлайн під час прослуховування",
   "urlError": "Не вдалося обробити URL пісні",
   "playlistAutoOfflineEnabled": "Автономний режим плейлиста увімкнено",
-  "playlistAutoOfflineDisabled": "Автономний режим плейлиста вимкнено"
+  "playlistAutoOfflineDisabled": "Автономний режим плейлиста вимкнено",
+  "offlinePlaylists": "Офлайн-плейлисти"
 }

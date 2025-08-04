@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Tự động lưu bài hát trong danh sách phát này để sử dụng ngoại tuyến khi nghe",
   "urlError": "Không thể phân giải URL bài hát",
   "playlistAutoOfflineEnabled": "Đã bật tự động phát danh sách ngoại tuyến",
-  "playlistAutoOfflineDisabled": "Đã tắt tự động phát danh sách ngoại tuyến"
+  "playlistAutoOfflineDisabled": "Đã tắt tự động phát danh sách ngoại tuyến",
+  "offlinePlaylists": "Danh sách phát ngoại tuyến"
 }

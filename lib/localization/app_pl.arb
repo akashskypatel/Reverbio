@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Automatycznie udostępniaj utwory z tej playlisty w trybie offline podczas odtwarzania",
   "urlError": "Nie można rozpoznać adresu URL utworu",
   "playlistAutoOfflineEnabled": "Automatyczne offline playlisty włączone",
-  "playlistAutoOfflineDisabled": "Automatyczne offline playlisty wyłączone"
+  "playlistAutoOfflineDisabled": "Automatyczne offline playlisty wyłączone",
+  "offlinePlaylists": "Playlisty offline"
 }

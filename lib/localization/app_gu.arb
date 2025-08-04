@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "જ્યારે સાંભળવામાં આવે ત્યારે આ પ્લેલિસ્ટમાંના ગીતોને સ્વયંચાલિત રીતે ઑફલાઇન ઉપલબ્ધ કરો",
   "urlError": "ગીતની URL ઉકેલી શકાઈ નહીં",
   "playlistAutoOfflineEnabled": "પ્લેલિસ્ટ ઓટો ઑફલાઇન સક્રિય",
-  "playlistAutoOfflineDisabled": "પ્લેલિસ્ટ ઓટો ઑફલાઇન નિષ્ક્રિય"
+  "playlistAutoOfflineDisabled": "પ્લેલિસ્ટ ઓટો ઑફલાઇન નિષ્ક્રિય",
+  "offlinePlaylists": "ઑફલાઇન પ્લેલિસ્ટ"
 }

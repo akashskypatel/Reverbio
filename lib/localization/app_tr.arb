@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Bu çalma listesindeki şarkıları dinlenirken otomatik olarak çevrimdışı kullanılabilir yap",
   "urlError": "Şarkı URL'si çözülemedi",
   "playlistAutoOfflineEnabled": "Çalma listesi otomatik çevrimdışı etkin",
-  "playlistAutoOfflineDisabled": "Çalma listesi otomatik çevrimdışı devre dışı"
+  "playlistAutoOfflineDisabled": "Çalma listesi otomatik çevrimdışı devre dışı",
+  "offlinePlaylists": "Çevrimdışı çalma listeleri"
 }

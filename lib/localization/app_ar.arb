@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "جعل الأغاني في قائمة التشغيل هذه متاحة دون اتصال تلقائيًا عند الاستماع إليها",
   "urlError": "تعذر حل عنوان URL للأغنية",
   "playlistAutoOfflineEnabled": "تم تفعيل التخزين التلقائي للقوائم دون اتصال",
-  "playlistAutoOfflineDisabled": "تم تعطيل التخزين التلقائي للقوائم دون اتصال"
+  "playlistAutoOfflineDisabled": "تم تعطيل التخزين التلقائي للقوائم دون اتصال",
+  "offlinePlaylists": "قوائم التشغيل دون اتصال"
 }

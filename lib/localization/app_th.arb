@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "ทำให้เพลงในเพลย์ลิสต์นี้สามารถใช้งานแบบออฟไลน์ได้โดยอัตโนมัติเมื่อมีการเล่น",
   "urlError": "ไม่สามารถแก้ไข URL ของเพลงได้",
   "playlistAutoOfflineEnabled": "เปิดใช้งานเพลย์ลิสต์ออฟไลน์อัตโนมัติแล้ว",
-  "playlistAutoOfflineDisabled": "ปิดใช้งานเพลย์ลิสต์ออฟไลน์อัตโนมัติแล้ว"
+  "playlistAutoOfflineDisabled": "ปิดใช้งานเพลย์ลิสต์ออฟไลน์อัตโนมัติแล้ว",
+  "offlinePlaylists": "เพลย์ลิสต์แบบออฟไลน์"
 }

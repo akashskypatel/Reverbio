@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Automatically make songs in this playlist available offline when being listened to",
   "urlError": "Song url could not be resolved",
   "playlistAutoOfflineEnabled": "Playlist auto offline enabled",
-  "playlistAutoOfflineDisabled": "Playlist auto offline disabled"
+  "playlistAutoOfflineDisabled": "Playlist auto offline disabled",
+  "offlinePlaylists": "Offline playlists"
 }

@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "Fanya muziki katika orodha hii ya kucheza ipatikanayo kiotomatiki bila mtandao unaposikilizwa",
   "urlError": "URL ya wimbo haikuweza kutambuliwa",
   "playlistAutoOfflineEnabled": "Orodha ya kucheza otomatiki nje ya mtandao imewezeshwa",
-  "playlistAutoOfflineDisabled": "Orodha ya kucheza otomatiki nje ya mtandao imezimwa"
+  "playlistAutoOfflineDisabled": "Orodha ya kucheza otomatiki nje ya mtandao imezimwa",
+  "offlinePlaylists": "Orodha ya kucheza bila mtandao"
 }

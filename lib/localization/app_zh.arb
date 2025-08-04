@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "当收听时，自动将此播放列表的歌曲设为离线可用",
   "urlError": "无法解析歌曲URL",
   "playlistAutoOfflineEnabled": "已启用播放列表自动离线功能",
-  "playlistAutoOfflineDisabled": "已停用播放列表自动离线功能"
+  "playlistAutoOfflineDisabled": "已停用播放列表自动离线功能",
+  "offlinePlaylists": "离线播放列表"
 }

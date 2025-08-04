@@ -211,5 +211,6 @@
   "autoCacheOfflinePlaylist": "このプレイリストの曲が再生されるときに自動的にオフラインで利用可能にする",
   "urlError": "曲のURLを解決できませんでした",
   "playlistAutoOfflineEnabled": "プレイリスト自動オフラインが有効",
-  "playlistAutoOfflineDisabled": "プレイリスト自動オフラインが無効"
+  "playlistAutoOfflineDisabled": "プレイリスト自動オフラインが無効",
+  "offlinePlaylists": "オフラインプレイリスト"
 }
