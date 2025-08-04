@@ -574,7 +574,7 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
                           title: Text(playlist['title']),
                           onTap: () {
                             showToast(
-                              addSongInCustomPlaylist(
+                              addSongToCustomPlaylist(
                                 context,
                                 playlist['title'],
                                 song,
