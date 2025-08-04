@@ -16,6 +16,7 @@ dependencies:
   audio_service: ^0.18.17
   audio_session: ^0.2.2
   cached_network_image: ^3.4.1
+  crypto: ^3.0.6
   csv: ^6.0.0
   discogs_api_client: ^0.1.6
   dynamic_color: ^1.7.0
