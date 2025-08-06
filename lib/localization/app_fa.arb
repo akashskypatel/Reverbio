@@ -212,5 +212,7 @@
   "urlError": "نشانی آهنگ قابل حل نبود",
   "playlistAutoOfflineEnabled": "ذخیره خودکار آفلاین لیست پخش فعال شد",
   "playlistAutoOfflineDisabled": "ذخیره خودکار آفلاین لیست پخش غیرفعال شد",
-  "offlinePlaylists": "لیست‌های پخش آفلاین"
+  "offlinePlaylists": "لیست‌های پخش آفلاین",
+  "streamRequestTimeout": "آستانه زمان‌اتمام درخواست استریم",
+  "usingProxy": "اتصال مستقیم به یوتیوب ناموفق بود. در حال تلاش برای اتصال با استفاده از سرورهای پروکسی..."
 }

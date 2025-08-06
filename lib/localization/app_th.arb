@@ -212,5 +212,7 @@
   "urlError": "ไม่สามารถแก้ไข URL ของเพลงได้",
   "playlistAutoOfflineEnabled": "เปิดใช้งานเพลย์ลิสต์ออฟไลน์อัตโนมัติแล้ว",
   "playlistAutoOfflineDisabled": "ปิดใช้งานเพลย์ลิสต์ออฟไลน์อัตโนมัติแล้ว",
-  "offlinePlaylists": "เพลย์ลิสต์แบบออฟไลน์"
+  "offlinePlaylists": "เพลย์ลิสต์แบบออฟไลน์",
+  "streamRequestTimeout": "เกณฑ์เวลารอคอยการสตรีม",
+  "usingProxy": "การเชื่อมต่อตรงไปยัง YouTube ล้มเหลว กำลังพยายามเชื่อมต่อโดยใช้เซิร์ฟเวอร์พรอกซี..."
 }

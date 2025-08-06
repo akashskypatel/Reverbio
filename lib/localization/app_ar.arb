@@ -212,5 +212,7 @@
   "urlError": "تعذر حل عنوان URL للأغنية",
   "playlistAutoOfflineEnabled": "تم تفعيل التخزين التلقائي للقوائم دون اتصال",
   "playlistAutoOfflineDisabled": "تم تعطيل التخزين التلقائي للقوائم دون اتصال",
-  "offlinePlaylists": "قوائم التشغيل دون اتصال"
+  "offlinePlaylists": "قوائم التشغيل دون اتصال",
+  "streamRequestTimeout": "حد مهلة طلب البث",
+  "usingProxy": "فشل الاتصال المباشر بيوتيوب. جاري محاولة الاتصال باستخدام خوادم وكيل..."
 }

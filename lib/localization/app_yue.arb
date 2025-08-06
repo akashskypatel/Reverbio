@@ -212,5 +212,7 @@
   "urlError": "無法解析歌曲URL",
   "playlistAutoOfflineEnabled": "已啟用播放清單自動離線功能",
   "playlistAutoOfflineDisabled": "已停用播放清單自動離線功能",
-  "offlinePlaylists": "離線播放清單"
+  "offlinePlaylists": "離線播放清單",
+  "streamRequestTimeout": "串流請求超時閾值",
+  "usingProxy": "連接YouTube失敗，正嘗試使用代理伺服器連接..."
 }

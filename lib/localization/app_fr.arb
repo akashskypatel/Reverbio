@@ -212,5 +212,7 @@
   "urlError": "L'URL de la chanson n'a pas pu être résolue",
   "playlistAutoOfflineEnabled": "Playlist automatique hors ligne activée",
   "playlistAutoOfflineDisabled": "Playlist automatique hors ligne désactivée",
-  "offlinePlaylists": "Playlists hors ligne"
+  "offlinePlaylists": "Playlists hors ligne",
+  "streamRequestTimeout": "Seuil de délai d'expiration de la requête de flux",
+  "usingProxy": "Échec de la connexion directe à YouTube. Tentative de connexion via des serveurs proxy..."
 }

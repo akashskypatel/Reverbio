@@ -212,5 +212,7 @@
   "urlError": "Şarkı URL'si çözülemedi",
   "playlistAutoOfflineEnabled": "Çalma listesi otomatik çevrimdışı etkin",
   "playlistAutoOfflineDisabled": "Çalma listesi otomatik çevrimdışı devre dışı",
-  "offlinePlaylists": "Çevrimdışı çalma listeleri"
+  "offlinePlaylists": "Çevrimdışı çalma listeleri",
+  "streamRequestTimeout": "Akış isteği zaman aşımı eşiği",
+  "usingProxy": "YouTube'a doğrudan bağlantı başarısız oldu. Proxy sunucular kullanarak bağlanmaya çalışılıyor..."
 }

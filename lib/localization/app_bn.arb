@@ -212,5 +212,7 @@
   "urlError": "গানের URL সমাধান করা যায়নি",
   "playlistAutoOfflineEnabled": "প্লেলিস্ট অটো অফলাইন সক্রিয় করা হয়েছে",
   "playlistAutoOfflineDisabled": "প্লেলিস্ট অটো অফলাইন নিষ্ক্রিয় করা হয়েছে",
-  "offlinePlaylists": "অফলাইন প্লেলিস্ট"
+  "offlinePlaylists": "অফলাইন প্লেলিস্ট",
+  "streamRequestTimeout": "স্ট্রিম রিকোয়েস্ট টাইমআউট সীমা",
+  "usingProxy": "YouTube-এর সাথে সরাসরি সংযোগ ব্যর্থ হয়েছে। প্রক্সি সার্ভার ব্যবহার করে সংযোগ করার চেষ্টা করা হচ্ছে..."
 }

@@ -212,5 +212,7 @@
   "urlError": "गाण्याचा URL सोडवला जाऊ शकला नाही",
   "playlistAutoOfflineEnabled": "प्लेलिस्ट ऑटो ऑफलाइन सक्षम केले",
   "playlistAutoOfflineDisabled": "प्लेलिस्ट ऑटो ऑफलाइन अक्षम केले",
-  "offlinePlaylists": "ऑफलाइन प्लेलिस्ट"
+  "offlinePlaylists": "ऑफलाइन प्लेलिस्ट",
+  "streamRequestTimeout": "स्ट्रीम विनंती टाइमआउट उंबर",
+  "usingProxy": "YouTube शी थेट कनेक्शन अयशस्वी. प्रॉक्सी सर्व्हर्स वापरून कनेक्ट करण्याचा प्रयत्न केला जात आहे..."
 }

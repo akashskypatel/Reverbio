@@ -212,5 +212,7 @@
   "urlError": "曲のURLを解決できませんでした",
   "playlistAutoOfflineEnabled": "プレイリスト自動オフラインが有効",
   "playlistAutoOfflineDisabled": "プレイリスト自動オフラインが無効",
-  "offlinePlaylists": "オフラインプレイリスト"
+  "offlinePlaylists": "オフラインプレイリスト",
+  "streamRequestTimeout": "ストリームリクエストのタイムアウト閾値",
+  "usingProxy": "YouTubeへの直接接続に失敗しました。プロキシサーバーを使用して接続を試みています..."
 }

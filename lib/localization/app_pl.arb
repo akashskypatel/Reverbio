@@ -212,5 +212,7 @@
   "urlError": "Nie można rozpoznać adresu URL utworu",
   "playlistAutoOfflineEnabled": "Automatyczne offline playlisty włączone",
   "playlistAutoOfflineDisabled": "Automatyczne offline playlisty wyłączone",
-  "offlinePlaylists": "Playlisty offline"
+  "offlinePlaylists": "Playlisty offline",
+  "streamRequestTimeout": "Próg limitu czasu żądania strumienia",
+  "usingProxy": "Bezpośrednie połączenie z YouTube nie powiodło się. Próba połączenia za pomocą serwerów proxy..."
 }

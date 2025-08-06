@@ -212,5 +212,7 @@
   "urlError": "Не вдалося обробити URL пісні",
   "playlistAutoOfflineEnabled": "Автономний режим плейлиста увімкнено",
   "playlistAutoOfflineDisabled": "Автономний режим плейлиста вимкнено",
-  "offlinePlaylists": "Офлайн-плейлисти"
+  "offlinePlaylists": "Офлайн-плейлисти",
+  "streamRequestTimeout": "Порог часу очікування потоку",
+  "usingProxy": "Пряме підключення до YouTube не вдалося. Спроба підключення через проксі-сервери..."
 }

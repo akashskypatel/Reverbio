@@ -212,5 +212,7 @@
   "urlError": "Song-URL konnte nicht aufgelöst werden",
   "playlistAutoOfflineEnabled": "Automatische Offline-Speicherung für Playlists aktiviert",
   "playlistAutoOfflineDisabled": "Automatische Offline-Speicherung für Playlists deaktiviert",
-  "offlinePlaylists": "Offline-Playlists"
+  "offlinePlaylists": "Offline-Playlists",
+  "streamRequestTimeout": "Stream-Anforderungs-Timeout-Schwelle",
+  "usingProxy": "Direkte Verbindung zu YouTube fehlgeschlagen. Versuche Verbindung über Proxy-Server herzustellen..."
 }

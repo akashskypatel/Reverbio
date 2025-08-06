@@ -212,5 +212,7 @@
   "urlError": "URL ya wimbo haikuweza kutambuliwa",
   "playlistAutoOfflineEnabled": "Orodha ya kucheza otomatiki nje ya mtandao imewezeshwa",
   "playlistAutoOfflineDisabled": "Orodha ya kucheza otomatiki nje ya mtandao imezimwa",
-  "offlinePlaylists": "Orodha ya kucheza bila mtandao"
+  "offlinePlaylists": "Orodha ya kucheza bila mtandao",
+  "streamRequestTimeout": "Kizingo cha mda wa maombi ya mkondo",
+  "usingProxy": "Uunganishaji wa moja kwa moja kwa YouTube umeshindwa. Kujaribu kuunganisha kwa kutumia seva za wakala..."
 }
