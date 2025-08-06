@@ -40,9 +40,7 @@ final DiscogsApiClient dc = DiscogsApiClient();
 final mb = MusicBrainzApiClient();
 
 List<YoutubeApiClient> userChosenClients = [
-  YoutubeApiClient.tv,
-  YoutubeApiClient.androidVr,
-  YoutubeApiClient.safari,
+  YoutubeApiClient.ios,
 ];
 
 bool youtubeValidate(String url) {

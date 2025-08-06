@@ -124,6 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 inactivatedColor,
               ),
         ),
+        /* //let yt-explode manage client for best experience
         CustomBar(
           tileName: context.l10n!.client,
           tileIcon: FluentIcons.device_meeting_room_24_filled,
@@ -131,6 +132,7 @@ class _SettingsPageState extends State<SettingsPage> {
               () =>
                   _showClientPicker(context, activatedColor, inactivatedColor),
         ),
+        */
         CustomBar(
           tileName: context.l10n!.language,
           tileIcon: FluentIcons.translate_24_filled,
@@ -151,14 +153,30 @@ class _SettingsPageState extends State<SettingsPage> {
                 inactivatedColor,
               ),
         ),
-        CustomBar(
-          tileName: context.l10n!.dynamicColor,
-          tileIcon: FluentIcons.inking_tool_accent_24_filled,
-          trailing: Switch(
-            value: useSystemColor.value,
-            onChanged: (value) => _toggleSystemColor(context, value),
-          ),
+        ValueListenableBuilder<int>(
+          valueListenable: streamRequestTimeout,
+          builder: (context, value, __) {
+            return CustomBar(
+              tileName: context.l10n!.streamRequestTimeout,
+              tileIcon: FluentIcons.timer_24_filled,
+              onTap:
+                  () => _showTimeoutThresholdPicker(
+                    context,
+                    activatedColor,
+                    inactivatedColor,
+                  ),
+            );
+          },
         ),
+        if (Platform.isAndroid)
+          CustomBar(
+            tileName: context.l10n!.dynamicColor,
+            tileIcon: FluentIcons.eyedropper_24_filled,
+            trailing: Switch(
+              value: useSystemColor.value,
+              onChanged: (value) => _toggleSystemColor(context, value),
+            ),
+          ),
         if (themeMode == ThemeMode.dark)
           CustomBar(
             tileName: context.l10n!.pureBlackTheme,
@@ -168,19 +186,20 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: (value) => _togglePureBlack(context, value),
             ),
           ),
-        ValueListenableBuilder<bool>(
-          valueListenable: predictiveBack,
-          builder: (context, value, __) {
-            return CustomBar(
-              tileName: context.l10n!.predictiveBack,
-              tileIcon: FluentIcons.position_backward_24_filled,
-              trailing: Switch(
-                value: value,
-                onChanged: (value) => _togglePredictiveBack(context, value),
-              ),
-            );
-          },
-        ),
+        if (Platform.isAndroid)
+          ValueListenableBuilder<bool>(
+            valueListenable: predictiveBack,
+            builder: (context, value, __) {
+              return CustomBar(
+                tileName: context.l10n!.predictiveBack,
+                tileIcon: FluentIcons.position_backward_24_filled,
+                trailing: Switch(
+                  value: value,
+                  onChanged: (value) => _togglePredictiveBack(context, value),
+                ),
+              );
+            },
+          ),
         ValueListenableBuilder<bool>(
           valueListenable: offlineMode,
           builder: (context, value, __) {
@@ -216,8 +235,8 @@ class _SettingsPageState extends State<SettingsPage> {
               tileName: context.l10n!.plugins,
               tileIcon:
                   value
-                      ? FluentIcons.plug_connected_24_regular
-                      : FluentIcons.plug_disconnected_24_filled,
+                      ? FluentIcons.plug_connected_24_filled
+                      : FluentIcons.plug_disconnected_24_regular,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _togglePluginsSupport(context, value),
@@ -563,6 +582,52 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  void _showTimeoutThresholdPicker(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    final availableValues = [5, 10, 15, 20, 25, 30];
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
+            padding: commonListViewBottomPadding,
+            itemCount: availableValues.length,
+            itemBuilder: (context, index) {
+              final threshold = availableValues[index];
+              final isSelected = streamRequestTimeout.value == threshold;
+              final borderRadius = getItemBorderRadius(
+                index,
+                availableValues.length,
+              );
+
+              return BottomSheetBar(
+                threshold.toString(),
+                onTap: () {
+                  if (context.mounted)
+                    setState(() {
+                      streamRequestTimeout.value = threshold;
+                    });
+                  addOrUpdateData(
+                    'settings',
+                    'streamRequestTimeout',
+                    streamRequestTimeout.value,
+                  );
+                },
+                isSelected ? activatedColor : inactivatedColor,
+                borderRadius: borderRadius,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
   void _showClientPicker(
     BuildContext context,
     Color activatedColor,
@@ -588,7 +653,7 @@ class _SettingsPageState extends State<SettingsPage> {
               );
 
               return BottomSheetBar(
-                client,
+                client == 'ios' ? '$client (Recommended)' : client,
                 onTap: () {
                   if (mounted)
                     setState(() {

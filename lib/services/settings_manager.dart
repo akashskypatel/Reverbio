@@ -70,7 +70,7 @@ final enablePlugins = ValueNotifier<bool>(
 );
 
 final clientsSetting = ValueNotifier<List>(
-  Hive.box('settings').get('clients', defaultValue: []),
+  Hive.box('settings').get('clients', defaultValue: ['ios']),
 );
 
 Locale languageSetting = getLocaleFromLanguageCode(
@@ -114,3 +114,7 @@ final autoCacheOffline = ValueNotifier<bool>(
 final postUpdateRun = Hive.box(
   'settings',
 ).get('postUpdateRun', defaultValue: {}) as Map;
+
+final streamRequestTimeout = ValueNotifier<int>(
+  Hive.box('settings').get('streamRequestTimeout', defaultValue: 10),
+);

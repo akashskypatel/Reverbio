@@ -481,14 +481,14 @@ Future<StreamManifest> getSongManifest(String songId) async {
   try {
     final manifest =
         useProxies.value
-            ? await pxm.getSongManifest(songId) ??
+            ? await pxm.getSongManifest(songId, timeout: streamRequestTimeout.value) ??
                 await yt.videos.streams.getManifest(
                   songId,
-                  ytClients: userChosenClients,
+                  //ytClients: userChosenClients, //let yt-explode manage client for best experience
                 )
             : await yt.videos.streams.getManifest(
               songId,
-              ytClients: userChosenClients,
+              //ytClients: userChosenClients, //let yt-explode manage client for best experience
             );
     return manifest;
   } catch (e, stackTrace) {
