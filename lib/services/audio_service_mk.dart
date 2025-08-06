@@ -205,8 +205,7 @@ class AudioPlayerService {
 
   Future<void> play() async {
     _updatePlayerState(AudioPlayerState.playing);
-    await _player.play();
-    return;
+    return _player.play();
   }
 
   Future<void> pause() async {
@@ -360,19 +359,28 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<audio_session.AudioSession> getSession() async {
-    if (_session == null) {
-      _session = await audio_session.AudioSession.instance;
-      await _session!.configure(
-        const audio_session.AudioSessionConfiguration.music(),
+    try {
+      if (_session == null) {
+        _session = await audio_session.AudioSession.instance;
+        await _session!.configure(
+          const audio_session.AudioSessionConfiguration.music(),
+        );
+        _sessionEventStream = _session!.interruptionEventStream.listen(
+          _handleSessionEventChange,
+        );
+        _sessionDeviceEventStream = _session!.devicesChangedEventStream.listen(
+          _handleDeviceEventChange,
+        );
+      }
+      return _session!;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
       );
-      _sessionEventStream = _session!.interruptionEventStream.listen(
-        _handleSessionEventChange,
-      );
-      _sessionDeviceEventStream = _session!.devicesChangedEventStream.listen(
-        _handleDeviceEventChange,
-      );
+      throw Exception('Could not get Audio Session.');
     }
-    return _session!;
   }
 
   Future<bool> sessionActive({bool active = true}) async {
@@ -557,7 +565,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
           break;
         case audio_session.AudioInterruptionType.pause:
           // The interruption ended and we should resume.
-          if(cachedIsPlaying) unawaited(play());
+          if (cachedIsPlaying) unawaited(play());
         case audio_session.AudioInterruptionType.unknown:
           // The interruption ended but we should not resume.
           break;
