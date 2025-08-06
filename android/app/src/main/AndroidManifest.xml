@@ -77,6 +77,9 @@
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
+            <meta-data
+                android:name="android.media.notification.icon"
+                android:resource="@mipmap/ic_notification" />
         </service>
         <!-- MediaButtonReceiver -->
         <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
