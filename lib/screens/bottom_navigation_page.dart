@@ -25,7 +25,6 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/utils.dart';
@@ -43,31 +42,20 @@ class BottomNavigationPage extends StatefulWidget {
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
   final _selectedIndex = ValueNotifier<int>(0);
   late ThemeData _theme;
-  final showMiniPlayer = ValueNotifier(false);
   @override
   void initState() {
     super.initState();
-    audioHandler.playerStateStream.listen((state) {
-      if (mounted)
-        setState(() {
-          switch (state) {
-            case AudioPlayerState.playing:
-            case AudioPlayerState.paused:
-              showMiniPlayer.value = true;
-              break;
-            case AudioPlayerState.stopped:
-            case AudioPlayerState.uninitialized:
-            case AudioPlayerState.initialized:
-              showMiniPlayer.value = false;
-              break;
-          }
-        });
-    });
+    audioHandler.songValueNotifier.addListener(_songListener);
   }
 
   @override
   void dispose() {
+    audioHandler.songValueNotifier.removeListener(_songListener);
     super.dispose();
+  }
+
+  void _songListener() {
+    if (mounted) setState(() {});
   }
 
   Map<String, NavigationDestination> _getNavigationDestinations(
@@ -174,25 +162,22 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                   ),
                 Flexible(
                   fit: FlexFit.tight,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(fit: FlexFit.tight, child: widget.child),
-                      ValueListenableBuilder(
-                        valueListenable: audioHandler.songValueNotifier,
-                        builder:
-                            (context, value, child) =>
-                                value != null
-                                    ? MiniPlayer(
-                                      context: context,
-                                      mediaItem: value.mediaItem,
-                                      closeButton: _buildMiniPlayerCloseButton(
-                                        context,
-                                      ),
-                                    )
-                                    : const SizedBox.shrink(),
-                      ),
-                    ],
+                  child: ValueListenableBuilder(
+                    valueListenable: audioHandler.songValueNotifier,
+                    builder: (context, value, child) {
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(fit: FlexFit.tight, child: widget.child),
+                          if (value != null)
+                            MiniPlayer(
+                              context: context,
+                              mediaItem: value.mediaItem,
+                              closeButton: _buildMiniPlayerCloseButton(context),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -244,10 +229,6 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
     return IconButton(
       onPressed: () {
         audioHandler.close();
-        if (mounted)
-          setState(() {
-            showMiniPlayer.value = false;
-          });
       },
       icon: Icon(
         FluentIcons.dismiss_24_filled,

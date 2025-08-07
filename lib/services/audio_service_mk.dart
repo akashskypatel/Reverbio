@@ -223,9 +223,8 @@ class AudioPlayerService {
 
   Future<void> stop() async {
     _updatePlayerState(AudioPlayerState.stopped);
-    await _mediaItemSubscription?.cancel();
-    await player.stop();
-    return _player.stop();
+    await seekToStart();
+    return _player.pause();
   }
 
   Future<void> seekToStart() async {
@@ -305,7 +304,7 @@ class AudioPlayerService {
   }
 }
 
-class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
+class ReverbioAudioHandler extends BaseAudioHandler {
   ReverbioAudioHandler() {
     _setupEventSubscriptions();
     if (Platform.isAndroid || Platform.isIOS) unawaited(getSession());
@@ -463,14 +462,20 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> fastForward() async {
-    await seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
+  Future<void> seekForward(bool begin) async {
+    if (begin)
+      await seekToStart();
+    else
+      await seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
     _updatePlaybackState();
   }
 
   @override
-  Future<void> rewind() async {
-    await seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
+  Future<void> seekBackward(bool begin) async {
+    if (begin)
+      await seekToStart();
+    else
+      await seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
     _updatePlaybackState();
   }
 
@@ -491,6 +496,11 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
     } catch (e) {
       return null;
     }
+  }
+
+  @override
+  Future<void> onNotificationDeleted() async {
+    await onTaskRemoved();
   }
 
   Future<void> close() async {
@@ -557,7 +567,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
           break;
         case audio_session.AudioInterruptionType.pause:
           // The interruption ended and we should resume.
-          if(cachedIsPlaying) unawaited(play());
+          if (cachedIsPlaying) unawaited(play());
         case audio_session.AudioInterruptionType.unknown:
           // The interruption ended but we should not resume.
           break;
@@ -680,41 +690,53 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   void _updatePlaybackState() {
-    mediaItem.add(songValueNotifier.value?.mediaItem);
     cachedIsPlaying = audioPlayer.playing;
-    playbackState.add(
-      playbackState.value.copyWith(
-        controls: [
-          if (hasPrevious) MediaControl.skipToPrevious else MediaControl.rewind,
-          if (audioPlayer.playing) MediaControl.pause else MediaControl.play,
-          if (hasNext) MediaControl.skipToNext else MediaControl.fastForward,
-          MediaControl.stop,
-        ],
-        systemActions: const {
-          MediaAction.play,
-          MediaAction.pause,
-          MediaAction.stop,
-          MediaAction.seek,
-          MediaAction.skipToNext,
-          MediaAction.skipToPrevious,
-          MediaAction.skipToQueueItem,
-          MediaAction.seekForward,
-          MediaAction.seekBackward,
-        },
-        androidCompactActionIndices: const [0, 1, 2],
-        processingState: _getProcessingState(),
-        repeatMode: settings.repeatNotifier.value,
-        shuffleMode:
-            audioPlayer.shuffleModeEnabled
-                ? AudioServiceShuffleMode.all
-                : AudioServiceShuffleMode.none,
-        playing: audioPlayer.playing,
-        updatePosition: audioPlayer.position,
-        bufferedPosition: audioPlayer.bufferedPosition,
-        speed: audioPlayer.speed,
-        queueIndex: audioPlayer.currentIndex,
-      ),
-    );
+    Future.microtask(() {
+      final newMediaItem = songValueNotifier.value?.mediaItem.copyWith(
+        duration: audioHandler.duration,
+      );
+      if (newMediaItem != mediaItem.value) mediaItem.add(newMediaItem);
+      if (mediaItem.value == null)
+        playbackState.add(PlaybackState());
+      else {
+        final newPlaybackState = playbackState.value.copyWith(
+          controls: [
+            if (hasPrevious)
+              MediaControl.skipToPrevious
+            else
+              MediaControl.rewind,
+            if (audioPlayer.playing) MediaControl.pause else MediaControl.play,
+            if (hasNext) MediaControl.skipToNext else MediaControl.fastForward,
+            MediaControl.stop,
+          ],
+          systemActions: const {
+            MediaAction.play,
+            MediaAction.pause,
+            MediaAction.stop,
+            MediaAction.seek,
+            MediaAction.skipToNext,
+            MediaAction.skipToPrevious,
+            MediaAction.skipToQueueItem,
+            MediaAction.seekForward,
+            MediaAction.seekBackward,
+          },
+          androidCompactActionIndices: const [0, 1, 2],
+          processingState: _getProcessingState(),
+          repeatMode: settings.repeatNotifier.value,
+          shuffleMode:
+              audioPlayer.shuffleModeEnabled
+                  ? AudioServiceShuffleMode.all
+                  : AudioServiceShuffleMode.none,
+          playing: audioPlayer.playing,
+          updatePosition: audioPlayer.position,
+          bufferedPosition: audioPlayer.bufferedPosition,
+          speed: audioPlayer.speed,
+          queueIndex: audioPlayer.currentIndex,
+        );
+        if (playbackState.value != newPlaybackState)
+          playbackState.add(newPlaybackState);
+      }
+    });
   }
 
   AudioProcessingState _getProcessingState() {
