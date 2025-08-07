@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="windows-1252"?>
 <>
   <InputFile>D:\Shared\Projects\Reverbio\build\windows\x64\runner\Release\reverbio.exe</InputFile>
-  <OutputFile>D:\Shared\Projects\Reverbio\build\windows\x64\runner\Release\reverbio_1.4.1_win_x64_portable.exe</OutputFile>
+  <OutputFile>D:\Shared\Projects\Reverbio\build\windows\x64\runner\Release\reverbio_win_x64_portable.exe</OutputFile>
   <Files>
     <Enabled>True</Enabled>
     <DeleteExtractedOnExit>False</DeleteExtractedOnExit>
@@ -570,7 +570,7 @@
           <File>
             <Type>2</Type>
             <Name>msvcp140.dll</Name>
-            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.42.34433\x64\Microsoft.VC143.CRT\msvcp140.dll</File>
+            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT\msvcp140.dll</File>
             <ActiveX>False</ActiveX>
             <ActiveXInstall>False</ActiveXInstall>
             <Action>0</Action>
@@ -582,7 +582,7 @@
           <File>
             <Type>2</Type>
             <Name>msvcp140_1.dll</Name>
-            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.42.34433\x64\Microsoft.VC143.CRT\msvcp140_1.dll</File>
+            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT\msvcp140_1.dll</File>
             <ActiveX>False</ActiveX>
             <ActiveXInstall>False</ActiveXInstall>
             <Action>0</Action>
@@ -594,7 +594,7 @@
           <File>
             <Type>2</Type>
             <Name>msvcp140_2.dll</Name>
-            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.42.34433\x64\Microsoft.VC143.CRT\msvcp140_2.dll</File>
+            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT\msvcp140_2.dll</File>
             <ActiveX>False</ActiveX>
             <ActiveXInstall>False</ActiveXInstall>
             <Action>0</Action>
@@ -606,7 +606,7 @@
           <File>
             <Type>2</Type>
             <Name>vcruntime140.dll</Name>
-            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.42.34433\x64\Microsoft.VC143.CRT\vcruntime140.dll</File>
+            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT\vcruntime140.dll</File>
             <ActiveX>False</ActiveX>
             <ActiveXInstall>False</ActiveXInstall>
             <Action>0</Action>
@@ -618,7 +618,7 @@
           <File>
             <Type>2</Type>
             <Name>vcruntime140_1.dll</Name>
-            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.42.34433\x64\Microsoft.VC143.CRT\vcruntime140_1.dll</File>
+            <File>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT\vcruntime140_1.dll</File>
             <ActiveX>False</ActiveX>
             <ActiveXInstall>False</ActiveXInstall>
             <Action>0</Action>
