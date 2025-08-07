@@ -124,6 +124,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 inactivatedColor,
               ),
         ),
+        if (isMobilePlatform())
+          CustomBar(
+            tileName: context.l10n!.audioDevice,
+            tileIcon: FluentIcons.speaker_settings_24_filled,
+            onTap:
+                () => _showAudioDevicePicker(
+                  context,
+                  activatedColor,
+                  inactivatedColor,
+                ),
+          ),
+        /* //let yt-explode manage client for best experience
         CustomBar(
           tileName: context.l10n!.client,
           tileIcon: FluentIcons.device_meeting_room_24_filled,
@@ -542,6 +554,114 @@ class _SettingsPageState extends State<SettingsPage> {
             },
             themeMode == mode ? activatedColor : inactivatedColor,
             borderRadius: borderRadius,
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAudioDevicePicker(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return FutureBuilder(
+            future: audioHandler.getConnectedAudioDevices(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting)
+                return const Spinner();
+              if (!snapshot.hasData ||
+                  snapshot.hasError ||
+                  snapshot.data == null)
+                return const Icon(FluentIcons.error_circle_24_filled);
+              else {
+                final devices = snapshot.data!;
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  padding: commonListViewBottomPadding,
+                  itemCount: devices.length,
+                  itemBuilder: (context, index) {
+                    final deviceName = devices[index].name;
+                    final isSelected = audioDevice.value == deviceName;
+                    final borderRadius = getItemBorderRadius(
+                      index,
+                      devices.length,
+                    );
+
+                    return BottomSheetBar(
+                      deviceName == 'auto'
+                          ? context.l10n!.selectAutomatically
+                          : deviceName,
+                      onTap: () {
+                        if (context.mounted)
+                          setState(() {
+                            audioDevice.value = deviceName;
+                            audioHandler.setAudioDevice(deviceName);
+                          });
+                        addOrUpdateData(
+                          'settings',
+                          'audioDevice',
+                          audioDevice.value,
+                        );
+                      },
+                      isSelected ? activatedColor : inactivatedColor,
+                      borderRadius: borderRadius,
+                    );
+                  },
+                );
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showTimeoutThresholdPicker(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    final availableValues = [5, 10, 15, 20, 25, 30];
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
+            padding: commonListViewBottomPadding,
+            itemCount: availableValues.length,
+            itemBuilder: (context, index) {
+              final threshold = availableValues[index];
+              final isSelected = streamRequestTimeout.value == threshold;
+              final borderRadius = getItemBorderRadius(
+                index,
+                availableValues.length,
+              );
+
+              return BottomSheetBar(
+                threshold.toString(),
+                onTap: () {
+                  if (context.mounted)
+                    setState(() {
+                      streamRequestTimeout.value = threshold;
+                    });
+                  addOrUpdateData(
+                    'settings',
+                    'streamRequestTimeout',
+                    streamRequestTimeout.value,
+                  );
+                },
+                isSelected ? activatedColor : inactivatedColor,
+                borderRadius: borderRadius,
+              );
+            },
           );
         },
       ),
@@ -1188,7 +1308,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> exitApp() async {
     try {
       await audioHandler.close();
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (isMobilePlatform()) {
         await SystemNavigator.pop();
       } else {
         exit(0);
