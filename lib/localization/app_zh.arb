@@ -205,5 +205,16 @@
   "queueCleared": "队列已清除！",
   "cannotReloadLocalPlugin": "无法在移动设备上从本地文件源重新加载插件。请删除插件并重新添加以更新。插件名称",
   "addedBackgroundJob": "已加入后台队列",
-  "updated": "已更新"
+  "updated": "已更新",
+  "autoCacheOffline": "自动将正在收听的歌曲设为离线可用",
+  "storageWarning": "警告：此选项会使用大量存储空间。启用前请确保你的设备有足够空间！",
+  "autoCacheOfflinePlaylist": "当收听时，自动将此播放列表的歌曲设为离线可用",
+  "urlError": "无法解析歌曲URL",
+  "playlistAutoOfflineEnabled": "已启用播放列表自动离线功能",
+  "playlistAutoOfflineDisabled": "已停用播放列表自动离线功能",
+  "offlinePlaylists": "离线播放列表",
+  "streamRequestTimeout": "流媒体请求超时阈值",
+  "usingProxy": "连接YouTube失败，正在尝试使用代理服务器连接...",
+  "audioDevice": "音频设备",
+  "selectAutomatically": "自动选择"
 }

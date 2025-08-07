@@ -205,5 +205,16 @@
   "queueCleared": "File d'attente vidée !",
   "cannotReloadLocalPlugin": "Impossible de recharger le plugin à partir d'un fichier local sur mobile. Supprimez le plugin et ajoutez-le à nouveau pour le mettre à jour. Nom du plugin",
   "addedBackgroundJob": "ajouté à la file d'attente en arrière-plan",
-  "updated": "Mis à jour"
+  "updated": "Mis à jour",
+  "autoCacheOffline": "Rendre automatiquement disponibles hors ligne les chansons écoutées",
+  "storageWarning": "Avertissement : Cette option utilisera beaucoup d'espace de stockage. Assurez-vous que votre appareil dispose de suffisamment d'espace avant de l'activer !",
+  "autoCacheOfflinePlaylist": "Rendre automatiquement disponibles hors ligne les chansons de cette playlist lorsqu'elles sont écoutées",
+  "urlError": "L'URL de la chanson n'a pas pu être résolue",
+  "playlistAutoOfflineEnabled": "Playlist automatique hors ligne activée",
+  "playlistAutoOfflineDisabled": "Playlist automatique hors ligne désactivée",
+  "offlinePlaylists": "Playlists hors ligne",
+  "streamRequestTimeout": "Seuil de délai d'expiration de la requête de flux",
+  "usingProxy": "Échec de la connexion directe à YouTube. Tentative de connexion via des serveurs proxy...",
+  "audioDevice": "Périphérique audio",
+  "selectAutomatically": "Sélection automatique"
 }
