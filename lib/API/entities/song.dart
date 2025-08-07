@@ -688,6 +688,8 @@ Future<void> getExistingOfflineSongs() async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
+  await Directory(_audioDirPath).create(recursive: true);
+  await Directory(_artworkDirPath).create(recursive: true);
   try {
     if (Directory(_audioDirPath).existsSync())
       await for (final file in Directory(_audioDirPath).list()) {
@@ -718,6 +720,8 @@ Future<String?> getOfflinePath(dynamic song) async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
+  await Directory(_audioDirPath).create(recursive: true);
+  await Directory(_artworkDirPath).create(recursive: true);
   song['id'] = parseEntityId(song);
   final audioFiles = await _getRelatedFiles(_audioDirPath, song);
   final artworkFiles = await _getRelatedFiles(_artworkDirPath, song);
@@ -764,6 +768,8 @@ Future<void> removeSongFromOffline(dynamic song) async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
+  await Directory(_audioDirPath).create(recursive: true);
+  await Directory(_artworkDirPath).create(recursive: true);
   song['id'] = parseEntityId(song);
   unawaited(_deleteRelatedFiles(_audioDirPath, song));
   unawaited(_deleteRelatedFiles(_artworkDirPath, song));
