@@ -13,7 +13,9 @@ Please delete options that are not relevant.
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] This change requires a documentation update
 
-# Testing Checklist
+(Copy everything below this including below header to a new comment per platform tested. Also add a separate comment with testing checklist for any new features.)
+
+# Testing Checklist - Platform: <platform>
 
 ## Application
 
@@ -61,6 +63,11 @@ Complete or verify all features on Song list component functions.
 - [ ] Song can be liked, added to playlist, added to queue, and added to offline successfully.
 - [ ] Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
 - [ ] Double tapping a song likes/dislikes a song.
+
+## Android Auto (Android Only)
+
+- [ ] Song Name, artist, artwork, position, duration and controls display correctly
+- [ ] Verify controls work as expected
 
 ## Search page
 
@@ -172,9 +179,9 @@ Complete or verify all features on Settings Page.
 - [ ] Confirm Client changes work.
 - [ ] Confirm Language changes work.
 - [ ] Confirm Audio Quality changes work.
-- [ ] Confirm Dynamic Accent Color changes work.
+- [ ] Confirm Dynamic Accent Color changes work. (Android Only)
 - [ ] Confirm Pure black theme changes work.
-- [ ] Confirm Predictive Black changes work.
+- [ ] Confirm Predictive Black changes work. (Android Only)
 - [ ] Confirm Offline Mode changes work.
 - [ ] Confirm enabling plugins works.
 - [ ] Confirm Skip Sponsor Segment changes work.
