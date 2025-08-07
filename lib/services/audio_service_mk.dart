@@ -307,7 +307,7 @@ class AudioPlayerService {
 class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   ReverbioAudioHandler() {
     _setupEventSubscriptions();
-    if (Platform.isAndroid || Platform.isIOS) unawaited(getSession());
+    if (isMobilePlatform()) unawaited(getSession());
     _updatePlaybackState();
   }
   final AudioPlayerService audioPlayer = AudioPlayerService();
@@ -384,7 +384,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<bool> sessionActive({bool active = true}) async {
-    return (!Platform.isAndroid && !Platform.isIOS) ||
+    return (!isMobilePlatform()) ||
         await (await getSession()).setActive(active);
   }
 
@@ -512,10 +512,29 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
   Future<void> seekToStart() => audioPlayer.seekToStart();
 
+  Future<void> setAudioDevice(String deviceName) async {
+    if (isMobilePlatform()) {
+      final audioDevice = AudioDevice(
+        deviceName,
+        deviceName == 'auto' ? '' : deviceName,
+      );
+      await audioPlayer.setAudioDevice(audioDevice: audioDevice);
+    }
+  }
+
+  Future<List<AudioDevice>> getConnectedAudioDevices() async {
+    if (isMobilePlatform()) {
+      final devices = audioPlayer.state.audioDevices;
+      return devices;
+    } else
+      return [];
+  }
+
   Future<void> _handleDeviceEventChange(
     audio_session.AudioDevicesChangedEvent event,
   ) async {
-    AudioDevice? audioDevice;
+    final audioDevice = AudioDevice.auto();
+    /*
     try {
       final currentDevice = audioPlayer.state.audioDevice;
       if (event.devicesAdded.isNotEmpty) {
@@ -541,6 +560,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
         stackTrace,
       );
     }
+    */
     await audioPlayer.setAudioDevice(audioDevice: audioDevice);
   }
 

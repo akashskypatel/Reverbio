@@ -548,3 +548,7 @@ Duration? tryParseDuration(String timeString) {
 String stableHash(String input) {
   return sha256.convert(utf8.encode(input)).toString();
 }
+
+bool isMobilePlatform() {
+  return Platform.isAndroid || Platform.isIOS;
+}
