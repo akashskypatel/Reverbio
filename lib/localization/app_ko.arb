@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "플레이리스트 자동 오프라인 비활성화됨",
   "offlinePlaylists": "오프라인 재생목록",
   "streamRequestTimeout": "스트림 요청 타임아웃 임계값",
-  "usingProxy": "YouTube로의 직접 연결 실패. 프록시 서버를 통해 연결 시도 중..."
+  "usingProxy": "YouTube로의 직접 연결 실패. 프록시 서버를 통해 연결 시도 중...",
+  "audioDevice": "오디오 장치",
+  "selectAutomatically": "자동 선택"
 }

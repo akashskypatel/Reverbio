@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "Playlist otomatis offline dinonaktifkan",
   "offlinePlaylists": "Daftar putar offline",
   "streamRequestTimeout": "Ambang batas waktu habis permintaan streaming",
-  "usingProxy": "Koneksi langsung ke YouTube gagal. Mencoba menghubungkan menggunakan server proxy..."
+  "usingProxy": "Koneksi langsung ke YouTube gagal. Mencoba menghubungkan menggunakan server proxy...",
+  "audioDevice": "Perangkat audio",
+  "selectAutomatically": "Pilih secara otomatis"
 }

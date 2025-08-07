@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "Playlist auto offline disabilitata",
   "offlinePlaylists": "Playlist offline",
   "streamRequestTimeout": "Soglia di timeout richiesta stream",
-  "usingProxy": "Connessione diretta a YouTube fallita. Tentativo di connessione tramite server proxy..."
+  "usingProxy": "Connessione diretta a YouTube fallita. Tentativo di connessione tramite server proxy...",
+  "audioDevice": "Dispositivo audio",
+  "selectAutomatically": "Seleziona automaticamente"
 }

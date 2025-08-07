@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "Playlist automatique hors ligne désactivée",
   "offlinePlaylists": "Playlists hors ligne",
   "streamRequestTimeout": "Seuil de délai d'expiration de la requête de flux",
-  "usingProxy": "Échec de la connexion directe à YouTube. Tentative de connexion via des serveurs proxy..."
+  "usingProxy": "Échec de la connexion directe à YouTube. Tentative de connexion via des serveurs proxy...",
+  "audioDevice": "Périphérique audio",
+  "selectAutomatically": "Sélection automatique"
 }

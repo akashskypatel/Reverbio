@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "Çalma listesi otomatik çevrimdışı devre dışı",
   "offlinePlaylists": "Çevrimdışı çalma listeleri",
   "streamRequestTimeout": "Akış isteği zaman aşımı eşiği",
-  "usingProxy": "YouTube'a doğrudan bağlantı başarısız oldu. Proxy sunucular kullanarak bağlanmaya çalışılıyor..."
+  "usingProxy": "YouTube'a doğrudan bağlantı başarısız oldu. Proxy sunucular kullanarak bağlanmaya çalışılıyor...",
+  "audioDevice": "Ses aygıtı",
+  "selectAutomatically": "Otomatik seç"
 }

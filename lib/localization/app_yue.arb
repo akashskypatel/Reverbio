@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "已停用播放清單自動離線功能",
   "offlinePlaylists": "離線播放清單",
   "streamRequestTimeout": "串流請求超時閾值",
-  "usingProxy": "連接YouTube失敗，正嘗試使用代理伺服器連接..."
+  "usingProxy": "連接YouTube失敗，正嘗試使用代理伺服器連接...",
+  "audioDevice": "音訊裝置",
+  "selectAutomatically": "自動選擇"
 }

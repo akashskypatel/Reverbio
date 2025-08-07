@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "プレイリスト自動オフラインが無効",
   "offlinePlaylists": "オフラインプレイリスト",
   "streamRequestTimeout": "ストリームリクエストのタイムアウト閾値",
-  "usingProxy": "YouTubeへの直接接続に失敗しました。プロキシサーバーを使用して接続を試みています..."
+  "usingProxy": "YouTubeへの直接接続に失敗しました。プロキシサーバーを使用して接続を試みています...",
+  "audioDevice": "オーディオデバイス",
+  "selectAutomatically": "自動選択"
 }

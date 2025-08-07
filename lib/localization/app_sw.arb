@@ -214,5 +214,7 @@
   "playlistAutoOfflineDisabled": "Orodha ya kucheza otomatiki nje ya mtandao imezimwa",
   "offlinePlaylists": "Orodha ya kucheza bila mtandao",
   "streamRequestTimeout": "Kizingo cha mda wa maombi ya mkondo",
-  "usingProxy": "Uunganishaji wa moja kwa moja kwa YouTube umeshindwa. Kujaribu kuunganisha kwa kutumia seva za wakala..."
+  "usingProxy": "Uunganishaji wa moja kwa moja kwa YouTube umeshindwa. Kujaribu kuunganisha kwa kutumia seva za wakala...",
+  "audioDevice": "Kifaa cha sauti",
+  "selectAutomatically": "Chagua kiotomatiki"
 }
