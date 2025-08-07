@@ -81,6 +81,9 @@
                 <action android:name="androidx.car.app.CarAppService"/>
                 <category android:name="androidx.car.app.category.MEDIA"/>
             </intent-filter>
+            <meta-data
+                android:name="android.media.notification.icon"
+                android:resource="@mipmap/ic_notification" />
         </service>
         <!-- MediaButtonReceiver -->
         <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
