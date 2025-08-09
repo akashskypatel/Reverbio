@@ -125,12 +125,35 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
         ),
         CustomBar(
+          tileName: context.l10n!.streamRequestTimeout,
+          tileIcon: FluentIcons.timer_10_24_filled,
+          onTap:
+              () => _showTimeoutThresholdPicker(
+                context,
+                activatedColor,
+                inactivatedColor,
+              ),
+        ),
+        if (isMobilePlatform())
+          CustomBar(
+            tileName: context.l10n!.audioDevice,
+            tileIcon: FluentIcons.speaker_settings_24_filled,
+            onTap:
+                () => _showAudioDevicePicker(
+                  context,
+                  activatedColor,
+                  inactivatedColor,
+                ),
+          ),
+        /* //let yt-explode manage client for best experience
+        CustomBar(
           tileName: context.l10n!.client,
           tileIcon: FluentIcons.device_meeting_room_24_filled,
           onTap:
               () =>
                   _showClientPicker(context, activatedColor, inactivatedColor),
         ),
+        */
         CustomBar(
           tileName: context.l10n!.language,
           tileIcon: FluentIcons.translate_24_filled,
@@ -542,6 +565,130 @@ class _SettingsPageState extends State<SettingsPage> {
             },
             themeMode == mode ? activatedColor : inactivatedColor,
             borderRadius: borderRadius,
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAudioDevicePicker(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return FutureBuilder(
+            future: audioHandler.getConnectedAudioDevices(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting)
+                return const Spinner();
+              if (!snapshot.hasData ||
+                  snapshot.hasError ||
+                  snapshot.data == null)
+                return const Icon(FluentIcons.error_circle_24_filled);
+              else {
+                final devices = snapshot.data!;
+                final deviceData =
+                    devices.map((e) {
+                        final category = getAudioDeviceCategory(e['category']);
+                        return {
+                          ...(e as Map),
+                          'icon': category['icon'],
+                          'order': category['order'],
+                          'localization': category['localization'],
+                        };
+                      }).toList()
+                      ..sort((a, b) => a['order'].compareTo(b['order']));
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  padding: commonListViewBottomPadding,
+                  itemCount: devices.length,
+                  itemBuilder: (context, index) {
+                    final isSelected =
+                        audioDevice.value['id'] == devices[index]['id'];
+                    final borderRadius = getItemBorderRadius(
+                      index,
+                      devices.length,
+                    );
+
+                    return CustomBar(
+                      tileName:
+                          deviceData[index]['name'] == 'auto'
+                              ? context.l10n!.selectAutomatically
+                              : '${deviceData[index]['name']} - ${deviceData[index]['localization']}',
+                      tileIcon:
+                          deviceData[index]['icon'] ??
+                          FluentIcons.speaker_box_24_filled,
+                      onTap: () {
+                        if (context.mounted)
+                          setState(() {
+                            audioDevice.value = devices[index];
+                            audioHandler.setAudioDevice(devices[index]);
+                          });
+                        addOrUpdateData(
+                          'settings',
+                          'audioDevice',
+                          audioDevice.value,
+                        );
+                      },
+                      backgroundColor:
+                          isSelected ? activatedColor : inactivatedColor,
+                      borderRadius: borderRadius,
+                    );
+                  },
+                );
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showTimeoutThresholdPicker(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    final availableValues = [5, 10, 15, 20, 25, 30];
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
+            padding: commonListViewBottomPadding,
+            itemCount: availableValues.length,
+            itemBuilder: (context, index) {
+              final threshold = availableValues[index];
+              final isSelected = streamRequestTimeout.value == threshold;
+              final borderRadius = getItemBorderRadius(
+                index,
+                availableValues.length,
+              );
+
+              return BottomSheetBar(
+                threshold.toString(),
+                onTap: () {
+                  if (context.mounted)
+                    setState(() {
+                      streamRequestTimeout.value = threshold;
+                    });
+                  addOrUpdateData(
+                    'settings',
+                    'streamRequestTimeout',
+                    streamRequestTimeout.value,
+                  );
+                },
+                isSelected ? activatedColor : inactivatedColor,
+                borderRadius: borderRadius,
+              );
+            },
           );
         },
       ),
@@ -1188,7 +1335,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> exitApp() async {
     try {
       await audioHandler.close();
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (isMobilePlatform()) {
         await SystemNavigator.pop();
       } else {
         exit(0);

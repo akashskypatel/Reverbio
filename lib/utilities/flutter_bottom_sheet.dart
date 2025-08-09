@@ -32,40 +32,43 @@ void showCustomBottomSheet(
     isScrollControlled: true,
     context: context,
     builder: (context) {
-      return Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(10),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
+      return PopScope(
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(10),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+              ),
             ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
-                child: GestureDetector(
-                  onTap: () => GoRouter.of(context).pop(),
-                  child: Container(
-                    width: 60,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      borderRadius: BorderRadius.circular(10),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
+                  child: GestureDetector(
+                    onTap: () => GoRouter.of(context).pop(),
+                    child: Container(
+                      width: 60,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: size.height * 0.65),
-                child: SingleChildScrollView(child: content),
-              ),
-            ],
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: size.height * 0.65),
+                  child: SingleChildScrollView(child: content),
+                ),
+              ],
+            ),
           ),
         ),
       );

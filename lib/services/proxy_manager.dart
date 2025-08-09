@@ -329,25 +329,25 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> getSongManifest(String songId) async {
+  Future<StreamManifest?> getSongManifest(String songId, {int timeout = 5}) async {
     try {
-      StreamManifest? manifest = await _validateDirect(songId, 5);
+      StreamManifest? manifest = await _validateDirect(songId, timeout);
       if (manifest != null) return manifest;
       if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
         await _fetchProxies();
-      manifest = await _cycleProxies(songId);
+      manifest = await _cycleProxies(songId, timeout: timeout);
       return manifest;
     } catch (_) {
       return null;
     }
   }
 
-  Future<StreamManifest?> _cycleProxies(String songId) async {
+  Future<StreamManifest?> _cycleProxies(String songId, {int timeout = 5}) async {
     StreamManifest? manifest;
     do {
       final proxy = await _randomProxy();
       if (proxy == null) break;
-      manifest = await _validateProxy(proxy, songId, 5);
+      manifest = await _validateProxy(proxy, songId, timeout);
     } while (manifest == null);
     return manifest;
   }

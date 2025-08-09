@@ -26,6 +26,7 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -74,11 +75,16 @@ class AudioPlayerService {
       StreamController<AudioPlayerState>.broadcast();
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
 
+  List<AudioDevice> audioDevices = [];
+  AudioDevice audioDevice = AudioDevice.auto();
+
   StreamSubscription<MediaItem>? _mediaItemSubscription;
   StreamSubscription? _playerStreamBuffer;
   StreamSubscription? _playerStreamCompleted;
   StreamSubscription? _playerStreamPlaying;
   StreamSubscription? _playerStreamError;
+  StreamSubscription? _playerStreamAudioDevice;
+  StreamSubscription? _playerStreamAudioDevices;
 
   final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
   ValueNotifier<double> get volumeNotifier => _volumeNotifier;
@@ -137,6 +143,9 @@ class AudioPlayerService {
   Stream<int> get currentIndexStream => _indexController.stream;
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
   Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
+  Stream<AudioDevice> get audioDeviceStream => _player.stream.audioDevice;
+  Stream<List<AudioDevice>> get audioDevicesStream =>
+      _player.stream.audioDevices;
 
   void _initialize() {
     _playerState = AudioPlayerState.initialized;
@@ -185,6 +194,13 @@ class AudioPlayerService {
         );
       }
     });
+    _playerStreamAudioDevice = _player.stream.audioDevice.listen(
+      (event) => audioDevice = event,
+    );
+    _playerStreamAudioDevices = _player.stream.audioDevices.listen(
+      (event) => audioDevices = event,
+    );
+
     unawaited(setAudioDevice());
     unawaited(setVolume(_volume));
   }
@@ -223,9 +239,8 @@ class AudioPlayerService {
 
   Future<void> stop() async {
     _updatePlayerState(AudioPlayerState.stopped);
-    await _mediaItemSubscription?.cancel();
-    await player.stop();
-    return _player.stop();
+    await seekToStart();
+    return _player.pause();
   }
 
   Future<void> seekToStart() async {
@@ -244,6 +259,8 @@ class AudioPlayerService {
     await _playerStreamPlaying?.cancel();
     await _playerStreamError?.cancel();
     await _mediaItemSubscription?.cancel();
+    await _playerStreamAudioDevice?.cancel();
+    await _playerStreamAudioDevices?.cancel();
     await _processingStateController.close();
     await _indexController.close();
     await _processingStateController.close();
@@ -305,10 +322,10 @@ class AudioPlayerService {
   }
 }
 
-class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
+class ReverbioAudioHandler extends BaseAudioHandler {
   ReverbioAudioHandler() {
     _setupEventSubscriptions();
-    if (Platform.isAndroid || Platform.isIOS) unawaited(getSession());
+    if (isMobilePlatform()) unawaited(getSession());
     _updatePlaybackState();
   }
   final AudioPlayerService audioPlayer = AudioPlayerService();
@@ -339,12 +356,18 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
       audioPlayer.songValueNotifier;
   Stream<AudioPlayerState> get playerStateStream =>
       audioPlayer.playerStateStream;
-  double get volume => audioPlayer.volume;
   Stream<PositionData> get positionDataStream => audioPlayer.positionDataStream;
+  Stream<AudioDevice> get audioDeviceStream => audioPlayer.audioDeviceStream;
+  Stream<List<AudioDevice>> get audioDevicesStream =>
+      audioPlayer.audioDevicesStream;
+  double get volume => audioPlayer.volume;
   AudioProcessingState get state => audioPlayer.processingState;
   bool get playing => audioPlayer.playing;
   Stream<Duration> get positionStream => audioPlayer.positionStream;
   bool cachedIsPlaying = false;
+  static const platform = MethodChannel(
+    'com.akashskypatel.reverbio/audio_device_channel',
+  );
 
   Future<void> dispose() async {
     await _playbackEventSubscription.cancel();
@@ -376,7 +399,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<bool> sessionActive({bool active = true}) async {
-    return (!Platform.isAndroid && !Platform.isIOS) ||
+    return (!isMobilePlatform()) ||
         await (await getSession()).setActive(active);
   }
 
@@ -463,14 +486,20 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> fastForward() async {
-    await seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
+  Future<void> seekForward(bool begin) async {
+    if (begin)
+      await seekToStart();
+    else
+      await seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
     _updatePlaybackState();
   }
 
   @override
-  Future<void> rewind() async {
-    await seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
+  Future<void> seekBackward(bool begin) async {
+    if (begin)
+      await seekToStart();
+    else
+      await seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
     _updatePlaybackState();
   }
 
@@ -493,6 +522,11 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
+  @override
+  Future<void> onNotificationDeleted() async {
+    await onTaskRemoved();
+  }
+
   Future<void> close() async {
     await audioPlayer.close();
     queue.add([]);
@@ -504,10 +538,72 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
   Future<void> seekToStart() => audioPlayer.seekToStart();
 
+  Future<void> setAudioDevice(dynamic device) async {
+    try {
+      if (Platform.isAndroid) {
+        final devices = await getConnectedAudioDevices();
+        if (devices.where((e) => e['id'] == device['id']).isNotEmpty)
+          await platform.invokeMethod<dynamic>('setAudioOutputDevice', {
+            'deviceId': device['id'],
+          });
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<dynamic> getCurrentAudioDevice() async {
+    try {
+      if (Platform.isAndroid) {
+        final device = await platform.invokeMethod<dynamic>(
+          'getCurrentAudioDevice',
+        );
+        audioDevice.value = device;
+        addOrUpdateData('settings', 'audioDevice', audioDevice.value);
+        return device;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<List<dynamic>> getConnectedAudioDevices() async {
+    try {
+      if (Platform.isAndroid) {
+        //final devices = audioPlayer.state.audioDevices;
+        final devices =
+            (await platform.invokeMethod<List>('getAudioOutputDevices')) ??
+            <dynamic>[];
+        //final devices = audioPlayer.audioDevices;
+
+        return devices;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
+      throw Exception(e.toString());
+    }
+    return [];
+  }
+
   Future<void> _handleDeviceEventChange(
     audio_session.AudioDevicesChangedEvent event,
   ) async {
-    AudioDevice? audioDevice;
+    final audioDevice = AudioDevice.auto();
+    /*
     try {
       final currentDevice = audioPlayer.state.audioDevice;
       if (event.devicesAdded.isNotEmpty) {
@@ -533,6 +629,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
         stackTrace,
       );
     }
+    */
     await audioPlayer.setAudioDevice(audioDevice: audioDevice);
   }
 
@@ -557,7 +654,7 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
           break;
         case audio_session.AudioInterruptionType.pause:
           // The interruption ended and we should resume.
-          if(cachedIsPlaying) unawaited(play());
+          if (cachedIsPlaying) unawaited(play());
         case audio_session.AudioInterruptionType.unknown:
           // The interruption ended but we should not resume.
           break;
@@ -680,41 +777,53 @@ class ReverbioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   void _updatePlaybackState() {
-    mediaItem.add(songValueNotifier.value?.mediaItem);
     cachedIsPlaying = audioPlayer.playing;
-    playbackState.add(
-      playbackState.value.copyWith(
-        controls: [
-          if (hasPrevious) MediaControl.skipToPrevious else MediaControl.rewind,
-          if (audioPlayer.playing) MediaControl.pause else MediaControl.play,
-          if (hasNext) MediaControl.skipToNext else MediaControl.fastForward,
-          MediaControl.stop,
-        ],
-        systemActions: const {
-          MediaAction.play,
-          MediaAction.pause,
-          MediaAction.stop,
-          MediaAction.seek,
-          MediaAction.skipToNext,
-          MediaAction.skipToPrevious,
-          MediaAction.skipToQueueItem,
-          MediaAction.seekForward,
-          MediaAction.seekBackward,
-        },
-        androidCompactActionIndices: const [0, 1, 2],
-        processingState: _getProcessingState(),
-        repeatMode: settings.repeatNotifier.value,
-        shuffleMode:
-            audioPlayer.shuffleModeEnabled
-                ? AudioServiceShuffleMode.all
-                : AudioServiceShuffleMode.none,
-        playing: audioPlayer.playing,
-        updatePosition: audioPlayer.position,
-        bufferedPosition: audioPlayer.bufferedPosition,
-        speed: audioPlayer.speed,
-        queueIndex: audioPlayer.currentIndex,
-      ),
-    );
+    Future.microtask(() {
+      final newMediaItem = songValueNotifier.value?.mediaItem.copyWith(
+        duration: audioHandler.duration,
+      );
+      if (newMediaItem != mediaItem.value) mediaItem.add(newMediaItem);
+      if (mediaItem.value == null)
+        playbackState.add(PlaybackState());
+      else {
+        final newPlaybackState = playbackState.value.copyWith(
+          controls: [
+            if (hasPrevious)
+              MediaControl.skipToPrevious
+            else
+              MediaControl.rewind,
+            if (audioPlayer.playing) MediaControl.pause else MediaControl.play,
+            if (hasNext) MediaControl.skipToNext else MediaControl.fastForward,
+            MediaControl.stop,
+          ],
+          systemActions: const {
+            MediaAction.play,
+            MediaAction.pause,
+            MediaAction.stop,
+            MediaAction.seek,
+            MediaAction.skipToNext,
+            MediaAction.skipToPrevious,
+            MediaAction.skipToQueueItem,
+            MediaAction.seekForward,
+            MediaAction.seekBackward,
+          },
+          androidCompactActionIndices: const [0, 1, 2],
+          processingState: _getProcessingState(),
+          repeatMode: settings.repeatNotifier.value,
+          shuffleMode:
+              audioPlayer.shuffleModeEnabled
+                  ? AudioServiceShuffleMode.all
+                  : AudioServiceShuffleMode.none,
+          playing: audioPlayer.playing,
+          updatePosition: audioPlayer.position,
+          bufferedPosition: audioPlayer.bufferedPosition,
+          speed: audioPlayer.speed,
+          queueIndex: audioPlayer.currentIndex,
+        );
+        if (playbackState.value != newPlaybackState)
+          playbackState.add(newPlaybackState);
+      }
+    });
   }
 
   AudioProcessingState _getProcessingState() {

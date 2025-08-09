@@ -32,7 +32,7 @@ Complete or verify all features on Home Page.
 - [ ] Suggested Artists loads with Image and Labels successfully.
 - [ ] Recommended for you loads with Image and Labels successfully.
 - [ ] Refresh Home Page completes successfully.
-- [ ] Liking artist, playlist, and song completes successfully.
+- [ ] Liking artist, playlist, and song completes successfully. (Large screen/Landscape only)
 - [ ] Navigating to an playlist page to confirm artwork, playlist name and song list loads.
 - [ ] Navigating to an artist page and confirm functionality below.
 
@@ -42,6 +42,7 @@ Complete or verify all features on Artist Page functions.
 
 - [ ] Navigating to an artist opens artist details page with artwork and artist name.
 - [ ] Artist page loads with genres, albums, other releases, and singles.
+- [ ] Artist can be liked and disliked successfully.
 - [ ] Navigating to an album page and an other release page to make sure they load as described below.
 
 ## Album Page
@@ -49,6 +50,7 @@ Complete or verify all features on Artist Page functions.
 Complete or verify all features on Album Page functions.
 
 - [ ] Navigating to an album opens album details page.
+- [ ] Album can be liked and disliked successfully.
 - [ ] album page loads with Album artwork, name, song count and song list.
 
 ## Song List component
@@ -68,6 +70,28 @@ Complete or verify all features on Song list component functions.
 
 - [ ] Song Name, artist, artwork, position, duration and controls display correctly
 - [ ] Verify controls work as expected
+
+## Now Playing Page
+
+Complete or verify all features on Now Playing Page.
+
+- [ ] Confirm now playing page shows artwork, controls, and queue (if on large screen mode).
+- [ ] Confirm tapping on artwork shows lyrics (if available for song).
+- [ ] Confirm tapping on artist name opens artist page.
+- [ ] Confirm song controls work.
+- [ ] Confirm tapping on like button likes the song.
+
+## Mini-player
+
+Complete or verify all features on Mini-player.
+
+- [ ] Confirm volume changes work.
+- [ ] Confirm song playback slider works.
+- [ ] Confirm song playback controls work:- play, pause, stop, next, previous.
+- [ ] Confirm tapping on like button likes the song.
+- [ ] Confirm tapping on mini-player artist name open artist page.
+- [ ] Confirm tapping on mini-player blank space or song name opens Now Playing page.
+- [ ] Confirm closing mini-player works.
 
 ## Search page
 
@@ -148,40 +172,19 @@ Complete or verify all features on Song Queue Page.
 - [ ] Confirm queued songs can be sorted, shuffled, and played.
 - [ ] Confirm queued songs can be cleared.
 
-## Mini-player
-
-Complete or verify all features on Mini-player.
-
-- [ ] Confirm volume changes work.
-- [ ] Confirm song playback slider works.
-- [ ] Confirm song playback controls work:- play, pause, stop, next, previous.
-- [ ] Confirm tapping on like button likes the song.
-- [ ] Confirm tapping on mini-player artist name open artist page.
-- [ ] Confirm tapping on mini-player blank space or song name opens Now Playing page.
-- [ ] Confirm closing mini-player works.
-
-## Now Playing Page
-
-Complete or verify all features on Now Playing Page.
-
-- [ ] Confirm now playing page shows artwork, controls, and queue (if on large screen mode).
-- [ ] Confirm tapping on artwork shows lyrics (if available for song).
-- [ ] Confirm tapping on artist name opens artist page.
-- [ ] Confirm song controls work.
-- [ ] Confirm tapping on like button likes the song.
-
 ## Settings Page
 
 Complete or verify all features on Settings Page.
 
 - [ ] Confirm Accent Color changes work.
 - [ ] Confirm Theme Mode changes work.
-- [ ] Confirm Client changes work.
+- [ ] Confirm Stream request timeout work.
+- [ ] Confirm Audio output device selection works. (Android only)
 - [ ] Confirm Language changes work.
 - [ ] Confirm Audio Quality changes work.
-- [ ] Confirm Dynamic Accent Color changes work. (Android Only)
+- [ ] Confirm Dynamic Accent Color changes work. (Android only)
 - [ ] Confirm Pure black theme changes work.
-- [ ] Confirm Predictive Black changes work. (Android Only)
+- [ ] Confirm Predictive Black changes work. (Android only)
 - [ ] Confirm Offline Mode changes work.
 - [ ] Confirm enabling plugins works.
 - [ ] Confirm Skip Sponsor Segment changes work.
