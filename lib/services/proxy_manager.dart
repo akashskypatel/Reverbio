@@ -335,7 +335,7 @@ class ProxyManager {
       if (manifest != null) return manifest;
       if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
         await _fetchProxies();
-      manifest = await _cycleProxies(songId);
+      manifest = await _cycleProxies(songId, timeout: timeout);
       return manifest;
     } catch (_) {
       return null;
