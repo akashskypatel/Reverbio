@@ -216,5 +216,18 @@
   "streamRequestTimeout": "流媒体请求超时阈值",
   "usingProxy": "连接YouTube失败，正在尝试使用代理服务器连接...",
   "audioDevice": "音频设备",
-  "selectAutomatically": "自动选择"
+  "selectAutomatically": "自动选择",
+  "androidAuto": "Android Auto",
+  "carAudio": "车载音响",
+  "bluetooth": "蓝牙",
+  "wiredHeadphones": "有线耳机",
+  "usbAudio": "USB音频",
+  "phoneSpeaker": "手机扬声器",
+  "other": "其他",
+  "aux": "AUX",
+  "radio": "收音机",
+  "hearingAid": "助听器",
+  "dockingStation": "扩展坞",
+  "phoneEarpiece": "电话听筒",
+  "hdmi": "HDMI"
 }

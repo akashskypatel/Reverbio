@@ -216,5 +216,18 @@
   "streamRequestTimeout": "Próg limitu czasu żądania strumienia",
   "usingProxy": "Bezpośrednie połączenie z YouTube nie powiodło się. Próba połączenia za pomocą serwerów proxy...",
   "audioDevice": "Urządzenie audio",
-  "selectAutomatically": "Wybierz automatycznie"
+  "selectAutomatically": "Wybierz automatycznie",
+  "androidAuto": "Android Auto",
+  "carAudio": "Audio samochodowe",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "Słuchawki przewodowe",
+  "usbAudio": "Audio USB",
+  "phoneSpeaker": "Głośnik telefonu",
+  "other": "Inne",
+  "aux": "AUX",
+  "radio": "Radio",
+  "hearingAid": "Aparat słuchowy",
+  "dockingStation": "Stacja dokująca",
+  "phoneEarpiece": "Słuchawka telefoniczna",
+  "hdmi": "HDMI"
 }

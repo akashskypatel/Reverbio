@@ -216,5 +216,18 @@
   "streamRequestTimeout": "Ambang batas waktu habis permintaan streaming",
   "usingProxy": "Koneksi langsung ke YouTube gagal. Mencoba menghubungkan menggunakan server proxy...",
   "audioDevice": "Perangkat audio",
-  "selectAutomatically": "Pilih secara otomatis"
+  "selectAutomatically": "Pilih secara otomatis",
+  "androidAuto": "Android Auto",
+  "carAudio": "Audio Mobil",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "Headphone Berkabel",
+  "usbAudio": "Audio USB",
+  "phoneSpeaker": "Speaker Ponsel",
+  "other": "Lainnya",
+  "aux": "AUX",
+  "radio": "Radio",
+  "hearingAid": "Alat Bantu Dengar",
+  "dockingStation": "Docking Station",
+  "phoneEarpiece": "Earpiece Telepon",
+  "hdmi": "HDMI"
 }

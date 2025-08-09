@@ -216,5 +216,18 @@
   "streamRequestTimeout": "સ્ટ્રીમ વિનંતી ટાઇમઆઉટ થ્રેશોલ્ડ",
   "usingProxy": "YouTube સાથે ડાયરેક્ટ કનેક્શન નિષ્ફળ. પ્રોક્સી સર્વર્સનો ઉપયોગ કરીને કનેક્ટ કરવાનો પ્રયાસ કરી રહ્યા છીએ...",
   "audioDevice": "ઑડિયો ઉપકરણ",
-  "selectAutomatically": "સ્વચાલિત પસંદ કરો"
+  "selectAutomatically": "સ્વચાલિત પસંદ કરો",
+  "androidAuto": "Android Auto",
+  "carAudio": "કાર ઑડિયો",
+  "bluetooth": "બ્લુટૂથ",
+  "wiredHeadphones": "વાયર્ડ હેડફોન્સ",
+  "usbAudio": "USB ઑડિયો",
+  "phoneSpeaker": "ફોન સ્પીકર",
+  "other": "અન્ય",
+  "aux": "AUX",
+  "radio": "રેડિયો",
+  "hearingAid": "સુનાવણી સહાયક",
+  "dockingStation": "ડોકિંગ સ્ટેશન",
+  "phoneEarpiece": "ફોન ઇયરપીસ",
+  "hdmi": "HDMI"
 }

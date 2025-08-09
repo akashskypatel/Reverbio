@@ -216,5 +216,18 @@
   "streamRequestTimeout": "스트림 요청 타임아웃 임계값",
   "usingProxy": "YouTube로의 직접 연결 실패. 프록시 서버를 통해 연결 시도 중...",
   "audioDevice": "오디오 장치",
-  "selectAutomatically": "자동 선택"
+  "selectAutomatically": "자동 선택",
+  "androidAuto": "Android Auto",
+  "carAudio": "차량 오디오",
+  "bluetooth": "블루투스",
+  "wiredHeadphones": "유선 헤드폰",
+  "usbAudio": "USB 오디오",
+  "phoneSpeaker": "폰 스피커",
+  "other": "기타",
+  "aux": "AUX",
+  "radio": "라디오",
+  "hearingAid": "보청기",
+  "dockingStation": "도킹 스테이션",
+  "phoneEarpiece": "전화 수화기",
+  "hdmi": "HDMI"
 }

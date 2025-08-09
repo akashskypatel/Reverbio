@@ -216,5 +216,18 @@
   "streamRequestTimeout": "آستانه زمان‌اتمام درخواست استریم",
   "usingProxy": "اتصال مستقیم به یوتیوب ناموفق بود. در حال تلاش برای اتصال با استفاده از سرورهای پروکسی...",
   "audioDevice": "دستگاه صوتی",
-  "selectAutomatically": "انتخاب خودکار"
+  "selectAutomatically": "انتخاب خودکار",
+  "androidAuto": "اندروید اتو",
+  "carAudio": "صوت خودرو",
+  "bluetooth": "بلوتوث",
+  "wiredHeadphones": "هدفون سیمی",
+  "usbAudio": "صوت USB",
+  "phoneSpeaker": "بلندگوی تلفن",
+  "other": "سایر",
+  "aux": "AUX",
+  "radio": "رادیو",
+  "hearingAid": "سمعک",
+  "dockingStation": "ایستگاه اتصال",
+  "phoneEarpiece": "گوشی تلفن",
+  "hdmi": "HDMI"
 }

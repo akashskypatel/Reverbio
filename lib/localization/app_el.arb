@@ -216,5 +216,18 @@
   "streamRequestTimeout": "Όριο χρονικού ορίου ροής",
   "usingProxy": "Αποτυχία απευθείας σύνδεσης με το YouTube. Προσπάθεια σύνδεσης με χρήση διακομιστών μεσολάβησης...",
   "audioDevice": "Συσκευή ήχου",
-  "selectAutomatically": "Αυτόματη επιλογή"
+  "selectAutomatically": "Αυτόματη επιλογή",
+  "androidAuto": "Android Auto",
+  "carAudio": "Αυτοκινητοφωνία",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "Συρματάκια ακουστικά",
+  "usbAudio": "USB ήχος",
+  "phoneSpeaker": "Ηχείο τηλεφώνου",
+  "other": "Άλλο",
+  "aux": "AUX",
+  "radio": "Ραδιόφωνο",
+  "hearingAid": "Βοηθητικό ακουστικό",
+  "dockingStation": "Σταθμός σύνδεσης",
+  "phoneEarpiece": "Ακουστικό τηλεφώνου",
+  "hdmi": "HDMI"
 }

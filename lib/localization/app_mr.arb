@@ -216,5 +216,18 @@
   "streamRequestTimeout": "स्ट्रीम विनंती टाइमआउट उंबर",
   "usingProxy": "YouTube शी थेट कनेक्शन अयशस्वी. प्रॉक्सी सर्व्हर्स वापरून कनेक्ट करण्याचा प्रयत्न केला जात आहे...",
   "audioDevice": "ऑडिओ डिव्हाइस",
-  "selectAutomatically": "स्वयंचलित निवडा"
+  "selectAutomatically": "स्वयंचलित निवडा",
+  "androidAuto": "Android Auto",
+  "carAudio": "कार ऑडिओ",
+  "bluetooth": "ब्ल्यूटूथ",
+  "wiredHeadphones": "वायर्ड हेडफोन्स",
+  "usbAudio": "USB ऑडिओ",
+  "phoneSpeaker": "फोन स्पीकर",
+  "other": "इतर",
+  "aux": "AUX",
+  "radio": "रेडिओ",
+  "hearingAid": "ऐडिंग एड",
+  "dockingStation": "डॉकिंग स्टेशन",
+  "phoneEarpiece": "फोन इअरपीस",
+  "hdmi": "HDMI"
 }

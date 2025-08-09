@@ -216,5 +216,18 @@
   "streamRequestTimeout": "স্ট্রিম রিকোয়েস্ট টাইমআউট সীমা",
   "usingProxy": "YouTube-এর সাথে সরাসরি সংযোগ ব্যর্থ হয়েছে। প্রক্সি সার্ভার ব্যবহার করে সংযোগ করার চেষ্টা করা হচ্ছে...",
   "audioDevice": "অডিও ডিভাইস",
-  "selectAutomatically": "স্বয়ংক্রিয়ভাবে নির্বাচন করুন"
+  "selectAutomatically": "স্বয়ংক্রিয়ভাবে নির্বাচন করুন",
+  "androidAuto": "অ্যান্ড্রয়েড অটো",
+  "carAudio": "গাড়ির অডিও",
+  "bluetooth": "ব্লুটুথ",
+  "wiredHeadphones": "ওয়্যারড হেডফোন",
+  "usbAudio": "ইউএসবি অডিও",
+  "phoneSpeaker": "ফোন স্পিকার",
+  "other": "অন্যান্য",
+  "aux": "AUX",
+  "radio": "রেডিও",
+  "hearingAid": "শ্রবণ সহায়ক",
+  "dockingStation": "ডকিং স্টেশন",
+  "phoneEarpiece": "ফোন ইয়ারপিস",
+  "hdmi": "HDMI"
 }

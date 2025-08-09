@@ -216,5 +216,18 @@
   "streamRequestTimeout": "串流請求超時閾值",
   "usingProxy": "連接YouTube失敗，正在嘗試使用代理伺服器連接...",
   "audioDevice": "音訊裝置",
-  "selectAutomatically": "自動選擇"
+  "selectAutomatically": "自動選擇",
+  "androidAuto": "Android Auto",
+  "carAudio": "車載音響",
+  "bluetooth": "藍牙",
+  "wiredHeadphones": "有線耳機",
+  "usbAudio": "USB音訊",
+  "phoneSpeaker": "手機揚聲器",
+  "other": "其他",
+  "aux": "AUX",
+  "radio": "收音機",
+  "hearingAid": "助聽器",
+  "dockingStation": "擴充基座",
+  "phoneEarpiece": "電話聽筒",
+  "hdmi": "HDMI"
 }

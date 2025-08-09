@@ -216,5 +216,18 @@
   "streamRequestTimeout": "เกณฑ์เวลารอคอยการสตรีม",
   "usingProxy": "การเชื่อมต่อตรงไปยัง YouTube ล้มเหลว กำลังพยายามเชื่อมต่อโดยใช้เซิร์ฟเวอร์พรอกซี...",
   "audioDevice": "อุปกรณ์เสียง",
-  "selectAutomatically": "เลือกอัตโนมัติ"
+  "selectAutomatically": "เลือกอัตโนมัติ",
+  "androidAuto": "Android Auto",
+  "carAudio": "ระบบเสียงรถยนต์",
+  "bluetooth": "บลูทูธ",
+  "wiredHeadphones": "หูฟังแบบมีสาย",
+  "usbAudio": "เสียง USB",
+  "phoneSpeaker": "ลำโพงโทรศัพท์",
+  "other": "อื่นๆ",
+  "aux": "AUX",
+  "radio": "วิทยุ",
+  "hearingAid": "เครื่องช่วยฟัง",
+  "dockingStation": "สถานีเชื่อมต่อ",
+  "phoneEarpiece": "หูฟังโทรศัพท์",
+  "hdmi": "HDMI"
 }

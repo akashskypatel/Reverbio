@@ -216,5 +216,18 @@
   "streamRequestTimeout": "Ngưỡng thời gian chờ yêu cầu phát trực tuyến",
   "usingProxy": "Kết nối trực tiếp đến YouTube thất bại. Đang thử kết nối bằng máy chủ proxy...",
   "audioDevice": "Thiết bị âm thanh",
-  "selectAutomatically": "Tự động chọn"
+  "selectAutomatically": "Tự động chọn",
+  "androidAuto": "Android Auto",
+  "carAudio": "Âm thanh xe hơi",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "Tai nghe có dây",
+  "usbAudio": "Âm thanh USB",
+  "phoneSpeaker": "Loa điện thoại",
+  "other": "Khác",
+  "aux": "AUX",
+  "radio": "Radio",
+  "hearingAid": "Máy trợ thính",
+  "dockingStation": "Trạm kết nối",
+  "phoneEarpiece": "Tai nghe điện thoại",
+  "hdmi": "HDMI"
 }

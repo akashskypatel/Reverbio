@@ -216,5 +216,18 @@
   "streamRequestTimeout": "حد مهلة طلب البث",
   "usingProxy": "فشل الاتصال المباشر بيوتيوب. جاري محاولة الاتصال باستخدام خوادم وكيل...",
   "audioDevice": "جهاز الصوت",
-  "selectAutomatically": "تحديد تلقائي"
+  "selectAutomatically": "تحديد تلقائي",
+  "androidAuto": "أندرويد أوتو",
+  "carAudio": "نظام صوت السيارة",
+  "bluetooth": "بلوتوث",
+  "wiredHeadphones": "سماعات سلكية",
+  "usbAudio": "صوت USB",
+  "phoneSpeaker": "مكبر صوت الهاتف",
+  "other": "أخرى",
+  "aux": "مدخل AUX",
+  "radio": "راديو",
+  "hearingAid": "سماعة أذن",
+  "dockingStation": "محطة إرساء",
+  "phoneEarpiece": "سماعة الهاتف",
+  "hdmi": "HDMI"
 }

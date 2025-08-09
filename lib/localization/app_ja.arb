@@ -216,5 +216,18 @@
   "streamRequestTimeout": "ストリームリクエストのタイムアウト閾値",
   "usingProxy": "YouTubeへの直接接続に失敗しました。プロキシサーバーを使用して接続を試みています...",
   "audioDevice": "オーディオデバイス",
-  "selectAutomatically": "自動選択"
+  "selectAutomatically": "自動選択",
+  "androidAuto": "Android Auto",
+  "carAudio": "カーオーディオ",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "有線ヘッドホン",
+  "usbAudio": "USBオーディオ",
+  "phoneSpeaker": "電話スピーカー",
+  "other": "その他",
+  "aux": "AUX",
+  "radio": "ラジオ",
+  "hearingAid": "補聴器",
+  "dockingStation": "ドッキングステーション",
+  "phoneEarpiece": "電話受話器",
+  "hdmi": "HDMI"
 }

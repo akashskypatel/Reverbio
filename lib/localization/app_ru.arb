@@ -216,5 +216,18 @@
   "streamRequestTimeout": "Порог таймаута запроса потока",
   "usingProxy": "Прямое подключение к YouTube не удалось. Попытка подключения через прокси-серверы...",
   "audioDevice": "Аудиоустройство",
-  "selectAutomatically": "Выбирать автоматически"
+  "selectAutomatically": "Выбирать автоматически",
+  "androidAuto": "Android Auto",
+  "carAudio": "Автомагнитола",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "Проводные наушники",
+  "usbAudio": "USB-аудио",
+  "phoneSpeaker": "Динамик телефона",
+  "other": "Другое",
+  "aux": "AUX",
+  "radio": "Радио",
+  "hearingAid": "Слуховой аппарат",
+  "dockingStation": "Док-станция",
+  "phoneEarpiece": "Телефонная трубка",
+  "hdmi": "HDMI"
 }

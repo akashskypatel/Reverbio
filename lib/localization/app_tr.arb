@@ -216,5 +216,18 @@
   "streamRequestTimeout": "Akış isteği zaman aşımı eşiği",
   "usingProxy": "YouTube'a doğrudan bağlantı başarısız oldu. Proxy sunucular kullanarak bağlanmaya çalışılıyor...",
   "audioDevice": "Ses aygıtı",
-  "selectAutomatically": "Otomatik seç"
+  "selectAutomatically": "Otomatik seç",
+  "androidAuto": "Android Auto",
+  "carAudio": "Araç ses sistemi",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "Kablolu kulaklık",
+  "usbAudio": "USB Ses",
+  "phoneSpeaker": "Telefon hoparlörü",
+  "other": "Diğer",
+  "aux": "AUX",
+  "radio": "Radyo",
+  "hearingAid": "İşitme Cihazı",
+  "dockingStation": "Dok İstasyonu",
+  "phoneEarpiece": "Telefon Kulaklığı",
+  "hdmi": "HDMI"
 }

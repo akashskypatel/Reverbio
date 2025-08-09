@@ -216,5 +216,18 @@
   "streamRequestTimeout": "స్ట్రీమ్ అభ్యర్థన సమయం ముగింపు పరిమితి",
   "usingProxy": "YouTubeకు ప్రత్యక్ష కనెక్షన్ విఫలమైంది. ప్రాక్సీ సర్వర్లను ఉపయోగించి కనెక్ట్ చేయడానికి ప్రయత్నిస్తున్నారు...",
   "audioDevice": "ఆడియో పరికరం",
-  "selectAutomatically": "స్వయంచాలకంగా ఎంచుకోండి"
+  "selectAutomatically": "స్వయంచాలకంగా ఎంచుకోండి",
+  "androidAuto": "Android Auto",
+  "carAudio": "కారు ఆడియో",
+  "bluetooth": "బ్లూటూత్",
+  "wiredHeadphones": "వైర్డ్ హెడ్‌ఫోన్‌లు",
+  "usbAudio": "USB ఆడియో",
+  "phoneSpeaker": "ఫోన్ స్పీకర్",
+  "other": "ఇతర",
+  "aux": "AUX",
+  "radio": "రేడియో",
+  "hearingAid": "వినికిడి సహాయం",
+  "dockingStation": "డాకింగ్ స్టేషన్",
+  "phoneEarpiece": "ఫోన్ ఇయర్పీస్",
+  "hdmi": "HDMI"
 }

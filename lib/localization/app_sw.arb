@@ -216,5 +216,18 @@
   "streamRequestTimeout": "Kizingo cha mda wa maombi ya mkondo",
   "usingProxy": "Uunganishaji wa moja kwa moja kwa YouTube umeshindwa. Kujaribu kuunganisha kwa kutumia seva za wakala...",
   "audioDevice": "Kifaa cha sauti",
-  "selectAutomatically": "Chagua kiotomatiki"
+  "selectAutomatically": "Chagua kiotomatiki",
+  "androidAuto": "Android Auto",
+  "carAudio": "Sauti ya gari",
+  "bluetooth": "Bluetooth",
+  "wiredHeadphones": "Viputi vya kusikilizia vilivyo na waya",
+  "usbAudio": "Sauti ya USB",
+  "phoneSpeaker": "Spika ya simu",
+  "other": "Nyingine",
+  "aux": "AUX",
+  "radio": "Redio",
+  "hearingAid": "Kisaidizi cha kusikia",
+  "dockingStation": "Kituo cha kushikilia",
+  "phoneEarpiece": "Kisikio cha simu",
+  "hdmi": "HDMI"
 }
