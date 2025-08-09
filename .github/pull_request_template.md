@@ -176,12 +176,13 @@ Complete or verify all features on Settings Page.
 
 - [ ] Confirm Accent Color changes work.
 - [ ] Confirm Theme Mode changes work.
-- [ ] Confirm Client changes work.
+- [ ] Confirm Stream request timeout work.
+- [ ] Confirm Audio output device selection works. (Android only)
 - [ ] Confirm Language changes work.
 - [ ] Confirm Audio Quality changes work.
-- [ ] Confirm Dynamic Accent Color changes work. (Android Only)
+- [ ] Confirm Dynamic Accent Color changes work. (Android only)
 - [ ] Confirm Pure black theme changes work.
-- [ ] Confirm Predictive Black changes work. (Android Only)
+- [ ] Confirm Predictive Black changes work. (Android only)
 - [ ] Confirm Offline Mode changes work.
 - [ ] Confirm enabling plugins works.
 - [ ] Confirm Skip Sponsor Segment changes work.
