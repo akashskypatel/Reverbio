@@ -5,7 +5,7 @@ repository: https://github.com/akashskypatel/Reverbio
 issue_tracker: https://github.com/akashskypatel/Reverbio/issues
 
 publish_to: 'none'
-version: 1.4.1 # run update.sh after changing the version
+version: 1.4.2 # run update.sh after changing the version
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -16,6 +16,7 @@ dependencies:
   audio_service: ^0.18.17
   audio_session: ^0.2.2
   cached_network_image: ^3.4.1
+  crypto: ^3.0.6
   csv: ^6.0.0
   discogs_api_client: ^0.1.6
   dynamic_color: ^1.7.0
@@ -61,16 +62,21 @@ flutter:
   assets:
     - assets/licenses/
     - assets/images/
+    - assets/fonts/
+    - assets/icons/
     - .env
 
   fonts:
+    - family: ReverbioIcons
+      fonts:
+        - asset: assets/icons/reverbio_icons/fonts/ReverbioIcons.ttf
     - family: paytoneOne
       fonts:
-        - asset: fonts/paytone/PaytoneOne-Regular.ttf
+        - asset: assets/fonts/paytone/PaytoneOne-Regular.ttf
     - family: montserrat
       fonts:
-        - asset: fonts/montserrat/Montserrat-VariableFont_wght.ttf
-        - asset: fonts/montserrat/Montserrat-Italic-VariableFont_wght.ttf
+        - asset: assets/fonts/montserrat/Montserrat-VariableFont_wght.ttf
+        - asset: assets/fonts/montserrat/Montserrat-Italic-VariableFont_wght.ttf
           style: italic
 
 flutter_native_splash:
