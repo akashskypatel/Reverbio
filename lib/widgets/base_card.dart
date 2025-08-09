@@ -89,8 +89,7 @@ class _BaseCardState extends State<BaseCard> {
 
   String? dataType;
   final borderRadius = 13.0;
-  late final likeSize =
-      widget.iconSize == null ? (widget.size * 0.20) : widget.iconSize;
+  late final likeSize = widget.size * 0.20;
   late final double artistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late ThemeData _theme;
@@ -350,28 +349,32 @@ class _BaseCardState extends State<BaseCard> {
       builder: (context, value, child) {
         final liked =
             value ? FluentIcons.heart_12_filled : FluentIcons.heart_12_regular;
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
-          child: Align(
-            alignment: Alignment.topRight,
-            child: Stack(
-              children: [
-                Transform.translate(
-                  offset: const Offset(5.5, 6.5),
-                  child: Icon(
+        final shadowOffset = -(likeSize / 18);
+        return Align(
+          alignment: Alignment.topRight,
+          child: Stack(
+            children: [
+              Transform.translate(
+                offset: Offset(
+                  shadowOffset + (shadowOffset * .5),
+                  shadowOffset,
+                ),
+                child: IconButton(
+                  onPressed: null,
+                  icon: Icon(
                     liked,
                     size: likeSize,
                     color: _theme.colorScheme.surface,
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _toggleLike(context),
-                  icon: Icon(liked, size: likeSize),
-                  color: _theme.colorScheme.primary,
-                  hoverColor: _theme.colorScheme.surface.withAlpha(128),
-                ),
-              ],
-            ),
+              ),
+              IconButton(
+                onPressed: () => _toggleLike(context),
+                icon: Icon(liked, size: likeSize),
+                color: _theme.colorScheme.primary,
+                hoverColor: _theme.colorScheme.surface.withAlpha(128),
+              ),
+            ],
           ),
         );
       },
