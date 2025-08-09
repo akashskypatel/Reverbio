@@ -26,6 +26,7 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -74,11 +75,16 @@ class AudioPlayerService {
       StreamController<AudioPlayerState>.broadcast();
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
 
+  List<AudioDevice> audioDevices = [];
+  AudioDevice audioDevice = AudioDevice.auto();
+
   StreamSubscription<MediaItem>? _mediaItemSubscription;
   StreamSubscription? _playerStreamBuffer;
   StreamSubscription? _playerStreamCompleted;
   StreamSubscription? _playerStreamPlaying;
   StreamSubscription? _playerStreamError;
+  StreamSubscription? _playerStreamAudioDevice;
+  StreamSubscription? _playerStreamAudioDevices;
 
   final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
   ValueNotifier<double> get volumeNotifier => _volumeNotifier;
@@ -137,6 +143,9 @@ class AudioPlayerService {
   Stream<int> get currentIndexStream => _indexController.stream;
   Stream<Playlist> get sequenceStateStream => _player.stream.playlist;
   Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
+  Stream<AudioDevice> get audioDeviceStream => _player.stream.audioDevice;
+  Stream<List<AudioDevice>> get audioDevicesStream =>
+      _player.stream.audioDevices;
 
   void _initialize() {
     _playerState = AudioPlayerState.initialized;
@@ -185,6 +194,13 @@ class AudioPlayerService {
         );
       }
     });
+    _playerStreamAudioDevice = _player.stream.audioDevice.listen(
+      (event) => audioDevice = event,
+    );
+    _playerStreamAudioDevices = _player.stream.audioDevices.listen(
+      (event) => audioDevices = event,
+    );
+
     unawaited(setAudioDevice());
     unawaited(setVolume(_volume));
   }
@@ -243,6 +259,8 @@ class AudioPlayerService {
     await _playerStreamPlaying?.cancel();
     await _playerStreamError?.cancel();
     await _mediaItemSubscription?.cancel();
+    await _playerStreamAudioDevice?.cancel();
+    await _playerStreamAudioDevices?.cancel();
     await _processingStateController.close();
     await _indexController.close();
     await _processingStateController.close();
@@ -338,12 +356,18 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       audioPlayer.songValueNotifier;
   Stream<AudioPlayerState> get playerStateStream =>
       audioPlayer.playerStateStream;
-  double get volume => audioPlayer.volume;
   Stream<PositionData> get positionDataStream => audioPlayer.positionDataStream;
+  Stream<AudioDevice> get audioDeviceStream => audioPlayer.audioDeviceStream;
+  Stream<List<AudioDevice>> get audioDevicesStream =>
+      audioPlayer.audioDevicesStream;
+  double get volume => audioPlayer.volume;
   AudioProcessingState get state => audioPlayer.processingState;
   bool get playing => audioPlayer.playing;
   Stream<Duration> get positionStream => audioPlayer.positionStream;
   bool cachedIsPlaying = false;
+  static const platform = MethodChannel(
+    'com.akashskypatel.reverbio/audio_device_channel',
+  );
 
   Future<void> dispose() async {
     await _playbackEventSubscription.cancel();
@@ -514,22 +538,65 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
   Future<void> seekToStart() => audioPlayer.seekToStart();
 
-  Future<void> setAudioDevice(String deviceName) async {
-    if (isMobilePlatform()) {
-      final audioDevice = AudioDevice(
-        deviceName,
-        deviceName == 'auto' ? '' : deviceName,
+  Future<void> setAudioDevice(dynamic device) async {
+    try {
+      if (Platform.isAndroid) {
+        final devices = await getConnectedAudioDevices();
+        if (devices.where((e) => e['id'] == device['id']).isNotEmpty)
+          await platform.invokeMethod<dynamic>('setAudioOutputDevice', {
+            'deviceId': device['id'],
+          });
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
       );
-      await audioPlayer.setAudioDevice(audioDevice: audioDevice);
+      throw Exception(e.toString());
     }
   }
 
-  Future<List<AudioDevice>> getConnectedAudioDevices() async {
-    if (isMobilePlatform()) {
-      final devices = audioPlayer.state.audioDevices;
-      return devices;
-    } else
-      return [];
+  Future<dynamic> getCurrentAudioDevice() async {
+    try {
+      if (Platform.isAndroid) {
+        final device = await platform.invokeMethod<dynamic>(
+          'getCurrentAudioDevice',
+        );
+        audioDevice.value = device;
+        addOrUpdateData('settings', 'audioDevice', audioDevice.value);
+        return device;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<List<dynamic>> getConnectedAudioDevices() async {
+    try {
+      if (Platform.isAndroid) {
+        //final devices = audioPlayer.state.audioDevices;
+        final devices =
+            (await platform.invokeMethod<List>('getAudioOutputDevices')) ??
+            <dynamic>[];
+        //final devices = audioPlayer.audioDevices;
+
+        return devices;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
+      throw Exception(e.toString());
+    }
+    return [];
   }
 
   Future<void> _handleDeviceEventChange(

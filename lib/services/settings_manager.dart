@@ -118,6 +118,6 @@ final streamRequestTimeout = ValueNotifier<int>(
   Hive.box('settings').get('streamRequestTimeout', defaultValue: 10),
 );
 
-final audioDevice = ValueNotifier<String>(
-  Hive.box('settings').get('audioDevice', defaultValue: 'auto'),
+final audioDevice = ValueNotifier<dynamic>(
+  Hive.box('settings').get('audioDevice', defaultValue: null),
 );

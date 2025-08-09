@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
@@ -11,9 +12,118 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
+const androidDeviceTypes = {
+  19: 'TYPE_AUX_LINE',
+  30: 'TYPE_BLE_BROADCAST',
+  26: 'TYPE_BLE_HEADSET',
+  27: 'TYPE_BLE_SPEAKER',
+  8: 'TYPE_BLUETOOTH_A2DP',
+  7: 'TYPE_BLUETOOTH_SCO',
+  1: 'TYPE_BUILTIN_EARPIECE',
+  15: 'TYPE_BUILTIN_MIC',
+  2: 'TYPE_BUILTIN_SPEAKER',
+  24: 'TYPE_BUILTIN_SPEAKER_SAFE',
+  21: 'TYPE_BUS',
+  13: 'TYPE_DOCK',
+  31: 'TYPE_DOCK_ANALOG',
+  14: 'TYPE_FM',
+  16: 'TYPE_FM_TUNER',
+  9: 'TYPE_HDMI',
+  10: 'TYPE_HDMI_ARC',
+  29: 'TYPE_HDMI_EARC',
+  23: 'TYPE_HEARING_AID',
+  20: 'TYPE_IP',
+  5: 'TYPE_LINE_ANALOG',
+  6: 'TYPE_LINE_DIGITAL',
+  32: 'TYPE_MULTICHANNEL_GROUP',
+  25: 'TYPE_REMOTE_SUBMIX',
+  18: 'TYPE_TELEPHONY',
+  17: 'TYPE_TV_TUNER',
+  0: 'TYPE_UNKNOWN',
+  12: 'TYPE_USB_ACCESSORY',
+  11: 'TYPE_USB_DEVICE',
+  22: 'TYPE_USB_HEADSET',
+  4: 'TYPE_WIRED_HEADPHONES',
+  3: 'TYPE_WIRED_HEADSET',
+};
+
+Map getAudioDeviceCategory(String category, {BuildContext? context}) {
+  context = context ?? NavigationManager().context;
+  final categoryOrder = <String, dynamic>{
+    'Android Auto': {
+      'order': 1,
+      'localization': context.l10n!.androidAuto,
+      'icon': ReverbioIcons.android_auto_monochrome,
+    },
+    'Car Audio': {
+      'order': 2,
+      'localization': context.l10n!.carAudio,
+      'icon': FluentIcons.vehicle_car_24_filled,
+    },
+    'Bluetooth': {
+      'order': 3,
+      'localization': context.l10n!.bluetooth,
+      'icon': FluentIcons.bluetooth_24_filled,
+    },
+    'AUX': {
+      'order': 4,
+      'localization': context.l10n!.aux,
+      'icon': FluentIcons.connector_24_filled,
+    },
+    'Radio': {
+      'order': 5,
+      'localization': context.l10n!.radio,
+      'icon': Icons.radio,
+    },
+    'Hearing Aid': {
+      'order': 6,
+      'localization': context.l10n!.hearingAid,
+      'icon': Icons.hearing,
+    },
+    'Wired Headphones': {
+      'order': 7,
+      'localization': context.l10n!.wiredHeadphones,
+      'icon': FluentIcons.headphones_24_filled,
+    },
+    'USB Audio': {
+      'order': 8,
+      'localization': context.l10n!.usbAudio,
+      'icon': FluentIcons.speaker_usb_24_filled,
+    },
+    'Docking Station': {
+      'order': 9,
+      'localization': context.l10n!.dockingStation,
+      'icon': FluentIcons.dock_24_filled,
+    },
+    'Phone Speaker': {
+      'order': 10,
+      'localization': context.l10n!.phoneSpeaker,
+      'icon': FluentIcons.speaker_2_24_filled,
+    },
+    'Phone Earpiece': {
+      'order': 11,
+      'localization': context.l10n!.phoneEarpiece,
+      'icon': FluentIcons.call_24_filled,
+    },
+    'HDMI': {
+      'order': 12,
+      'localization': context.l10n!.hdmi,
+      'icon': FluentIcons.tv_usb_24_filled,
+    },
+    'Other': {
+      'order': 13,
+      'localization': context.l10n!.other,
+      'icon': FluentIcons.speaker_box_24_filled,
+    },
+  };
+
+  return categoryOrder[category];
+}
 
 class CancelledException implements Exception {
   @override

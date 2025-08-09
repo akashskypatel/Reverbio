@@ -124,6 +124,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 inactivatedColor,
               ),
         ),
+        CustomBar(
+          tileName: context.l10n!.streamRequestTimeout,
+          tileIcon: FluentIcons.timer_10_24_filled,
+          onTap:
+              () => _showTimeoutThresholdPicker(
+                context,
+                activatedColor,
+                inactivatedColor,
+              ),
+        ),
         if (isMobilePlatform())
           CustomBar(
             tileName: context.l10n!.audioDevice,
@@ -143,6 +153,7 @@ class _SettingsPageState extends State<SettingsPage> {
               () =>
                   _showClientPicker(context, activatedColor, inactivatedColor),
         ),
+        */
         CustomBar(
           tileName: context.l10n!.language,
           tileIcon: FluentIcons.translate_24_filled,
@@ -580,28 +591,43 @@ class _SettingsPageState extends State<SettingsPage> {
                 return const Icon(FluentIcons.error_circle_24_filled);
               else {
                 final devices = snapshot.data!;
+                final deviceData =
+                    devices.map((e) {
+                        final category = getAudioDeviceCategory(e['category']);
+                        return {
+                          ...(e as Map),
+                          'icon': category['icon'],
+                          'order': category['order'],
+                          'localization': category['localization'],
+                        };
+                      }).toList()
+                      ..sort((a, b) => a['order'].compareTo(b['order']));
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
                   padding: commonListViewBottomPadding,
                   itemCount: devices.length,
                   itemBuilder: (context, index) {
-                    final deviceName = devices[index].name;
-                    final isSelected = audioDevice.value == deviceName;
+                    final isSelected =
+                        audioDevice.value['id'] == devices[index]['id'];
                     final borderRadius = getItemBorderRadius(
                       index,
                       devices.length,
                     );
 
-                    return BottomSheetBar(
-                      deviceName == 'auto'
-                          ? context.l10n!.selectAutomatically
-                          : deviceName,
+                    return CustomBar(
+                      tileName:
+                          deviceData[index]['name'] == 'auto'
+                              ? context.l10n!.selectAutomatically
+                              : '${deviceData[index]['name']} - ${deviceData[index]['localization']}',
+                      tileIcon:
+                          deviceData[index]['icon'] ??
+                          FluentIcons.speaker_box_24_filled,
                       onTap: () {
                         if (context.mounted)
                           setState(() {
-                            audioDevice.value = deviceName;
-                            audioHandler.setAudioDevice(deviceName);
+                            audioDevice.value = devices[index];
+                            audioHandler.setAudioDevice(devices[index]);
                           });
                         addOrUpdateData(
                           'settings',
@@ -609,7 +635,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           audioDevice.value,
                         );
                       },
-                      isSelected ? activatedColor : inactivatedColor,
+                      backgroundColor:
+                          isSelected ? activatedColor : inactivatedColor,
                       borderRadius: borderRadius,
                     );
                   },
