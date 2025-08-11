@@ -17,6 +17,7 @@ import android.os.Process
 import android.content.Context
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
+import android.content.pm.PackageManager
 
 class MainActivity : AudioServiceActivity() {
   private val CHANNEL = "com.akashskypatel.reverbio/audio_device_channel"
@@ -34,7 +35,7 @@ class MainActivity : AudioServiceActivity() {
               result.success(deviceList)
           }
           "setAudioOutputDevice" -> {
-              val deviceId = call.argument<Int>("deviceId") ?: throw IllegalArgumentException("Missing deviceId")
+              val deviceId = call.argument<Int?>("deviceId") // Now nullable
               val success = setAudioOutputDevice(deviceId)
               result.success(success)
           }
@@ -120,36 +121,63 @@ class MainActivity : AudioServiceActivity() {
   }
 
   @RequiresApi(Build.VERSION_CODES.M)
-  private fun setAudioOutputDevice(deviceId: Int): Boolean {
-    val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-    val targetDevice = devices.firstOrNull { it.id == deviceId } ?: return false
+  private fun setAudioOutputDevice(deviceId: Int?): Boolean {
+      val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+      
+      // Handle automatic selection case
+      if (deviceId == null) {
+          return resetToAutomaticRouting(audioManager)
+      }
 
-    return when (targetDevice.type) {
-        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> {
-            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-            audioManager.isBluetoothScoOn = true
-            audioManager.startBluetoothSco()
-            true
-        }
-        AudioDeviceInfo.TYPE_WIRED_HEADPHONES, 
-        AudioDeviceInfo.TYPE_WIRED_HEADSET -> {
-            audioManager.mode = AudioManager.MODE_NORMAL
-            audioManager.isSpeakerphoneOn = false
-            true
-        }
-        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> {
-            audioManager.mode = AudioManager.MODE_NORMAL
-            audioManager.isSpeakerphoneOn = true
-            true
-        }
-        AudioDeviceInfo.TYPE_USB_DEVICE -> {
-            audioManager.mode = AudioManager.MODE_NORMAL
-            audioManager.isSpeakerphoneOn = false
-            true
-        }
-        else -> false
-    }
+      // Manual device selection (existing logic)
+      val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+      val targetDevice = devices.firstOrNull { it.id == deviceId } ?: return false
+
+      return when (targetDevice.type) {
+          AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> {
+              audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+              audioManager.isBluetoothScoOn = true
+              audioManager.startBluetoothSco()
+              true
+          }
+          AudioDeviceInfo.TYPE_WIRED_HEADPHONES, 
+          AudioDeviceInfo.TYPE_WIRED_HEADSET -> {
+              audioManager.mode = AudioManager.MODE_NORMAL
+              audioManager.isSpeakerphoneOn = false
+              true
+          }
+          AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> {
+              audioManager.mode = AudioManager.MODE_NORMAL
+              audioManager.isSpeakerphoneOn = true
+              true
+          }
+          AudioDeviceInfo.TYPE_USB_DEVICE -> {
+              audioManager.mode = AudioManager.MODE_NORMAL
+              audioManager.isSpeakerphoneOn = false
+              true
+          }
+          else -> false
+      }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.M)
+  private fun resetToAutomaticRouting(audioManager: AudioManager): Boolean {
+      return try {
+          // Reset all manual routing settings
+          audioManager.mode = AudioManager.MODE_NORMAL
+          audioManager.isSpeakerphoneOn = false
+          
+          // Stop any forced audio routing
+          if (audioManager.isBluetoothScoOn) {
+              audioManager.stopBluetoothSco()
+              audioManager.isBluetoothScoOn = false
+          }
+          
+          true
+      } catch (e: Exception) {
+          Log.e(TAG, "Error resetting to automatic routing", e)
+          false
+      }
   }
 
   @RequiresApi(Build.VERSION_CODES.M)
@@ -200,6 +228,11 @@ class MainActivity : AudioServiceActivity() {
       }
   }
 
+  private fun isAndroidAutoConnected(): Boolean {
+    val pm = packageManager
+    return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     // Aligns the Flutter view vertically with the window.
     WindowCompat.setDecorFitsSystemWindows(getWindow(), false)
@@ -209,7 +242,9 @@ class MainActivity : AudioServiceActivity() {
       // a flicker before the similar frame is drawn in Flutter.
       splashScreen.setOnExitAnimationListener { splashScreenView -> splashScreenView.remove() }
     }
-
+    if (isAndroidAutoConnected()) {
+      // Initialize Android Auto-specific components
+    }
     super.onCreate(savedInstanceState)
   }
 }
