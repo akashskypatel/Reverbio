@@ -24,7 +24,7 @@ const androidDeviceTypes = {
   27: {'id': 'TYPE_BLE_SPEAKER', 'name': 'BLE Speaker', 'include': true},
   8: {'id': 'TYPE_BLUETOOTH_A2DP', 'name': 'Bluetooth A2DP', 'include': true},
   7: {'id': 'TYPE_BLUETOOTH_SCO', 'name': 'Bluetooth SCO', 'include': true},
-  1: {'id': 'TYPE_BUILTIN_EARPIECE', 'name': 'Built-in Earpiece', 'include': true},
+  1: {'id': 'TYPE_BUILTIN_EARPIECE', 'name': 'Built-in Earpiece', 'include': false},
   15: {'id': 'TYPE_BUILTIN_MIC', 'name': 'Built-in Mic', 'include': false},
   2: {'id': 'TYPE_BUILTIN_SPEAKER', 'name': 'Built-in Speaker', 'include': true},
   24: {'id': 'TYPE_BUILTIN_SPEAKER_SAFE', 'name': 'Built-in Speaker Safe', 'include': false},
