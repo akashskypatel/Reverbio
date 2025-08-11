@@ -25,26 +25,26 @@ Reverbio: A powerful, ad-free music streaming app with multi-platform support, o
 
 ## Features
 
-- Stream from YT out of the box, and anywhere else with Plugins <br/>
-- Online song, artist and playlist search with suggestions <br/>
-- Offline listening support <br/>
-- Import & export your data and never lose it <br/>
-- Add custom playlists with link <br/>
-- User song queueu <br/>
-- Optimized sound experience <br/>
-- SponsorBlock support <br/>
-- Lyrics support <br/>
-- No ads <br/>
-- No subscriptions <br/>
-- 30 supported languages <br/>
-- Material UI & accent colors & dynamic colors (Android 12+) <br/>
-- Android and Windows Support <br/>
-- Custom plugin support <br/>
-- Track your favorite Songs, Albums, Artists and Playlists <br/>
-- Android Auto Support </br>
-- (New) Import playlists from any music service using CSV files! </br>
+- Stream from YT out of the box, and anywhere else with Plugins
+- Online song, artist and playlist search with suggestions
+- Offline listening support
+- Import & export your data and never lose it
+- Add custom playlists with link
+- User song queue
+- Optimized sound experience
+- SponsorBlock support
+- Lyrics support
+- No ads
+- No subscriptions
+- 30 supported languages
+- Material UI & accent colors & dynamic colors (Android 12+)
+- Android and Windows Support
+- Custom plugin support
+- Track your favorite Songs, Albums, Artists and Playlists
+- Android Auto Support
+- (New) Import playlists from any music service using CSV files!
 - (Pre-Release) Select Android output device 
-- (Pre-Release) Select YouTube resultion timeout in case it takes longer than usual for YouTube-Explode API to get YouTube stream
+- (Pre-Release) Select YouTube stream resolution timeout in case it takes longer than usual for YouTube-Explode API to get YouTube stream
 
 <details>
 <summary>30 Supported Languages</summary>
