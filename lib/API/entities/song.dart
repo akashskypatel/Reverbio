@@ -315,7 +315,7 @@ Future<dynamic> getSongByRecordingDetails(
           'release-group-rels',
         ],
       );
-      recording['artist'] = combineArtists(recording);
+      recording['artist'] = combineArtists(recording) ?? 'Unknown';
       if (getImage)
         for (final release in recording['releases']) {
           final coverArt = await mb.coverArt.get(release['id'], 'release');
