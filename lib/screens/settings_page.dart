@@ -590,27 +590,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   snapshot.data == null)
                 return const Icon(FluentIcons.error_circle_24_filled);
               else {
-                final devices = snapshot.data!;
-                final deviceData =
-                    devices
-                        .map((e) {
-                          final category = getAudioDeviceCategory(
-                            e['category'],
-                          );
-                          return {
-                            ...(e as Map),
-                            'icon': category['icon'],
-                            'order': category['order'],
-                            'localization': category['localization'],
-                          };
-                        })
+                final devices =
+                    snapshot.data!
                         .where(
                           (e) =>
                               (androidDeviceTypes[e['type']]?['include'] ??
                                       false)
                                   as bool,
                         )
-                        .toList()
+                        .toList();
+                final deviceData =
+                    devices.map((e) {
+                        final category = getAudioDeviceCategory(e['category']);
+                        return {
+                          ...(e as Map),
+                          'icon': category['icon'],
+                          'order': category['order'],
+                          'localization': category['localization'],
+                        };
+                      }).toList()
                       ..sort((a, b) => a['order'].compareTo(b['order']));
 
                 return ListView.builder(
