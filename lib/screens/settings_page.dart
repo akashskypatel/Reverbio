@@ -592,16 +592,27 @@ class _SettingsPageState extends State<SettingsPage> {
               else {
                 final devices = snapshot.data!;
                 final deviceData =
-                    devices.map((e) {
-                        final category = getAudioDeviceCategory(e['category']);
-                        return {
-                          ...(e as Map),
-                          'icon': category['icon'],
-                          'order': category['order'],
-                          'localization': category['localization'],
-                        };
-                      }).toList()
+                    devices
+                        .map((e) {
+                          final category = getAudioDeviceCategory(
+                            e['category'],
+                          );
+                          return {
+                            ...(e as Map),
+                            'icon': category['icon'],
+                            'order': category['order'],
+                            'localization': category['localization'],
+                          };
+                        })
+                        .where(
+                          (e) =>
+                              (androidDeviceTypes[e['type']]?['include'] ??
+                                      false)
+                                  as bool,
+                        )
+                        .toList()
                       ..sort((a, b) => a['order'].compareTo(b['order']));
+
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
