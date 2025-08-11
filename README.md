@@ -15,6 +15,16 @@ Reverbio: A powerful, ad-free music streaming app with multi-platform support, o
 
 ---
 
+# Announcement
+
+Please note that YouTube is constantly changing and updating their service. The library used by Reverbio to access YouTube streams may not always be up to date with new changes made by YouTube. This may cause YouTube streams to not work correctly from time to time. Additionally, YouTube employs other safeguards that prevents unofficial libraries from accessing their service, such as temporary IP blocking, and requiring user authentication using official YouTube methods.
+
+Unfortunately there are no easy ways to get around these problems. Reverbio tries to work around these problems using public SSL proxies to route Reverbio traffic which causes stream resolution to be slow, but this is not an infallible solution. Public proxies are blocked by YouTube fairly quickly.
+
+Best way to improve your ad-free streaming experience in Reverbio is to use JavaScript plugins that unlock the potential to stream from a variety of sources such as alternative music streaming APIs, your personal library (remote or local), and more! Take a look at the repository's readme and plugin documentation to get started.
+
+---
+
 ## Download
 
 [<img src="/repository_files/get-it-on-github.png" alt="Get it on Github" height="80">](https://github.com/akashskypatel/Reverbio/releases/latest)
@@ -138,50 +148,13 @@ OR
 
 ---
 
-## License
+## Android Auto
 
-<center>
-
-```
-Copyright © 2025 Akash Patel
-
-Reverbio is a free software licensed under GPL v3.0
-It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-```
-
-```
-Being Open Source doesn't mean you can just make a copy of the app and upload it on playstore or sell
-a closed source copy of the same.
-Read the following carefully:
-1. Any copy of a software under GPL must be under same license. So you can't upload the app on a closed source
-  app repository like PlayStore/AppStore without distributing the source code.
-2. You can't sell any copied/modified version of the app under any "non-free" license.
-   You must provide the copy with the original software or with instructions on how to obtain original software,
-   should clearly state all changes, should clearly disclose full source code, should include same license
-   and all copyrights should be retained.
-
-In simple words, You can ONLY use the source code of this app for `Open Source` Project under `GPL v3.0` or later
-with all your source code CLEARLY DISCLOSED on any code hosting platform like GitHub, with clear INSTRUCTIONS on
-how to obtain the original software, should clearly STATE ALL CHANGES made and should RETAIN all copyrights.
-Use of this software under any "non-free" license is NOT permitted.
-```
-
-</center>
-
-See the [GNU General Public License](https://github.com/akashskypatel/Reverbio/blob/master/LICENSE) for more details.
-
----
+If Reverbio doesn't appear in Android Auto for you, please go to Settings > Connection Preferences > Android Auto > Tap Version multiple times until Developer Mode is turned on > Tap vertical ellipses at the top > Developer Settings > scroll down to enable Unknown Sources
 
 ## Contribute
 
 Contributions are always welcome. Please read our [contributing guidelines](https://github.com/akashskypatel/Reverbio/blob/master/CONTRIBUTING.md) before contributing.
-
----
-
-## F.A.Q
-
-You can see frequently asked questions and their answers [here](https://github.com/akashskypatel/Reverbio/discussions/340).
 
 ---
 
@@ -192,8 +165,6 @@ You can see frequently asked questions and their answers [here](https://github.c
 ---
 
 ## Disclaimer
-
-<center>
 
 ```
 Reverbio does not possess or maintain any association with the songs and other content accessible through the app.
@@ -206,6 +177,32 @@ By using the app, you consent to utilizing the songs and other content exclusive
 non-commercial purposes and in accordance with all applicable laws and regulations.
 ```
 
-</center>
+---
+
+## License
+
+```
+Copyright © 2025 Akash Patel
+
+Reverbio is a free software licensed under GPL v3.0
+It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Being Open Source doesn't mean you can just make a copy of the app and upload it on playstore or sell
+a closed source copy of the same.
+Read the following carefully:
+
+1. Any copy of a software under GPL must be under same license. So you can't upload the app on a closed source
+  app repository like PlayStore/AppStore without distributing the source code.
+2. You can't sell any copied/modified version of the app under any "non-free" license.
+   You must provide the copy with the original software or with instructions on how to obtain original software,
+   should clearly state all changes, should clearly disclose full source code, should include same license
+   and all copyrights should be retained.
+
+In simple words, You can ONLY use the source code of this app for `Open Source` Project under `GPL v3.0` or later
+with all your source code CLEARLY DISCLOSED on any code hosting platform like GitHub, with clear INSTRUCTIONS on
+how to obtain the original software, should clearly STATE ALL CHANGES made and should RETAIN all copyrights.
+Use of this software under any "non-free" license is NOT permitted.
+```
+See the [GNU General Public License](https://github.com/akashskypatel/Reverbio/blob/master/LICENSE) for more details.
 
 ---
