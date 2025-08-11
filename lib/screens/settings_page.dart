@@ -619,7 +619,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       tileName:
                           deviceData[index]['name'] == 'auto'
                               ? context.l10n!.selectAutomatically
-                              : '${deviceData[index]['name']} - ${deviceData[index]['localization']}',
+                              : '${deviceData[index]['name']} - ${deviceData[index]['localization']} (${androidDeviceTypes[deviceData[index]['type']]?['name']})',
                       tileIcon:
                           deviceData[index]['icon'] ??
                           FluentIcons.speaker_box_24_filled,
