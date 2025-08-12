@@ -557,6 +557,25 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
   }
 
+  Future<bool> getAndroidAutoDevMode() async {
+    try {
+      if (Platform.isAndroid) {
+        final devMode = await platform.invokeMethod<dynamic>(
+          'getAndroidAutoDevMode',
+        );
+        return devMode;
+      }
+      return false;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
+      throw Exception(e.toString());
+    }
+  }
+
   Future<dynamic> getCurrentAudioDevice() async {
     try {
       if (Platform.isAndroid) {

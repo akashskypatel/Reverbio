@@ -18,6 +18,7 @@ import android.content.Context
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
 import android.content.pm.PackageManager
+import android.provider.Settings
 
 class MainActivity : AudioServiceActivity() {
   private val CHANNEL = "com.akashskypatel.reverbio/audio_device_channel"
@@ -35,7 +36,7 @@ class MainActivity : AudioServiceActivity() {
               result.success(deviceList)
           }
           "setAudioOutputDevice" -> {
-              val deviceId = call.argument<Int?>("deviceId") // Now nullable
+              val deviceId = call.argument<Int?>("deviceId")
               val success = setAudioOutputDevice(deviceId)
               result.success(success)
           }
