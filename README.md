@@ -17,7 +17,7 @@ Reverbio: A powerful, ad-free music streaming app with multi-platform support, o
 
 # Announcement
 
-Please note that YouTube is constantly changing and updating their service. The library used by Reverbio to access YouTube streams may not always be up to date with new changes made by YouTube. This may cause YouTube streams to not work correctly from time to time. Additionally, YouTube employs other safeguards that prevents unofficial libraries from accessing their service, such as temporary IP blocking, and requiring user authentication using official YouTube methods.
+Please note that YouTube is constantly changing and updating their service. The library, [youtube_explode_dart](https://github.com/Hexer10/youtube_explode_dart), used by Reverbio to access YouTube streams may not always be up to date with new changes made by YouTube. This may cause YouTube streams to not work correctly from time to time. Additionally, YouTube employs other safeguards that prevents unofficial libraries from accessing their service, such as temporary IP blocking, and requiring user authentication using official YouTube methods.
 
 Unfortunately there are no easy ways to get around these problems. Reverbio tries to work around these problems using public SSL proxies to route Reverbio traffic which causes stream resolution to be slow, but this is not an infallible solution. Public proxies are blocked by YouTube fairly quickly.
 
@@ -53,8 +53,8 @@ Best way to improve your ad-free streaming experience in Reverbio is to use Java
 - Track your favorite Songs, Albums, Artists and Playlists
 - Android Auto Support
 - (New) Import playlists from any music service using CSV files!
-- (Pre-Release) Select Android output device 
-- (Pre-Release) Select YouTube stream resolution timeout in case it takes longer than usual for YouTube-Explode API to get YouTube stream
+- (New) Select Android output device 
+- (New) Select YouTube stream resolution timeout in case it takes longer than usual for YouTube-Explode API to get YouTube stream
 
 <details>
 <summary>30 Supported Languages</summary>
