@@ -56,9 +56,15 @@ class NowPlayingPage extends StatefulWidget {
 class _NowPlayingPageState extends State<NowPlayingPage> {
   late ThemeData _theme;
   late bool _isLargeScreen;
+
+  @override
+  void deactivate() {
+    nowPlayingOpen.value = false;
+    super.deactivate();
+  }
+
   @override
   void dispose() {
-    nowPlayingOpen = false;
     super.dispose();
   }
 
@@ -79,12 +85,12 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(FluentIcons.arrow_down_24_filled),
+          icon: const Icon(FluentIcons.arrow_left_24_filled),
           iconSize: pageHeaderIconSize,
           splashColor: Colors.transparent,
           onPressed: () {
-            nowPlayingOpen = !nowPlayingOpen;
-            GoRouter.of(context).pop(context);
+            nowPlayingOpen.value = !nowPlayingOpen.value;
+            GoRouter.of(context).pop();
           },
         ),
         actions: [
@@ -187,7 +193,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   void _showVolumeSlider(BuildContext context) => showDialog(
     context: context,
-    builder: (BuildContext savecontext) {
+    builder: (_) {
       int _duelCommandment = audioHandler.volume.toInt();
       return StatefulBuilder(
         builder: (context, setState) {
@@ -215,8 +221,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                         icon: const Icon(FluentIcons.speaker_0_24_regular),
                       ),
                     ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.15,
+                    Expanded(
+                      //width: MediaQuery.of(context).size.width * 0.15,
                       child: Slider(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         value: _duelCommandment.toDouble(),

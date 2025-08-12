@@ -32,6 +32,7 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class BaseCard extends StatefulWidget {
@@ -88,8 +89,7 @@ class _BaseCardState extends State<BaseCard> {
 
   String? dataType;
   final borderRadius = 13.0;
-  late final likeSize =
-      widget.iconSize == null ? (widget.size * 0.20) : widget.iconSize;
+  late final likeSize = widget.size * 0.20;
   late final double artistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late ThemeData _theme;
@@ -155,29 +155,34 @@ class _BaseCardState extends State<BaseCard> {
             visible: value,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: widget.paddingValue),
-              child: GestureDetector(
-                onTap: widget.onPressed,
-                child: SizedBox(
-                  width: widget.size,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(borderRadius),
-                        clipBehavior: Clip.antiAlias,
-                        child: SizedBox(
-                          width: widget.size,
-                          height: widget.size,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(borderRadius),
-                              color: colorScheme.secondary,
-                            ),
-                            child: Stack(
-                              children: [
-                                if (mounted)
-                                  FutureBuilder(
+              child: SizedBox(
+                width: widget.size,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      clipBehavior: Clip.antiAlias,
+                      child: SizedBox(
+                        width: widget.size,
+                        height: widget.size,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(borderRadius),
+                            color: colorScheme.secondary,
+                          ),
+                          child: Stack(
+                            children: [
+                              if (mounted)
+                                GestureDetector(
+                                  onDoubleTapDown:
+                                      (details) => _toggleLike(
+                                        context,
+                                        details: details,
+                                      ),
+                                  onTap: widget.onPressed,
+                                  child: FutureBuilder(
                                     initialData:
                                         widget.loadingWidget != null
                                             ? SizedBox(
@@ -203,17 +208,16 @@ class _BaseCardState extends State<BaseCard> {
                                       return snapshot.data!;
                                     },
                                   ),
-                                if (widget.showLabel) _buildLabel(),
-                                if (widget.showLike) _buildLiked(),
-                              ],
-                            ),
+                                ),
+                              if (widget.showLabel) _buildLabel(),
+                              if (widget.showLike) _buildLiked(),
+                            ],
                           ),
                         ),
                       ),
-                      if (widget.showOverflowLabel)
-                        _buildOverflowLabel(context),
-                    ],
-                  ),
+                    ),
+                    if (widget.showOverflowLabel) _buildOverflowLabel(context),
+                  ],
                 ),
               ),
             ),
@@ -303,10 +307,8 @@ class _BaseCardState extends State<BaseCard> {
             ),
           ),
         Align(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            direction: Axis.vertical,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Icon(
                 widget.icon,
@@ -347,37 +349,43 @@ class _BaseCardState extends State<BaseCard> {
       builder: (context, value, child) {
         final liked =
             value ? FluentIcons.heart_12_filled : FluentIcons.heart_12_regular;
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 1),
-          child: Align(
-            alignment: Alignment.topRight,
-            child: Stack(
-              children: [
-                Transform.translate(
-                  offset: const Offset(5.5, 6.5),
-                  child: Icon(
+        final shadowOffset = -(likeSize / 18);
+        return Align(
+          alignment: Alignment.topRight,
+          child: Stack(
+            children: [
+              Transform.translate(
+                offset: Offset(
+                  shadowOffset + (shadowOffset * .5),
+                  shadowOffset,
+                ),
+                child: IconButton(
+                  onPressed: null,
+                  icon: Icon(
                     liked,
                     size: likeSize,
                     color: _theme.colorScheme.surface,
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _toggleLike(context),
-                  icon: Icon(liked, size: likeSize),
-                  color: _theme.colorScheme.primary,
-                  hoverColor: _theme.colorScheme.surface.withAlpha(128),
-                ),
-              ],
-            ),
+              ),
+              IconButton(
+                onPressed: () => _toggleLike(context),
+                icon: Icon(liked, size: likeSize),
+                color: _theme.colorScheme.primary,
+                hoverColor: _theme.colorScheme.surface.withAlpha(128),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  void _toggleLike(BuildContext context) async {
+  void _toggleLike(BuildContext context, {TapDownDetails? details}) async {
     final liked = await _updateLikeStatus();
     isLikedNotifier.value = liked;
+    if (details != null)
+      AnimatedHeart.show(context: context, details: details, like: liked);
   }
 
   Future<bool> _updateLikeStatus() async {

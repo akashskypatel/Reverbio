@@ -58,7 +58,7 @@ ThemeData? theme;
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
-bool nowPlayingOpen = false;
+final nowPlayingOpen = ValueNotifier(false);
 Map<String, dynamic> userGeolocation = {};
 
 const appLanguages = <String, String>{
@@ -237,12 +237,12 @@ class _ReverbioState extends State<Reverbio> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initialisation();
+  await initialization();
 
   runApp(const Reverbio());
 }
 
-Future<void> initialisation() async {
+Future<void> initialization() async {
   try {
     await Hive.initFlutter('reverbio');
 
@@ -257,14 +257,16 @@ Future<void> initialisation() async {
 
     audioHandler = await AudioService.init(
       builder: ReverbioAudioHandler.new,
-      config: const AudioServiceConfig(
+      config: AudioServiceConfig(
         androidNotificationChannelId: 'com.akashskypatel.reverbio',
         androidNotificationChannelName: 'Reverbio',
-        androidNotificationIcon: 'drawable/ic_launcher_foreground',
+        androidNotificationIcon: 'drawable/ic_notification',
         androidShowNotificationBadge: true,
+        androidNotificationOngoing: true,
+        notificationColor: theme?.colorScheme.primary ?? Colors.blue.shade900,
       ),
     );
-
+    audioDevice.value = await audioHandler.getCurrentAudioDevice();
     // Init clients
     if (clientsSetting.value.isNotEmpty) {
       final chosenClients = <YoutubeApiClient>[];
@@ -304,6 +306,7 @@ Future<void> initialisation() async {
 }
 
 void handleIncomingLink(Uri? uri) async {
+  final context = NavigationManager().context;
   if (uri != null && uri.scheme == 'reverbio' && uri.host == 'playlist') {
     try {
       if (uri.pathSegments[0] == 'custom') {
@@ -316,13 +319,13 @@ void handleIncomingLink(Uri? uri) async {
         if (playlist != null) {
           userCustomPlaylists.value = [...userCustomPlaylists.value, playlist];
           addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
-          showToast('${NavigationManager().context.l10n!.addedSuccess}!');
+          showToast(context.l10n!.addedSuccess);
         } else {
-          showToast('Invalid playlist data');
+          showToast(context.l10n!.invalidPlaylistData);
         }
       }
     } catch (e) {
-      showToast('Failed to load playlist');
+      showToast(context.l10n!.failedToLoadPlaylist);
     }
   }
 }

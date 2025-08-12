@@ -55,7 +55,6 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   bool isProcessing = true;
   final borderRadius = 13.0;
   late double playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
-  late bool isLargeScreen = MediaQuery.of(context).size.width > 480;
   late ThemeData _theme;
   int itemsNumber = recommendedCardsNumber;
   final Map<String, BaseCard> cards = {};
@@ -75,14 +74,13 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
-    isLargeScreen = MediaQuery.of(context).size.width > 480;
     playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
     return Column(
       children: [
         SectionHeader(title: widget.title),
         ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: playlistHeight + (isLargeScreen ? 44 : 60),
+            maxHeight: playlistHeight + (isLargeScreen() ? 44 : 60),
           ),
           child: FutureBuilder(
             future: widget.future,
@@ -98,7 +96,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
                     ? _buildErrorWidget(context)
                     : snapshot.connectionState == ConnectionState.waiting
                     ? _buildLoadingWidget()
-                    : isLargeScreen
+                    : isLargeScreen()
                     ? _buildLargeScreenScroller(context)
                     : _buildSmallScreenScroller(context);
               } catch (e, stackTrace) {

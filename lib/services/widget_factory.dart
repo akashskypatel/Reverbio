@@ -137,7 +137,10 @@ class WidgetFactory {
               ])
               : methodData?['methodName'],
     );
-    showToast('$pluginName - $label added to background queue.', context: context);
+    showToast(
+      '$pluginName - $label ${context.l10n!.addedBackgroundJob}',
+      context: context,
+    );
     if (context.mounted)
       if (setState != null)
         setState(() {
@@ -438,10 +441,14 @@ class WidgetFactory {
     required BuildContext context,
     Map? methodData,
   }) {
+    final settings =
+        PM.getUserSettings(pluginName).isEmpty
+            ? PM.getDefaultSettings(pluginName)
+            : PM.getUserSettings(pluginName);
     final defaultValue =
-        PM.getUserSettings(pluginName)[id] is String
-            ? PM.getUserSettings(pluginName)[id] == 'true'
-            : (PM.getUserSettings(pluginName)[id] ?? false);
+        settings[id] is String
+            ? settings[id] == 'true'
+            : (settings[id] ?? false);
     final thumbIcon =
         WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
           WidgetState.selected: Icon(
@@ -567,7 +574,11 @@ class WidgetFactory {
     Map? onTapOutsideData,
     Map? onEditingCompleteData,
   }) {
-    final defaultValue = PM.getUserSettings(pluginName)[id] ?? '';
+    final settings =
+        PM.getUserSettings(pluginName).isEmpty
+            ? PM.getDefaultSettings(pluginName)
+            : PM.getUserSettings(pluginName);
+    final defaultValue = settings[id] ?? '';
     final controller = TextEditingController(text: defaultValue as String);
     final focusNode = FocusNode();
     void Function(void Function())? _setState;
@@ -727,7 +738,11 @@ class WidgetFactory {
     required BuildContext context,
     Map? methodData,
   }) {
-    final defaultValue = PM.getUserSettings(pluginName)[id];
+    final settings =
+        PM.getUserSettings(pluginName).isEmpty
+            ? PM.getDefaultSettings(pluginName)
+            : PM.getUserSettings(pluginName);
+    final defaultValue = settings[id];
     final controller = TextEditingController(text: defaultValue as String);
     void Function(void Function())? _setState;
     void resetField() {

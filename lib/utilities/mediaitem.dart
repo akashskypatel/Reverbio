@@ -40,6 +40,7 @@ MediaItem mapToMediaItem(Map song) {
     album: song['album'] ?? '',
     artist: song['artist'] ?? '',
     title: song['title'] ?? '',
+    duration: Duration(seconds: song['duration'] ?? 0),
     artUri:
         imagePath.isNotEmpty
             ? (isFilePath(imagePath) && doesFileExist(imagePath)
@@ -47,6 +48,9 @@ MediaItem mapToMediaItem(Map song) {
                 : (isUrl(imagePath) ? Uri.parse(imagePath) : null))
             : null,
     extras: {
+      'android.media.metadata.DURATION': (song['duration'] ?? 0) * 1000,
+      'android.media.metadata.ART_URI': imagePath,
+      'android.media.metadata.ALBUM_ART_URI': imagePath,
       'artistId': song['artistId'] ?? '',
       'lowResImage': song['lowResImage'] ?? '',
       'ytid': song['ytid'] ?? '',
@@ -63,6 +67,7 @@ Map<String, dynamic> songToMediaExtras(Map song) => {
   'album': '',
   'artist': song['artist'].toString().trim(),
   'title': song['title'].toString(),
+  'duration': song['duration'],
   'artUri':
       song['isOffline'] ?? false
           ? Uri.file(song['highResImage'].toString())

@@ -27,6 +27,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:open_settings_plus/core/open_settings_plus.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -39,6 +40,7 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_colors.dart';
 import 'package:reverbio/style/app_themes.dart';
+import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -47,6 +49,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
+import 'package:reverbio/widgets/playlist_import.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -124,12 +127,43 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
         ),
         CustomBar(
+          tileName: context.l10n!.streamRequestTimeout,
+          tileIcon: FluentIcons.timer_10_24_filled,
+          onTap:
+              () => _showTimeoutThresholdPicker(
+                context,
+                activatedColor,
+                inactivatedColor,
+              ),
+        ),
+        if (Platform.isAndroid)
+          CustomBar(
+            tileName: context.l10n!.audioDevice,
+            tileIcon: FluentIcons.speaker_settings_24_filled,
+            onTap:
+                () => _showAudioDevicePicker(
+                  context,
+                  activatedColor,
+                  inactivatedColor,
+                ),
+          ),
+        if (Platform.isAndroid)
+          CustomBar(
+            tileName: context.l10n!.androidAuto,
+            tileIcon: ReverbioIcons.android_auto_monochrome,
+            onTap: () async {
+              await _showAndroidAutoMessage(context);
+            },
+          ),
+        /* //let yt-explode manage client for best experience
+        CustomBar(
           tileName: context.l10n!.client,
           tileIcon: FluentIcons.device_meeting_room_24_filled,
           onTap:
               () =>
                   _showClientPicker(context, activatedColor, inactivatedColor),
         ),
+        */
         CustomBar(
           tileName: context.l10n!.language,
           tileIcon: FluentIcons.translate_24_filled,
@@ -345,7 +379,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         CustomBar(
           tileName: context.l10n!.clearRecentlyPlayed,
-          tileIcon: FluentIcons.receipt_play_24_filled,
+          tileIcon: FluentIcons.text_grammar_dismiss_24_filled,
           onTap: () => _showClearRecentlyPlayedDialog(context),
         ),
         CustomBar(
@@ -360,6 +394,11 @@ class _SettingsPageState extends State<SettingsPage> {
             final response = await restoreData(context);
             showToast(response);
           },
+        ),
+        CustomBar(
+          tileName: context.l10n!.importPlaylists,
+          tileIcon: FluentIcons.table_add_24_filled,
+          onTap: () => showPlaylistImporter(context),
         ),
         if (!isFdroidBuild)
           FutureBuilder(
@@ -459,6 +498,73 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _showAndroidAutoMessage(
+    BuildContext context,
+  ) async => showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(context.l10n!.androidAuto),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Follow these steps to enable Android Auto for Reverbio:',
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('1. Go to settings'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('2. Tap on Connection Preferences'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('3. Tap on Android Auto'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '4. Scroll down and Tap Version several times until you are asked to enable developer mode',
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('5. Tap on 3 dots on the top right corner'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('6. Tap on Developer Settings'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('7. Scroll down and enable "Unknown sources"'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              GoRouter.of(context).pop();
+            },
+            child: Text(context.l10n!.cancel.toUpperCase()),
+          ),
+          TextButton(
+            onPressed: () async {
+              const settings = OpenSettingsPlusAndroid();
+              await settings.bluetooth();
+            },
+            child: Text(context.l10n!.settings.toUpperCase()),
+          ),
+        ],
+      );
+    },
+  );
+
   void _showAccentColorPicker(BuildContext context) {
     showCustomBottomSheet(
       context,
@@ -495,7 +601,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           : color,
                 ),
                 if (isSelected)
-                  Icon(Icons.check, color: _theme.colorScheme.onPrimary),
+                  Icon(
+                    FluentIcons.checkmark_24_filled,
+                    color: _theme.colorScheme.onPrimary,
+                  ),
               ],
             ),
           );
@@ -533,6 +642,144 @@ class _SettingsPageState extends State<SettingsPage> {
             },
             themeMode == mode ? activatedColor : inactivatedColor,
             borderRadius: borderRadius,
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAudioDevicePicker(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return FutureBuilder(
+            future: audioHandler.getConnectedAudioDevices(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting)
+                return const Spinner();
+              if (!snapshot.hasData ||
+                  snapshot.hasError ||
+                  snapshot.data == null)
+                return const Icon(FluentIcons.error_circle_24_filled);
+              else {
+                final devices =
+                    snapshot.data!
+                        .where(
+                          (e) =>
+                              (androidDeviceTypes[e['type']]?['include'] ??
+                                      false)
+                                  as bool,
+                        )
+                        .toList();
+                final deviceData =
+                    devices.map((e) {
+                        final category = getAudioDeviceCategory(e['category']);
+                        return {
+                          ...(e as Map),
+                          'icon': category['icon'],
+                          'order': category['order'],
+                          'localization': category['localization'],
+                        };
+                      }).toList()
+                      ..sort((a, b) => a['order'].compareTo(b['order']));
+                devices.add({
+                  'id': null,
+                  'name': 'auto',
+                  'type': null,
+                  'address': null,
+                  'category': null,
+                });
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  padding: commonListViewBottomPadding,
+                  itemCount: devices.length,
+                  itemBuilder: (context, index) {
+                    final isSelected =
+                        audioDevice.value['id'] == devices[index]['id'];
+                    final borderRadius = getItemBorderRadius(
+                      index,
+                      devices.length,
+                    );
+                    return CustomBar(
+                      tileName:
+                          devices[index]['name'] == 'auto'
+                              ? context.l10n!.selectAutomatically
+                              : '${deviceData[index]['name']} - ${deviceData[index]['localization']} (${androidDeviceTypes[deviceData[index]['type']]?['name']})',
+                      tileIcon:
+                          devices[index]['name'] == 'auto'
+                              ? FluentIcons.flash_auto_24_filled
+                              : FluentIcons.speaker_box_24_filled,
+                      onTap: () {
+                        if (context.mounted)
+                          setState(() {
+                            audioDevice.value = devices[index];
+                            audioHandler.setAudioDevice(devices[index]);
+                          });
+                        addOrUpdateData(
+                          'settings',
+                          'audioDevice',
+                          audioDevice.value,
+                        );
+                      },
+                      backgroundColor:
+                          isSelected ? activatedColor : inactivatedColor,
+                      borderRadius: borderRadius,
+                    );
+                  },
+                );
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showTimeoutThresholdPicker(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    final availableValues = [5, 10, 15, 20, 25, 30];
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
+            padding: commonListViewBottomPadding,
+            itemCount: availableValues.length,
+            itemBuilder: (context, index) {
+              final threshold = availableValues[index];
+              final isSelected = streamRequestTimeout.value == threshold;
+              final borderRadius = getItemBorderRadius(
+                index,
+                availableValues.length,
+              );
+              return BottomSheetBar(
+                threshold.toString(),
+                onTap: () {
+                  if (context.mounted)
+                    setState(() {
+                      streamRequestTimeout.value = threshold;
+                    });
+                  addOrUpdateData(
+                    'settings',
+                    'streamRequestTimeout',
+                    streamRequestTimeout.value,
+                  );
+                },
+                isSelected ? activatedColor : inactivatedColor,
+                borderRadius: borderRadius,
+              );
+            },
           );
         },
       ),
@@ -663,7 +910,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   await _reloadPlugins(PM.pluginsData[index]);
                                   setState(() {});
                                   showToast(
-                                    '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) updated!',
+                                    '${PM.pluginsData[index]['name']} (${PM.pluginsData[index]['version']}) ${context.l10n!.updated}!',
                                   );
                                 },
                                 icon: const Icon(
@@ -1169,7 +1416,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ) ??
         false;
     if (shouldSave) {
-      NavigationManager.router.goNamed('settings');
       showToast(context.l10n!.restartAppMsg);
       addOrUpdateData('settings', 'offlineMode', value);
       offlineMode.value = value;
@@ -1180,7 +1426,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> exitApp() async {
     try {
       await audioHandler.close();
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (isMobilePlatform()) {
         await SystemNavigator.pop();
       } else {
         exit(0);

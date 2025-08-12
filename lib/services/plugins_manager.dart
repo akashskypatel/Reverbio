@@ -30,6 +30,7 @@ import 'package:flutter_js/extensions/fetch.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -85,8 +86,8 @@ class PluginsManager {
   }
 
   static Future<bool> syncPlugin(Map plugin) async {
+    final context = NavigationManager().context;
     if (_isProcessingNotifiers[plugin['name']]!.value) {
-      final context = NavigationManager().context;
       showToast(
         '${plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
       );
@@ -101,6 +102,12 @@ class PluginsManager {
           settings['source'] ?? plugin['source'] ?? plugin['originalSource'];
       if (source != null) {
         if (isFilePath(source)) {
+          if (Platform.isAndroid || Platform.isIOS) {
+            showToast(
+              '${context.l10n!.cannotReloadLocalPlugin}: ${plugin['name']}',
+            );
+            return false;
+          }
           if (doesFileExist(source)) {
             pluginData = await getLocalPlugin(path: source);
           }
@@ -419,18 +426,17 @@ class PluginsManager {
   static Future<Map> getLocalPlugin({String? path}) async {
     try {
       String jsContent = '';
-      String? filePath;
-      filePath =
-          path ??
-          (await FilePicker.platform.pickFiles(
-            type: FileType.custom,
-            allowedExtensions: ['js'],
-          ))?.files.single.path;
-      if (filePath != null) {
-        jsContent = await File(filePath).readAsString();
-        return getPluginData(jsContent, filePath);
+      if (path == null || path.isEmpty) {
+        path =
+            (await FilePicker.platform.pickFiles(
+              type: FileType.custom,
+              allowedExtensions: ['js'],
+            ))?.files.single.path;
+        if (path == null || path.isEmpty) return {};
       }
-      return {};
+      jsContent = await File(path).readAsString();
+      unawaited(clearFilePickerTempFiles());
+      return getPluginData(jsContent, path);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -540,7 +546,7 @@ class PluginsManager {
           script: script,
           methodName: 'pluginVersion',
         );
-        final manifest = _extractManifest(script);
+        final manifest = jsonDecode(jsonEncode(_extractManifest(script)));
         if (name != null &&
             !name.isError &&
             version != null &&
@@ -552,8 +558,8 @@ class PluginsManager {
             'manifest': manifest,
             'originalSource': source,
             'source': manifest['settings']['source'] ?? source,
-            'defaultSettings': manifest['settings'],
-            'userSettings': manifest['settings'],
+            'defaultSettings': jsonDecode(jsonEncode(manifest['settings'])),
+            'userSettings': jsonDecode(jsonEncode(manifest['settings'])),
           };
           return data;
         }
@@ -988,7 +994,6 @@ class PluginsManager {
     String key,
     dynamic setting,
   ) {
-    //TODO fix updating settings
     try {
       final settings = getUserSettings(pluginName);
       settings[key] = setting;
@@ -1026,16 +1031,11 @@ class PluginsManager {
 
   static void restSettings(String pluginName) {
     try {
-      final (result, _) = _executeMethod(
-        pluginName: pluginName,
-        methodName: 'pluginSettings',
-      );
-      if (result == null || result.isError) return;
-      final settings = getDefaultSettings(pluginName);
+      final defaultSettings = getDefaultSettings(pluginName);
       final userSettings = getUserSettings(pluginName);
-      if (userSettings != null && settings != null) {
-        (userSettings as Map).clear();
-        userSettings.addAll(settings);
+      if (userSettings != null && defaultSettings != null) {
+        userSettings.clear();
+        userSettings.addAll(defaultSettings);
       }
       addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
     } catch (e, stackTrace) {
@@ -1053,13 +1053,6 @@ class PluginsManager {
     List<dynamic>? args,
   }) {
     try {
-      if (_isProcessingNotifiers[pluginName]!.value) {
-        final context = NavigationManager().context;
-        showToast(
-          '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
-        );
-        return;
-      }
       if (!_plugins.map((e) => e['name']).contains(pluginName)) return null;
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
@@ -1091,13 +1084,6 @@ class PluginsManager {
     Duration? timeout,
   }) async {
     try {
-      if (_isProcessingNotifiers[pluginName]!.value) {
-        final context = NavigationManager().context;
-        showToast(
-          '${context.l10n!.cannotRunAction} ${context.l10n!.waitForJob}',
-        );
-        return;
-      }
       if (!_plugins.map((e) => e['name']).contains(pluginName)) return null;
       methodName = methodName.trim();
       final methodCall = buildMethodCall(methodName, args);
@@ -1203,7 +1189,7 @@ class PluginsManager {
 
   static Future<void> getSongUrl(Map song, Function fallback) async {
     if (!enablePlugins.value || plugins.isEmpty) return await fallback(song);
-    const timeout = Duration(seconds: 5);
+    const timeout = Duration(seconds: 10);
     final allFutures = <Future>[];
     void onSuccess(dynamic result) {
       var songUrl = '';

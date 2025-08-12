@@ -106,3 +106,18 @@ final prepareNextSong = ValueNotifier<bool>(
 final useProxies = ValueNotifier<bool>(
   Hive.box('settings').get('useProxies', defaultValue: true),
 );
+
+final autoCacheOffline = ValueNotifier<bool>(
+  Hive.box('settings').get('autoCacheOffline', defaultValue: false),
+);
+
+final postUpdateRun =
+    Hive.box('settings').get('postUpdateRun', defaultValue: {}) as Map;
+
+final streamRequestTimeout = ValueNotifier<int>(
+  Hive.box('settings').get('streamRequestTimeout', defaultValue: 10),
+);
+
+final audioDevice = ValueNotifier<dynamic>(
+  Hive.box('settings').get('audioDevice', defaultValue: null),
+);

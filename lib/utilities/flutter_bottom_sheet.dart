@@ -28,51 +28,50 @@ void showCustomBottomSheet(
   ValueNotifier<bool>? canCloseOnTapOutside,
 }) {
   final size = MediaQuery.sizeOf(context);
-
-  Scaffold.of(context).showBottomSheet(
-    enableDrag: true,
-    (ctx) => TapRegion(
-      onTapOutside: (event) {
-        if (canCloseOnTapOutside == null || canCloseOnTapOutside.value)
-          GoRouter.of(ctx).pop(ctx);
-      },
-      child: Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(10),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
+  showModalBottomSheet(
+    isScrollControlled: true,
+    context: context,
+    builder: (context) {
+      return PopScope(
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(10),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+              ),
             ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
-                child: GestureDetector(
-                  onTap: () => GoRouter.of(ctx).pop(ctx),
-                  child: Container(
-                    width: 60,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Theme.of(ctx).colorScheme.onSecondaryContainer,
-                      borderRadius: BorderRadius.circular(10),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
+                  child: GestureDetector(
+                    onTap: () => GoRouter.of(context).pop(),
+                    child: Container(
+                      width: 60,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: size.height * 0.65),
-                child: SingleChildScrollView(child: content),
-              ),
-            ],
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: size.height * 0.65),
+                  child: SingleChildScrollView(child: content),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }

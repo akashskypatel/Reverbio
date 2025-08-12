@@ -1,7 +1,32 @@
+/*
+ *     Copyright (C) 2025 Akash Patel
+ *
+ *     Reverbio is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     Reverbio is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/akashskypatel/Reverbio
+ */
+
 import 'dart:async';
 
+import 'package:csv/csv.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -564,4 +589,116 @@ bool checkPlaylist(dynamic playlist, dynamic otherPlaylist) {
   parseEntityId(playlist);
   parseEntityId(otherPlaylist);
   return checkEntityId(playlist['id'], otherPlaylist['id']);
+}
+
+String _standardizeFieldName(String originalName) {
+  const _fieldMappings = {
+    'Arist(s) Name': 'artist',
+    'Track Name': 'title',
+    'Album Name': 'album',
+    'Spotify Track Id': 'spotifyId',
+    'SpotifyID': 'spotifyId',
+    'Track URI': 'spotifyId',
+    'Artist Name(s)': 'artist',
+    'artist': 'artist',
+    'arist': 'artist',
+    'song': 'title',
+    'track': 'title',
+    'album': 'album',
+    'duration': 'duration',
+    'length': 'duration',
+    'time': 'duration',
+  };
+  final lowerName = originalName
+      .toLowerCase()
+      .trim()
+      .replaceAll(r'\s+', ' ')
+      .trim()
+      .replaceAll(' ', '_');
+
+  if (_fieldMappings.containsKey(originalName)) {
+    return _fieldMappings[originalName] ?? originalName;
+  }
+
+  if (_fieldMappings.containsKey(lowerName)) {
+    return _fieldMappings[lowerName] ?? lowerName;
+  }
+
+  return lowerName;
+}
+
+Future<bool> uploadCsvPlaylist(BuildContext context) async {
+  int fileCount = 0;
+  int count = 0;
+  try {
+    final _dir = await getApplicationSupportDirectory();
+    final _importsDirPath = '${_dir.path}/imports';
+    final files =
+        (await FilePicker.platform.pickFiles(
+          allowMultiple: true,
+          type: FileType.custom,
+          allowedExtensions: ['csv'],
+        ))?.files;
+    if (files == null || files.isEmpty) return false;
+    fileCount = files.length;
+    for (final f in files) {
+      if (f.path == null) continue;
+      final file = await copyFileToDir(f.path!, _importsDirPath);
+      final rows = const CsvToListConverter(eol: '\n').convert(
+        (await file.readAsString())
+            .replaceAll('\r\n', '\n')
+            .replaceAll('\r', '\n'),
+      );
+      final headers =
+          rows.first.map((e) => _standardizeFieldName(e.toString())).toList();
+      if (!headers.contains('artist') || !headers.contains('title')) {
+        logger.log(
+          'File does not contain required fields Artist, Song Title, and ISRC (if possible): ${file.path} - $headers',
+          null,
+          null,
+        );
+        continue;
+      }
+      final list = [];
+      for (final row in rows.skip(1)) {
+        int i = 0;
+        final map = row.fold(<String, dynamic>{}, (map, e) {
+          if (headers[i] == 'duration')
+            map[headers[i]] =
+                parseTimeStringToSeconds(e.toString().trim()) ?? 0;
+          else if (headers[i] == 'duration_(ms)')
+            map[headers[i]] = (int.tryParse(e.toString().trim()) ?? 0) ~/ 1000;
+          else
+            map[headers[i]] = e.toString().trim();
+          i++;
+          return map;
+        });
+        list.add(map);
+      }
+      final baseFileName = basenameWithoutExtension(file.path);
+      final playlistName =
+          findPlaylistByName(baseFileName) == null
+              ? baseFileName
+              : incrementFileName(baseFileName);
+      createCustomPlaylist(
+        '$playlistName (${context.l10n!.imported})',
+        context,
+        songList: list,
+      );
+      count++;
+    }
+    showToast(
+      '${context.l10n!.addedPlaylistFiles}: $count/$fileCount',
+      context: context,
+    );
+    unawaited(clearFilePickerTempFiles());
+  } catch (e, stackTrace) {
+    showToast(
+      '${context.l10n!.addedSomePlaylistFiles}: $count/$fileCount',
+      context: context,
+    );
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return false;
+  }
+  return true;
 }

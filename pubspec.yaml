@@ -5,7 +5,7 @@ repository: https://github.com/akashskypatel/Reverbio
 issue_tracker: https://github.com/akashskypatel/Reverbio/issues
 
 publish_to: 'none'
-version: 1.2.1 # run update.sh after changing the version
+version: 1.4.4 # run update.sh after changing the version
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -14,7 +14,10 @@ environment:
 dependencies:
   app_links: ^6.4.0
   audio_service: ^0.18.17
+  audio_session: ^0.2.2
   cached_network_image: ^3.4.1
+  crypto: ^3.0.6
+  csv: ^6.0.0
   discogs_api_client: ^0.1.6
   dynamic_color: ^1.7.0
   file_picker: ^10.1.2
@@ -36,6 +39,7 @@ dependencies:
   media_kit: ^1.1.11
   media_kit_libs_audio: ^1.0.5
   musicbrainz_api_client: ^0.1.8
+  open_settings_plus: ^0.4.0
   path: ^1.9.1
   path_provider: ^2.1.5
   rxdart: ^0.28.0
@@ -58,16 +62,22 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/licenses/
+    - assets/images/
+    - assets/fonts/
+    - assets/icons/
     - .env
 
   fonts:
+    - family: ReverbioIcons
+      fonts:
+        - asset: assets/icons/reverbio_icons/fonts/ReverbioIcons.ttf
     - family: paytoneOne
       fonts:
-        - asset: fonts/paytone/PaytoneOne-Regular.ttf
+        - asset: assets/fonts/paytone/PaytoneOne-Regular.ttf
     - family: montserrat
       fonts:
-        - asset: fonts/montserrat/Montserrat-VariableFont_wght.ttf
-        - asset: fonts/montserrat/Montserrat-Italic-VariableFont_wght.ttf
+        - asset: assets/fonts/montserrat/Montserrat-VariableFont_wght.ttf
+        - asset: assets/fonts/montserrat/Montserrat-Italic-VariableFont_wght.ttf
           style: italic
 
 flutter_native_splash:
@@ -85,7 +95,12 @@ flutter_launcher_icons:
   adaptive_icon_background: '#191919'
   adaptive_icon_foreground: 'assets/images/ic_launcher_foreground.png'
   adaptive_icon_round: 'assets/images/ic_launcher_round.png'
-  adaptive_icon_monochrome: 'assets/images/ic_launcher_foreground.png'
+  adaptive_icon_monochrome: 'assets/images/ic_launcher_monochrome.png'
+  android_notification_icon : 'assets/images/ic_notification.png'
   image_path: 'assets/images/ic_launcher.png'
+  windows:
+    generate: true
+    image_path: "assets/images/ic_splash.png"
+    icon_size: 256 # min:48, max:256, default: 48
 
 flutter_lints: ^5.0.0

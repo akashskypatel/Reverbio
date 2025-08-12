@@ -13,7 +13,9 @@ Please delete options that are not relevant.
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] This change requires a documentation update
 
-# Testing Checklist
+(Copy everything below this including below header to a new comment per platform tested. Also add a separate comment with testing checklist for any new features.)
+
+# Testing Checklist - Platform: <platform>
 
 ## Application
 
@@ -30,14 +32,66 @@ Complete or verify all features on Home Page.
 - [ ] Suggested Artists loads with Image and Labels successfully.
 - [ ] Recommended for you loads with Image and Labels successfully.
 - [ ] Refresh Home Page completes successfully.
-- [ ] Liking artist, playlist, and song completes successfully.
-- [ ] Recommended for you toolbox opens and closes successfully.
-- [ ] Recommended for you songs can be played successfully (if stream found).
+- [ ] Liking artist, playlist, and song completes successfully. (Large screen/Landscape only)
+- [ ] Navigating to an playlist page to confirm artwork, playlist name and song list loads.
+- [ ] Navigating to an artist page and confirm functionality below.
+
+## Artist Page
+
+Complete or verify all features on Artist Page functions.
+
+- [ ] Navigating to an artist opens artist details page with artwork and artist name.
+- [ ] Artist page loads with genres, albums, other releases, and singles.
+- [ ] Artist can be liked and disliked successfully.
+- [ ] Navigating to an album page and an other release page to make sure they load as described below.
+
+## Album Page
+
+Complete or verify all features on Album Page functions.
+
+- [ ] Navigating to an album opens album details page.
+- [ ] Album can be liked and disliked successfully.
+- [ ] album page loads with Album artwork, name, song count and song list.
+
+## Song List component
+
+Complete or verify all features on Song list component functions.
+
+- [ ] Song list loads with song artwork, name, artist name, and duration.
+- [ ] Toolbox opens and closes successfully.
+- [ ] Songs can be played successfully (if stream found).
 - [ ] If song stream found, can be opened in youtube successfully.
-- [ ] Recommended for you songs can be queued, played, shuffled, and sorted successfully.
-- [ ] A Recommended for you Song can be liked, added to playlist, added to queue, and added to offline successfully.
-- [ ] A Recommended for you Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
+- [ ] Songs can be queued, played, shuffled, and sorted successfully.
+- [ ] Song can be liked, added to playlist, added to queue, and added to offline successfully.
+- [ ] Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
 - [ ] Double tapping a song likes/dislikes a song.
+
+## Android Auto (Android Only)
+
+- [ ] Song Name, artist, artwork, position, duration and controls display correctly
+- [ ] Verify controls work as expected
+
+## Now Playing Page
+
+Complete or verify all features on Now Playing Page.
+
+- [ ] Confirm now playing page shows artwork, controls, and queue (if on large screen mode).
+- [ ] Confirm tapping on artwork shows lyrics (if available for song).
+- [ ] Confirm tapping on artist name opens artist page.
+- [ ] Confirm song controls work.
+- [ ] Confirm tapping on like button likes the song.
+
+## Mini-player
+
+Complete or verify all features on Mini-player.
+
+- [ ] Confirm volume changes work.
+- [ ] Confirm song playback slider works.
+- [ ] Confirm song playback controls work:- play, pause, stop, next, previous.
+- [ ] Confirm tapping on like button likes the song.
+- [ ] Confirm tapping on mini-player artist name open artist page.
+- [ ] Confirm tapping on mini-player blank space or song name opens Now Playing page.
+- [ ] Confirm closing mini-player works.
 
 ## Search page
 
@@ -48,19 +102,15 @@ Complete or verify all features on Search Page.
 - [ ] Clicking on search suggestions shows search results successfully.
 - [ ] Search result pages can successfully be iterated up and down for all search entities.
 - [ ] Search result entities can be liked/disliked successfully.
-- [ ] Search result songs can be played successfully (if stream found).
-- [ ] If song stream found, can be opened in youtube successfully.
-- [ ] Song results can be queued, played, shuffled, and sorted successfully.
-- [ ] A Song result can be liked, added to playlist, added to queue, and added to offline successfully.
-- [ ] A Song result can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
-- [ ] Double tapping a song likes/dislikes a song.
 
 ## Library page
 
 Complete or verify all features on Library Page.
 
 - [ ] Add a custom playlist using YouTube link.
-- [ ] Add a local custom playlist.
+- [ ] Add a local custom playlist without image.
+- [ ] Add a local custom playlist with image.
+- [ ] Add a imported playlist from csv file.
 - [ ] Confirm liked playlist from home page shows under liked playlists.
 - [ ] Search for playlist in library and clear searched filter.
 - [ ] Remove liked playlist.
@@ -84,7 +134,7 @@ Complete or verify all features on Liked Songs Page.
 ## Liked Artists page
 
 Complete or verify all features on Liked Artists Page.
-
+ 
 - [ ] Confirm liked Artists show in the list.
 - [ ] Confirm genres for liked artists show in the list.
 - [ ] Confirm searching for genre filters genre list.
@@ -122,41 +172,21 @@ Complete or verify all features on Song Queue Page.
 - [ ] Confirm queued songs can be sorted, shuffled, and played.
 - [ ] Confirm queued songs can be cleared.
 
-## Mini-player
-
-Complete or verify all features on Mini-player.
-
-- [ ] Confirm volume changes work.
-- [ ] Confirm song playback slider works.
-- [ ] Confirm song playback controls work:- play, pause, stop, next, previous.
-- [ ] Confirm tapping on like button likes the song.
-- [ ] Confirm closing mini-player works.
-- [ ] Confirm tapping on mini-player artist name open artist page.
-- [ ] Confirm tapping on mini-player blank space or song name opens Now Playing page.
-
-## Now Playing Page
-
-Complete or verify all features on Now Playing Page.
-
-- [ ] Confirm now playing page shows artwork, controls, and queue (if on large screen mode).
-- [ ] Confirm tapping on artwork shows lyrics (if available for song).
-- [ ] Confirm tapping on artist name opens artist page.
-- [ ] Confirm song controls work.
-- [ ] Confirm tapping on like button likes the song.
-
 ## Settings Page
 
 Complete or verify all features on Settings Page.
 
 - [ ] Confirm Accent Color changes work.
 - [ ] Confirm Theme Mode changes work.
-- [ ] Confirm Client changes work.
+- [ ] Confirm Stream request timeout work.
+- [ ] Confirm Audio output device selection works. (Android only)
 - [ ] Confirm Language changes work.
 - [ ] Confirm Audio Quality changes work.
-- [ ] Confirm Dynamic Accent Color changes work.
+- [ ] Confirm Dynamic Accent Color changes work. (Android only)
 - [ ] Confirm Pure black theme changes work.
-- [ ] Confirm Predictive Black changes work.
+- [ ] Confirm Predictive Black changes work. (Android only)
 - [ ] Confirm Offline Mode changes work.
+- [ ] Confirm enabling plugins works.
 - [ ] Confirm Skip Sponsor Segment changes work.
 - [ ] Confirm Skip non-music segment changes work.
 - [ ] Confirm prepare next song works.
@@ -191,7 +221,7 @@ Complete or verify all features for Plugins
 - [ ] Verify plugins can be enables successfully
 - [ ] Verify plugin bottom sheet opens when plugins are enabled
 - [ ] Verify a plugin can be added (use template plugin under /app_plugins/src/template.js)
-- [ ] Verify plugin can be reloaded individually and in batch
+- [ ] Verify plugin can be reloaded individually and in batch. (change plugin version in template plugin to check)
 - [ ] Verify plugin can be deleted
 - [ ] Verify plugin settings page opens when tapping on individual plugin under plugin list
 - [ ] Verify all plugin settings widgets load correctly with default values as defined in template.js manifest

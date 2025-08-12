@@ -3,6 +3,8 @@
     package="com.akashskypatel.reverbio">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"  />
     <!-- Queries for Android 11+ -->
@@ -29,10 +31,11 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         android:extractNativeLibs="true"
-        tools:replace="android:extractNativeLibs">
+        tools:replace="android:extractNativeLibs"
+        android:appCategory="audio" >
         <!-- AudioServiceActivity -->
         <activity
-            android:name="com.ryanheise.audioservice.AudioServiceActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:allowCrossUidActivitySwitchFromBelow="false"
@@ -41,7 +44,6 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
@@ -73,10 +75,17 @@
         <service android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="true"
-            tools:ignore="Instantiatable">
+            tools:ignore="Instantiatable"
+            android:label="@string/my_app_name"
+            android:icon="@mipmap/ic_launcher">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
+                <action android:name="androidx.car.app.CarAppService"/>
+                <category android:name="androidx.car.app.category.MEDIA"/>
             </intent-filter>
+            <meta-data
+                android:name="android.media.notification.icon"
+                android:resource="@mipmap/ic_notification" />
         </service>
         <!-- MediaButtonReceiver -->
         <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
@@ -86,8 +95,19 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
-
         <meta-data android:name="com.google.android.gms.car.application"
-          android:resource="@xml/automotive_app_desc"/>
+            android:resource="@xml/automotive_app_desc"/>
+        <meta-data
+            android:name="com.google.android.gms.car.media"
+            android:value="true" />
+        <meta-data
+            android:name="com.google.android.gms.car.notification.SmallIcon"
+            android:resource="@mipmap/ic_notification" />
+        <meta-data
+            android:name="android.media.browseable"
+            android:value="true" />
+        <meta-data
+            android:name="androidx.car.app.TintableAttributionIcon"
+            android:resource="@drawable/ic_status_icon" />
     </application>
 </manifest>

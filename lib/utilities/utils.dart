@@ -1,8 +1,31 @@
+/*
+ *     Copyright (C) 2025 Akash Patel
+ *
+ *     Reverbio is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     Reverbio is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/akashskypatel/Reverbio
+ */
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
@@ -10,9 +33,118 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
+const androidDeviceTypes = {
+  19: {'id': 'TYPE_AUX_LINE', 'name': 'AUX Line', 'include': true},
+  30: {'id': 'TYPE_BLE_BROADCAST', 'name': 'BLE Broadcast', 'include': true},
+  26: {'id': 'TYPE_BLE_HEADSET', 'name': 'BLE Headset', 'include': true},
+  27: {'id': 'TYPE_BLE_SPEAKER', 'name': 'BLE Speaker', 'include': true},
+  8: {'id': 'TYPE_BLUETOOTH_A2DP', 'name': 'Bluetooth A2DP', 'include': true},
+  7: {'id': 'TYPE_BLUETOOTH_SCO', 'name': 'Bluetooth SCO', 'include': true},
+  1: {'id': 'TYPE_BUILTIN_EARPIECE', 'name': 'Built-in Earpiece', 'include': false},
+  15: {'id': 'TYPE_BUILTIN_MIC', 'name': 'Built-in Mic', 'include': false},
+  2: {'id': 'TYPE_BUILTIN_SPEAKER', 'name': 'Built-in Speaker', 'include': true},
+  24: {'id': 'TYPE_BUILTIN_SPEAKER_SAFE', 'name': 'Built-in Speaker Safe', 'include': false},
+  21: {'id': 'TYPE_BUS', 'name': 'BUS', 'include': true},
+  13: {'id': 'TYPE_DOCK', 'name': 'Dock', 'include': true},
+  31: {'id': 'TYPE_DOCK_ANALOG', 'name': 'Dock Analog', 'include': true},
+  14: {'id': 'TYPE_FM', 'name': 'FM', 'include': true},
+  16: {'id': 'TYPE_FM_TUNER', 'name': 'FM Tuner', 'include': true},
+  9: {'id': 'TYPE_HDMI', 'name': 'HDMI', 'include': true},
+  10: {'id': 'TYPE_HDMI_ARC', 'name': 'HDMI ARC', 'include': true},
+  29: {'id': 'TYPE_HDMI_EARC', 'name': 'HDMI E-ARC', 'include': true},
+  23: {'id': 'TYPE_HEARING_AID', 'name': 'Hearing Aid', 'include': true},
+  20: {'id': 'TYPE_IP', 'name': 'IP', 'include': true},
+  5: {'id': 'TYPE_LINE_ANALOG', 'name': 'Line Analog', 'include': true},
+  6: {'id': 'TYPE_LINE_DIGITAL', 'name': 'Line Digital', 'include': true},
+  32: {'id': 'TYPE_MULTICHANNEL_GROUP', 'name': 'Multi-channel Group', 'include': true},
+  25: {'id': 'TYPE_REMOTE_SUBMIX', 'name': 'Remote SubMix', 'include': true},
+  18: {'id': 'TYPE_TELEPHONY', 'name': 'Telephony', 'include': false},
+  17: {'id': 'TYPE_TV_TUNER', 'name': 'TV Tuner', 'include': true},
+  0: {'id': 'TYPE_UNKNOWN', 'name': 'Unknown', 'include': true},
+  12: {'id': 'TYPE_USB_ACCESSORY', 'name': 'USB Accessory', 'include': true},
+  11: {'id': 'TYPE_USB_DEVICE', 'name': 'USB Device', 'include': true},
+  22: {'id': 'TYPE_USB_HEADSET', 'name': 'USB Headset', 'include': true},
+  4: {'id': 'TYPE_WIRED_HEADPHONES', 'name': 'Wired Headphones', 'include': true},
+  3: {'id': 'TYPE_WIRED_HEADSET', 'name': 'Wired Headset', 'include': true},
+};
+
+Map getAudioDeviceCategory(String category, {BuildContext? context}) {
+  context = context ?? NavigationManager().context;
+  final categoryOrder = <String, dynamic>{
+    'Android Auto': {
+      'order': 1,
+      'localization': context.l10n!.androidAuto,
+      'icon': ReverbioIcons.android_auto_monochrome,
+    },
+    'Car Audio': {
+      'order': 2,
+      'localization': context.l10n!.carAudio,
+      'icon': FluentIcons.vehicle_car_24_filled,
+    },
+    'Bluetooth': {
+      'order': 3,
+      'localization': context.l10n!.bluetooth,
+      'icon': FluentIcons.bluetooth_24_filled,
+    },
+    'AUX': {
+      'order': 4,
+      'localization': context.l10n!.aux,
+      'icon': FluentIcons.connector_24_filled,
+    },
+    'Radio': {
+      'order': 5,
+      'localization': context.l10n!.radio,
+      'icon': Icons.radio,
+    },
+    'Hearing Aid': {
+      'order': 6,
+      'localization': context.l10n!.hearingAid,
+      'icon': Icons.hearing,
+    },
+    'Wired Headphones': {
+      'order': 7,
+      'localization': context.l10n!.wiredHeadphones,
+      'icon': FluentIcons.headphones_24_filled,
+    },
+    'USB Audio': {
+      'order': 8,
+      'localization': context.l10n!.usbAudio,
+      'icon': FluentIcons.speaker_usb_24_filled,
+    },
+    'Docking Station': {
+      'order': 9,
+      'localization': context.l10n!.dockingStation,
+      'icon': FluentIcons.dock_24_filled,
+    },
+    'Phone Speaker': {
+      'order': 10,
+      'localization': context.l10n!.phoneSpeaker,
+      'icon': FluentIcons.speaker_2_24_filled,
+    },
+    'Phone Earpiece': {
+      'order': 11,
+      'localization': context.l10n!.phoneEarpiece,
+      'icon': FluentIcons.call_24_filled,
+    },
+    'HDMI': {
+      'order': 12,
+      'localization': context.l10n!.hdmi,
+      'icon': FluentIcons.tv_usb_24_filled,
+    },
+    'Other': {
+      'order': 13,
+      'localization': context.l10n!.other,
+      'icon': FluentIcons.speaker_box_24_filled,
+    },
+  };
+
+  return categoryOrder[category];
+}
 
 class CancelledException implements Exception {
   @override
@@ -198,7 +330,9 @@ List<Map<String, dynamic>> safeConvert(dynamic input) {
 
 bool isLargeScreen({BuildContext? context}) {
   context = context ?? NavigationManager().context;
-  return MediaQuery.of(context).size.height < MediaQuery.of(context).size.width || MediaQuery.of(context).size.width > 540;
+  return MediaQuery.of(context).size.height <
+          MediaQuery.of(context).size.width ||
+      MediaQuery.of(context).size.width > 540;
 }
 
 List<T> pickRandomItems<T>(List<T> items, int n, {int? seed}) {
@@ -508,4 +642,44 @@ Future<Uri?> getValidImage(dynamic obj) async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
   }
   return null;
+}
+
+int? parseTimeStringToSeconds(String timeString) {
+  if (!timeString.contains(':') && int.tryParse(timeString) == null)
+    return null;
+  final parts =
+      timeString
+          .split(':')
+          .reversed
+          .toList(); // Reverse to [seconds, minutes, hours]
+  if (parts.isEmpty || parts.length > 3) {
+    return null;
+  }
+
+  int seconds = 0;
+  for (int i = 0; i < parts.length; i++) {
+    final value = int.tryParse(parts[i]) ?? 0;
+    seconds +=
+        value *
+        (i == 0
+            ? 1
+            : i == 1
+            ? 60
+            : 3600);
+  }
+  return seconds;
+}
+
+Duration? tryParseDuration(String timeString) {
+  final seconds = parseTimeStringToSeconds(timeString);
+  if (seconds == null) return null;
+  return Duration(seconds: seconds);
+}
+
+String stableHash(String input) {
+  return sha256.convert(utf8.encode(input)).toString();
+}
+
+bool isMobilePlatform() {
+  return Platform.isAndroid || Platform.isIOS;
 }
