@@ -39,6 +39,7 @@ dependencies:
   media_kit: ^1.1.11
   media_kit_libs_audio: ^1.0.5
   musicbrainz_api_client: ^0.1.8
+  open_settings_plus: ^0.4.0
   path: ^1.9.1
   path_provider: ^2.1.5
   rxdart: ^0.28.0
