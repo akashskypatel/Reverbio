@@ -1,0 +1,22 @@
+## 1.4.4
+
+- Stream from YT out of the box, and anywhere else with Plugins
+- Online song, artist and playlist search with suggestions
+- Offline listening support
+- Import & export your data and never lose it
+- Add custom playlists with link
+- User song queue
+- Optimized sound experience
+- SponsorBlock support
+- Lyrics support
+- No ads
+- No subscriptions
+- 30 supported languages
+- Material UI & accent colors & dynamic colors (Android 12+)
+- Android and Windows Support
+- Custom plugin support
+- Track your favorite Songs, Albums, Artists and Playlists
+- Android Auto Support
+- (New) Import playlists from any music service using CSV files!
+- (New) Select Android output device 
+- (New) Select YouTube stream resolution timeout in case it takes longer than usual for YouTube-Explode API to get YouTube stream
