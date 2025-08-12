@@ -229,5 +229,13 @@
   "hearingAid": "వినికిడి సహాయం",
   "dockingStation": "డాకింగ్ స్టేషన్",
   "phoneEarpiece": "ఫోన్ ఇయర్పీస్",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Reverbio కోసం Android Auto ను ప్రారంభించడానికి ఈ దశలను అనుసరించండి:",
+  "androidAutoStep1": "1. సెట్టింగ్‌లకు వెళ్లండి",
+  "androidAutoStep2": "2. కనెక్షన్ ప్రాధాన్యతలపై టాప్ చేయండి",
+  "androidAutoStep3": "3. Android Auto పై టాప్ చేయండి",
+  "androidAutoStep4": "4. క్రిందికి స్క్రోల్ చేసి, డెవలపర్ మోడ్‌ను ప్రారంభించమని అడిగే వరకు వెర్షన్‌ను అనేకసార్లు టాప్ చేయండి",
+  "androidAutoStep5": "5. పైన కుడి మూలలోని మూడు చుక్కలపై టాప్ చేయండి",
+  "androidAutoStep6": "6. డెవలపర్ సెట్టింగ్‌లపై టాప్ చేయండి",
+  "androidAutoStep7": "7. క్రిందికి స్క్రోల్ చేసి \"తెలియని మూలాలను\" ప్రారంభించండి"
 }

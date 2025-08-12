@@ -229,5 +229,13 @@
   "hearingAid": "श्रवण यंत्र",
   "dockingStation": "डॉकिंग स्टेशन",
   "phoneEarpiece": "फोन ईयरपीस",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Reverbio के लिए Android Auto सक्षम करने के लिए इन चरणों का पालन करें:",
+  "androidAutoStep1": "1. सेटिंग्स पर जाएं",
+  "androidAutoStep2": "2. कनेक्शन प्राथमिकताओं पर टैप करें",
+  "androidAutoStep3": "3. Android Auto पर टैप करें",
+  "androidAutoStep4": "4. नीचे स्क्रॉल करें और डेवलपर मोड सक्षम करने के लिए कहा जाने तक संस्करण पर कई बार टैप करें",
+  "androidAutoStep5": "5. ऊपरी दाएं कोने में तीन बिंदुओं पर टैप करें",
+  "androidAutoStep6": "6. डेवलपर सेटिंग्स पर टैप करें",
+  "androidAutoStep7": "7. नीचे स्क्रॉल करें और \"अज्ञात स्रोत\" सक्षम करें"
 }

@@ -229,5 +229,13 @@
   "hearingAid": "Máy trợ thính",
   "dockingStation": "Trạm kết nối",
   "phoneEarpiece": "Tai nghe điện thoại",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Làm theo các bước sau để bật Android Auto cho Reverbio:",
+  "androidAutoStep1": "1. Đi tới cài đặt",
+  "androidAutoStep2": "2. Nhấn vào Tùy chọn kết nối",
+  "androidAutoStep3": "3. Nhấn vào Android Auto",
+  "androidAutoStep4": "4. Cuộn xuống và nhấn vào Phiên bản nhiều lần cho đến khi được yêu cầu bật chế độ nhà phát triển",
+  "androidAutoStep5": "5. Nhấn vào ba chấm ở góc trên bên phải",
+  "androidAutoStep6": "6. Nhấn vào Cài đặt nhà phát triển",
+  "androidAutoStep7": "7. Cuộn xuống và bật \"Nguồn không xác định\""
 }

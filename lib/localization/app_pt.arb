@@ -229,5 +229,13 @@
   "hearingAid": "Aparato auditivo",
   "dockingStation": "Docking Station",
   "phoneEarpiece": "Auscultador do telefone",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Siga estes passos para ativar o Android Auto para o Reverbio:",
+  "androidAutoStep1": "1. Vá para definições",
+  "androidAutoStep2": "2. Toque em Preferências de ligação",
+  "androidAutoStep3": "3. Toque em Android Auto",
+  "androidAutoStep4": "4. Deslize para baixo e toque em Versão várias vezes até lhe ser pedido para ativar o modo de programador",
+  "androidAutoStep5": "5. Toque nos três pontos no canto superior direito",
+  "androidAutoStep6": "6. Toque em Definições de programador",
+  "androidAutoStep7": "7. Deslize para baixo e ative \"Fontes desconhecidas\""
 }

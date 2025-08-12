@@ -229,5 +229,13 @@
   "hearingAid": "เครื่องช่วยฟัง",
   "dockingStation": "สถานีเชื่อมต่อ",
   "phoneEarpiece": "หูฟังโทรศัพท์",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "ทำตามขั้นตอนเหล่านี้เพื่อเปิดใช้งาน Android Auto สำหรับ Reverbio:",
+  "androidAutoStep1": "1. ไปที่การตั้งค่า",
+  "androidAutoStep2": "2. แตะที่การตั้งค่าการเชื่อมต่อ",
+  "androidAutoStep3": "3. แตะที่ Android Auto",
+  "androidAutoStep4": "4. เลื่อนลงและแตะที่เวอร์ชันหลายครั้งจนกว่าจะถูกขอให้เปิดใช้งานโหมดนักพัฒนา",
+  "androidAutoStep5": "5. แตะจุดสามจุดที่มุมขวาบน",
+  "androidAutoStep6": "6. แตะที่การตั้งค่าสำหรับนักพัฒนา",
+  "androidAutoStep7": "7. เลื่อนลงและเปิดใช้งาน \"แหล่งที่ไม่รู้จัก\""
 }

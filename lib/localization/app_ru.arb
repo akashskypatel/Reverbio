@@ -229,5 +229,13 @@
   "hearingAid": "Слуховой аппарат",
   "dockingStation": "Док-станция",
   "phoneEarpiece": "Телефонная трубка",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Выполните следующие шаги, чтобы включить Android Auto для Reverbio:",
+  "androidAutoStep1": "1. Перейдите в настройки",
+  "androidAutoStep2": "2. Нажмите на Настройки подключения",
+  "androidAutoStep3": "3. Нажмите на Android Auto",
+  "androidAutoStep4": "4. Прокрутите вниз и нажмите на Версия несколько раз, пока вас не попросят включить режим разработчика",
+  "androidAutoStep5": "5. Нажмите на три точки в правом верхнем углу",
+  "androidAutoStep6": "6. Нажмите на Настройки разработчика",
+  "androidAutoStep7": "7. Прокрутите вниз и включите \"Неизвестные источники\""
 }

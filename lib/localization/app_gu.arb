@@ -229,5 +229,13 @@
   "hearingAid": "સુનાવણી સહાયક",
   "dockingStation": "ડોકિંગ સ્ટેશન",
   "phoneEarpiece": "ફોન ઇયરપીસ",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Reverbio માટે Android Auto સક્રિય કરવા માટે આ પગલાંઓ અનુસરો:",
+  "androidAutoStep1": "1. સેટિંગ્સ પર જાઓ",
+  "androidAutoStep2": "2. કનેક્શન પસંદગીઓ પર ટેપ કરો",
+  "androidAutoStep3": "3. Android Auto પર ટેપ કરો",
+  "androidAutoStep4": "4. નીચે સ્ક્રોલ કરો અને વિકાસકર્તા મોડ સક્રિય કરવા કહેવામાં આવે ત્યાં સુધી વર્ઝન પર ઘણી વાર ટેપ કરો",
+  "androidAutoStep5": "5. ઉપરના જમણા ખૂણે ત્રણ બિંદુઓ પર ટેપ કરો",
+  "androidAutoStep6": "6. ડેવલપર સેટિંગ્સ પર ટેપ કરો",
+  "androidAutoStep7": "7. નીચે સ્ક્રોલ કરો અને \"અજ્ઞાત સ્ત્રોતો\" સક્રિય કરો"
 }
