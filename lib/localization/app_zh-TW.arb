@@ -229,5 +229,13 @@
   "hearingAid": "助聽器",
   "dockingStation": "擴充基座",
   "phoneEarpiece": "電話聽筒",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "按照以下步驟為Reverbio啟用Android Auto：",
+  "androidAutoStep1": "1. 前往設定",
+  "androidAutoStep2": "2. 點擊連接偏好設定",
+  "androidAutoStep3": "3. 點擊Android Auto",
+  "androidAutoStep4": "4. 向下滑動並多次點擊版本，直到系統要求您啟用開發者模式",
+  "androidAutoStep5": "5. 點擊右上角的三點圖示",
+  "androidAutoStep6": "6. 點擊開發者設定",
+  "androidAutoStep7": "7. 向下滑動並啟用「未知來源」"
 }

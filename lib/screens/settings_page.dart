@@ -27,6 +27,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:open_settings_plus/core/open_settings_plus.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -39,6 +40,7 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_colors.dart';
 import 'package:reverbio/style/app_themes.dart';
+import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -134,7 +136,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 inactivatedColor,
               ),
         ),
-        if (isMobilePlatform())
+        if (Platform.isAndroid)
           CustomBar(
             tileName: context.l10n!.audioDevice,
             tileIcon: FluentIcons.speaker_settings_24_filled,
@@ -144,6 +146,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   activatedColor,
                   inactivatedColor,
                 ),
+          ),
+        if (Platform.isAndroid)
+          CustomBar(
+            tileName: context.l10n!.androidAuto,
+            tileIcon: ReverbioIcons.android_auto_monochrome,
+            onTap: () async {
+              await _showAndroidAutoMessage(context);
+            },
           ),
         /* //let yt-explode manage client for best experience
         CustomBar(
@@ -488,6 +498,73 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _showAndroidAutoMessage(
+    BuildContext context,
+  ) async => showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(context.l10n!.androidAuto),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Follow these steps to enable Android Auto for Reverbio:',
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('1. Go to settings'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('2. Tap on Connection Preferences'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('3. Tap on Android Auto'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '4. Scroll down and Tap Version several times until you are asked to enable developer mode',
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('5. Tap on 3 dots on the top right corner'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('6. Tap on Developer Settings'),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('7. Scroll down and enable "Unknown sources"'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              GoRouter.of(context).pop();
+            },
+            child: Text(context.l10n!.cancel.toUpperCase()),
+          ),
+          TextButton(
+            onPressed: () async {
+              const settings = OpenSettingsPlusAndroid();
+              await settings.bluetooth();
+            },
+            child: Text(context.l10n!.settings.toUpperCase()),
+          ),
+        ],
+      );
+    },
+  );
+
   void _showAccentColorPicker(BuildContext context) {
     showCustomBottomSheet(
       context,
@@ -590,7 +667,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   snapshot.data == null)
                 return const Icon(FluentIcons.error_circle_24_filled);
               else {
-                final devices = snapshot.data!;
+                final devices =
+                    snapshot.data!
+                        .where(
+                          (e) =>
+                              (androidDeviceTypes[e['type']]?['include'] ??
+                                      false)
+                                  as bool,
+                        )
+                        .toList();
                 final deviceData =
                     devices.map((e) {
                         final category = getAudioDeviceCategory(e['category']);
@@ -602,6 +687,13 @@ class _SettingsPageState extends State<SettingsPage> {
                         };
                       }).toList()
                       ..sort((a, b) => a['order'].compareTo(b['order']));
+                devices.add({
+                  'id': null,
+                  'name': 'auto',
+                  'type': null,
+                  'address': null,
+                  'category': null,
+                });
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
@@ -614,15 +706,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       index,
                       devices.length,
                     );
-
                     return CustomBar(
                       tileName:
-                          deviceData[index]['name'] == 'auto'
+                          devices[index]['name'] == 'auto'
                               ? context.l10n!.selectAutomatically
-                              : '${deviceData[index]['name']} - ${deviceData[index]['localization']}',
+                              : '${deviceData[index]['name']} - ${deviceData[index]['localization']} (${androidDeviceTypes[deviceData[index]['type']]?['name']})',
                       tileIcon:
-                          deviceData[index]['icon'] ??
-                          FluentIcons.speaker_box_24_filled,
+                          devices[index]['name'] == 'auto'
+                              ? FluentIcons.flash_auto_24_filled
+                              : FluentIcons.speaker_box_24_filled,
                       onTap: () {
                         if (context.mounted)
                           setState(() {
@@ -671,7 +763,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 index,
                 availableValues.length,
               );
-
               return BottomSheetBar(
                 threshold.toString(),
                 onTap: () {

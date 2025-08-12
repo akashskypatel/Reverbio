@@ -229,5 +229,13 @@
   "hearingAid": "Audífono",
   "dockingStation": "Estación de acoplamiento",
   "phoneEarpiece": "Auricular de teléfono",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Siga estos pasos para habilitar Android Auto para Reverbio:",
+  "androidAutoStep1": "1. Ve a configuración",
+  "androidAutoStep2": "2. Toque en Preferencias de conexión",
+  "androidAutoStep3": "3. Toque en Android Auto",
+  "androidAutoStep4": "4. Desplácese hacia abajo y toque Versión varias veces hasta que se le solicite habilitar el modo de desarrollador",
+  "androidAutoStep5": "5. Toque los tres puntos en la esquina superior derecha",
+  "androidAutoStep6": "6. Toque en Configuración para desarrolladores",
+  "androidAutoStep7": "7. Desplácese hacia abajo y active \"Fuentes desconocidas\""
 }

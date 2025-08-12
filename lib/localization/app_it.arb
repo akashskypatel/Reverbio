@@ -229,5 +229,13 @@
   "hearingAid": "Apparecchio acustico",
   "dockingStation": "Stazione di aggancio",
   "phoneEarpiece": "Ricevitore telefonico",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Segui questi passaggi per abilitare Android Auto per Reverbio:",
+  "androidAutoStep1": "1. Vai alle impostazioni",
+  "androidAutoStep2": "2. Tocca Preferenze di connessione",
+  "androidAutoStep3": "3. Tocca Android Auto",
+  "androidAutoStep4": "4. Scorri verso il basso e tocca più volte Versione finché non ti viene chiesto di abilitare la modalità sviluppatore",
+  "androidAutoStep5": "5. Tocca i tre puntini nell'angolo in alto a destra",
+  "androidAutoStep6": "6. Tocca Impostazioni sviluppatore",
+  "androidAutoStep7": "7. Scorri verso il basso e abilita \"Origini sconosciute\""
 }

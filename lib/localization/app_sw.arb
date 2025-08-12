@@ -229,5 +229,13 @@
   "hearingAid": "Kisaidizi cha kusikia",
   "dockingStation": "Kituo cha kushikilia",
   "phoneEarpiece": "Kisikio cha simu",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Fuata hatua hizi kuwezesha Android Auto kwa Reverbio:",
+  "androidAutoStep1": "1. Nenda kwa mipangilio",
+  "androidAutoStep2": "2. Gonga kwenye Mapendekezo ya Muunganisho",
+  "androidAutoStep3": "3. Gonga kwenye Android Auto",
+  "androidAutoStep4": "4. Songa chini na gonga Toleo mara kadhaa hadi uambiwe kuwezesha hali ya msanidi programu",
+  "androidAutoStep5": "5. Gonga alama tatu kwenye kona ya juu kulia",
+  "androidAutoStep6": "6. Gonga kwenye Mipangilio ya Wasanidi Programu",
+  "androidAutoStep7": "7. Songa chini na wezesha \"Vyanzo visivyojulikana\""
 }

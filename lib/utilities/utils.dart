@@ -1,3 +1,24 @@
+/*
+ *     Copyright (C) 2025 Akash Patel
+ *
+ *     Reverbio is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     Reverbio is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ *     For more information about Reverbio, including how to contribute,
+ *     please visit: https://github.com/akashskypatel/Reverbio
+ */
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -18,38 +39,38 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 const androidDeviceTypes = {
-  19: 'TYPE_AUX_LINE',
-  30: 'TYPE_BLE_BROADCAST',
-  26: 'TYPE_BLE_HEADSET',
-  27: 'TYPE_BLE_SPEAKER',
-  8: 'TYPE_BLUETOOTH_A2DP',
-  7: 'TYPE_BLUETOOTH_SCO',
-  1: 'TYPE_BUILTIN_EARPIECE',
-  15: 'TYPE_BUILTIN_MIC',
-  2: 'TYPE_BUILTIN_SPEAKER',
-  24: 'TYPE_BUILTIN_SPEAKER_SAFE',
-  21: 'TYPE_BUS',
-  13: 'TYPE_DOCK',
-  31: 'TYPE_DOCK_ANALOG',
-  14: 'TYPE_FM',
-  16: 'TYPE_FM_TUNER',
-  9: 'TYPE_HDMI',
-  10: 'TYPE_HDMI_ARC',
-  29: 'TYPE_HDMI_EARC',
-  23: 'TYPE_HEARING_AID',
-  20: 'TYPE_IP',
-  5: 'TYPE_LINE_ANALOG',
-  6: 'TYPE_LINE_DIGITAL',
-  32: 'TYPE_MULTICHANNEL_GROUP',
-  25: 'TYPE_REMOTE_SUBMIX',
-  18: 'TYPE_TELEPHONY',
-  17: 'TYPE_TV_TUNER',
-  0: 'TYPE_UNKNOWN',
-  12: 'TYPE_USB_ACCESSORY',
-  11: 'TYPE_USB_DEVICE',
-  22: 'TYPE_USB_HEADSET',
-  4: 'TYPE_WIRED_HEADPHONES',
-  3: 'TYPE_WIRED_HEADSET',
+  19: {'id': 'TYPE_AUX_LINE', 'name': 'AUX Line', 'include': true},
+  30: {'id': 'TYPE_BLE_BROADCAST', 'name': 'BLE Broadcast', 'include': true},
+  26: {'id': 'TYPE_BLE_HEADSET', 'name': 'BLE Headset', 'include': true},
+  27: {'id': 'TYPE_BLE_SPEAKER', 'name': 'BLE Speaker', 'include': true},
+  8: {'id': 'TYPE_BLUETOOTH_A2DP', 'name': 'Bluetooth A2DP', 'include': true},
+  7: {'id': 'TYPE_BLUETOOTH_SCO', 'name': 'Bluetooth SCO', 'include': true},
+  1: {'id': 'TYPE_BUILTIN_EARPIECE', 'name': 'Built-in Earpiece', 'include': false},
+  15: {'id': 'TYPE_BUILTIN_MIC', 'name': 'Built-in Mic', 'include': false},
+  2: {'id': 'TYPE_BUILTIN_SPEAKER', 'name': 'Built-in Speaker', 'include': true},
+  24: {'id': 'TYPE_BUILTIN_SPEAKER_SAFE', 'name': 'Built-in Speaker Safe', 'include': false},
+  21: {'id': 'TYPE_BUS', 'name': 'BUS', 'include': true},
+  13: {'id': 'TYPE_DOCK', 'name': 'Dock', 'include': true},
+  31: {'id': 'TYPE_DOCK_ANALOG', 'name': 'Dock Analog', 'include': true},
+  14: {'id': 'TYPE_FM', 'name': 'FM', 'include': true},
+  16: {'id': 'TYPE_FM_TUNER', 'name': 'FM Tuner', 'include': true},
+  9: {'id': 'TYPE_HDMI', 'name': 'HDMI', 'include': true},
+  10: {'id': 'TYPE_HDMI_ARC', 'name': 'HDMI ARC', 'include': true},
+  29: {'id': 'TYPE_HDMI_EARC', 'name': 'HDMI E-ARC', 'include': true},
+  23: {'id': 'TYPE_HEARING_AID', 'name': 'Hearing Aid', 'include': true},
+  20: {'id': 'TYPE_IP', 'name': 'IP', 'include': true},
+  5: {'id': 'TYPE_LINE_ANALOG', 'name': 'Line Analog', 'include': true},
+  6: {'id': 'TYPE_LINE_DIGITAL', 'name': 'Line Digital', 'include': true},
+  32: {'id': 'TYPE_MULTICHANNEL_GROUP', 'name': 'Multi-channel Group', 'include': true},
+  25: {'id': 'TYPE_REMOTE_SUBMIX', 'name': 'Remote SubMix', 'include': true},
+  18: {'id': 'TYPE_TELEPHONY', 'name': 'Telephony', 'include': false},
+  17: {'id': 'TYPE_TV_TUNER', 'name': 'TV Tuner', 'include': true},
+  0: {'id': 'TYPE_UNKNOWN', 'name': 'Unknown', 'include': true},
+  12: {'id': 'TYPE_USB_ACCESSORY', 'name': 'USB Accessory', 'include': true},
+  11: {'id': 'TYPE_USB_DEVICE', 'name': 'USB Device', 'include': true},
+  22: {'id': 'TYPE_USB_HEADSET', 'name': 'USB Headset', 'include': true},
+  4: {'id': 'TYPE_WIRED_HEADPHONES', 'name': 'Wired Headphones', 'include': true},
+  3: {'id': 'TYPE_WIRED_HEADSET', 'name': 'Wired Headset', 'include': true},
 };
 
 Map getAudioDeviceCategory(String category, {BuildContext? context}) {

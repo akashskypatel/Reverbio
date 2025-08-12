@@ -229,5 +229,13 @@
   "hearingAid": "İşitme Cihazı",
   "dockingStation": "Dok İstasyonu",
   "phoneEarpiece": "Telefon Kulaklığı",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Reverbio için Android Auto'yu etkinleştirmek üzere şu adımları izleyin:",
+  "androidAutoStep1": "1. Ayarlar'a gidin",
+  "androidAutoStep2": "2. Bağlantı Tercihleri'ne dokunun",
+  "androidAutoStep3": "3. Android Auto'ya dokunun",
+  "androidAutoStep4": "4. Aşağı kaydırın ve geliştirici modunu etkinleştirmeniz istenene kadar Sürüm'e birkaç kez dokunun",
+  "androidAutoStep5": "5. Sağ üst köşedeki üç noktaya dokunun",
+  "androidAutoStep6": "6. Geliştirici Ayarları'na dokunun",
+  "androidAutoStep7": "7. Aşağı kaydırın ve \"Bilinmeyen kaynaklar\"ı etkinleştirin"
 }

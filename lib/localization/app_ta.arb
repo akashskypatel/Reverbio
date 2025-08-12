@@ -229,5 +229,13 @@
   "hearingAid": "கேட்பொலி உதவி",
   "dockingStation": "டாக்கிங் ஸ்டேஷன்",
   "phoneEarpiece": "தொலைபேசி செவிப்பகுதி",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Reverbio-க்கு Android Auto-ஐ இயக்க இந்த படிகளைப் பின்பற்றவும்:",
+  "androidAutoStep1": "1. அமைப்புகளுக்குச் செல்லவும்",
+  "androidAutoStep2": "2. இணைப்பு விருப்பத்தேர்வுகளைத் தட்டவும்",
+  "androidAutoStep3": "3. Android Auto-ஐத் தட்டவும்",
+  "androidAutoStep4": "4. கீழே உருட்டி, டெவலப்பர் முறையை இயக்கச் சொல்லும் வரை பதிப்பை பல முறை தட்டவும்",
+  "androidAutoStep5": "5. மேல் வலது மூலையில் உள்ள மூன்று புள்ளிகளைத் தட்டவும்",
+  "androidAutoStep6": "6. டெவலப்பர் அமைப்புகளைத் தட்டவும்",
+  "androidAutoStep7": "7. கீழே உருட்டி \"தெரியாத மூலங்களை\" இயக்கவும்"
 }

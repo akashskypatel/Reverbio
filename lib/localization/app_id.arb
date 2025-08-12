@@ -229,5 +229,13 @@
   "hearingAid": "Alat Bantu Dengar",
   "dockingStation": "Docking Station",
   "phoneEarpiece": "Earpiece Telepon",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Ikuti langkah-langkah ini untuk mengaktifkan Android Auto untuk Reverbio:",
+  "androidAutoStep1": "1. Buka pengaturan",
+  "androidAutoStep2": "2. Ketuk Preferensi Koneksi",
+  "androidAutoStep3": "3. Ketuk Android Auto",
+  "androidAutoStep4": "4. Gulir ke bawah dan Ketuk Versi beberapa kali hingga diminta mengaktifkan mode pengembang",
+  "androidAutoStep5": "5. Ketuk tiga titik di pojok kanan atas",
+  "androidAutoStep6": "6. Ketuk Pengaturan Pengembang",
+  "androidAutoStep7": "7. Gulir ke bawah dan aktifkan \"Sumber tidak dikenal\""
 }

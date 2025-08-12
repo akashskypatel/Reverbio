@@ -229,5 +229,13 @@
   "hearingAid": "Hearing Aid",
   "dockingStation": "Docking Station",
   "phoneEarpiece": "Phone Earpiece",
-  "hdmi": "HDMI"
+  "hdmi": "HDMI",
+  "androidAutoInstructions": "Follow these steps to enable Android Auto for Reverbio:",
+  "androidAutoStep1": "1. Go to settings",
+  "androidAutoStep2": "2. Tap on Connection Preferences",
+  "androidAutoStep3": "3. Tap on Android Auto",
+  "androidAutoStep4": "4. Scroll down and Tap Version several times until you are asked to enable developer mode",
+  "androidAutoStep5": "5. Tap on 3 dots on the top right corner",
+  "androidAutoStep6": "6. Tap on Developer Settings",
+  "androidAutoStep7": "7. Scroll down and enable \"Unknown sources\""
 }
