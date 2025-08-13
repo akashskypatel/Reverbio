@@ -30,6 +30,9 @@ import 'package:flutter_js/extensions/fetch.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -48,11 +51,11 @@ typedef WF = WidgetFactory;
 
 class PluginsManager {
   PluginsManager._();
-  static final _pluginsCacheData =
+  static final _pluginsData =
       Hive.box('settings').get('pluginsData', defaultValue: []) as List;
-  static final pluginsDataNotifier = ValueNotifier(_pluginsCacheData.length);
+  static final pluginsDataNotifier = ValueNotifier(_pluginsData.length);
   static List testMethods = ['pluginName', 'pluginVersion', 'asyncTest'];
-  static List get pluginsData => _pluginsCacheData;
+  static List get pluginsData => _pluginsData;
   static final List<Map> _plugins = [];
   static final Map _futures = {};
   static final Map _activeJob = {};
@@ -122,7 +125,7 @@ class PluginsManager {
           if (!result.isError) {
             flutterJs.dispose();
             await addPlugin(pluginData);
-            addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+            addOrUpdateData('settings', 'pluginsData', _pluginsData);
             return true;
           }
         }
@@ -155,7 +158,7 @@ class PluginsManager {
   static Future<void> addPlugin(Map plugin) async {
     try {
       removePlugin(plugin['name']);
-      _pluginsCacheData.add(plugin);
+      _pluginsData.add(plugin);
       _plugins.add(plugin);
       _isProcessingNotifiers[plugin['name']] = ValueNotifier(false);
       _backgroundJobNotifiers[plugin['name']] = ValueNotifier(null);
@@ -174,7 +177,7 @@ class PluginsManager {
   static Future<void> reloadPlugins() async {
     try {
       _plugins.clear();
-      for (final _plugin in _pluginsCacheData) {
+      for (final _plugin in _pluginsData) {
         if (_plugins
             .where((value) => value['name'] == _plugin['name'])
             .toList()
@@ -470,9 +473,9 @@ class PluginsManager {
         final result = flutterJs.evaluate(data['script']);
         if (!result.isError) {
           removePlugin(data['name']);
-          _pluginsCacheData.add(data);
+          _pluginsData.add(data);
           _plugins.add(data);
-          pluginsDataNotifier.value = _pluginsCacheData.length;
+          pluginsDataNotifier.value = _pluginsData.length;
           _isProcessingNotifiers[data['name']] = ValueNotifier(false);
           _backgroundJobNotifiers[data['name']] = ValueNotifier(null);
           _futures[data['name']] = [];
@@ -522,9 +525,9 @@ class PluginsManager {
         return;
       }
       _clearBackgroundJobData(pluginName);
-      _pluginsCacheData.removeWhere((value) => value['name'] == pluginName);
+      _pluginsData.removeWhere((value) => value['name'] == pluginName);
       _plugins.removeWhere((value) => value['name'] == pluginName);
-      pluginsDataNotifier.value = _pluginsCacheData.length;
+      pluginsDataNotifier.value = _pluginsData.length;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -871,7 +874,7 @@ class PluginsManager {
   static List<Map<String, dynamic>> getWidgets(String pluginName) {
     try {
       final result =
-          _pluginsCacheData.firstWhere(
+          _pluginsData.firstWhere(
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['manifest']['widgets'];
@@ -891,7 +894,7 @@ class PluginsManager {
   static Map<String, dynamic> getHooks(String pluginName) {
     try {
       final result =
-          _pluginsCacheData.firstWhere(
+          _pluginsData.firstWhere(
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['manifest']['hooks'];
@@ -939,7 +942,7 @@ class PluginsManager {
   static dynamic getUserSettings(String pluginName) {
     try {
       final settings =
-          _pluginsCacheData.firstWhere(
+          _pluginsData.firstWhere(
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['userSettings'];
@@ -957,7 +960,7 @@ class PluginsManager {
   static dynamic getDefaultSettings(String pluginName) {
     try {
       final settings =
-          _pluginsCacheData.firstWhere(
+          _pluginsData.firstWhere(
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['defaultSettings'];
@@ -973,13 +976,13 @@ class PluginsManager {
 
   static dynamic setUserSettings(String pluginName, dynamic settings) {
     try {
-      _pluginsCacheData
+      _pluginsData
           .firstWhere(
             (value) => value['name'] == pluginName,
             orElse: () => {},
           )['userSettings']
           .addAll(settings);
-      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+      addOrUpdateData('settings', 'pluginsData', _pluginsData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1019,7 +1022,7 @@ class PluginsManager {
       );
       final userSettings = getUserSettings(pluginName);
       if (userSettings != null) (userSettings as Map).addAll(settings);
-      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+      addOrUpdateData('settings', 'pluginsData', _pluginsData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1037,7 +1040,7 @@ class PluginsManager {
         userSettings.clear();
         userSettings.addAll(defaultSettings);
       }
-      addOrUpdateData('settings', 'pluginsData', _pluginsCacheData);
+      addOrUpdateData('settings', 'pluginsData', _pluginsData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1111,8 +1114,56 @@ class PluginsManager {
     }
   }
 
+  static void cacheData(String pluginName, dynamic entity, {String? key}) {
+    final entityCacheMap = {
+      'song': {'key': 'cachedSongs', 'cache': cachedSongsList},
+      'album': {'key': 'cachedAlbums', 'cache': cachedAlbumsList},
+      'single': {'key': 'cachedAlbums', 'cache': cachedAlbumsList},
+      'ep': {'key': 'cachedAlbums', 'cache': cachedAlbumsList},
+      'broadcast': {'key': 'cachedAlbums', 'cache': cachedAlbumsList},
+      'other': {'key': 'cachedAlbums', 'cache': cachedAlbumsList},
+      'artist': {'key': 'cachedArtists', 'cache': cachedArtistsList},
+    };
+    try {
+      final ids = parseEntityId(entity);
+      if (ids.isEmpty)
+        throw Exception([
+          'cacheData - $pluginName: invalid entity provided',
+          entity.toString(),
+        ]);
+      final type = entity['primary-type']?.toLowerCase() ?? 'unknown';
+      final cacheInfo = entityCacheMap[type];
+      if (cacheInfo != null) {
+        final cacheKey = key ?? cacheInfo['key'] as String? ?? '';
+        final cache =
+            key != null
+                ? Hive.box('cache').get(pluginName, defaultValue: []) as List
+                : cacheInfo['cache'] as List<dynamic>;
+        if (cacheKey.isEmpty)
+          throw Exception([
+            'cacheData - $pluginName: could not determine cacheKey for supplied entity',
+            entity.toString(),
+          ]);
+        final index = cache.indexOf(
+          (e) => checkEntityId(e['id'], entity['id']),
+        );
+        if (cache.isEmpty || index < 0)
+          cache.add(entity);
+        else
+          cache.insert(index, entity);
+        addOrUpdateData('cache', cacheKey, cache);
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
   static dynamic triggerHook(dynamic entity, String hookName) async {
-    final hooks = {
+    const hooks = {
       'onQueueSong': {'isAsync': true, 'isBackground': false},
       'onEntityLiked': {'isAsync': true, 'isBackground': true},
       'onPlaylistPlay': {'isAsync': true, 'isBackground': true},
@@ -1155,19 +1206,25 @@ class PluginsManager {
         if (result is List) {
           if (entity is List) {
             entity = result;
+            for (final e in entity) {
+              cacheData(plugin['name'], e, key: e['cacheKey']);
+            }
             continue;
           } else if (entity is Map) {
             entity[plugin['name']][hookName] = result;
+            cacheData(plugin['name'], entity, key: entity['cacheKey']);
             continue;
           }
         }
         if (result is Map) {
           if (entity is Map) {
             entity.addAll(entity);
+            cacheData(plugin['name'], entity, key: entity['cacheKey']);
             continue;
           } else if (entity is List) {
             for (final e in entity) {
               e[plugin['name']][hookName] = result;
+              cacheData(plugin['name'], e, key: e['cacheKey']);
               continue;
             }
           }
