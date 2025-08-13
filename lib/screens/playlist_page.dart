@@ -83,7 +83,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   bool getLikeStatus() {
     if ([
-      'artist',
       'album',
       'single',
       'ep',
@@ -123,7 +122,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
                       isArtist: widget.isArtist,
                     )
                     : ([
-                          'artist',
                           'album',
                           'single',
                           'ep',
@@ -355,7 +353,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
           iconSize: pageHeaderIconSize,
           onPressed: () {
             if ([
-              'artist',
               'album',
               'single',
               'ep',

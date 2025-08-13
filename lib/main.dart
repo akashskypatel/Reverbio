@@ -266,7 +266,7 @@ Future<void> initialization() async {
         notificationColor: theme?.colorScheme.primary ?? Colors.blue.shade900,
       ),
     );
-
+    audioDevice.value = await audioHandler.getCurrentAudioDevice();
     // Init clients
     if (clientsSetting.value.isNotEmpty) {
       final chosenClients = <YoutubeApiClient>[];

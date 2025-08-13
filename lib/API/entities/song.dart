@@ -29,6 +29,7 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -231,7 +232,7 @@ Future<dynamic> findYTSong(dynamic song) async {
     return result.isNotEmpty ? result.first : {};
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return {};
   }
 }
 
@@ -317,7 +318,7 @@ Future<dynamic> getSongByRecordingDetails(
           'release-group-rels',
         ],
       );
-      recording['artist'] = combineArtists(recording);
+      recording['artist'] = combineArtists(recording) ?? 'Unknown';
       if (getImage)
         for (final release in recording['releases']) {
           final coverArt = await mb.coverArt.get(release['id'], 'release');
@@ -481,7 +482,10 @@ Future<StreamManifest> getSongManifest(String songId) async {
   try {
     final manifest =
         useProxies.value
-            ? await pxm.getSongManifest(songId, timeout: streamRequestTimeout.value) ??
+            ? await pxm.getSongManifest(
+                  songId,
+                  timeout: streamRequestTimeout.value,
+                ) ??
                 await yt.videos.streams.getManifest(
                   songId,
                   //ytClients: userChosenClients, //let yt-explode manage client for best experience
@@ -513,15 +517,26 @@ Future<void> getSongUrl(dynamic song) async {
     unawaited(makeSongOffline(song));
 }
 
+Future<void> getSongInfo(dynamic song) async {
+  if (song == null) return;
+  song['primary-type'] = song['primary-type'] ?? 'song';
+  if (song['mbid'] == null) {
+    if (song['primary-type'].toLowerCase() == 'single')
+      await getSinglesDetails(song);
+    else
+      await findMBSong(song);
+  }
+  if (song['ytid'] == null) {
+    final sngQry = await findYTSong(song);
+    song.addAll(Map<String, dynamic>.from(sngQry ?? {}));
+  }
+}
+
 Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   final context = NavigationManager().context;
   try {
     if (song == null) return '';
-    if (song['mbid'] == null) await findMBSong(song);
-    if (song['ytid'] == null) {
-      final sngQry = await findYTSong(song);
-      song.addAll(Map<String, dynamic>.from(sngQry ?? {}));
-    }
+    if (song['mbid'] == null) await getSongInfo(song);
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
@@ -534,12 +549,14 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
       }
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
+      logger.log('Could not find YouTube stream for this song.', null, null);
       song['error'] = context.l10n!.errorCouldNotFindAStream;
       song['isError'] = true;
       return '';
     }
     //check if url resolves
     if (await checkUrl(song['songUrl']) >= 400) {
+      logger.log('Song url could not be resolved.', null, null);
       song['error'] = context.l10n!.urlError;
       song['isError'] = true;
       return '';
@@ -693,6 +710,8 @@ Future<void> getExistingOfflineSongs() async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
+  await Directory(_audioDirPath).create(recursive: true);
+  await Directory(_artworkDirPath).create(recursive: true);
   try {
     if (Directory(_audioDirPath).existsSync())
       await for (final file in Directory(_audioDirPath).list()) {
@@ -723,6 +742,8 @@ Future<String?> getOfflinePath(dynamic song) async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
+  await Directory(_audioDirPath).create(recursive: true);
+  await Directory(_artworkDirPath).create(recursive: true);
   song['id'] = parseEntityId(song);
   final audioFiles = await _getRelatedFiles(_audioDirPath, song);
   final artworkFiles = await _getRelatedFiles(_artworkDirPath, song);
@@ -769,6 +790,8 @@ Future<void> removeSongFromOffline(dynamic song) async {
   final _dir = await getApplicationSupportDirectory();
   final _audioDirPath = '${_dir.path}/tracks';
   final _artworkDirPath = '${_dir.path}/artworks';
+  await Directory(_audioDirPath).create(recursive: true);
+  await Directory(_artworkDirPath).create(recursive: true);
   song['id'] = parseEntityId(song);
   unawaited(_deleteRelatedFiles(_audioDirPath, song));
   unawaited(_deleteRelatedFiles(_artworkDirPath, song));
