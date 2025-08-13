@@ -25,7 +25,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -165,11 +164,7 @@ class _SongBarState extends State<SongBar> {
     final ids = Uri.parse('?${parseEntityId(widget.song)}').queryParameters;
     if ((ids['mb'] == null || widget.song['mbid'] == null) &&
         _songMetadataFuture == null) {
-      widget.song['primary-type'] = widget.song['primary-type'] ?? 'song';
-      _songMetadataFuture =
-          widget.song['primary-type'].toLowerCase() != 'single'
-              ? findMBSong(widget.song)
-              : getSinglesDetails(widget.song);
+      _songMetadataFuture = getSongInfo(widget.song);
       unawaited(
         _songMetadataFuture!.whenComplete(() {
           if (mounted)
