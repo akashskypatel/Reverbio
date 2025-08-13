@@ -29,13 +29,16 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
+import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/formatter.dart';
@@ -229,7 +232,7 @@ Future<dynamic> findYTSong(dynamic song) async {
     return result.isNotEmpty ? result.first : {};
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return {};
   }
 }
 
@@ -512,14 +515,26 @@ Future<void> getSongUrl(dynamic song) async {
   await PM.getSongUrl(song, getSongYoutubeUrl);
 }
 
+Future<void> getSongInfo(dynamic song) async {
+  if (song == null) return;
+  song['primary-type'] = song['primary-type'] ?? 'song';
+  if (song['mbid'] == null) {
+    if (song['primary-type'].toLowerCase() == 'single')
+      await getSinglesDetails(song);
+    else
+      await findMBSong(song);
+  }
+  if (song['ytid'] == null) {
+    final sngQry = await findYTSong(song);
+    song.addAll(Map<String, dynamic>.from(sngQry ?? {}));
+  }
+}
+
 Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
+  final context = NavigationManager().context;
   try {
     if (song == null) return '';
-    if (song['mbid'] == null) await findMBSong(song);
-    if (song['ytid'] == null) {
-      final sngQry = await findYTSong(song);
-      song.addAll(Map<String, dynamic>.from(sngQry ?? {}));
-    }
+    if (song['mbid'] == null) await getSongInfo(song);
     if (song['ytid'] != null && song['ytid'].isNotEmpty) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
@@ -532,19 +547,21 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
       }
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
-      song['error'] = 'Could not find YoutTube stream for this song.';
+      logger.log('Could not find YouTube stream for this song.', null, null);
+      song['error'] = context.l10n!.errorCouldNotFindAStream;
       song['isError'] = true;
       return '';
     }
     //check if url resolves
     if (await checkUrl(song['songUrl']) >= 400) {
-      song['error'] = 'Song url could not be resolved.';
+      logger.log('Song url could not be resolved.', null, null);
+      song['error'] = context.l10n!.urlError;
       song['isError'] = true;
       return '';
     }
     return song['songUrl'];
   } catch (e, stackTrace) {
-    song['error'] = 'Song url could not be resolved.';
+    song['error'] = context.l10n!.urlError;
     song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return '';
