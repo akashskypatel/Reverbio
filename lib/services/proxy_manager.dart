@@ -72,9 +72,10 @@ class ProxyManager {
       logger.log('Fetching proxies...', null, null);
       final futures =
           <Future>[]
-            ..add(_fetchSpysMe())
+            //..add(_fetchSpysMe())
             ..add(_fetchProxyScrape())
-            ..add(_fetchOpenProxyList());
+            ..add(_fetchOpenProxyList())
+            ..add(_fetchJetkaiProxyList());
       _fetchingList = Future.wait(futures);
       await _fetchingList?.whenComplete(() {
         _fetched = true;
@@ -94,6 +95,45 @@ class ProxyManager {
     }
   }
 
+  Future<void> _fetchJetkaiProxyList() async {
+    try {
+      logger.log('Fetching from jetkai/proxy-list...', null, null);
+      const url =
+          'https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/json/proxies-advanced.json';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        logger.log('Failed to fetch from jetkai/proxy-list', null, null);
+        return;
+      }
+      final result = jsonDecode(response.body);
+      (result as List).fold(_proxies, (v, e) {
+        final isSSL = (e['protocols'] as List).any((e) => e['type'] == 'https');
+        if (e['ip'] != null &&
+            e['port'] != null &&
+            e['location']['isocode'] != null &&
+            isSSL) {
+          v[e['location']['isocode']] = v[e['location']['isocode']] ?? [];
+          v[e['location']['isocode']]!.add(
+            Proxy(
+              source: 'jetkai/proxy-list',
+              address: '${e['ip']}:${e['port']}',
+              country: e['location']['isocode'],
+              ssl: isSSL,
+            ),
+          );
+        }
+        return v;
+      });
+      logger.log('Proxies fetched: ${_proxies.length}', null, null);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
   Future<void> _fetchOpenProxyList() async {
     try {
       logger.log('Fetching from openproxylist...', null, null);
@@ -101,7 +141,7 @@ class ProxyManager {
           'https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt';
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) {
-        logger.log('Failed to fetch from spys.me', null, null);
+        logger.log('Failed to fetch from openproxylist', null, null);
         return;
       }
       response.body.split('\n').fold(_proxies, (v, e) {
@@ -329,7 +369,10 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> getSongManifest(String songId, {int timeout = 5}) async {
+  Future<StreamManifest?> getSongManifest(
+    String songId, {
+    int timeout = 5,
+  }) async {
     try {
       StreamManifest? manifest = await _validateDirect(songId, timeout);
       if (manifest != null) return manifest;
@@ -342,7 +385,10 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> _cycleProxies(String songId, {int timeout = 5}) async {
+  Future<StreamManifest?> _cycleProxies(
+    String songId, {
+    int timeout = 5,
+  }) async {
     StreamManifest? manifest;
     do {
       final proxy = await _randomProxy();
