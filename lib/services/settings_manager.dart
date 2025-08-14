@@ -115,7 +115,7 @@ final postUpdateRun =
     Hive.box('settings').get('postUpdateRun', defaultValue: {}) as Map;
 
 final streamRequestTimeout = ValueNotifier<int>(
-  Hive.box('settings').get('streamRequestTimeout', defaultValue: 10),
+  Hive.box('settings').get('streamRequestTimeout', defaultValue: 20),
 );
 
 final audioDevice = ValueNotifier<dynamic>(
