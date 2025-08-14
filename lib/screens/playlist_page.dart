@@ -34,10 +34,8 @@ import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -62,7 +60,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   dynamic _playlist;
   late ThemeData _theme;
-  bool _isLoading = true;
   var _currentLastLoadedId = 0;
   late final likeStatus = ValueNotifier<bool>(getLikeStatus());
 
@@ -134,11 +131,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   void _loadMore() {
-    _isLoading = true;
     fetch().then((List<dynamic> fetchedList) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
           if (fetchedList.isNotEmpty) {
             _songsList.addAll(fetchedList);
           }
@@ -500,34 +495,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
             _loadMore();
           });
       },
-    );
-  }
-
-  Widget _buildSongListItem(int index, bool isRemovable) {
-    if (index >= _songsList.length) {
-      if (!_isLoading) {
-        _loadMore();
-      }
-      return const Spinner();
-    }
-
-    final borderRadius = getItemBorderRadius(index, _songsList.length);
-
-    return SongBar(
-      _songsList[index],
-      onRemove:
-          isRemovable
-              ? () => {
-                if (removeSongFromPlaylist(
-                  _playlist,
-                  _songsList[index],
-                  removeOneAtIndex: index,
-                ))
-                  {_updateSongsListOnRemove(index)},
-              }
-              : null,
-      borderRadius: borderRadius,
-      showMusicDuration: true,
     );
   }
 }

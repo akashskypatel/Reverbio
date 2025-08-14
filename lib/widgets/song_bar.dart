@@ -25,6 +25,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -32,7 +33,6 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
-import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -46,7 +46,8 @@ import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
   SongBar(
-    this.song, {
+    this.song,
+    this.context, {
     this.backgroundColor,
     this.showMusicDuration = false,
     this.onPlay,
@@ -54,7 +55,7 @@ class SongBar extends StatefulWidget {
     this.borderRadius = BorderRadius.zero,
     super.key,
   });
-
+  final BuildContext context;
   final dynamic song;
   final Color? backgroundColor;
   final VoidCallback? onRemove;
@@ -65,6 +66,10 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
   final ValueNotifier<MediaItem?> _mediaItemNotifier = ValueNotifier(null);
+  final ValueNotifier<Media?> _mediaNotifier = ValueNotifier(null);
+  final ValueNotifier<Future<dynamic>?> _songMetadataFuture = ValueNotifier(
+    null,
+  );
   late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
     this.borderRadius,
   );
@@ -72,24 +77,33 @@ class SongBar extends StatefulWidget {
 
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
-  bool get isPrimed => _isPreparedNotifier.value;
+  bool get isPrepared => _isPreparedNotifier.value;
   Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
   MediaItem get mediaItem => _mediaItemNotifier.value ?? mapToMediaItem(song);
-  final FutureTracker<bool> _songFutureTracker = FutureTracker();
+  Media? get media => _mediaNotifier.value;
+  final FutureTracker<void> _songFutureTracker = FutureTracker();
 
   @override
   _SongBarState createState() => _SongBarState();
 
-  ///Returns false if song cannot play
-  Future<bool> queueSong({bool play = false}) async {
+  Future<void> _prepareSong() async {
     try {
-      await PM.triggerHook(song, 'onQueueSong');
       _isLoadingNotifier.value = true;
-      if (!isPrimed) unawaited(prepareSong());
-      if (play) await _songFutureTracker.completer!.future;
-      if (!isError) await audioHandler.queueSong(songBar: this, play: play);
+      if (_songMetadataFuture.value != null)
+        await _songMetadataFuture.value;
+      else
+        await getMetadata();
+      if (!isPrepared) await getSongUrl(song);
+      if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
+        song['songUrl'] = null;
+        song['isError'] = true;
+        song['error'] = context.l10n!.urlError;
+      }
+      await _updateMediaItem();
+      _isPreparedNotifier.value = true;
+      _isErrorNotifier.value =
+          song.containsKey('isError') ? song['isError'] : false;
       _isLoadingNotifier.value = false;
-      _isErrorNotifier.value = isError;
     } catch (e, stackTrace) {
       _isLoadingNotifier.value = false;
       _isErrorNotifier.value = true;
@@ -100,21 +114,29 @@ class SongBar extends StatefulWidget {
       );
     }
     if (isError) {
-      final context = NavigationManager().context;
       showToast(context.l10n!.errorCouldNotFindAStream);
     }
-    return !isError;
   }
 
-  Future<bool> _prepareSong() async {
-    _isLoadingNotifier.value = true;
-    if (!isPrimed) await getSongUrl(song);
-    _updateMediaItem(mapToMediaItem(song));
-    _isPreparedNotifier.value = true;
-    _isErrorNotifier.value =
-        song.containsKey('isError') ? song['isError'] : false;
-    _isLoadingNotifier.value = false;
-    return !isError;
+  Future<void> getMetadata() async {
+    try {
+      final ids = Uri.parse('?${parseEntityId(song)}').queryParameters;
+      if (_songMetadataFuture.value != null)
+        await _songMetadataFuture.value;
+      else if ((ids['mb'] == null || song['mbid'] == null) &&
+          _songMetadataFuture.value == null) {
+        _songMetadataFuture.value = getSongInfo(song);
+        unawaited(
+          _songMetadataFuture.value!.then((value) async => _updateMediaItem),
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   Future<void> prepareSong({bool shouldWait = false}) async {
@@ -132,16 +154,16 @@ class SongBar extends StatefulWidget {
     return checkSong(song, other.song);
   }
 
-  void _updateMediaItem(MediaItem mediaItem) {
-    _mediaItemStreamController.add(mediaItem);
-    _mediaItemNotifier.value = mediaItem;
+  Future<void> _updateMediaItem() async {
+    song['image'] = (await getValidImage(song))?.toString();
+    _mediaItemNotifier.value = mapToMediaItem(song);
+    if (song['songUrl'] != null && !isError)
+      _mediaNotifier.value = await audioHandler.buildAudioSource(this);
   }
 }
 
 class _SongBarState extends State<SongBar> {
   late ThemeData _theme;
-  Future<dynamic>? _songMetadataFuture;
-  dynamic loadedSong = false;
 
   TapDownDetails? doubleTapDetails;
 
@@ -161,26 +183,19 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    final ids = Uri.parse('?${parseEntityId(widget.song)}').queryParameters;
-    if ((ids['mb'] == null || widget.song['mbid'] == null) &&
-        _songMetadataFuture == null) {
-      _songMetadataFuture = getSongInfo(widget.song);
-      unawaited(
-        _songMetadataFuture!.whenComplete(() {
-          if (mounted)
-            setState(() {
-              widget._updateMediaItem(mapToMediaItem(widget.song));
-            });
-        }),
-      );
-    }
-    widget._updateMediaItem(mapToMediaItem(widget.song));
+    widget._songMetadataFuture.addListener(_metaDataListener);
+    if (mounted) unawaited(widget.getMetadata());
   }
 
   @override
   void dispose() {
-    _songMetadataFuture?.ignore();
+    widget._songMetadataFuture.value?.ignore();
+    widget._songMetadataFuture.removeListener(_metaDataListener);
     super.dispose();
+  }
+
+  void _metaDataListener() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -200,7 +215,12 @@ class _SongBarState extends State<SongBar> {
             onTap:
                 widget.onPlay ??
                 () async {
-                  await widget.queueSong(play: true);
+                  await audioHandler.prepare(
+                    songBar: widget,
+                    play: true,
+                    skipOnError: true,
+                  );
+                  //await widget.queueSong(play: true);
                 },
             child: Card(
               color: widget.backgroundColor,
@@ -278,6 +298,7 @@ class _SongBarState extends State<SongBar> {
 
   Widget _buildLoadingSpinner(BuildContext context) {
     return Tooltip(
+      waitDuration: const Duration(milliseconds: 1500),
       message: context.l10n!.loading,
       child: const SizedBox(width: 24, height: 24, child: Spinner()),
     );
@@ -285,6 +306,7 @@ class _SongBarState extends State<SongBar> {
 
   Widget _buildErrorIconWidget(BuildContext context) {
     return Tooltip(
+      waitDuration: const Duration(milliseconds: 1500),
       message: context.l10n!.errorCouldNotFindAStream,
       child: Icon(
         FluentIcons.error_circle_24_filled,

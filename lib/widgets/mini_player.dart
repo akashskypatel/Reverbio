@@ -26,6 +26,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/screens/now_playing_page.dart';
@@ -116,6 +117,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
             Row(
               children: [
                 _buildLikeButton(),
+                const SizedBox(width: 10),
                 _buildPreviousButton(context),
                 if (audioHandler.hasPrevious) const SizedBox(width: 10),
                 StreamBuilder<Duration>(
@@ -127,9 +129,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                 const SizedBox(width: 10),
                 StreamBuilder<PlaybackState>(
                   stream: audioHandler.playbackState,
-                  builder: (context, snapshot) {
-                    return _buildPlayPauseButton(context);
-                  },
+                  builder: _buildPlayPauseButton,
                 ),
                 if (audioHandler.hasNext) const SizedBox(width: 10),
                 _buildNextButton(context),
@@ -153,6 +153,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
               children: [
                 if (isLargeScreen(context: context)) ...[
                   _buildLikeButton(),
+                  const SizedBox(width: 10),
                   _buildPreviousButton(context),
                   if (audioHandler.hasPrevious) const SizedBox(width: 10),
                   StreamBuilder<Duration>(
@@ -164,9 +165,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   const SizedBox(width: 10),
                   StreamBuilder<PlaybackState>(
                     stream: audioHandler.playbackState,
-                    builder: (context, snapshot) {
-                      return _buildPlayPauseButton(context);
-                    },
+                    builder: _buildPlayPauseButton,
                   ),
                   if (audioHandler.hasNext) const SizedBox(width: 10),
                   _buildNextButton(context),
@@ -175,9 +174,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   const SizedBox(width: 10),
                   StreamBuilder<PlaybackState>(
                     stream: audioHandler.playbackState,
-                    builder: (context, snapshot) {
-                      return _buildPlayPauseButton(context);
-                    },
+                    builder: _buildPlayPauseButton,
                   ),
                 ],
               ],
@@ -199,6 +196,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
         final icon = Icon(
           value ? FluentIcons.heart_24_filled : FluentIcons.heart_24_regular,
           color: primaryColor,
+          size: 35,
         );
         void onPressed() {
           updateSongLikeStatus(
@@ -208,12 +206,16 @@ class _MiniPlayerState extends State<MiniPlayer> {
           status.value = !status.value;
         }
 
-        return IconButton(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          icon: icon,
-          iconSize: 35,
-          onPressed: onPressed,
+        return buildIconDataButton(
+          icon: IconDataAndAction(iconData: icon, onPressed: onPressed),
+          35,
+          _theme.colorScheme.primary,
+          _theme.colorScheme.surfaceContainerHigh,
+          context,
+          elevation: 0,
+          padding: const EdgeInsets.all(8),
+          hoverColor: _theme.colorScheme.primary.withValues(alpha: 0.08),
+          tooltip: context.l10n!.stop,
         );
       },
     );
@@ -223,33 +225,56 @@ class _MiniPlayerState extends State<MiniPlayer> {
     if (mounted) setState(() {});
   }
 
-  Widget _buildPlayPauseButton(BuildContext context) {
-    final processingState = audioHandler.state;
-    final isPlaying = audioHandler.playing;
-    final iconDataAndAction = getIconFromProcessingState(
-      processingState,
-      isPlaying,
-    );
-    return IconButton(
-      onPressed: iconDataAndAction.onPressed,
-      icon: Icon(
-        iconDataAndAction.iconData,
-        color: _theme.colorScheme.primary,
-        size: 35,
-      ),
-    );
+  Widget _buildPlayPauseButton(
+    BuildContext context,
+    AsyncSnapshot<PlaybackState> snapshot,
+  ) {
+    if (snapshot.connectionState == ConnectionState.waiting)
+      return const SizedBox.square(dimension: 35, child: Spinner());
+    if (snapshot.hasError || snapshot.data == null)
+      return const SizedBox.square(
+        dimension: 35,
+        child: Icon(FluentIcons.error_circle_24_filled),
+      );
+    else {
+      return buildIconDataButton(
+        playerState: snapshot.data,
+        35,
+        _theme.colorScheme.primary,
+        _theme.colorScheme.surfaceContainerHigh,
+        context,
+        elevation: 0,
+        padding: const EdgeInsets.all(8),
+        hoverColor: _theme.colorScheme.primary.withValues(alpha: 0.08),
+      );
+    }
   }
 
   Widget _buildStopButton(BuildContext context) {
     final isPlaying = audioHandler.playing;
-    return IconButton(
-      onPressed:
-          isPlaying || audioHandler.position.inSeconds > 0
-              ? () => audioHandler.seekToStart()
-              : null,
-      icon: const Icon(FluentIcons.stop_24_filled, size: 35),
-      color: _theme.colorScheme.primary,
-      disabledColor: _theme.colorScheme.secondaryContainer,
+    return buildIconDataButton(
+      icon: IconDataAndAction(
+        iconData: Icon(
+          FluentIcons.stop_24_filled,
+          size: 35,
+          color:
+              isPlaying || audioHandler.position.inSeconds > 0
+                  ? _theme.colorScheme.primary
+                  : _theme.colorScheme.primary.withValues(alpha: 0.08),
+        ),
+        onPressed:
+            isPlaying || audioHandler.position.inSeconds > 0
+                ? () => audioHandler.seekToStart()
+                : null,
+      ),
+      35,
+      _theme.colorScheme.primary,
+      _theme.colorScheme.surfaceContainerHigh,
+      context,
+      elevation: 0,
+      padding: const EdgeInsets.all(8),
+      hoverColor: _theme.colorScheme.primary.withValues(alpha: 0.08),
+      tooltip: context.l10n!.stop,
     );
   }
 
@@ -422,6 +447,7 @@ class PositionSlider extends StatelessWidget {
               icon: const Icon(FluentIcons.speaker_2_24_regular),
               color: Theme.of(context).colorScheme.primary,
             ),
+            const SizedBox(width: 10),
             _buildPositionText(context, fontColor, value),
             Flexible(
               child: Column(
@@ -442,6 +468,7 @@ class PositionSlider extends StatelessWidget {
               ),
             ),
             _buildDurationText(context, fontColor, value),
+            const SizedBox(width: 10),
             closeButton ?? const SizedBox.shrink(),
           ],
         );

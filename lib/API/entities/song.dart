@@ -590,7 +590,7 @@ Future<String?> getYouTubeAudioUrl(String songId) async {
     final manifest = await getSongManifest(songId);
     final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
     final audioUrl = audioQuality.url.toString();
-
+    addOrUpdateData('cache', cacheKey, audioUrl);
     return audioUrl;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

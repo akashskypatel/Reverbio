@@ -123,18 +123,18 @@ class _SongListState extends State<SongList> {
               return snapshot.hasError
                   ? _buildErrorWidget()
                   : (snapshot.hasData
-                      ? _buildSongList()
+                      ? _buildSongList(context)
                       : _buildLoadingWidget());
             },
           )
         else if (widget.inputData != null)
-          _buildSongList()
+          _buildSongList(context)
         else
           ValueListenableBuilder(
             valueListenable: activeQueueLength,
             builder: (context, value, __) {
               if (value != 0) {
-                return _buildSongList();
+                return _buildSongList(context);
               } else
                 return _buildErrorWidget();
             },
@@ -269,7 +269,7 @@ class _SongListState extends State<SongList> {
         if (audioHandler.queueSongBars.isNotEmpty &&
             audioHandler.songValueNotifier.value == null &&
             widget.songBars.isNotEmpty) {
-          audioHandler.queueSong(play: true, skipOnError: true);
+          audioHandler.prepare(skipOnError: true);
         }
       },
     );
@@ -289,7 +289,7 @@ class _SongListState extends State<SongList> {
             '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
           );
         }
-        await audioHandler.queueSong(play: true, skipOnError: true);
+        await audioHandler.prepare(play: true, skipOnError: true);
       },
       icon: Icon(
         FluentIcons.play_circle_24_filled,
@@ -324,7 +324,7 @@ class _SongListState extends State<SongList> {
     );
   }
 
-  void _buildSongBars() {
+  void _buildSongBars(BuildContext context) {
     if (widget.page != 'queue') {
       widget.songBars.clear();
       for (var i = 0; i < _songsList.length; i++) {
@@ -332,6 +332,7 @@ class _SongListState extends State<SongList> {
         widget.songBars.add(
           SongBar(
             _songsList[i],
+            context,
             borderRadius: borderRadius,
             showMusicDuration: true,
           ),
@@ -368,8 +369,8 @@ class _SongListState extends State<SongList> {
     setState(() {});
   }
 
-  Widget _buildSongList() {
-    _buildSongBars();
+  Widget _buildSongList(BuildContext context) {
+    _buildSongBars(context);
     return ValueListenableBuilder(
       valueListenable:
           widget.page == 'queue' ? activeQueueLength : _songBarsLength,

@@ -40,7 +40,6 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 List dbPlaylists = [...playlistsDB, ...albumsDB];
@@ -418,25 +417,6 @@ Future<List> getPlaylists({
 
   // Default to returning all playlists.
   return dbPlaylists;
-}
-
-Future<List<SongBar>> getSongBarsFromPlaylist(dynamic playlistData) async {
-  if (playlistData is String ||
-      playlistData['list'] == null ||
-      playlistData['list'].isEmpty)
-    playlistData = await getPlaylistInfoForWidget(playlistData);
-  if (playlistData['list'] == null || playlistData['list'].isEmpty) return [];
-  int index = 0;
-  final totalLength = (playlistData['list'] as List).length;
-  return (playlistData['list'] as List).map((e) {
-    final bar = SongBar(
-      e,
-      borderRadius: getItemBorderRadius(index, totalLength),
-      showMusicDuration: true,
-    );
-    index++;
-    return bar;
-  }).toList();
 }
 
 Future<List> getSongsFromPlaylist(dynamic playlistId) async {

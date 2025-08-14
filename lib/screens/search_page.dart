@@ -33,10 +33,8 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/playlist_page.dart';
-import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
-import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
@@ -424,15 +422,6 @@ class _SearchPageState extends State<SearchPage> {
         ),
       ),
     ];
-  }
-
-  Future<dynamic> _queuePlaylist(dynamic element) async {
-    final songBars = await getSongBarsFromPlaylist(element);
-    setQueueToPlaylist({
-      'title': element['title'],
-      'list': element['list'],
-    }, songBars);
-    showToast('${context.l10n!.queueReplacedByPlaylist}: ${element['title']}');
   }
 
   List<Widget> _getItems(

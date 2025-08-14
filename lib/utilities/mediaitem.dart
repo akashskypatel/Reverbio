@@ -34,7 +34,10 @@ Map mediaItemToMap(MediaItem mediaItem) => {
 };
 
 MediaItem mapToMediaItem(Map song) {
-  final imagePath = parseImage(song)?.first ?? '';
+  final imagePath =
+      (song['image'] != null && song['image'] is String)
+          ? song['image']
+          : parseImage(song)?.first ?? '';
   return MediaItem(
     id: song['id'] ?? '',
     album: song['album'] ?? '',
@@ -62,38 +65,17 @@ MediaItem mapToMediaItem(Map song) {
 }
 
 // Add this helper method to convert Media to MediaItem
-Map<String, dynamic> songToMediaExtras(Map song) => {
-  'id': song['id'].toString(),
-  'album': '',
-  'artist': song['artist'].toString().trim(),
-  'title': song['title'].toString(),
-  'duration': song['duration'],
-  'artUri':
-      song['isOffline'] ?? false
-          ? Uri.file(song['highResImage'].toString())
-          : Uri.parse(song['highResImage'].toString()),
-  'extras': {
-    'artistId': song['artistId'],
-    'lowResImage': song['lowResImage'],
-    'ytid': song['ytid'],
-    'isLive': song['isLive'],
-    'isOffline': song['isOffline'],
-    'artWorkPath': song['highResImage'].toString(),
-  },
-};
-
-MediaItem extrasToMediaItem(Map<String, dynamic> extras) => MediaItem(
-  id: extras['id'],
-  album: extras['album'],
-  artist: extras['artist'],
-  title: extras['title'],
-  artUri: extras['artUri'],
-  extras: {
-    'artistId': extras['extras']['artistId'],
-    'lowResImage': extras['extras']['lowResImage'],
-    'ytid': extras['extras']['ytid'],
-    'isLive': extras['extras']['isLive'],
-    'isOffline': extras['extras']['isOffline'],
-    'artWorkPath': extras['extras']['artWorkPath'],
-  },
-);
+Map<String, dynamic> songToMediaExtras(Map song) {
+  final imagePath = parseImage(song)?.first ?? '';
+  return {
+    'android.media.metadata.DURATION': (song['duration'] ?? 0) * 1000,
+    'android.media.metadata.ART_URI': imagePath,
+    'android.media.metadata.ALBUM_ART_URI': imagePath,
+    'artistId': song['artistId'] ?? '',
+    'lowResImage': song['lowResImage'] ?? '',
+    'ytid': song['ytid'] ?? '',
+    'isLive': song['isLive'] ?? false,
+    'isOffline': song['isOffline'] ?? false,
+    'artWorkPath': song['highResImage'] ?? '',
+  };
+}

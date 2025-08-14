@@ -24,83 +24,109 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
-Widget buildPlaybackIconButton(
-  PlaybackState? playerState,
+Widget buildIconDataButton(
   double iconSize,
   Color iconColor,
   Color backgroundColor,
   BuildContext context, {
+  String? tooltip,
+  PlaybackState? playerState,
+  Color? hoverColor,
+  IconDataAndAction? icon,
   double elevation = 2,
   EdgeInsets padding = const EdgeInsets.all(15),
 }) {
   final processingState = playerState?.processingState;
   final isPlaying = playerState?.playing ?? false;
 
-  final iconDataAndAction = getIconFromProcessingState(
-    processingState,
-    isPlaying,
-  );
-
+  final iconDataAndAction =
+      icon ??
+      getIconFromProcessingState(
+        processingState,
+        isPlaying,
+        iconColor,
+        size: iconSize,
+      );
+  tooltip =
+      tooltip ??
+      ((audioHandler.duration - audioHandler.position).inMilliseconds <= 100
+          ? context.l10n!.repeat
+          : isPlaying
+          ? context.l10n!.pause
+          : context.l10n!.play);
   return Tooltip(
-    message:
-        (audioHandler.duration - audioHandler.position).inMilliseconds <= 100
-            ? context.l10n!.repeat
-            : isPlaying
-            ? context.l10n!.pause
-            : context.l10n!.play,
-    child: RawMaterialButton(
-      elevation: elevation,
-      onPressed: iconDataAndAction.onPressed,
-      fillColor: backgroundColor,
-      splashColor: Colors.transparent,
-      padding: padding,
-      shape: const CircleBorder(),
-      child: Icon(iconDataAndAction.iconData, color: iconColor, size: iconSize),
+    waitDuration: const Duration(milliseconds: 1500),
+    message: tooltip,
+    child: SizedBox.square(
+      dimension: iconSize + padding.horizontal,
+      child: RawMaterialButton(
+        elevation: elevation,
+        onPressed: iconDataAndAction.onPressed,
+        fillColor: backgroundColor,
+        hoverColor: hoverColor,
+        splashColor: Colors.transparent,
+        padding: padding,
+        shape: const CircleBorder(),
+        child: iconDataAndAction.iconData,
+      ),
     ),
   );
 }
 
-_IconDataAndAction getIconFromProcessingState(
+IconDataAndAction getIconFromProcessingState(
   AudioProcessingState? processingState,
   bool isPlaying,
-) {
+  Color iconColor, {
+  double size = 35,
+}) {
+  Widget playIcon() => SizedBox.square(
+    dimension: size,
+    child: Icon(FluentIcons.play_24_filled, size: size, color: iconColor),
+  );
+  Widget pauseIcon() => SizedBox.square(
+    dimension: size,
+    child: Icon(FluentIcons.pause_24_filled, size: size, color: iconColor),
+  );
+  Widget replayIcon() => SizedBox.square(
+    dimension: size,
+    child: Icon(
+      FluentIcons.arrow_counterclockwise_24_filled,
+      size: size,
+      color: iconColor,
+    ),
+  );
+  Widget spinner() => SizedBox.square(dimension: size, child: const Spinner());
+  IconDataAndAction playOrPause() => IconDataAndAction(
+    iconData:
+        (audioHandler.duration - audioHandler.position).inMilliseconds <= 100 &&
+                (audioHandler.duration.inMilliseconds >= 100)
+            ? replayIcon()
+            : isPlaying
+            ? pauseIcon()
+            : playIcon(),
+    onPressed:
+        () =>
+            (audioHandler.duration - audioHandler.position).inMilliseconds <=
+                        100 &&
+                    (audioHandler.duration.inMilliseconds >= 100)
+                ? audioHandler.seek(Duration.zero)
+                : isPlaying
+                ? audioHandler.pause()
+                : audioHandler.play(),
+  );
   switch (processingState) {
     case AudioProcessingState.buffering:
     case AudioProcessingState.loading:
-      return _IconDataAndAction(iconData: FluentIcons.spinner_ios_16_filled);
-    case AudioProcessingState.completed:
-      return _IconDataAndAction(
-        iconData:
-            (audioHandler.duration - audioHandler.position).inMilliseconds <=
-                    100
-                ? FluentIcons.arrow_counterclockwise_24_filled
-                : isPlaying
-                ? FluentIcons.pause_24_filled
-                : FluentIcons.play_24_filled,
-        onPressed:
-            () =>
-                (audioHandler.duration - audioHandler.position)
-                            .inMilliseconds <=
-                        100
-                    ? audioHandler.seek(Duration.zero)
-                    : isPlaying
-                    ? audioHandler.pause()
-                    : audioHandler.play(),
-      );
+      return IconDataAndAction(iconData: spinner());
     default:
-      return _IconDataAndAction(
-        iconData:
-            isPlaying
-                ? FluentIcons.pause_24_filled
-                : FluentIcons.play_24_filled,
-        onPressed: isPlaying ? audioHandler.pause : audioHandler.play,
-      );
+      return playOrPause();
   }
 }
 
-class _IconDataAndAction {
-  _IconDataAndAction({required this.iconData, this.onPressed});
-  final IconData iconData;
+class IconDataAndAction {
+  IconDataAndAction({required this.iconData, this.onPressed});
+  final Widget iconData;
   final VoidCallback? onPressed;
 }

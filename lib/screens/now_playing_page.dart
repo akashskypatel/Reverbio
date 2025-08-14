@@ -1131,8 +1131,8 @@ class PlayerControlButtons extends StatelessWidget {
     return StreamBuilder<PlaybackState>(
       stream: audioHandler.playbackState,
       builder: (context, snapshot) {
-        return buildPlaybackIconButton(
-          snapshot.data,
+        return buildIconDataButton(
+          playerState: snapshot.data,
           iconSize,
           primaryColor,
           secondaryColor,

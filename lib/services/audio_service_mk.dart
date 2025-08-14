@@ -20,6 +20,7 @@
  */
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -36,12 +37,11 @@ import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:rxdart/rxdart.dart';
-
-enum AudioPlayerState { uninitialized, initialized, playing, paused, stopped }
 
 final Map activeQueue = {
   'id': '',
@@ -58,22 +58,23 @@ class AudioPlayerService {
     _initialize();
   }
 
-  static final Player _player = Player();
-  static bool _isShuffleEnabled = false;
-  static double _volume = settings.volume.toDouble();
+  late final Player _player = Player();
+  bool _isShuffleEnabled = false;
+  double _volume = settings.volume.toDouble();
 
-  static final _volumeNotifier = ValueNotifier(_volume);
-  static AudioProcessingState _processingState = AudioProcessingState.idle;
-  static AudioPlayerState _playerState = AudioPlayerState.uninitialized;
+  late final _volumeNotifier = ValueNotifier(_volume);
+  final _processingStateNotifier = ValueNotifier<AudioProcessingState>(
+    AudioProcessingState.idle,
+  );
 
   final List<SongBar> _queueSongBars = [];
 
-  static final _indexController = StreamController<int>.broadcast();
-  static final _processingStateController =
+  final _indexController = StreamController<int>.broadcast();
+  final _processingStateController =
       StreamController<AudioProcessingState>.broadcast();
-  static final _playerStateController =
-      StreamController<AudioPlayerState>.broadcast();
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
+
+  final ValueNotifier<DateTime?> _bufferStartNotifier = ValueNotifier(null);
 
   List<AudioDevice> audioDevices = [];
   AudioDevice audioDevice = AudioDevice.auto();
@@ -91,10 +92,9 @@ class AudioPlayerService {
   ValueNotifier<SongBar?> get songValueNotifier => _songValueNotifier;
 
   List<SongBar> get queueSongBars => _queueSongBars;
-  AudioPlayerState get playerState => _playerState;
-  AudioProcessingState get processingState => _processingState;
+  AudioProcessingState get processingState => _processingStateNotifier.value;
   PlayerState get state => _player.state;
-  static Player get player => _player;
+  Player get player => _player;
   bool get shuffleModeEnabled => _isShuffleEnabled;
   bool get playing => _player.state.playing;
   bool get hasNext {
@@ -124,8 +124,6 @@ class AudioPlayerService {
   double get speed => _player.state.rate;
   double get volume => _volume;
 
-  Stream<AudioPlayerState> get playerStateStream =>
-      _playerStateController.stream;
   Stream<AudioProcessingState> get processingStateStream =>
       _processingStateController.stream;
   Stream<bool> get playbackEventStream => _player.stream.playing;
@@ -148,50 +146,37 @@ class AudioPlayerService {
       _player.stream.audioDevices;
 
   void _initialize() {
-    _playerState = AudioPlayerState.initialized;
     _playerStreamBuffer = _player.stream.buffer.listen((buffer) {
-      if ((_player.state.buffer.inSeconds < (_player.state.rate * 60)) ||
-          _player.state.buffering) {
-        _updateProcessingState(AudioProcessingState.buffering);
-      } else if (_player.state.buffer.inSeconds >= (_player.state.rate * 60)) {
+      final bufferedDuration =
+          DateTime.now()
+              .difference(_bufferStartNotifier.value ?? DateTime.now())
+              .inSeconds;
+      final playableDuration =
+          _player.state.buffer.inSeconds ~/ _player.state.rate;
+      final isBuffered =
+          playableDuration >= bufferedDuration &&
+          (bufferedDuration + playableDuration) > 0;
+      if (isBuffered)
         _updateProcessingState(AudioProcessingState.ready);
-      }
-      logger.log(
-        'Buffer position:${_player.state.buffer.inSeconds} \n Status:$_processingState',
-        null,
-        null,
-      );
+      else
+        _updateProcessingState(AudioProcessingState.buffering);
     });
     _playerStreamCompleted = _player.stream.completed.listen((isCompleted) {
-      if (isCompleted && _processingState != AudioProcessingState.error) {
+      if (isCompleted &&
+          _processingStateNotifier.value != AudioProcessingState.error) {
         _updateProcessingState(AudioProcessingState.completed);
-        logger.log(
-          'Buffer Completed:${_player.state.buffer.inSeconds} \n Status:$_processingState',
-          null,
-          null,
-        );
       }
     });
     _playerStreamPlaying = _player.stream.playing.listen((playing) {
-      if (playing && _processingState != AudioProcessingState.error) {
+      if (playing &&
+          _processingStateNotifier.value != AudioProcessingState.error) {
         _updateProcessingState(AudioProcessingState.ready);
-        _updatePlayerState(AudioPlayerState.paused);
-        logger.log(
-          'Playing:${_player.state.buffer.inSeconds} \n Status:$_processingState',
-          null,
-          null,
-        );
       }
     });
     _playerStreamError = _player.stream.error.listen((error) {
       if (error != '') {
         logger.log('Player Stream Error', error, StackTrace.current);
         _updateProcessingState(AudioProcessingState.error);
-        logger.log(
-          'Error:${_player.state.buffer.inSeconds} \n Status:$_processingState',
-          null,
-          null,
-        );
       }
     });
     _playerStreamAudioDevice = _player.stream.audioDevice.listen(
@@ -206,53 +191,39 @@ class AudioPlayerService {
   }
 
   void _updateProcessingState(AudioProcessingState newState) {
-    if (_processingState != newState) {
-      _processingState = newState;
+    if (_processingStateNotifier.value != newState) {
+      _processingStateNotifier.value = newState;
       _processingStateController.add(newState);
     }
   }
 
-  void _updatePlayerState(AudioPlayerState newState) {
-    if (_playerState != newState) {
-      _playerState = newState;
-      _playerStateController.add(newState);
-    }
-  }
-
   Future<void> play() async {
-    _updatePlayerState(AudioPlayerState.playing);
+    _updateProcessingState(AudioProcessingState.ready);
     await _player.play();
     return;
   }
 
   Future<void> pause() async {
-    _updatePlayerState(AudioPlayerState.paused);
     return _player.pause();
   }
 
   Future<void> close() async {
-    _updatePlayerState(AudioPlayerState.initialized);
     await player.stop();
     _songValueNotifier.value = null;
     return;
   }
 
   Future<void> stop() async {
-    _updatePlayerState(AudioPlayerState.stopped);
     await seekToStart();
     return _player.pause();
   }
 
   Future<void> seekToStart() async {
-    _updatePlayerState(
-      player.state.playing ? AudioPlayerState.playing : AudioPlayerState.paused,
-    );
     await player.seek(Duration.zero);
     return _player.pause();
   }
 
   Future<void> dispose() async {
-    _updatePlayerState(AudioPlayerState.uninitialized);
     await close();
     await _playerStreamBuffer?.cancel();
     await _playerStreamCompleted?.cancel();
@@ -264,7 +235,6 @@ class AudioPlayerService {
     await _processingStateController.close();
     await _indexController.close();
     await _processingStateController.close();
-    await _playerStateController.close();
     await _mediaItemStreamController.close();
     return _player.dispose();
   }
@@ -276,18 +246,27 @@ class AudioPlayerService {
 
   Future<void> open(Media media) async {
     _updateProcessingState(AudioProcessingState.loading);
+    _bufferStartNotifier.value = DateTime.now();
     return _player.open(media);
   }
 
-  Future<void> queue(Media media, SongBar songBar) async {
+  Future<void> prepare(
+    SongBar songBar, {
+    bool play = false,
+    bool skipOnError = false,
+  }) async {
     _updateProcessingState(AudioProcessingState.loading);
     songValueNotifier.value = songBar;
+    await songBar.prepareSong(shouldWait: play);
     _mediaItemSubscription = songBar.mediaItemStream.listen(
       _mediaItemStreamController.add,
     );
-    await _player.open(media);
+  }
+
+  Future<void> queue(Media media) async {
+    await open(media);
     await player.seek(Duration.zero);
-    return _player.pause();
+    return pause();
   }
 
   Future<void> setVolume(double volume) async {
@@ -298,10 +277,6 @@ class AudioPlayerService {
   }
 
   Future<void> seek(Duration duration) async {
-    if (duration < player.state.duration)
-      _updatePlayerState(
-        player.state.playing ? AudioPlayerState.playing : playerState,
-      );
     return _player.seek(duration);
   }
 
@@ -343,8 +318,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   late final StreamSubscription<MediaItem?> _mediaItemSubscription;
   late final StreamSubscription<audio_session.AudioInterruptionEvent>
   _sessionEventStream;
-  late final StreamSubscription<audio_session.AudioDevicesChangedEvent>
-  _sessionDeviceEventStream;
+  //late final StreamSubscription<audio_session.AudioDevicesChangedEvent>
+  //_sessionDeviceEventStream;
   final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
     PositionData(Duration.zero, Duration.zero, Duration.zero),
   );
@@ -354,8 +329,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   bool get hasPrevious => audioPlayer.hasPrevious;
   ValueNotifier<SongBar?> get songValueNotifier =>
       audioPlayer.songValueNotifier;
-  Stream<AudioPlayerState> get playerStateStream =>
-      audioPlayer.playerStateStream;
   Stream<PositionData> get positionDataStream => audioPlayer.positionDataStream;
   Stream<AudioDevice> get audioDeviceStream => audioPlayer.audioDeviceStream;
   Stream<List<AudioDevice>> get audioDevicesStream =>
@@ -378,7 +351,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _positionDataSubscription.cancel();
     await _mediaItemSubscription.cancel();
     await _sessionEventStream.cancel();
-    await _sessionDeviceEventStream.cancel();
+    //await _sessionDeviceEventStream.cancel();
     await audioPlayer.dispose();
   }
 
@@ -391,9 +364,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       _sessionEventStream = _session!.interruptionEventStream.listen(
         _handleSessionEventChange,
       );
-      _sessionDeviceEventStream = _session!.devicesChangedEventStream.listen(
-        _handleDeviceEventChange,
-      );
+      //_sessionDeviceEventStream = _session!.devicesChangedEventStream.listen(
+      //  _handleDeviceEventChange,
+      //);
     }
     return _session!;
   }
@@ -438,16 +411,24 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   @override
-  Future<void> skipToNext({bool play = true}) async {
+  Future<void> skipToNext({bool play = true, bool skipOnError = true}) async {
     final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
     if (!audioPlayer.hasNext && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value?.song == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
     if (loopAllSongs && index == queueSongBars.length - 1) {
-      await queueSong(songBar: queueSongBars.first, play: play);
+      await this.prepare(
+        songBar: queueSongBars.first,
+        play: play,
+        skipOnError: skipOnError,
+      );
       audioPlayer.skipToNext(0);
     } else if (index < queueSongBars.length - 1) {
-      await queueSong(songBar: queueSongBars[index + 1], play: play);
+      await this.prepare(
+        songBar: queueSongBars[index + 1],
+        play: play,
+        skipOnError: skipOnError,
+      );
       audioPlayer.skipToNext(index + 1);
     }
     _updatePlaybackState();
@@ -460,10 +441,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (audioPlayer.songValueNotifier.value == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
     if (loopAllSongs && index == 0) {
-      await queueSong(songBar: queueSongBars.last, play: play);
+      await this.prepare(songBar: queueSongBars.last, play: play);
       audioPlayer.skipToPrevious(queueSongBars.length - 1);
     } else if (index > 0) {
-      await queueSong(songBar: queueSongBars[index - 1], play: play);
+      await this.prepare(songBar: queueSongBars[index - 1], play: play);
       audioPlayer.skipToPrevious(index - 1);
     }
     _updatePlaybackState();
@@ -472,7 +453,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> skipToQueueItem(int index, {bool play = true}) async {
     index = min(index, queueSongBars.length - 1);
-    await queueSong(songBar: queueSongBars[index], play: play);
+    await this.prepare(songBar: queueSongBars[index], play: play);
     _updatePlaybackState();
   }
 
@@ -481,7 +462,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       Random().nextInt(queueSongBars.length - 1),
       queueSongBars.length - 1,
     );
-    await queueSong(songBar: queueSongBars[index], play: play);
+    await this.prepare(songBar: queueSongBars[index], play: play);
     _updatePlaybackState();
   }
 
@@ -525,6 +506,47 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> onNotificationDeleted() async {
     await onTaskRemoved();
+  }
+
+  @override
+  Future<void> prepare({
+    SongBar? songBar,
+    bool play = false,
+    bool skipOnError = false,
+    int skipCount = 0,
+  }) async {
+    if (songBar != null && !isSongInQueue(songBar)) {
+      addSongToQueue(songBar);
+    }
+    if (queueSongBars.isEmpty) return;
+    songBar = songBar ?? audioPlayer.queueSongBars.first;
+    play = play || audioPlayer.playing;
+    await audioPlayer.prepare(songBar, play: play, skipOnError: skipOnError);
+    if (!songBar.isError && songBar.media != null) {
+      await audioPlayer.queue(songBar.media!);
+      if (play) return this.play();
+    } else if (skipOnError && audioPlayer.queueSongBars.length > 1) {
+      if (skipCount < audioPlayer.queueSongBars.length || skipCount <= 10) {
+        final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
+        if (next != null)
+          return this.prepare(
+            songBar: next,
+            play: play,
+            skipOnError: skipOnError,
+            skipCount: skipCount + 1,
+          );
+      } else {
+        showToast(
+          'Failed to fetch song too many times',
+          context: songBar.context,
+        );
+      }
+    }
+    if (prepareNextSong.value) {
+      final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
+      if (next != null)
+        unawaited(this.prepare(songBar: next, skipOnError: skipOnError));
+    }
   }
 
   Future<void> close() async {
@@ -621,8 +643,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> _handleDeviceEventChange(
     audio_session.AudioDevicesChangedEvent event,
   ) async {
-    final audioDevice = AudioDevice.auto();
     /*
+    final audioDevice = AudioDevice.auto();
+    
     try {
       final currentDevice = audioPlayer.state.audioDevice;
       if (event.devicesAdded.isNotEmpty) {
@@ -648,8 +671,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         stackTrace,
       );
     }
-    */
+    
     await audioPlayer.setAudioDevice(audioDevice: audioDevice);
+    */
   }
 
   void _handleSessionEventChange(audio_session.AudioInterruptionEvent event) {
@@ -733,7 +757,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         value.position != Duration.zero) {
       switch (repeatNotifier.value) {
         case AudioServiceRepeatMode.one:
-          queueSong(songBar: audioPlayer.songValueNotifier.value, play: true);
+          this.prepare(
+            songBar: audioPlayer.songValueNotifier.value,
+            play: true,
+          );
           break;
         default:
           if (shuffleNotifier.value)
@@ -751,7 +778,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           song['skipSegments'] != null &&
           song['skipSegments'].isNotEmpty) {
         final checkSegment =
-            List<Map<String, dynamic>>.from(song['skipSegments'])
+            (jsonDecode(jsonEncode(song['skipSegments'])) as List)
+                .cast<Map<String, dynamic>>()
                 .where(
                   (e) =>
                       e['start']! <= value.position.inMicroseconds &&
@@ -827,7 +855,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
             MediaAction.seekBackward,
           },
           androidCompactActionIndices: const [0, 1, 2],
-          processingState: _getProcessingState(),
+          processingState: audioPlayer.processingState,
           repeatMode: settings.repeatNotifier.value,
           shuffleMode:
               audioPlayer.shuffleModeEnabled
@@ -845,19 +873,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     });
   }
 
-  AudioProcessingState _getProcessingState() {
-    if (audioPlayer.processingState == AudioProcessingState.error) {
-      return AudioProcessingState.error;
-    } else if (!audioPlayer.playing) {
-      return AudioProcessingState.ready;
-    } else if (audioPlayer.processingState == AudioProcessingState.buffering) {
-      return AudioProcessingState.buffering;
-    } else {
-      return AudioProcessingState.ready;
-    }
-  }
-
-  Future<bool> queueSong({
+  /*
+  Future<bool> _queueSong({
     SongBar? songBar,
     bool play = false,
     bool skipOnError = false,
@@ -870,21 +887,22 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
       final index = songBar == null ? 0 : queueIndexOf(songBar);
       songBar = queueSongBars[index];
-      final isError =
-          songBar.song.containsKey('isError') ? songBar.song['isError'] : false;
       // Prepare next song
       if (prepareNextSong.value) {
         final newIndex =
             index >= queueSongBars.length && loopAllSongs ? 0 : index + 1;
         if (play &&
-            !isError &&
             queueSongBars.length > 1 &&
             newIndex != index &&
             newIndex < queueSongBars.length)
-          unawaited(queueSongBars[newIndex].prepareSong());
+          unawaited(
+            queueSong(
+              songBar: queueSongBars[newIndex],
+              skipOnError: skipOnError,
+            ),
+          );
 
         if (play &&
-            isError &&
             skipOnError &&
             newIndex < queueSongBars.length &&
             newIndex != index)
@@ -897,9 +915,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       final isOffline = songBar.song['isOffline'] ?? false;
       final preliminaryTag = mapToMediaItem(songBar.song);
       if (songBar.song['songUrl'] == null &&
-          !songBar.isPrimed &&
+          !songBar.isPrepared &&
           !songBar.isLoading)
-        await songBar.prepareSong(shouldWait: true);
+        await songBar.getMetadata(shouldWait: true);
 
       if (songBar.song['songUrl'] == null ||
           await checkUrl(songBar.song['songUrl']) >= 400) {
@@ -913,7 +931,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         if (play) {
           mediaItem.add(preliminaryTag);
           logger.log('Playing: $songUrl', null, null);
-          await audioPlayer.queue(audioSource, songBar);
+          //await audioPlayer.queue(audioSource, songBar);
           unawaited(audioPlayer.play());
         }
         final cacheKey =
@@ -930,7 +948,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
     return false;
   }
-
+  */
   Future<Media> buildAudioSource(SongBar songBar) async {
     final extras = songToMediaExtras(songBar.song);
 
@@ -1074,6 +1092,29 @@ bool isSongInQueue(SongBar songBar) {
 int queueIndexOf(SongBar songBar, {List<SongBar>? songBars}) {
   if (songBars != null) return songBars.indexWhere((e) => e.equals(songBar));
   return audioHandler.queueSongBars.indexWhere((e) => e.equals(songBar));
+}
+
+SongBar? nextSongBar(SongBar songBar, {List<SongBar>? songBars}) {
+  final list = songBars != null ? songBars : audioHandler.queueSongBars;
+  final length = list.length;
+  final index = list.indexWhere((e) => e.equals(songBar));
+  if (index < 0) return null;
+  if (length == 1) return songBar;
+  if (index == (length - 1) &&
+      repeatNotifier.value == AudioServiceRepeatMode.all)
+    return list[0];
+  return list[index + 1];
+}
+
+SongBar? previousSongBar(SongBar songBar, {List<SongBar>? songBars}) {
+  final list = songBars != null ? songBars : audioHandler.queueSongBars;
+  final length = list.length;
+  final index = list.indexWhere((e) => e.equals(songBar));
+  if (index < 0) return null;
+  if (length == 1) return songBar;
+  if (index == 0 && repeatNotifier.value == AudioServiceRepeatMode.all)
+    return list[length - 1];
+  return list[index - 1];
 }
 
 void setQueueToPlaylist(dynamic playlist, List<SongBar> songBars) {
