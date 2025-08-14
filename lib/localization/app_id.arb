@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Gulir ke bawah dan Ketuk Versi beberapa kali hingga diminta mengaktifkan mode pengembang",
   "androidAutoStep5": "5. Ketuk tiga titik di pojok kanan atas",
   "androidAutoStep6": "6. Ketuk Pengaturan Pengembang",
-  "androidAutoStep7": "7. Gulir ke bawah dan aktifkan \"Sumber tidak dikenal\""
+  "androidAutoStep7": "7. Gulir ke bawah dan aktifkan \"Sumber tidak dikenal\"",
+  "stop": "Berhenti"
 }

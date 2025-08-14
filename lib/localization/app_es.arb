@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Desplácese hacia abajo y toque Versión varias veces hasta que se le solicite habilitar el modo de desarrollador",
   "androidAutoStep5": "5. Toque los tres puntos en la esquina superior derecha",
   "androidAutoStep6": "6. Toque en Configuración para desarrolladores",
-  "androidAutoStep7": "7. Desplácese hacia abajo y active \"Fuentes desconocidas\""
+  "androidAutoStep7": "7. Desplácese hacia abajo y active \"Fuentes desconocidas\"",
+  "stop": "Detener"
 }

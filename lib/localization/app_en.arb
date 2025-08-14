@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Scroll down and Tap Version several times until you are asked to enable developer mode",
   "androidAutoStep5": "5. Tap on 3 dots on the top right corner",
   "androidAutoStep6": "6. Tap on Developer Settings",
-  "androidAutoStep7": "7. Scroll down and enable \"Unknown sources\""
+  "androidAutoStep7": "7. Scroll down and enable \"Unknown sources\"",
+  "stop": "Stop"
 }

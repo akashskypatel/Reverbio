@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Scorri verso il basso e tocca più volte Versione finché non ti viene chiesto di abilitare la modalità sviluppatore",
   "androidAutoStep5": "5. Tocca i tre puntini nell'angolo in alto a destra",
   "androidAutoStep6": "6. Tocca Impostazioni sviluppatore",
-  "androidAutoStep7": "7. Scorri verso il basso e abilita \"Origini sconosciute\""
+  "androidAutoStep7": "7. Scorri verso il basso e abilita \"Origini sconosciute\"",
+  "stop": "Ferma"
 }

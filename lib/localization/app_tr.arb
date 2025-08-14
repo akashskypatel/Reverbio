@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Aşağı kaydırın ve geliştirici modunu etkinleştirmeniz istenene kadar Sürüm'e birkaç kez dokunun",
   "androidAutoStep5": "5. Sağ üst köşedeki üç noktaya dokunun",
   "androidAutoStep6": "6. Geliştirici Ayarları'na dokunun",
-  "androidAutoStep7": "7. Aşağı kaydırın ve \"Bilinmeyen kaynaklar\"ı etkinleştirin"
+  "androidAutoStep7": "7. Aşağı kaydırın ve \"Bilinmeyen kaynaklar\"ı etkinleştirin",
+  "stop": "Durdur"
 }

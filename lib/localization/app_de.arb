@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Scrollen Sie nach unten und tippen Sie mehrmals auf Version, bis Sie aufgefordert werden, den Entwicklermodus zu aktivieren",
   "androidAutoStep5": "5. Tippen Sie auf die drei Punkte in der oberen rechten Ecke",
   "androidAutoStep6": "6. Tippen Sie auf Entwicklereinstellungen",
-  "androidAutoStep7": "7. Scrollen Sie nach unten und aktivieren Sie \"Unbekannte Quellen\""
+  "androidAutoStep7": "7. Scrollen Sie nach unten und aktivieren Sie \"Unbekannte Quellen\"",
+  "stop": "Stopp"
 }

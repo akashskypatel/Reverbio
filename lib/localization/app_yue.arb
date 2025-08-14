@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. 向下滑動並多次點擊版本，直到系統要求您啟用開發者模式",
   "androidAutoStep5": "5. 點擊右上角嘅三點圖示",
   "androidAutoStep6": "6. 點擊開發者設定",
-  "androidAutoStep7": "7. 向下滑動並啟用「未知來源」"
+  "androidAutoStep7": "7. 向下滑動並啟用「未知來源」",
+  "stop": "停止"
 }

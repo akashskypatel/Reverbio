@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Cuộn xuống và nhấn vào Phiên bản nhiều lần cho đến khi được yêu cầu bật chế độ nhà phát triển",
   "androidAutoStep5": "5. Nhấn vào ba chấm ở góc trên bên phải",
   "androidAutoStep6": "6. Nhấn vào Cài đặt nhà phát triển",
-  "androidAutoStep7": "7. Cuộn xuống và bật \"Nguồn không xác định\""
+  "androidAutoStep7": "7. Cuộn xuống và bật \"Nguồn không xác định\"",
+  "stop": "Dừng"
 }

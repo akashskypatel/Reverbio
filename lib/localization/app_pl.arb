@@ -237,5 +237,6 @@
   "androidAutoStep4": "4. Przewiń w dół i dotknij Wersja kilka razy, aż zostaniesz poproszony o włączenie trybu dewelopera",
   "androidAutoStep5": "5. Dotknij trzech kropek w prawym górnym rogu",
   "androidAutoStep6": "6. Dotknij Ustawienia dla programistów",
-  "androidAutoStep7": "7. Przewiń w dół i włącz \"Nieznane źródła\""
+  "androidAutoStep7": "7. Przewiń w dół i włącz \"Nieznane źródła\"",
+  "stop": "Zatrzymaj"
 }
