@@ -396,6 +396,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Tooltip(
+                          waitDuration: const Duration(milliseconds: 1500),
                           message: context.l10n!.youtubePlaylistLinkOrId,
                           child: ElevatedButton(
                             onPressed: () {
@@ -418,6 +419,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         ),
                         const SizedBox(width: 10),
                         Tooltip(
+                          waitDuration: const Duration(milliseconds: 1500),
                           message: context.l10n!.customPlaylists,
                           child: ElevatedButton(
                             onPressed: () {
@@ -440,6 +442,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         ),
                         const SizedBox(width: 10),
                         Tooltip(
+                          waitDuration: const Duration(milliseconds: 1500),
                           message: context.l10n!.importPlaylists,
                           child: ElevatedButton(
                             onPressed: () {
