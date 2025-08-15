@@ -1159,10 +1159,13 @@ class PlayerControlButtons extends StatelessWidget {
           ),
           iconSize: iconSize / 1.7,
           onPressed:
-              () =>
-                  repeatNotifier.value == AudioServiceRepeatMode.one
-                      ? audioHandler.playAgain()
-                      : audioHandler.skipToNext(),
+              repeatNotifier.value == AudioServiceRepeatMode.one
+                  ? () async {
+                    await audioHandler.playAgain();
+                  }
+                  : () async {
+                    await audioHandler.skipToNext();
+                  },
           splashColor: Colors.transparent,
           tooltip: context.l10n!.next,
         );
