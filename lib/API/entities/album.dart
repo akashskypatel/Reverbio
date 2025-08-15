@@ -60,11 +60,12 @@ Future<Map> getAlbumDetailsById(dynamic albumData) async {
     final id = parseEntityId(albumData);
     final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
     final cached = _getCachedAlbum(albumData);
-    if (cached != null) {
+    if (cached != null && cached['primary-type'] != null) {
       await getAlbumCoverArt(cached);
-      if (cached['list'] == null || cached['list'].isEmpty)
+      if (cached['list'] == null || cached['list'].isEmpty) {
         await getTrackList(cached);
-      else {
+        return cached;
+      } else {
         await PM.triggerHook(albumData, 'onGetAlbumInfo');
         return cached;
       }
@@ -81,7 +82,10 @@ Future<Map> getAlbumDetailsById(dynamic albumData) async {
     album['album'] = album['title'];
     album['cachedAt'] = DateTime.now().toString();
     await getAlbumCoverArt(album);
-    await getTrackList(album);
+    if (album['primary-type'].toLowerCase() != 'single')
+      await getTrackList(album);
+    else
+      await getSinglesDetails(album);
     cachedAlbumsList.addOrUpdate('id', album['id'], album);
     addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
     await PM.triggerHook(albumData, 'onGetAlbumInfo');
@@ -167,7 +171,7 @@ Future<dynamic> getSinglesDetails(dynamic single) async {
   final rgid = single['mbidType'] == 'track' ? single['reid'] : ids['mb'];
   if (rgid == null) return single;
   final cached = _getCachedAlbum(single);
-  if (cached != null) {
+  if (cached != null && cached['primary-type'] != null) {
     single.addAll(cached);
     return single;
   } else
@@ -185,6 +189,7 @@ Future<dynamic> getSinglesDetails(dynamic single) async {
             'rid': result['id'],
             'mbid': single['id'],
             'mbidType': 'release-group',
+            'list': [result],
           });
           result.removeWhere(
             (key, value) => ['id', 'mbid', 'mbidType'].contains(key),
@@ -225,7 +230,8 @@ Future<List?> getTrackList(dynamic album) async {
 
     if (cached != null &&
         cached['list'] != null &&
-        (cached['list'] as List).isNotEmpty) {
+        (cached['list'] as List).isNotEmpty &&
+        cached['primary-type'] != null) {
       album['list'] = cached['list'];
       return album['list'];
     }
