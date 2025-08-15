@@ -207,8 +207,8 @@
   "addedBackgroundJob": "已加入后台队列",
   "updated": "已更新",
   "autoCacheOffline": "自动将正在收听的歌曲设为离线可用",
-  "storageWarning": "警告：此选项会使用大量存储空间。启用前请确保你的设备有足够空间！",
-  "autoCacheOfflinePlaylist": "当收听时，自动将此播放列表的歌曲设为离线可用",
+  "storageWarning": "警告：此选项会占用大量存储空间。启用前请确保你的设备有足够空间！歌曲首次在线播放后才会在线提供。",
+  "autoCacheOfflinePlaylist": "自动保存播放列表以供离线播放",
   "urlError": "无法解析歌曲URL",
   "playlistAutoOfflineEnabled": "已启用播放列表自动离线功能",
   "playlistAutoOfflineDisabled": "已停用播放列表自动离线功能",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. 点击右上角的三点图标",
   "androidAutoStep6": "6. 点击开发者设置",
   "androidAutoStep7": "7. 向下滑动并启用\"未知来源\"",
-  "stop": "停止"
+  "stop": "停止",
+  "downloaded": "已下载"
 }

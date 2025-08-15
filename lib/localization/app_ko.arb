@@ -207,8 +207,8 @@
   "addedBackgroundJob": "백그라운드 대기열에 추가됨",
   "updated": "업데이트됨",
   "autoCacheOffline": "듣고 있는 음악을 자동으로 오프라인에서 사용 가능하게 함",
-  "storageWarning": "경고: 이 옵션은 많은 저장 공간을 사용합니다. 활성화하기 전에 기기에 충분한 저장 공간이 있는지 확인하세요!",
-  "autoCacheOfflinePlaylist": "이 재생목록의 음악을 들을 때 자동으로 오프라인에서 사용 가능하게 함",
+  "storageWarning": "경고: 이 옵션은 많은 저장 공간을 사용합니다. 활성화하기 전에 기기에 충분한 저장 공간이 있는지 확인하세요! 노래는 온라인에서 처음 재생된 후에만 온라인에서 사용할 수 있습니다.",
+  "autoCacheOfflinePlaylist": "오프라인 재생을 위한 플레이리스트 자동 저장",
   "urlError": "노래 URL을 확인할 수 없음",
   "playlistAutoOfflineEnabled": "플레이리스트 자동 오프라인 활성화됨",
   "playlistAutoOfflineDisabled": "플레이리스트 자동 오프라인 비활성화됨",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. 오른쪽 상단 모서리에 있는 점 세 개를 탭하세요",
   "androidAutoStep6": "6. 개발자 설정을 탭하세요",
   "androidAutoStep7": "7. 아래로 스크롤하여 \"알 수 없는 출처\" 활성화",
-  "stop": "중지"
+  "stop": "중지",
+  "downloaded": "다운로드됨"
 }

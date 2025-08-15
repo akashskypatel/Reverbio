@@ -207,8 +207,8 @@
   "addedBackgroundJob": "ajouté à la file d'attente en arrière-plan",
   "updated": "Mis à jour",
   "autoCacheOffline": "Rendre automatiquement disponibles hors ligne les chansons écoutées",
-  "storageWarning": "Avertissement : Cette option utilisera beaucoup d'espace de stockage. Assurez-vous que votre appareil dispose de suffisamment d'espace avant de l'activer !",
-  "autoCacheOfflinePlaylist": "Rendre automatiquement disponibles hors ligne les chansons de cette playlist lorsqu'elles sont écoutées",
+  "storageWarning": "Avertissement : Cette option utilise beaucoup d'espace de stockage. Assurez-vous que votre appareil dispose de suffisamment d'espace avant de l'activer ! Les chansons ne seront disponibles en ligne qu'après avoir été lues en ligne une première fois.",
+  "autoCacheOfflinePlaylist": "Enregistrement automatique pour lecture hors ligne",
   "urlError": "L'URL de la chanson n'a pas pu être résolue",
   "playlistAutoOfflineEnabled": "Playlist automatique hors ligne activée",
   "playlistAutoOfflineDisabled": "Playlist automatique hors ligne désactivée",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Appuyez sur les trois points dans le coin supérieur droit",
   "androidAutoStep6": "6. Appuyez sur Paramètres du développeur",
   "androidAutoStep7": "7. Faites défiler vers le bas et activez \"Sources inconnues\"",
-  "stop": "Arrêter"
+  "stop": "Arrêter",
+  "downloaded": "Téléchargé"
 }

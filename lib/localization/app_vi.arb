@@ -207,8 +207,8 @@
   "addedBackgroundJob": "đã thêm vào hàng đợi nền",
   "updated": "Đã cập nhật",
   "autoCacheOffline": "Tự động lưu bài hát đang nghe để sử dụng ngoại tuyến",
-  "storageWarning": "Cảnh báo: Tùy chọn này sẽ sử dụng nhiều dung lượng lưu trữ. Hãy đảm bảo thiết bị của bạn có đủ dung lượng trước khi bật!",
-  "autoCacheOfflinePlaylist": "Tự động lưu bài hát trong danh sách phát này để sử dụng ngoại tuyến khi nghe",
+  "storageWarning": "Cảnh báo: Tùy chọn này sẽ sử dụng nhiều dung lượng lưu trữ. Đảm bảo thiết bị của bạn có đủ dung lượng trước khi bật! Bài hát sẽ chỉ khả dụng trực tuyến sau khi được phát trực tuyến lần đầu tiên.",
+  "autoCacheOfflinePlaylist": "Tự động lưu danh sách phát để phát ngoại tuyến",
   "urlError": "Không thể phân giải URL bài hát",
   "playlistAutoOfflineEnabled": "Đã bật tự động phát danh sách ngoại tuyến",
   "playlistAutoOfflineDisabled": "Đã tắt tự động phát danh sách ngoại tuyến",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Nhấn vào ba chấm ở góc trên bên phải",
   "androidAutoStep6": "6. Nhấn vào Cài đặt nhà phát triển",
   "androidAutoStep7": "7. Cuộn xuống và bật \"Nguồn không xác định\"",
-  "stop": "Dừng"
+  "stop": "Dừng",
+  "downloaded": "Đã tải xuống"
 }

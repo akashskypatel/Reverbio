@@ -207,8 +207,8 @@
   "addedBackgroundJob": "adicionado à fila em segundo plano",
   "updated": "Atualizado",
   "autoCacheOffline": "Disponibilizar automaticamente músicas a serem ouvidas offline",
-  "storageWarning": "Aviso: Esta opção irá utilizar muito armazenamento. Certifique-se de que o seu dispositivo tem espaço suficiente antes de ativar!",
-  "autoCacheOfflinePlaylist": "Disponibilizar automaticamente músicas desta playlist offline quando forem ouvidas",
+  "storageWarning": "Aviso: Esta opção irá utilizar muito espaço de armazenamento. Certifique-se de que o seu dispositivo tem espaço suficiente antes de ativar! As canções ficarão disponíveis online apenas após serem reproduzidas online pela primeira vez.",
+  "autoCacheOfflinePlaylist": "Guardar automaticamente playlist para reprodução offline",
   "urlError": "URL da música não pôde ser resolvido",
   "playlistAutoOfflineEnabled": "Playlist automática offline ativada",
   "playlistAutoOfflineDisabled": "Playlist automática offline desativada",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Toque nos três pontos no canto superior direito",
   "androidAutoStep6": "6. Toque em Definições de programador",
   "androidAutoStep7": "7. Deslize para baixo e ative \"Fontes desconhecidas\"",
-  "stop": "Parar"
+  "stop": "Parar",
+  "downloaded": "Transferido"
 }

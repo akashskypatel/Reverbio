@@ -207,8 +207,8 @@
   "addedBackgroundJob": "añadido a la cola en segundo plano",
   "updated": "Actualizado",
   "autoCacheOffline": "Hacer que las canciones que se escuchan estén disponibles automáticamente sin conexión",
-  "storageWarning": "Advertencia: Esta opción utilizará mucho almacenamiento. ¡Asegúrese de que su dispositivo tenga suficiente espacio antes de activarla!",
-  "autoCacheOfflinePlaylist": "Hacer que las canciones de esta lista de reproducción estén disponibles automáticamente sin conexión cuando se escuchen",
+  "storageWarning": "Advertencia: Esta opción utilizará mucho espacio de almacenamiento. ¡Asegúrate de que tu dispositivo tenga suficiente espacio disponible antes de activarla! Las canciones estarán disponibles en línea solo después de reproducirse en línea por primera vez.",
+  "autoCacheOfflinePlaylist": "Guardar lista automáticamente para reproducción offline",
   "urlError": "No se pudo resolver la URL de la canción",
   "playlistAutoOfflineEnabled": "Auto offline de lista de reproducción habilitado",
   "playlistAutoOfflineDisabled": "Auto offline de lista de reproducción deshabilitado",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Toque los tres puntos en la esquina superior derecha",
   "androidAutoStep6": "6. Toque en Configuración para desarrolladores",
   "androidAutoStep7": "7. Desplácese hacia abajo y active \"Fuentes desconocidas\"",
-  "stop": "Detener"
+  "stop": "Detener",
+  "downloaded": "Descargado"
 }

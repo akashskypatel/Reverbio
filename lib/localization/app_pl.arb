@@ -207,8 +207,8 @@
   "addedBackgroundJob": "dodano do kolejki w tle",
   "updated": "Zaktualizowano",
   "autoCacheOffline": "Automatycznie udostępniaj odtwarzane utwory w trybie offline",
-  "storageWarning": "Ostrzeżenie: Ta opcja zużyje dużo miejsca. Upewnij się, że twoje urządzenie ma wystarczająco dużo miejsca przed włączeniem!",
-  "autoCacheOfflinePlaylist": "Automatycznie udostępniaj utwory z tej playlisty w trybie offline podczas odtwarzania",
+  "storageWarning": "Ostrzeżenie: Ta opcja zużyje dużo miejsca w pamięci. Upewnij się, że Twoje urządzenie ma wystarczająco dużo wolnego miejsca przed włączeniem! Utwory staną się dostępne online dopiero po pierwszym odtworzeniu online.",
+  "autoCacheOfflinePlaylist": "Automatycznie zapisuj playlistę do odtwarzania offline",
   "urlError": "Nie można rozpoznać adresu URL utworu",
   "playlistAutoOfflineEnabled": "Automatyczne offline playlisty włączone",
   "playlistAutoOfflineDisabled": "Automatyczne offline playlisty wyłączone",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Dotknij trzech kropek w prawym górnym rogu",
   "androidAutoStep6": "6. Dotknij Ustawienia dla programistów",
   "androidAutoStep7": "7. Przewiń w dół i włącz \"Nieznane źródła\"",
-  "stop": "Zatrzymaj"
+  "stop": "Zatrzymaj",
+  "downloaded": "Pobrano"
 }

@@ -207,8 +207,8 @@
   "addedBackgroundJob": "Zur Hintergrund-Warteschlange hinzugefügt",
   "updated": "Aktualisiert",
   "autoCacheOffline": "Automatisch offline verfügbare Songs zwischenspeichern",
-  "storageWarning": "Warnung: Diese Option verbraucht viel Speicherplatz. Bitte stellen Sie sicher, dass Ihr Gerät über genügend Speicher verfügt, bevor Sie sie aktivieren!",
-  "autoCacheOfflinePlaylist": "Songs in dieser Playlist beim Abspielen automatisch offline verfügbar machen",
+  "storageWarning": "Warnung: Diese Option benötigt viel Speicherplatz. Bitte stellen Sie sicher, dass Ihr Gerät genügend Speicher hat, bevor Sie sie aktivieren! Songs werden erst nach dem ersten Online-Abspielen online verfügbar sein.",
+  "autoCacheOfflinePlaylist": "Playlist automatisch für Offline-Wiedergabe speichern",
   "urlError": "Song-URL konnte nicht aufgelöst werden",
   "playlistAutoOfflineEnabled": "Automatische Offline-Speicherung für Playlists aktiviert",
   "playlistAutoOfflineDisabled": "Automatische Offline-Speicherung für Playlists deaktiviert",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Tippen Sie auf die drei Punkte in der oberen rechten Ecke",
   "androidAutoStep6": "6. Tippen Sie auf Entwicklereinstellungen",
   "androidAutoStep7": "7. Scrollen Sie nach unten und aktivieren Sie \"Unbekannte Quellen\"",
-  "stop": "Stopp"
+  "stop": "Stopp",
+  "downloaded": "Heruntergeladen"
 }

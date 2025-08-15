@@ -207,8 +207,8 @@
   "addedBackgroundJob": "added to background queue",
   "updated": "Updated",
   "autoCacheOffline": "Automatically make songs being listened to available offline",
-  "storageWarning": "Warning: This options will use a lot of storage. Please make sure your device has enough storage before enabling!",
-  "autoCacheOfflinePlaylist": "Automatically make songs in this playlist available offline when being listened to",
+  "storageWarning": "Warning: This option will use significant storage space. Ensure your device has enough available storage before enabling! Songs will become available online only after being played online first.",
+  "autoCacheOfflinePlaylist": "Auto-save playlist for offline playback",
   "urlError": "Song url could not be resolved",
   "playlistAutoOfflineEnabled": "Playlist auto offline enabled",
   "playlistAutoOfflineDisabled": "Playlist auto offline disabled",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Tap on 3 dots on the top right corner",
   "androidAutoStep6": "6. Tap on Developer Settings",
   "androidAutoStep7": "7. Scroll down and enable \"Unknown sources\"",
-  "stop": "Stop"
+  "stop": "Stop",
+  "downloaded": "Downloaded"
 }

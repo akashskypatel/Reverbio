@@ -207,8 +207,8 @@
   "addedBackgroundJob": "バックグラウンドキューに追加されました",
   "updated": "更新済み",
   "autoCacheOffline": "再生中の曲を自動的にオフラインで利用可能にする",
-  "storageWarning": "警告: このオプションは大量のストレージを使用します。有効にする前にデバイスに十分なストレージがあることを確認してください！",
-  "autoCacheOfflinePlaylist": "このプレイリストの曲が再生されるときに自動的にオフラインで利用可能にする",
+  "storageWarning": "警告: このオプションは多くのストレージ容量を使用します。有効にする前にデバイスに十分な空き容量があることを確認してください！曲はオンラインで初めて再生された後にのみオンラインで利用可能になります。",
+  "autoCacheOfflinePlaylist": "オフライン再生用にプレイリストを自動保存",
   "urlError": "曲のURLを解決できませんでした",
   "playlistAutoOfflineEnabled": "プレイリスト自動オフラインが有効",
   "playlistAutoOfflineDisabled": "プレイリスト自動オフラインが無効",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. 右上の三点リーダーをタップします",
   "androidAutoStep6": "6. 開発者向け設定をタップします",
   "androidAutoStep7": "7. 下にスクロールして「不明なソース」を有効にします",
-  "stop": "停止"
+  "stop": "停止",
+  "downloaded": "ダウンロード済み"
 }

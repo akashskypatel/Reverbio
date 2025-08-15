@@ -207,8 +207,8 @@
   "addedBackgroundJob": "ditambahkan ke antrian latar belakang",
   "updated": "Diperbarui",
   "autoCacheOffline": "Otomatis membuat lagu yang sedang didengarkan tersedia secara offline",
-  "storageWarning": "Peringatan: Opsi ini akan menggunakan banyak penyimpanan. Pastikan perangkat Anda memiliki cukup penyimpanan sebelum mengaktifkannya!",
-  "autoCacheOfflinePlaylist": "Otomatis buat lagu dalam daftar putar ini tersedia offline saat didengarkan",
+  "storageWarning": "Peringatan: Opsi ini akan menggunakan banyak ruang penyimpanan. Pastikan perangkat Anda memiliki cukup ruang penyimpanan sebelum mengaktifkannya! Lagu akan tersedia online hanya setelah diputar online terlebih dahulu.",
+  "autoCacheOfflinePlaylist": "Simpan otomatis playlist untuk pemutaran offline",
   "urlError": "URL lagu tidak dapat diselesaikan",
   "playlistAutoOfflineEnabled": "Playlist otomatis offline diaktifkan",
   "playlistAutoOfflineDisabled": "Playlist otomatis offline dinonaktifkan",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Ketuk tiga titik di pojok kanan atas",
   "androidAutoStep6": "6. Ketuk Pengaturan Pengembang",
   "androidAutoStep7": "7. Gulir ke bawah dan aktifkan \"Sumber tidak dikenal\"",
-  "stop": "Berhenti"
+  "stop": "Berhenti",
+  "downloaded": "Unduhan selesai"
 }

@@ -207,8 +207,8 @@
   "addedBackgroundJob": "imeongezwa kwenye foleni ya nyuma",
   "updated": "ImeSasishwa",
   "autoCacheOffline": "Fanya muziki unaosikilizwa ipasavyo kwa kiotomatiki bila mtandao",
-  "storageWarning": "Onyo: Chaguo hili litatumia kumbukumbu nyingi. Hakikisha kifaa chako kina kumbukumbu ya kutosha kabla ya kuwezesha!",
-  "autoCacheOfflinePlaylist": "Fanya muziki katika orodha hii ya kucheza ipatikanayo kiotomatiki bila mtandao unaposikilizwa",
+  "storageWarning": "Onyo: Chaguo hili litatumia nafasi nyingi ya kuhifadhi. Hakikisha kifaa chako kina nafasi ya kutosha kabla ya kuwezesha! Nyimbo zitapatikana mkondoni baada ya kuchezwa mkondoni kwa mara ya kwanza.",
+  "autoCacheOfflinePlaylist": "Hifadhi orodha kiotomatiki kwa kucheza nje ya mtandao",
   "urlError": "URL ya wimbo haikuweza kutambuliwa",
   "playlistAutoOfflineEnabled": "Orodha ya kucheza otomatiki nje ya mtandao imewezeshwa",
   "playlistAutoOfflineDisabled": "Orodha ya kucheza otomatiki nje ya mtandao imezimwa",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Gonga alama tatu kwenye kona ya juu kulia",
   "androidAutoStep6": "6. Gonga kwenye Mipangilio ya Wasanidi Programu",
   "androidAutoStep7": "7. Songa chini na wezesha \"Vyanzo visivyojulikana\"",
-  "stop": "Simama"
+  "stop": "Simama",
+  "downloaded": "Imepakwa"
 }

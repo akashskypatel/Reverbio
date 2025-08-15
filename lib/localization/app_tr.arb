@@ -207,8 +207,8 @@
   "addedBackgroundJob": "arka plan kuyruğuna eklendi",
   "updated": "Güncellendi",
   "autoCacheOffline": "Dinlenen şarkıları otomatik olarak çevrimdışı kullanılabilir yap",
-  "storageWarning": "Uyarı: Bu seçenek çok fazla depolama alanı kullanacaktır. Etkinleştirmeden önce cihazınızda yeterli depolama alanı olduğundan emin olun!",
-  "autoCacheOfflinePlaylist": "Bu çalma listesindeki şarkıları dinlenirken otomatik olarak çevrimdışı kullanılabilir yap",
+  "storageWarning": "Uyarı: Bu seçenek çok fazla depolama alanı kullanacaktır. Etkinleştirmeden önce cihazınızda yeterli alan olduğundan emin olun! Şarkılar ilk kez çevrimiçi oynatıldıktan sonra çevrimiçi olarak kullanılabilir hale gelecektir.",
+  "autoCacheOfflinePlaylist": "Çevrimdışı oynatma için çalma listesini otomatik kaydet",
   "urlError": "Şarkı URL'si çözülemedi",
   "playlistAutoOfflineEnabled": "Çalma listesi otomatik çevrimdışı etkin",
   "playlistAutoOfflineDisabled": "Çalma listesi otomatik çevrimdışı devre dışı",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Sağ üst köşedeki üç noktaya dokunun",
   "androidAutoStep6": "6. Geliştirici Ayarları'na dokunun",
   "androidAutoStep7": "7. Aşağı kaydırın ve \"Bilinmeyen kaynaklar\"ı etkinleştirin",
-  "stop": "Durdur"
+  "stop": "Durdur",
+  "downloaded": "İndirildi"
 }

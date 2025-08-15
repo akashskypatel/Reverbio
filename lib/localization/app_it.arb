@@ -207,8 +207,8 @@
   "addedBackgroundJob": "aggiunto alla coda in background",
   "updated": "Aggiornato",
   "autoCacheOffline": "Rendi automaticamente disponibili offline le canzoni in ascolto",
-  "storageWarning": "Attenzione: Questa opzione utilizzerà molto spazio di archiviazione. Assicurati che il tuo dispositivo abbia spazio sufficiente prima di abilitarla!",
-  "autoCacheOfflinePlaylist": "Rendi automaticamente disponibili offline le canzoni di questa playlist quando vengono ascoltate",
+  "storageWarning": "Avviso: Questa opzione utilizzerà molto spazio di archiviazione. Assicurati che il tuo dispositivo abbia spazio sufficiente prima di abilitarla! Le canzoni saranno disponibili online solo dopo essere state riprodotte online per la prima volta.",
+  "autoCacheOfflinePlaylist": "Salva automaticamente playlist per riproduzione offline",
   "urlError": "L'URL della canzone non può essere risolto",
   "playlistAutoOfflineEnabled": "Playlist auto offline abilitata",
   "playlistAutoOfflineDisabled": "Playlist auto offline disabilitata",
@@ -238,5 +238,6 @@
   "androidAutoStep5": "5. Tocca i tre puntini nell'angolo in alto a destra",
   "androidAutoStep6": "6. Tocca Impostazioni sviluppatore",
   "androidAutoStep7": "7. Scorri verso il basso e abilita \"Origini sconosciute\"",
-  "stop": "Ferma"
+  "stop": "Ferma",
+  "downloaded": "Scaricato"
 }
