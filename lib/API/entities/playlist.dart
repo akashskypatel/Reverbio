@@ -49,6 +49,10 @@ final userPlaylists = ValueNotifier<List>(
 final userCustomPlaylists = ValueNotifier<List>(
   Hive.box('user').get('customPlaylists', defaultValue: []),
 );
+final List userOfflinePlaylists = Hive.box(
+  'user',
+).get('offlinePlaylists', defaultValue: []);
+
 List userLikedPlaylists = Hive.box(
   'user',
 ).get('likedPlaylists', defaultValue: []);
@@ -63,6 +67,9 @@ dynamic nextRecommendedSong;
 final ValueNotifier<int> currentLikedPlaylistsLength = ValueNotifier(
   userLikedPlaylists.length,
 );
+final ValueNotifier<int> currentOfflinePlaylistsLength = ValueNotifier(
+  userOfflinePlaylists.length,
+);
 
 /* Future<void> playPlaylistSong({
   Map<dynamic, dynamic>? playlist,
@@ -75,6 +82,55 @@ final ValueNotifier<int> currentLikedPlaylistsLength = ValueNotifier(
     await audioHandler.queueSong(activeQueue['list'][activeSongId], play: true);
   }
 } */
+
+bool isPlaylistAlreadyOffline(dynamic playlist) {
+  final isOffline =
+      userOfflinePlaylists.where((e) => e['id'] == playlist['id']).isNotEmpty;
+  playlist['autoCacheOffline'] = isOffline;
+  if (isOffline) {
+    for (final song in (playlist['list'] ?? [])) {
+      song['autoCacheOffline'] = playlist['autoCacheOffline'];
+    }
+  }
+  return isOffline;
+}
+
+void updateOfflinePlaylist(dynamic playlist, bool add) {
+  if (add)
+    addOfflinePlaylist(playlist);
+  else
+    removeOfflinePlaylist(playlist);
+}
+
+void addOfflinePlaylist(dynamic playlist) {
+  final ids = Uri.parse('?${parseEntityId(playlist)}').queryParameters;
+  if ((ids['yt'] ?? ids['mb'] ?? ids['uc']) != null) {
+    userOfflinePlaylists.addOrUpdate('id', playlist['id'], {
+      'id': playlist['id'],
+      'title': playlist['title'],
+      'source': playlist['source'],
+      'primary-type':
+          ids['ytid'] != null ? 'playlist' : playlist['primary-type'],
+    });
+    currentOfflinePlaylistsLength.value = userOfflinePlaylists.length;
+    addOrUpdateData('user', 'offlinePlaylists', userOfflinePlaylists);
+    if (playlist['source'] == 'user-created')
+      addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+    if (playlist['source'] == 'youtube')
+      addOrUpdateData('user', 'likedPlaylists', userLikedPlaylists);
+    if (playlist['source'] == 'user-youtube')
+      addOrUpdateData('user', 'playlists', userPlaylists.value);
+  }
+}
+
+void removeOfflinePlaylist(dynamic playlist) {
+  final ids = Uri.parse('?${parseEntityId(playlist)}').queryParameters;
+  if ((ids['yt'] ?? ids['mb'] ?? ids['uc']) != null) {
+    userOfflinePlaylists.removeWhere((e) => playlist['id'] == e['id']);
+    currentOfflinePlaylistsLength.value = userOfflinePlaylists.length;
+    addOrUpdateData('user', 'offlinePlaylists', userOfflinePlaylists);
+  }
+}
 
 Future<List<dynamic>> getUserYTPlaylists() async {
   final playlistsByUser = [];
@@ -157,6 +213,13 @@ Future<String> addYTUserPlaylist(String input, BuildContext context) async {
   }
 }
 
+dynamic findPlaylistById(String playlistId) {
+  final existing = userCustomPlaylists.value.where(
+    (value) => value['id'] == playlistId,
+  );
+  return existing.isNotEmpty ? existing.first : null;
+}
+
 dynamic findPlaylistByName(String playlistName) {
   final existing = userCustomPlaylists.value.where(
     (value) => value['title'] == playlistName,
@@ -170,9 +233,38 @@ List<String> getPlaylistNames() {
   }).toList();
 }
 
+String sanitizePlaylistName(String playlistName) {
+  final regExp = RegExp(r'[/\\:*?"<>|&=]');
+  return playlistName
+      .replaceAll(regExp, ' ')
+      .replaceAll(r'\s+', ' ')
+      .trim()
+      .replaceAll(' ', '_');
+}
+
 String generatePlaylistId(String playlistName) {
   return 'UC-${stableHash(sanitizePlaylistName(playlistName))}';
 }
+
+void updateCustomPlaylist(
+  Map oldPlaylist,
+  String playlistName, {
+  String? imageUrl,
+}) {
+  final newId = generatePlaylistId(playlistName);
+  userOfflinePlaylists
+      .where((e) => e['id'] == oldPlaylist['id'])
+      .forEach((p) => p['id'] = newId);
+  addOrUpdateData('user', 'offlinePlaylists', userOfflinePlaylists);
+  oldPlaylist.addAll({
+    'id': 'uc=$newId',
+    'ucid': generatePlaylistId(playlistName),
+    'title': playlistName,
+    if (imageUrl != null) 'image': imageUrl,
+  });
+  addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+}
+
 String createCustomPlaylist(
   String playlistName,
   BuildContext context, {
@@ -180,7 +272,8 @@ String createCustomPlaylist(
   List<dynamic>? songList,
 }) {
   final customPlaylist = {
-    'id': 'uc=${playlistName.replaceAll(r'\s+', '_')}',
+    'id': 'uc=${generatePlaylistId(playlistName)}',
+    'ucid': generatePlaylistId(playlistName),
     'title': playlistName,
     'source': 'user-created',
     'primary-type': 'playlist',
@@ -297,6 +390,7 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
     final ytid = Uri.parse('?$playlistId').queryParameters['yt'];
     if (ytid == null || ytid.isEmpty) return !add;
     if (add) {
+      playlist['primary-type'] = playlist['primary-type'] ?? 'playlist';
       userLikedPlaylists.addOrUpdate('id', playlistId, playlist);
       currentLikedPlaylistsLength.value = userLikedPlaylists.length;
       PM.triggerHook(playlist, 'onEntityLiked');
@@ -312,11 +406,15 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
   }
 }
 
-bool isPlaylistAlreadyLiked(playlistToCheck) =>
-    playlistToCheck is Map &&
-    userLikedPlaylists.any(
-      (playlist) => playlist is Map && checkPlaylist(playlist, playlistToCheck),
-    );
+bool isPlaylistAlreadyLiked(playlistToCheck) {
+  final liked =
+      playlistToCheck is Map &&
+      userLikedPlaylists.any(
+        (playlist) =>
+            playlist is Map && checkPlaylist(playlist, playlistToCheck),
+      );
+  return liked;
+}
 
 Future<List> getPlaylists({
   String? query,
@@ -467,13 +565,39 @@ int findPlaylistIndexByYtId(String ytid) {
   await audioHandler.playSong(activeQueue['list'][activeSongId]);
 } */
 
+Future<Map?> getPlaylistInfo(Map playlist) async {
+  dynamic data;
+  final ids = Uri.parse('?${parseEntityId(playlist)}').queryParameters;
+  if (playlist['source'] == 'user-created')
+    data =
+        userCustomPlaylists.value
+            .where((e) => e['id'] == playlist['id'])
+            .firstOrNull;
+  // ignore: unnecessary_null_comparison
+  else if (data == null && (ids['yt'] != null || playlist['ytid'] != null))
+    data = await getPlaylistInfoForWidget(playlist);
+  else if ([
+    'artist',
+    'album',
+    'single',
+    'ep',
+    'broadcast',
+    'other',
+  ].contains(playlist['primary-type']?.toLowerCase()))
+    data = await getAlbumDetailsById(playlist['id']);
+  else
+    data = playlist;
+  return data;
+}
+
 Future<Map> getPlaylistInfoForWidget(
   dynamic playlistData, {
   bool isArtist = false,
 }) async {
+  final ids = parseEntityId(playlistData);
   final id =
       playlistData is String
-          ? Uri.parse('?${parseEntityId(playlistData)}').queryParameters['yt']
+          ? Uri.parse('?$ids').queryParameters['yt']
           : playlistData['ytid'] as String? ?? playlistData['id'] as String?;
   if (id == null || id.isEmpty) return {};
   if (isArtist) {
