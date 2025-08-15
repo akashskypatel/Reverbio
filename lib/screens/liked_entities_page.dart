@@ -198,7 +198,8 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
             ),
           ),
     );
-    cardList.add(card);
+    if (data['primary-type'] != null && data['primary-type']?.toLowerCase() != 'unknown')
+      cardList.add(card);
   }
 
   void _parseGenres(dynamic data) {
