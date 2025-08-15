@@ -33,6 +33,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final yt = YoutubeExplode();
@@ -52,50 +53,84 @@ bool youtubeValidate(String url) {
   return regExp.hasMatch(url);
 }
 
+String? getCombinedId(dynamic entity) {
+  String? combinedId;
+  if (entity['ytid'] != null) {
+    combinedId = 'yt=${entity['ytid']}';
+  }
+  if (entity['mbid'] != null) {
+    combinedId =
+        combinedId == null || combinedId.isEmpty
+            ? 'mb=${entity['mbid']}'
+            : joinIfNotEmpty([combinedId, 'mb=${entity['mbid']}'], '&');
+  }
+  if (entity['dcid'] != null) {
+    combinedId =
+        combinedId == null || combinedId.isEmpty
+            ? 'dc=${entity['dcid']}'
+            : joinIfNotEmpty([combinedId, 'dc=${entity['dcid']}'], '&');
+  }
+  if (entity['ucid'] != null) {
+    combinedId =
+        combinedId == null || combinedId.isEmpty
+            ? 'uc=${entity['ucid']}'
+            : joinIfNotEmpty([combinedId, 'uc=${entity['ucid']}'], '&');
+  }
+  if (entity['isrc'] != null) {
+    combinedId =
+        combinedId == null || combinedId.isEmpty
+            ? 'is=${entity['isrc']}'
+            : joinIfNotEmpty([combinedId, 'is=${entity['isrc']}'], '&');
+  }
+  return combinedId;
+}
+
 String parseEntityId(dynamic entity) {
   dynamic ids;
-  String songId =
-      entity is String
-          ? entity
-          : entity['id'] ??
-              entity['mbid'] ??
-              entity['ytid'] ??
-              entity['dcid'] ??
-              '';
+  String entityId =
+      entity is String ? entity : getCombinedId(entity) ?? entity['id'] ?? '';
   final mbRx = RegExp(
     r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
     caseSensitive: false,
   );
-  if (songId.contains('=')) {
-    ids = Uri.parse('?$songId').queryParameters;
-    songId = Uri(
+  final isRx = RegExp(
+    r'^[A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5}$',
+    caseSensitive: false,
+  );
+  if (entityId.contains('=')) {
+    ids = Uri.parse('?$entityId').queryParameters;
+    entityId = Uri(
       host: '',
       queryParameters: ids,
     ).toString().replaceAll('?', '').replaceAll('//', '');
-  } else if (mbRx.hasMatch(songId)) {
-    songId = 'mb=$songId';
-  } else if (int.tryParse(songId) != null) {
-    songId = 'dc=$songId';
-  } else if (songId.isNotEmpty) {
-    songId = 'yt=$songId';
+  } else if (mbRx.hasMatch(entityId)) {
+    entityId = 'mb=$entityId';
+  } else if (isRx.hasMatch(entityId)) {
+    entityId = 'is=$entityId';
+  } else if (int.tryParse(entityId) != null) {
+    entityId = 'dc=$entityId';
+  } else if (entityId.startsWith('UC-')) {
+    entityId = 'uc=$entityId';
+  } else if (entityId.isNotEmpty) {
+    entityId = 'yt=$entityId';
   }
-  ids = Uri.parse('?$songId').queryParameters;
+  ids = Uri.parse('?$entityId').queryParameters;
   if (entity is Map) {
-    entity =
-        Map<String, dynamic>.from(entity)
-          ..addAll(<String, dynamic>{'id': songId})
-          ..addAll(<String, dynamic>{'ytid': ids['yt']})
-          ..addAll(<String, dynamic>{'mbid': ids['mb']})
-          ..addAll(<String, dynamic>{'dcid': ids['dc']});
+    entity['id'] = entityId;
+    if (ids['yt'] != null) entity['ytid'] = ids['yt'];
+    if (ids['mb'] != null) entity['mbid'] = ids['mb'];
+    if (ids['is'] != null) entity['isrc'] = ids['is'];
+    if (ids['dc'] != null) entity['dcid'] = ids['dc'];
+    if (ids['uc'] != null) entity['ucid'] = ids['uc'];
   }
-  return songId;
+  return entityId;
 }
 
 String? combineArtists(dynamic value) {
   if (value == null) return null;
   final artists =
       ((value['artist-credit'] ?? []) as List)
-          .map((e) => e['name'] as String)
+          .map((e) => (e['name'] ?? e['artist']) as String)
           .toList();
   final result = artists
       .fold<Set<String>>(<String>{}, (result, str) {
