@@ -121,23 +121,40 @@ class _ArtistPageState extends State<ArtistPage> {
   }
 
   Widget _buildLikeButton() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: likeStatus,
-      builder: (context, value, __) {
-        return IconButton(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          icon:
-              value
-                  ? const Icon(FluentIcons.heart_24_filled)
-                  : const Icon(FluentIcons.heart_24_regular),
-          iconSize: pageHeaderIconSize,
-          onPressed: () {
-            updateArtistLikeStatus(widget.artistData, !likeStatus.value);
-            if (mounted)
-              setState(() {
-                likeStatus.value = !likeStatus.value;
-              });
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return ValueListenableBuilder(
+          valueListenable: currentLikedArtistsLength,
+          builder: (context, value, child) {
+            return FutureBuilder(
+              future: Future.microtask(
+                () => isArtistAlreadyLiked(widget.artistData),
+              ),
+              builder: (context, snapshot) {
+                bool value = false;
+                if (!snapshot.hasError &&
+                    snapshot.hasData &&
+                    snapshot.data != null &&
+                    snapshot.connectionState != ConnectionState.waiting)
+                  value = snapshot.data!;
+                return IconButton(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  icon:
+                      value
+                          ? const Icon(FluentIcons.heart_24_filled)
+                          : const Icon(FluentIcons.heart_24_regular),
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () {
+                    updateArtistLikeStatus(
+                      widget.artistData,
+                      !likeStatus.value,
+                    );
+                    if (mounted) setState(() {});
+                  },
+                );
+              },
+            );
           },
         );
       },

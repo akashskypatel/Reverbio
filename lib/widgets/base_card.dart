@@ -84,7 +84,6 @@ class BaseCard extends StatefulWidget {
 }
 
 class _BaseCardState extends State<BaseCard> {
-  late ValueNotifier<bool> isLikedNotifier = ValueNotifier(_getLikeStatus());
   Future<dynamic>? _fetchingDataFuture;
 
   String? dataType;
@@ -103,6 +102,7 @@ class _BaseCardState extends State<BaseCard> {
         if (mounted)
           setState(() {
             widget.inputData?.addAll(Map<String, dynamic>.from(data));
+            dataType = _parseDataType();
           });
       }),
     );
@@ -146,7 +146,6 @@ class _BaseCardState extends State<BaseCard> {
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
-    isLikedNotifier.value = _getLikeStatus();
     final colorScheme = _theme.colorScheme;
     return ValueListenableBuilder<bool>(
       valueListenable: widget.hideNotifier,
@@ -344,77 +343,103 @@ class _BaseCardState extends State<BaseCard> {
   }
 
   Widget _buildLiked() {
-    return ValueListenableBuilder(
-      valueListenable: isLikedNotifier,
-      builder: (context, value, child) {
-        final liked =
-            value ? FluentIcons.heart_12_filled : FluentIcons.heart_12_regular;
-        final shadowOffset = -(likeSize / 18);
-        return Align(
-          alignment: Alignment.topRight,
-          child: Stack(
-            children: [
-              Transform.translate(
-                offset: Offset(
-                  shadowOffset + (shadowOffset * .5),
-                  shadowOffset,
-                ),
-                child: IconButton(
-                  onPressed: null,
-                  icon: Icon(
-                    liked,
-                    size: likeSize,
-                    color: _theme.colorScheme.surface,
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return ValueListenableBuilder(
+          valueListenable: _getLikeNotifier(),
+          builder: (context, value, child) {
+            return FutureBuilder(
+              future: Future.microtask(_getLikeStatus),
+              builder: (context, snapshot) {
+                bool value = false;
+                if (!snapshot.hasError &&
+                    snapshot.hasData &&
+                    snapshot.data != null &&
+                    snapshot.connectionState != ConnectionState.waiting)
+                  value = snapshot.data!;
+                final liked =
+                    value
+                        ? FluentIcons.heart_12_filled
+                        : FluentIcons.heart_12_regular;
+                final shadowOffset = -(likeSize / 18);
+                return Align(
+                  alignment: Alignment.topRight,
+                  child: Stack(
+                    children: [
+                      Transform.translate(
+                        offset: Offset(
+                          shadowOffset + (shadowOffset * .5),
+                          shadowOffset,
+                        ),
+                        child: IconButton(
+                          onPressed: null,
+                          icon: Icon(
+                            liked,
+                            size: likeSize,
+                            color: _theme.colorScheme.surface,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          _toggleLike(context);
+                          if (mounted) setState(() {});
+                        },
+                        icon: Icon(liked, size: likeSize),
+                        color: _theme.colorScheme.primary,
+                        hoverColor: _theme.colorScheme.surface.withAlpha(128),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              IconButton(
-                onPressed: () => _toggleLike(context),
-                icon: Icon(liked, size: likeSize),
-                color: _theme.colorScheme.primary,
-                hoverColor: _theme.colorScheme.surface.withAlpha(128),
-              ),
-            ],
-          ),
+                );
+              },
+            );
+          },
         );
       },
     );
   }
 
-  void _toggleLike(BuildContext context, {TapDownDetails? details}) async {
-    final liked = await _updateLikeStatus();
-    isLikedNotifier.value = liked;
-    if (details != null)
-      AnimatedHeart.show(context: context, details: details, like: liked);
-  }
-
-  Future<bool> _updateLikeStatus() async {
+  ValueNotifier<int> _getLikeNotifier() {
     switch (dataType) {
       case 'playlist':
-        return updatePlaylistLikeStatus(
-          widget.inputData,
-          !isLikedNotifier.value,
-        );
+        return currentLikedPlaylistsLength;
       case 'album':
       case 'single':
       case 'ep':
       case 'broadcast':
       case 'other':
-        if (widget.inputData?['source'] == 'youtube')
-          return updatePlaylistLikeStatus(
-            widget.inputData,
-            !isLikedNotifier.value,
-          );
-        else
-          return updateAlbumLikeStatus(
-            widget.inputData,
-            !isLikedNotifier.value,
-          );
+        return currentLikedAlbumsLength;
       case 'artist':
-        return updateArtistLikeStatus(widget.inputData, !isLikedNotifier.value);
+        return currentLikedArtistsLength;
       default:
-        return false;
+        return ValueNotifier(0);
     }
+  }
+
+  void _toggleLike(BuildContext context, {TapDownDetails? details}) async {
+    final liked = await _updateLikeStatus();
+    if (details != null)
+      AnimatedHeart.show(context: context, details: details, like: liked);
+  }
+
+  Future<bool> _updateLikeStatus() async {
+    final liked = _getLikeStatus();
+    switch (dataType) {
+      case 'playlist':
+        await updatePlaylistLikeStatus(widget.inputData, !liked);
+      case 'album':
+      case 'single':
+      case 'ep':
+      case 'broadcast':
+      case 'other':
+        await updateAlbumLikeStatus(widget.inputData, !liked);
+      case 'artist':
+        await updateArtistLikeStatus(widget.inputData, !liked);
+      default:
+        return liked;
+    }
+    return _getLikeStatus();
   }
 
   bool _getLikeStatus() {
