@@ -1,36 +1,9 @@
+/*
 {
-  "translations": {
-      "stop": {
-          "ar": "إيقاف",
-          "bn": "বন্ধ করুন",
-          "de": "Stopp",
-          "el": "Σταμάτα",
-          "en": "Stop",
-          "es": "Detener",
-          "fa": "توقف",
-          "fr": "Arrêter",
-          "gu": "બંધ કરો",
-          "hi": "रोकें",
-          "id": "Berhenti",
-          "it": "Ferma",
-          "ja": "停止",
-          "ko": "중지",
-          "mr": "थांबवा",
-          "pl": "Zatrzymaj",
-          "pt-br": "Parar",
-          "pt": "Parar",
-          "ru": "Стоп",
-          "sw": "Simama",
-          "ta": "நிறுத்து",
-          "te": "ఆపు",
-          "th": "หยุด",
-          "tr": "Durdur",
-          "uk": "Стоп",
-          "vi": "Dừng",
-          "yue": "停止",
-          "zh-Hant": "停止",
-          "zh-TW": "停止",
-          "zh": "停止"
+    "translations": {
+      "key": {
+        "languageCode": "translation"
       }
-  }
-}
+    }
+} 
+*/
