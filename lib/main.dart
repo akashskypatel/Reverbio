@@ -289,6 +289,8 @@ Future<void> initialization() async {
 
     await PM.initialize();
 
+    postUpdate();
+
     try {
       // Listen to incoming links while app is running
       appLinks.uriLinkStream.listen(

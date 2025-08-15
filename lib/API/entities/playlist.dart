@@ -170,6 +170,9 @@ List<String> getPlaylistNames() {
   }).toList();
 }
 
+String generatePlaylistId(String playlistName) {
+  return 'UC-${stableHash(sanitizePlaylistName(playlistName))}';
+}
 String createCustomPlaylist(
   String playlistName,
   BuildContext context, {

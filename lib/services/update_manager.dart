@@ -25,10 +25,12 @@ import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/version.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
@@ -201,4 +203,18 @@ Future<String> getDownloadUrl(Map<String, dynamic> map) async {
   if (io.Platform.isAndroid) return map[downloadUrlKey].toString();
   if (io.Platform.isWindows) return map[downloadAmd64url].toString();
   return map[downloadLatest].toString();
+}
+
+void postUpdate() {
+  final hasPostUpdateRun = postUpdateRun[appVersion] ?? false;
+  if (!hasPostUpdateRun) {
+    //Make changes from here
+    for (final e in userCustomPlaylists.value) {
+      e['id'] = generatePlaylistId(e['title']);
+    }
+    addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+    //to here
+  }
+  postUpdateRun[appVersion] = true;
+  addOrUpdateData('settings', 'postUpdateRun', postUpdateRun);
 }
