@@ -307,6 +307,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildSearchBar() {
     return CustomSearchBar(
       //loadingProgressNotifier: _fetchingSongs,
+      searchDelayMs: 0,
       controller: _searchBar,
       focusNode: _inputNode,
       labelText: '${context.l10n!.search}...',
@@ -362,7 +363,7 @@ class _LibraryPageState extends State<LibraryPage> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: bars.length,
       padding: commonListViewBottomPadding,
-      itemBuilder: (BuildContext context, index) {
+      itemBuilder: (context, index) {
         return bars[index];
       },
     );
@@ -371,7 +372,7 @@ class _LibraryPageState extends State<LibraryPage> {
   void _showAddPlaylistDialog() => showDialog(
     routeSettings: const RouteSettings(name: '/save-playlist'),
     context: context,
-    builder: (BuildContext savecontext) {
+    builder: (savecontext) {
       var id = '';
       var customPlaylistName = '';
       var isYouTubeMode = true;
@@ -526,7 +527,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         ),
                         context: savecontext,
                         builder:
-                            (BuildContext confirmcontext) => ConfirmationDialog(
+                            (confirmcontext) => ConfirmationDialog(
                               message:
                                   '${context.l10n!.playlistAlreadyExists}. ${context.l10n!.overwriteExistingPlaylist}',
                               confirmText: context.l10n!.confirm,
@@ -571,7 +572,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   void _showRemovePlaylistDialog(Map playlist) => showDialog(
     context: context,
-    builder: (BuildContext context) {
+    builder: (context) {
       return ConfirmationDialog(
         message: context.l10n!.removePlaylistQuestion,
         confirmText: context.l10n!.remove,
