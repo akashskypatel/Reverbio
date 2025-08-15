@@ -45,10 +45,22 @@ const androidDeviceTypes = {
   27: {'id': 'TYPE_BLE_SPEAKER', 'name': 'BLE Speaker', 'include': true},
   8: {'id': 'TYPE_BLUETOOTH_A2DP', 'name': 'Bluetooth A2DP', 'include': true},
   7: {'id': 'TYPE_BLUETOOTH_SCO', 'name': 'Bluetooth SCO', 'include': true},
-  1: {'id': 'TYPE_BUILTIN_EARPIECE', 'name': 'Built-in Earpiece', 'include': false},
+  1: {
+    'id': 'TYPE_BUILTIN_EARPIECE',
+    'name': 'Built-in Earpiece',
+    'include': false,
+  },
   15: {'id': 'TYPE_BUILTIN_MIC', 'name': 'Built-in Mic', 'include': false},
-  2: {'id': 'TYPE_BUILTIN_SPEAKER', 'name': 'Built-in Speaker', 'include': true},
-  24: {'id': 'TYPE_BUILTIN_SPEAKER_SAFE', 'name': 'Built-in Speaker Safe', 'include': false},
+  2: {
+    'id': 'TYPE_BUILTIN_SPEAKER',
+    'name': 'Built-in Speaker',
+    'include': true,
+  },
+  24: {
+    'id': 'TYPE_BUILTIN_SPEAKER_SAFE',
+    'name': 'Built-in Speaker Safe',
+    'include': false,
+  },
   21: {'id': 'TYPE_BUS', 'name': 'BUS', 'include': true},
   13: {'id': 'TYPE_DOCK', 'name': 'Dock', 'include': true},
   31: {'id': 'TYPE_DOCK_ANALOG', 'name': 'Dock Analog', 'include': true},
@@ -61,7 +73,11 @@ const androidDeviceTypes = {
   20: {'id': 'TYPE_IP', 'name': 'IP', 'include': true},
   5: {'id': 'TYPE_LINE_ANALOG', 'name': 'Line Analog', 'include': true},
   6: {'id': 'TYPE_LINE_DIGITAL', 'name': 'Line Digital', 'include': true},
-  32: {'id': 'TYPE_MULTICHANNEL_GROUP', 'name': 'Multi-channel Group', 'include': true},
+  32: {
+    'id': 'TYPE_MULTICHANNEL_GROUP',
+    'name': 'Multi-channel Group',
+    'include': true,
+  },
   25: {'id': 'TYPE_REMOTE_SUBMIX', 'name': 'Remote SubMix', 'include': true},
   18: {'id': 'TYPE_TELEPHONY', 'name': 'Telephony', 'include': false},
   17: {'id': 'TYPE_TV_TUNER', 'name': 'TV Tuner', 'include': true},
@@ -69,7 +85,11 @@ const androidDeviceTypes = {
   12: {'id': 'TYPE_USB_ACCESSORY', 'name': 'USB Accessory', 'include': true},
   11: {'id': 'TYPE_USB_DEVICE', 'name': 'USB Device', 'include': true},
   22: {'id': 'TYPE_USB_HEADSET', 'name': 'USB Headset', 'include': true},
-  4: {'id': 'TYPE_WIRED_HEADPHONES', 'name': 'Wired Headphones', 'include': true},
+  4: {
+    'id': 'TYPE_WIRED_HEADPHONES',
+    'name': 'Wired Headphones',
+    'include': true,
+  },
   3: {'id': 'TYPE_WIRED_HEADSET', 'name': 'Wired Headset', 'include': true},
 };
 
@@ -370,28 +390,12 @@ bool isUrl(String input) {
 }
 
 bool isFilePath(String input) {
-  final path = input.trim();
-
-  if (isUrl(input)) return false;
-
-  final windowsDriveLetter = RegExp(r'^[a-zA-Z]:\\');
-  if (windowsDriveLetter.hasMatch(path)) {
-    return true;
+  try {
+    final schema = Uri.file(input).scheme;
+    return schema == 'file';
+  } catch (_) {
+    return false;
   }
-
-  if (path.startsWith('/')) {
-    return true;
-  }
-
-  if (path.startsWith('file://')) {
-    return true;
-  }
-
-  if (path.contains(Platform.pathSeparator)) {
-    return true;
-  }
-
-  return false;
 }
 
 bool doesFileExist(String path) {
@@ -682,4 +686,11 @@ String stableHash(String input) {
 
 bool isMobilePlatform() {
   return Platform.isAndroid || Platform.isIOS;
+}
+
+String joinIfNotEmpty(List<String?> strings, String separator) {
+  return [
+    for (final s in strings)
+      if (s != null && s.trim().isNotEmpty) s
+  ].join(separator);
 }
