@@ -269,14 +269,14 @@ dynamic _getCachedSong(dynamic song) {
   try {
     final cached = cachedSongsList.where((e) {
       return checkSong(song, e) ||
-          (song is Map &&
-                  (song['ytid'] != null &&
+          song is Map &&
+              ((song['ytid'] != null &&
                       e['ytid'] != null &&
                       song['ytid'] == e['ytid']) ||
-              (song['originalTitle'] != null &&
-                  song['originalArtist'] != null &&
-                  song['originalTitle'] == e['originalTitle'] &&
-                  song['originalArtist'] == e['originalArtist']));
+                  (song['originalTitle'] != null &&
+                      song['originalArtist'] != null &&
+                      song['originalTitle'] == e['originalTitle'] &&
+                      song['originalArtist'] == e['originalArtist']));
     });
     if (cached.isEmpty) return null;
     return cached.first;
@@ -296,7 +296,10 @@ Future<dynamic> getSongByRecordingDetails(
   if (rcdId == null) return recording;
   final cached = _getCachedSong(recording);
   if (cached != null) {
-    recording.addAll(Map<String, dynamic>.from(cached));
+    if (recording is Map)
+      recording.addAll(Map<String, dynamic>.from(cached));
+    else
+      recording = cached;
     return recording;
   } else
     try {
@@ -320,7 +323,7 @@ Future<dynamic> getSongByRecordingDetails(
       );
       recording['artist'] = combineArtists(recording) ?? 'Unknown';
       if (getImage)
-        for (final release in recording['releases']) {
+        for (final release in (recording['releases'] ?? [])) {
           final coverArt = await mb.coverArt.get(release['id'], 'release');
           if (coverArt['error'] == null) {
             //TODO: parse by image size
@@ -328,7 +331,7 @@ Future<dynamic> getSongByRecordingDetails(
             break;
           }
         }
-      recording.addAll({
+      recording.addAll(<String, dynamic>{
         'id': 'mb=${recording['id']}',
         'rid': recording['id'],
         'mbid': recording['id'],
@@ -374,6 +377,7 @@ Future<dynamic> findSongByIsrc(dynamic song) async {
         if ((recording['isrcs'] as List).contains(isrc)) {
           recording = await getSongByRecordingDetails(recording);
           song.addAll(recording);
+          parseEntityId(song);
           await PM.triggerHook(song, 'onGetSongInfo');
           return song;
         }
@@ -390,19 +394,32 @@ Future<dynamic> findSongByIsrc(dynamic song) async {
 
 Future<dynamic> findMBSong(dynamic song) async {
   try {
-    song['originalTitle'] = song['title'];
-    song['originalArtist'] = song['artist'];
+    if (song is String) {
+      song = <String, dynamic>{'id': song};
+      song['id'] = parseEntityId(song);
+      final ids = Uri.parse('?${song['id']}').queryParameters;
+      if ((ids['mb'] == null && song['mbid'] == null) &&
+          (ids['yt'] != null || song['ytid'] != null)) {
+        song.addAll(Map<String, dynamic>.from(await getYTSongDetails(song)));
+      }
+    } else {
+      song['originalTitle'] = song['title'];
+      song['originalArtist'] = song['artist'];
+    }
     final cached = _getCachedSong(song);
     if (cached != null) {
       song.addAll(Map<String, dynamic>.from(cached));
       await PM.triggerHook(song, 'onGetSongInfo');
+      parseEntityId(song);
       return song;
     }
     song['id'] = parseEntityId(song);
     final ids = Uri.parse('?${song['id']}').queryParameters;
-    if (ids['mb'] != null && song['mbidType'] == 'recording') {
+    if (ids['mb'] != null &&
+        (song['mbidType'] == 'recording' || song['mbidType'] == null)) {
       song.addAll(await getSongByRecordingDetails(song));
       await PM.triggerHook(song, 'onGetSongInfo');
+      parseEntityId(song);
       return song;
     } else if (song['isrc'] != null && song['isrc'].isNotEmpty) {
       return await findSongByIsrc(song);
@@ -463,11 +480,17 @@ Future<dynamic> findMBSong(dynamic song) async {
     final qryResult =
         (await mb.recordings.search(qry, limit: 100))?['recordings'] ?? [];
     final recordings = List<Map<String, dynamic>>.from(qryResult);
+    if (recordings.isEmpty && artistInfo.isNotEmpty) {
+      song['artist-credit'] = [artistInfo];
+      parseEntityId(song);
+      return song;
+    }
     for (dynamic recording in recordings) {
       recording['artist'] = combineArtists(recording);
       if (checkTitleAndArtist(song, recording)) {
         recording = await getSongByRecordingDetails(recording);
         song.addAll(recording);
+        parseEntityId(song);
         await PM.triggerHook(song, 'onGetSongInfo');
         return song;
       }
@@ -475,6 +498,7 @@ Future<dynamic> findMBSong(dynamic song) async {
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
+  parseEntityId(song);
   return song;
 }
 
@@ -513,6 +537,8 @@ Future<void> getSongUrl(dynamic song) async {
     return;
   }
   await PM.getSongUrl(song, getSongYoutubeUrl);
+  if ((song['autoCacheOffline'] ?? false) && song['songUrl'] != null)
+    unawaited(makeSongOffline(song));
 }
 
 Future<void> getSongInfo(dynamic song) async {
@@ -528,6 +554,7 @@ Future<void> getSongInfo(dynamic song) async {
     final sngQry = await findYTSong(song);
     song.addAll(Map<String, dynamic>.from(sngQry ?? {}));
   }
+  return;
 }
 
 Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
@@ -639,17 +666,20 @@ Future<String?> getSongLyrics(String artist, String title) async {
 Future<void> makeSongOffline(dynamic song) async {
   //TODO: make available offline for other sources
   try {
+    if (isSongAlreadyOffline(song)) return;
     final _dir = await getApplicationSupportDirectory();
-    final _audioDirPath = '${_dir.path}/tracks';
-    final _artworkDirPath = '${_dir.path}/artworks';
+    final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
+    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
     await Directory(_audioDirPath).create(recursive: true);
     await Directory(_artworkDirPath).create(recursive: true);
 
     final id = song['id'] = parseEntityId(song);
     if (song['ytid'] == null || song['ytid'].isEmpty)
       song.addAll(Map<String, dynamic>.from(await findYTSong(song) ?? {}));
-    final _audioFile = File('$_audioDirPath/$id.m4a');
-    final _artworkFile = File('$_artworkDirPath/$id.jpg');
+    final _audioFile = File('$_audioDirPath${Platform.pathSeparator}$id.m4a');
+    final _artworkFile = File(
+      '$_artworkDirPath${Platform.pathSeparator}$id.jpg',
+    );
 
     try {
       final audioManifest = await getSongManifest(song['ytid']);
@@ -700,56 +730,92 @@ Future<void> makeSongOffline(dynamic song) async {
 }
 
 Future<List<dynamic>> getUserOfflineSongs() async {
-  await getExistingOfflineSongs();
+  if (!(await checkOfflineFiles())) await getExistingOfflineSongs();
   return userOfflineSongs;
+}
+
+Future<bool> checkOfflineFiles() async {
+  final _dir = await getApplicationSupportDirectory();
+  final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
+  final fileList =
+      Directory(
+        _audioDirPath,
+      ).listSync().map((file) => basenameWithoutExtension(file.path)).toSet();
+  final offlineSongsSet = userOfflineSongs.toSet();
+  userOfflineSongs.removeWhere((e) => !fileList.any((f) => checkSong(e, f)));
+  if ((userOfflineSongs.isEmpty && fileList.isNotEmpty) ||
+      userOfflineSongs.length != fileList.length)
+    return false;
+  final exists = fileList.every(
+    (e) => offlineSongsSet.any((f) => checkSong(e, f)),
+  );
+  return exists;
 }
 
 Future<void> getExistingOfflineSongs() async {
   final _dir = await getApplicationSupportDirectory();
-  final _audioDirPath = '${_dir.path}/tracks';
-  final _artworkDirPath = '${_dir.path}/artworks';
+  final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
   await Directory(_audioDirPath).create(recursive: true);
-  await Directory(_artworkDirPath).create(recursive: true);
   try {
     if (Directory(_audioDirPath).existsSync())
       await for (final file in Directory(_audioDirPath).list()) {
         if (file is File && isAudio(file.path)) {
           final filename = basenameWithoutExtension(file.path);
           final ids = Uri.parse('?$filename').queryParameters;
-          if (ids['mb'] != null && ids['mb']!.isNotEmpty) {
-            if (!userOfflineSongs.any((e) => e['id'].contains(ids['mb']))) {
-              final song = await getSongByRecordingDetails(filename);
-              final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
-              if (imageFiles.isNotEmpty) {
-                song['offlineArtworkPath'] = imageFiles.first.path;
-              }
-              song['offlineAudioPath'] = file.path;
-              userOfflineSongs.add(song);
-              addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
-              currentOfflineSongsLength.value = userOfflineSongs.length;
+          if ((ids['mb'] != null && ids['mb']!.isNotEmpty) ||
+              (ids['yt'] != null && ids['yt']!.isNotEmpty)) {
+            if (!userOfflineSongs.any(
+              (e) => checkEntityId(e['id'], filename),
+            )) {
+              await _matchFileToSongInfo(file);
             }
           }
         }
       }
+      currentOfflineSongsLength.value = userOfflineSongs.length;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+}
+
+Future<void> _matchFileToSongInfo(File file) async {
+  try {
+    final _dir = await getApplicationSupportDirectory();
+    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
+    await Directory(_artworkDirPath).create(recursive: true);
+    final filename = basenameWithoutExtension(file.path);
+    final song = await findMBSong(filename);
+    final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
+    if (imageFiles.isNotEmpty) {
+      song['offlineArtworkPath'] = imageFiles.first.path;
+    }
+    song['offlineAudioPath'] = file.path;
+    userOfflineSongs.addOrUpdate('id', song['id'], song);
+    addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
 }
 
 Future<String?> getOfflinePath(dynamic song) async {
-  final _dir = await getApplicationSupportDirectory();
-  final _audioDirPath = '${_dir.path}/tracks';
-  final _artworkDirPath = '${_dir.path}/artworks';
-  await Directory(_audioDirPath).create(recursive: true);
-  await Directory(_artworkDirPath).create(recursive: true);
-  song['id'] = parseEntityId(song);
-  final audioFiles = await _getRelatedFiles(_audioDirPath, song);
-  final artworkFiles = await _getRelatedFiles(_artworkDirPath, song);
-  //TODO: add quality check
-  if (audioFiles.isNotEmpty) song['offlineAudioPath'] = audioFiles.first.path;
-  if (artworkFiles.isNotEmpty)
-    song['offlineArtworkPath'] = artworkFiles.first.path;
-  return song['offlineAudioPath'];
+  try {
+    final _dir = await getApplicationSupportDirectory();
+    final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
+    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
+    await Directory(_audioDirPath).create(recursive: true);
+    await Directory(_artworkDirPath).create(recursive: true);
+    song['id'] = parseEntityId(song);
+    final audioFiles = await _getRelatedFiles(_audioDirPath, song);
+    final artworkFiles = await _getRelatedFiles(_artworkDirPath, song);
+    //TODO: add quality check
+    if (audioFiles.isNotEmpty) song['offlineAudioPath'] = audioFiles.first.path;
+    if (artworkFiles.isNotEmpty)
+      song['offlineArtworkPath'] = artworkFiles.first.path;
+    return song['offlineAudioPath'];
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return null;
 }
 
 Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
@@ -786,8 +852,8 @@ Future<void> _deleteRelatedFiles(String directory, dynamic entity) async {
 
 Future<void> removeSongFromOffline(dynamic song) async {
   final _dir = await getApplicationSupportDirectory();
-  final _audioDirPath = '${_dir.path}/tracks';
-  final _artworkDirPath = '${_dir.path}/artworks';
+  final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
+  final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
   await Directory(_audioDirPath).create(recursive: true);
   await Directory(_artworkDirPath).create(recursive: true);
   song['id'] = parseEntityId(song);
@@ -959,10 +1025,10 @@ bool checkSong(dynamic songA, dynamic songB) {
   if (songB is Map) songB['id'] = parseEntityId(songB);
   if (songA is String && songB is String)
     return checkEntityId(songA, songB) || checkEntityId(songB, songA);
-  if (songA is String && !(songB is String))
+  if (songA is String && songB is Map)
     return checkEntityId(songA, songB['id']) ||
         checkEntityId(songB['id'], songA);
-  if (songB is String && !(songA is String))
+  if (songB is String && songA is Map)
     return checkEntityId(songB, songA['id']) ||
         checkEntityId(songA['id'], songB);
   if (songA['id'] == null ||
