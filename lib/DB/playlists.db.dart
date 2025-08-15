@@ -22,6 +22,7 @@
 List<Map<String, dynamic>> playlistsDB = [
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx',
     'id': 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx',
     'title': 'Top 50 Global',
@@ -31,6 +32,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLDRZlcOmNR1ZpWYFy0TSUQSU-6vt0UIP2',
     'id': 'yt=PLDRZlcOmNR1ZpWYFy0TSUQSU-6vt0UIP2',
     'title': 'Teen Beats',
@@ -39,6 +41,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLuUt-gc4791lfJJRh-FMS7YzZDS5SUZ_9',
     'id': 'yt=PLuUt-gc4791lfJJRh-FMS7YzZDS5SUZ_9',
     'title': 'Internet Rewind',
@@ -47,6 +50,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLH1a9jqvHSspkYxCtSCBLgW2CxC-B9Gdg',
     'id': 'yt=PLH1a9jqvHSspkYxCtSCBLgW2CxC-B9Gdg',
     'title': 'Goosebumps',
@@ -55,6 +59,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLoumn5BIsUDd3IH7MVw2XiW9nQKzCFy4O',
     'id': 'yt=PLoumn5BIsUDd3IH7MVw2XiW9nQKzCFy4O',
     'title': 'Best Pop Music Playlist 2024',
@@ -63,6 +68,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLmQPPVKNGMHipaJbw0lHPuGPuKQDJkcdn',
     'id': 'yt=PLmQPPVKNGMHipaJbw0lHPuGPuKQDJkcdn',
     'title': 'Lofi Remixes',
@@ -71,6 +77,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLPZdY4vhqvRAKdgI75eWn5XM0gPqs3QMY',
     'id': 'yt=PLPZdY4vhqvRAKdgI75eWn5XM0gPqs3QMY',
     'title': 'M+ike Remixes',
@@ -80,6 +87,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLHg022HMFzFDMNp9xBGy3sARnqxaPl3PG',
     'id': 'yt=PLHg022HMFzFDMNp9xBGy3sARnqxaPl3PG',
     'title': 'Car Music 2024',
@@ -88,6 +96,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLSR9lWowvoE3A9i4JVVHtQFjlJt0_LItG',
     'id': 'yt=PLSR9lWowvoE3A9i4JVVHtQFjlJt0_LItG',
     'title': 'TikTok Songs 2024',
@@ -96,6 +105,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLp9rb04pybWKvMIfxkdAKDmGoliDpJ87U',
     'id': 'yt=PLp9rb04pybWKvMIfxkdAKDmGoliDpJ87U',
     'title': 'sped up songs',
@@ -104,6 +114,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLw9U13gRyHys_YyMKCWuG2gYQ1eG-vQv4',
     'id': 'yt=PLw9U13gRyHys_YyMKCWuG2gYQ1eG-vQv4',
     'title': 'Big on the internet',
@@ -112,6 +123,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLgzTt0k8mXzHcKebL8d0uYHfawiARhQja',
     'id': 'yt=PLgzTt0k8mXzHcKebL8d0uYHfawiARhQja',
     'title': 'Best Sad and Emotional Songs',
@@ -120,6 +132,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'RDCLAK5uy_lBNUteBRencHzKelu5iDHwLF6mYqjL-JU',
     'id': 'yt=RDCLAK5uy_lBNUteBRencHzKelu5iDHwLF6mYqjL-JU',
     'title': 'Pop Certified',
@@ -128,6 +141,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'RDCLAK5uy_n0oLcyKJhNW8BmrnMySAoVuLjRZfgozG0',
     'id': 'yt=RDCLAK5uy_n0oLcyKJhNW8BmrnMySAoVuLjRZfgozG0',
     'title': 'Energizing EDM',
@@ -136,6 +150,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLt7y1FnPdz8xbIZIaAp5cee4ZGJyB-VU_',
     'id': 'yt=PLt7y1FnPdz8xbIZIaAp5cee4ZGJyB-VU_',
     'title': 'Rock Adrenaline',
@@ -144,6 +159,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLbiET8FQg1MQ6YoMfX9MWV5E-tTdsVf4Q',
     'id': 'yt=PLbiET8FQg1MQ6YoMfX9MWV5E-tTdsVf4Q',
     'title': '#ILoveAltPop',
@@ -152,6 +168,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'RDCLAK5uy_k-fiP0mCE_HlLqk-h15LlxGmjTCTn4_aA',
     'id': 'yt=RDCLAK5uy_k-fiP0mCE_HlLqk-h15LlxGmjTCTn4_aA',
     'title': 'House Rap Hits',
@@ -160,6 +177,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'RDCLAK5uy_nnZGCEPxzc5FASdbQVMufD25OfYBJlHqY',
     'id': 'yt=RDCLAK5uy_nnZGCEPxzc5FASdbQVMufD25OfYBJlHqY',
     'title': 'Modern Classical',
@@ -168,6 +186,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL7zsB-C3aNu03RwSy2Bn3Ov3oaEReOlT5',
     'id': 'yt=PL7zsB-C3aNu03RwSy2Bn3Ov3oaEReOlT5',
     'title': 'Best Remixes Of Popular SONGS 2024 and 2025',
@@ -176,6 +195,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLWEEt0QgQFInR8b2_sKk86VAGhLs_Iczf',
     'id': 'yt=PLWEEt0QgQFInR8b2_sKk86VAGhLs_Iczf',
     'title': 'OPM Top Hits: Original Pilipino Music 2024',
@@ -184,6 +204,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLiy0XOfUv4hGbDDI0gx6sFqsYdcQ6zMWx',
     'id': 'yt=PLiy0XOfUv4hGbDDI0gx6sFqsYdcQ6zMWx',
     'title': 'OPM 2000-2009 / Best Pinoy Songs Playlist 2000s Hits',
@@ -192,6 +213,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLfQAe5M2BkwCKimscRq-F9wkO5tUPY9TS',
     'id': 'yt=PLfQAe5M2BkwCKimscRq-F9wkO5tUPY9TS',
     'title': 'Mood Booster',
@@ -200,6 +222,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLmYULo-LwF9Lsx-JRO0UN-dJWk_0pbd-L',
     'id': 'yt=PLmYULo-LwF9Lsx-JRO0UN-dJWk_0pbd-L',
     'title': 'Best of MrSuicideSheep',
@@ -208,6 +231,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLC1og_v3eb4hrv4wsqG1G5dsNZh9bIscJ',
     'id': 'yt=PLC1og_v3eb4hrv4wsqG1G5dsNZh9bIscJ',
     'title': 'Trap Nation',
@@ -216,6 +240,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL3-LxnWEF8P07gIEArC9pZn5Qnw1j7-8C',
     'id': 'yt=PL3-LxnWEF8P07gIEArC9pZn5Qnw1j7-8C',
     'title': 'Songs to Sing in the Car',
@@ -224,6 +249,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLZmONlbUZQSlqdckShGOb-YK4Ti1F-ck-',
     'id': 'yt=PLZmONlbUZQSlqdckShGOb-YK4Ti1F-ck-',
     'title': 'Disney Hits',
@@ -232,6 +258,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLOHoVaTp8R7darg5gZZEeTj1BJsJ1hrAr',
     'id': 'yt=PLOHoVaTp8R7darg5gZZEeTj1BJsJ1hrAr',
     'title': 'Capital Fm Top 40 This Week 2024',
@@ -240,6 +267,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLOHoVaTp8R7dfrJW5pumS0iD_dhlXKv17',
     'id': 'yt=PLOHoVaTp8R7dfrJW5pumS0iD_dhlXKv17',
     'title': 'KPOP 2024',
@@ -248,6 +276,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u1m2YDp_Y1nRs4tYXOqE2iE',
     'id': 'yt=PL-_a53M3g7u1m2YDp_Y1nRs4tYXOqE2iE',
     'title': 'Sped Up Mexican Songs',
@@ -256,6 +285,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u2qU3XTnVlWgAKJQXXm7Kjz',
     'id': 'yt=PL-_a53M3g7u2qU3XTnVlWgAKJQXXm7Kjz',
     'title': 'Lost in the Woods Spotify',
@@ -264,6 +294,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u23B84qz128Nv4I0piBp3zr',
     'id': 'yt=PL-_a53M3g7u23B84qz128Nv4I0piBp3zr',
     'title': 'Celtic Punk Spotify',
@@ -272,6 +303,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u2UQT5jfGpmhkMswdNJe-Gh',
     'id': 'yt=PL-_a53M3g7u2UQT5jfGpmhkMswdNJe-Gh',
     'title': 'New NCS Song 2024',
@@ -280,6 +312,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u2siW7D-B89KS49vmCBekjY',
     'id': 'yt=PL-_a53M3g7u2siW7D-B89KS49vmCBekjY',
     'title': 'Timeless Love Songs Spotify',
@@ -288,6 +321,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u1CXZnQ4gK6C9T_vMnj6YTq',
     'id': 'yt=PL-_a53M3g7u1CXZnQ4gK6C9T_vMnj6YTq',
     'title': 'One Love Spotify - Best Reggae Spotify Playlist',
@@ -297,6 +331,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u0GJasXfv8u9lWpIGxNEGio',
     'id': 'yt=PL-_a53M3g7u0GJasXfv8u9lWpIGxNEGio',
     'title': '2024 Rap Hits',
@@ -305,6 +340,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u3EyY6fsaOrYhrGDSMTpu8g',
     'id': 'yt=PL-_a53M3g7u3EyY6fsaOrYhrGDSMTpu8g',
     'title': 'Polskie Teledyski 2024',
@@ -313,6 +349,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u0HHF7xyyIO8bRoJizjk26J',
     'id': 'yt=PL-_a53M3g7u0HHF7xyyIO8bRoJizjk26J',
     'title': 'Boost Your Confidence Songs',
@@ -321,6 +358,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u1AvsB9-qMXN3TInFZ1rpQH',
     'id': 'yt=PL-_a53M3g7u1AvsB9-qMXN3TInFZ1rpQH',
     'title': 'Cancion Pop en Ingles 2024',
@@ -329,6 +367,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u31e2_YgqqgB7NJlj5tPNr1',
     'id': 'yt=PL-_a53M3g7u31e2_YgqqgB7NJlj5tPNr1',
     'title': 'Fenomen Hit 2024',
@@ -337,6 +376,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u3Zlv6NkqlVPNZcdfCgC6dM',
     'id': 'yt=PL-_a53M3g7u3Zlv6NkqlVPNZcdfCgC6dM',
     'title': 'Top French Songs September 2024',
@@ -345,6 +385,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u22pc0c5UUIzrzcXQEWnCcV',
     'id': 'yt=PL-_a53M3g7u22pc0c5UUIzrzcXQEWnCcV',
     'title': 'Christmas Carols 2024',
@@ -353,6 +394,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u082wTxHgLM1MsEbCMYmGde',
     'id': 'yt=PL-_a53M3g7u082wTxHgLM1MsEbCMYmGde',
     'title': 'Mix Christmas Songs 2024',
@@ -361,6 +403,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u1jSV1qeQ8mrzEbsRF_dpB2',
     'id': 'yt=PL-_a53M3g7u1jSV1qeQ8mrzEbsRF_dpB2',
     'title': 'Canzoni 2023 Estate Nuove',
@@ -369,6 +412,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL-_a53M3g7u3TuMekuhs2oTjUTyQlakb1',
     'id': 'yt=PL-_a53M3g7u3TuMekuhs2oTjUTyQlakb1',
     'title': 'Top Underrated Trap Songs 2023',
@@ -377,6 +421,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilJiZuba40Sfzq-5AbF3XF4z',
     'id': 'yt=PLXpMeQYR1ilJiZuba40Sfzq-5AbF3XF4z',
     'title': 'Sped Up Audios 2024',
@@ -385,6 +430,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilKN2Lj8R9rowFpn-8kTkH94',
     'id': 'yt=PLXpMeQYR1ilKN2Lj8R9rowFpn-8kTkH94',
     'title': 'Spotify Workday Lounge',
@@ -393,6 +439,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilKCtx2KEEN2ogI5YchRNMoe',
     'id': 'yt=PLXpMeQYR1ilKCtx2KEEN2ogI5YchRNMoe',
     'title': 'Party Cove Spotify',
@@ -401,6 +448,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilLvj8yAKf7UUYIsjEF65JoP',
     'id': 'yt=PLXpMeQYR1ilLvj8yAKf7UUYIsjEF65JoP',
     'title': 'Spotify Spooning',
@@ -409,6 +457,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilKfnosI1735VbavkfHNh0a8',
     'id': 'yt=PLXpMeQYR1ilKfnosI1735VbavkfHNh0a8',
     'title': 'Chill Rock Spotify',
@@ -417,6 +466,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilJIRQb6wcAOscYz2TnmyOM0',
     'id': 'yt=PLXpMeQYR1ilJIRQb6wcAOscYz2TnmyOM0',
     'title': 'Sing-Along Indie Hits Spotify',
@@ -425,6 +475,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilJRHtUCgzgLm4x9WZ7YhYQQ',
     'id': 'yt=PLXpMeQYR1ilJRHtUCgzgLm4x9WZ7YhYQQ',
     'title': "80's Rock Ballads Love Songs",
@@ -433,6 +484,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilJWc-C5uKMSpVS49mphJcKC',
     'id': 'yt=PLXpMeQYR1ilJWc-C5uKMSpVS49mphJcKC',
     'title': 'Cardio Spotify Playlist',
@@ -441,6 +493,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilK2M6PUwdA75st7uAUrH7Z_',
     'id': 'yt=PLXpMeQYR1ilK2M6PUwdA75st7uAUrH7Z_',
     'title': 'Canciones 2025 Reggaeton',
@@ -450,6 +503,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilIgQ0klpqWf7-RdfouCeJLj',
     'id': 'yt=PLXpMeQYR1ilIgQ0klpqWf7-RdfouCeJLj',
     'title': 'Best Remixes of 2025',
@@ -459,6 +513,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilK6jP9_H5vxlG4uGaBCbNIA',
     'id': 'yt=PLXpMeQYR1ilK6jP9_H5vxlG4uGaBCbNIA',
     'title': 'Best Country Songs TikTok',
@@ -467,6 +522,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilLr_jD8AMS8YjRSzl0ZnZOq',
     'id': 'yt=PLXpMeQYR1ilLr_jD8AMS8YjRSzl0ZnZOq',
     'title': 'Best R&B Throwback Mix',
@@ -475,6 +531,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilIGbCW4ZGy5aPsENjEn6SgF',
     'id': 'yt=PLXpMeQYR1ilIGbCW4ZGy5aPsENjEn6SgF',
     'title': 'Mix Canciones TikTok 2024',
@@ -483,6 +540,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilItUxKgJwDxaO5Eo9JVgI-0',
     'id': 'yt=PLXpMeQYR1ilItUxKgJwDxaO5Eo9JVgI-0',
     'title': 'TikTok Songs Playlist Slow',
@@ -491,6 +549,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilKaCDSyh9l8PUBKoWOCejel',
     'id': 'yt=PLXpMeQYR1ilKaCDSyh9l8PUBKoWOCejel',
     'title': 'Regional Mexicano 2024 Lo Mas Nuevo',
@@ -499,6 +558,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilJKp9YfL2fVMsoQuKSbxsLK',
     'id': 'yt=PLXpMeQYR1ilJKp9YfL2fVMsoQuKSbxsLK',
     'title': 'Disney Soundtracks Playlist 2024',
@@ -507,6 +567,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilL_qsEr9Z9aaTlcOq2oQhe8',
     'id': 'yt=PLXpMeQYR1ilL_qsEr9Z9aaTlcOq2oQhe8',
     'title': 'New Song 2024 Dance',
@@ -515,6 +576,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilIU529zp7xRsv990b6YpyAh',
     'id': 'yt=PLXpMeQYR1ilIU529zp7xRsv990b6YpyAh',
     'title': 'Clean TikTok Playlist 2024',
@@ -523,6 +585,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilKXzjYmIb-FIKmYnzWZ7v4b',
     'id': 'yt=PLXpMeQYR1ilKXzjYmIb-FIKmYnzWZ7v4b',
     'title': 'New House Songs 2024 to 2025',
@@ -531,6 +594,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLXpMeQYR1ilJbpgayg1uVwZ9fZEMTbdL5',
     'id': 'yt=PLXpMeQYR1ilJbpgayg1uVwZ9fZEMTbdL5',
     'title': 'Top Upbeat Hits 2024',
@@ -539,6 +603,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLFgquLnL59alW3xmYiWRaoz0oM3H17Lth',
     'id': 'yt=PLFgquLnL59alW3xmYiWRaoz0oM3H17Lth',
     'title': 'New This Week',
@@ -547,6 +612,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLPu2lZ1KUJCLGJirygukZ_2TKNyd2Zj5q',
     'id': 'yt=PLPu2lZ1KUJCLGJirygukZ_2TKNyd2Zj5q',
     'title': 'Classic Rock Hits',
@@ -555,6 +621,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'RDCLAK5uy_kWiJXUNLZM9EyS3GBGznl1ku8_cOos97U',
     'id': 'yt=RDCLAK5uy_kWiJXUNLZM9EyS3GBGznl1ku8_cOos97U',
     'title': 'Huge Dance Hits',
@@ -563,6 +630,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLZhMSEOdAKDj0MCF_HTXB8bKBLywN_rnc',
     'id': 'yt=PLZhMSEOdAKDj0MCF_HTXB8bKBLywN_rnc',
     'title': 'Warehouse Party',
@@ -571,6 +639,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLsBm69f4tz3P52EXZH8vRgAoTAVoaK69G',
     'id': 'yt=PLsBm69f4tz3P52EXZH8vRgAoTAVoaK69G',
     'title': 'Slowed & reverbed',
@@ -579,6 +648,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLth-LJrTVjenUQVnBWHkx-me2Lrw0ZomP',
     'id': 'yt=PLth-LJrTVjenUQVnBWHkx-me2Lrw0ZomP',
     'title': 'Fresh & chill',
@@ -587,6 +657,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLw9U13gRyHyuqU-6Xt2FwWW7jjrfCUdA8',
     'id': 'yt=PLw9U13gRyHyuqU-6Xt2FwWW7jjrfCUdA8',
     'title': 'Heart beats',
@@ -595,6 +666,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLypD8YB4XFBzSbQN-XdJYzvXDpEcDmvD4',
     'id': 'yt=PLypD8YB4XFBzSbQN-XdJYzvXDpEcDmvD4',
     'title': 'Levitate',
@@ -603,6 +675,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLgzTt0k8mXzEP-Oc7lnk5T3f4XFSqQPNr',
     'id': 'yt=PLgzTt0k8mXzEP-Oc7lnk5T3f4XFSqQPNr',
     'title': 'Wedding Songs and Love Songs',
@@ -611,6 +684,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLeZo-g7MgUlFrrsJ5rZvz5cgwXka6y1kV',
     'id': 'yt=PLeZo-g7MgUlFrrsJ5rZvz5cgwXka6y1kV',
     'title': 'Phonk Music',
@@ -619,6 +693,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLw1Oi3cBR52TbfWJkV_bCg2K2_cOJVsBa',
     'id': 'yt=PLw1Oi3cBR52TbfWJkV_bCg2K2_cOJVsBa',
     'title': 'Dopamine Music',
@@ -627,6 +702,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL40hokT6YTwKtGpW_nohOY-ejoNsOtJEF',
     'id': 'yt=PL40hokT6YTwKtGpW_nohOY-ejoNsOtJEF',
     'title': 'Situationship type',
@@ -635,6 +711,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLPz5VBapcZx2YYFt61NJt8Lctu2PyNRWZ',
     'id': 'yt=PLPz5VBapcZx2YYFt61NJt8Lctu2PyNRWZ',
     'title': 'Work From Home',
@@ -643,6 +720,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL788cqrhfEcYf1KsGlpRVm2YFlX5PZJuL',
     'id': 'yt=PL788cqrhfEcYf1KsGlpRVm2YFlX5PZJuL',
     'title': 'Back in 2016',
@@ -651,6 +729,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLWl4U8L95nKNHk1NOIDi_05bBKzSFkfq4',
     'id': 'yt=PLWl4U8L95nKNHk1NOIDi_05bBKzSFkfq4',
     'title': 'Mint',
@@ -659,6 +738,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLoTmxgrbHycoNOZj2GwTwPP1rLN2kHMjZ',
     'id': 'yt=PLoTmxgrbHycoNOZj2GwTwPP1rLN2kHMjZ',
     'title': 'Dance hits',
@@ -667,6 +747,7 @@ List<Map<String, dynamic>> playlistsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLgzTt0k8mXzGjD1gQXkqC3bE0GzYwBnSD',
     'id': 'yt=PLgzTt0k8mXzGjD1gQXkqC3bE0GzYwBnSD',
     'title': 'Best travel songs',

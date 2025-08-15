@@ -22,6 +22,7 @@
 List albumsDB = [
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLS5_MK8e_MzSNmCQ3_AqbQL1JOM4Yy-_v',
     'id': 'yt=PLS5_MK8e_MzSNmCQ3_AqbQL1JOM4Yy-_v',
     'title': 'Starboy - The Weeknd',
@@ -31,6 +32,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLtdokPm7vPss1TXrV4gr2pnSXmMu-UFF4',
     'id': 'yt=PLtdokPm7vPss1TXrV4gr2pnSXmMu-UFF4',
     'title': 'Dawn FM - The Weeknd',
@@ -40,6 +42,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLOkPWZS9Q7ECOreiaeGJZ_dA8KlCtsvHN',
     'id': 'yt=PLOkPWZS9Q7ECOreiaeGJZ_dA8KlCtsvHN',
     'title': 'AM - Arctic Monkeys',
@@ -49,6 +52,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL9tY0BWXOZFuFZ-n1neSQ9R619SDUDSyl',
     'id': 'yt=PL9tY0BWXOZFuFZ-n1neSQ9R619SDUDSyl',
     'title': 'Lover - Taylor Swift',
@@ -58,6 +62,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLfSdF_HSSu55q-5p-maISZyr19erpZsTo',
     'id': 'yt=PLfSdF_HSSu55q-5p-maISZyr19erpZsTo',
     'title': "Harry's House - Harry Styles",
@@ -67,6 +72,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLfSdF_HSSu548MHnItRg7sYbj1OkmFc2g',
     'id': 'yt=PLfSdF_HSSu548MHnItRg7sYbj1OkmFc2g',
     'title': 'Fine Line - Harry Styles',
@@ -76,6 +82,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLK2zhq9oy0K4yxwMmBPsXQ3NvaQSxw6rY',
     'id': 'yt=PLK2zhq9oy0K4yxwMmBPsXQ3NvaQSxw6rY',
     'title': 'My Dear Melancholy - The Weeknd',
@@ -85,6 +92,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLsCPTY_MPoPZLKsjasPhYLuoWG-s-rdKq',
     'id': 'yt=PLsCPTY_MPoPZLKsjasPhYLuoWG-s-rdKq',
     'title': 'Happier Than Ever - Billie Eilish',
@@ -94,6 +102,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLHwvDXmNUa93H0TFpFvKK1wD3WupLzcHd',
     'id': 'yt=PLHwvDXmNUa93H0TFpFvKK1wD3WupLzcHd',
     'title': 'SOUR - Olivia Rodrigo',
@@ -103,6 +112,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL2YYYbxwOUaKedFVO8nv_HY_0XZCH00S4',
     'id': 'yt=PL2YYYbxwOUaKedFVO8nv_HY_0XZCH00S4',
     'title': 'Beauty Behind The Madness - The Weeknd',
@@ -112,6 +122,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL2YYYbxwOUaIUIjvLgpVyn_K4-IIl3mFc',
     'id': 'yt=PL2YYYbxwOUaIUIjvLgpVyn_K4-IIl3mFc',
     'title': 'After Hours - The Weeknd',
@@ -121,6 +132,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLorwKgiUml5v7dtrSLgvs6p-Y3oCh61yU',
     'id': 'yt=PLorwKgiUml5v7dtrSLgvs6p-Y3oCh61yU',
     'title': "Don't Smile at Me - Billie Eilish",
@@ -130,6 +142,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLmU8B4gZ41icgJv5WmjkK6c3KyOpVEDkI',
     'id': 'yt=PLmU8B4gZ41icgJv5WmjkK6c3KyOpVEDkI',
     'title': "1989 (Taylor's Version) - Taylor Swift",
@@ -139,6 +152,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL7V-LJGDr4W8z5XbbROMq19AWCyyh-lF4',
     'id': 'yt=PL7V-LJGDr4W8z5XbbROMq19AWCyyh-lF4',
     'title': 'Born To Die - Lana Del Rey',
@@ -148,6 +162,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLu8BgVaWowIFIoeD8JZTuHZRGt5KcDmxR',
     'id': 'yt=PLu8BgVaWowIFIoeD8JZTuHZRGt5KcDmxR',
     'title': 'Cry Baby - Melanie Martinez',
@@ -157,6 +172,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLnBDayR0gzwyD-F1nBgx3Gt4wO9h8pJSB',
     'id': 'yt=PLnBDayR0gzwyD-F1nBgx3Gt4wO9h8pJSB',
     'title': 'Night Visions - Imagine Dragons',
@@ -166,6 +182,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLE3uncMq8x3wLUlOD9W0c8-A8ZIZHUj6L',
     'id': 'yt=PLE3uncMq8x3wLUlOD9W0c8-A8ZIZHUj6L',
     'title': 'Wasteland - Brent Faiyaz',
@@ -175,6 +192,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL2BpnHM2wLCtglIEFILC9Z1jz7LdUOneO',
     'id': 'yt=PL2BpnHM2wLCtglIEFILC9Z1jz7LdUOneO',
     'title': "Emails I can't send - Sabrina Carpenter",
@@ -184,6 +202,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL1z9R7TJXY8wQT8P-jsjgdRFvjkte_Akn',
     'id': 'yt=PL1z9R7TJXY8wQT8P-jsjgdRFvjkte_Akn',
     'title': 'Planet Her - Doja Cat',
@@ -193,6 +212,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLWrMgSHVv2bPQUSEZnrep56vxWVech7gT',
     'id': 'yt=PLWrMgSHVv2bPQUSEZnrep56vxWVech7gT',
     'title': 'SOS - SZA',
@@ -202,6 +222,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PL9tY0BWXOZFsRO7M8bLf-PKpUfFP48Jha',
     'id': 'yt=PL9tY0BWXOZFsRO7M8bLf-PKpUfFP48Jha',
     'title': 'HEROES & VILLAINS - Metro Boomin',
@@ -211,6 +232,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLfiMjLyNWxeYae8z1QiwSLTK12G_6EQU_',
     'id': 'yt=PLfiMjLyNWxeYae8z1QiwSLTK12G_6EQU_',
     'title': 'Surface Sounds - KALEO',
@@ -220,6 +242,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lYFD0sDFxZ8cr9ttczB7pH1zYc8r16kkg',
     'id': 'yt=OLAK5uy_lYFD0sDFxZ8cr9ttczB7pH1zYc8r16kkg',
     'title': 'GOLDEN - Jung Kook',
@@ -229,6 +252,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLWOP54w8bbgM2Qlyks0Bt6GQOODjjfJY-',
     'id': 'yt=PLWOP54w8bbgM2Qlyks0Bt6GQOODjjfJY-',
     'title': 'Christmas - Michael Bublé',
@@ -238,6 +262,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lw2-Cu3aRY2Tkfi28_79m05SkBF_tlufg',
     'id': 'yt=OLAK5uy_lw2-Cu3aRY2Tkfi28_79m05SkBF_tlufg',
     'title': 'Midnights - Taylor Swift',
@@ -247,6 +272,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mFp59TqeoWXnMKVRThBlLdVyVXz0pjaYk',
     'id': 'yt=OLAK5uy_mFp59TqeoWXnMKVRThBlLdVyVXz0pjaYk',
     'title': 'Merry Christmas - Mariah Carey',
@@ -256,6 +282,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lb5kz8gsKmocY458o2B5FUAtmuG3sNcH4',
     'id': 'yt=OLAK5uy_lb5kz8gsKmocY458o2B5FUAtmuG3sNcH4',
     'title': 'Scarlet - Doja Cat',
@@ -265,6 +292,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_n6zWDEznvX5Lz6Q8SMCeiEcJk87sKh0XI',
     'id': 'yt=OLAK5uy_n6zWDEznvX5Lz6Q8SMCeiEcJk87sKh0XI',
     'title': 'Ferxxocalipsis - Feid',
@@ -274,6 +302,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLbxg9IbgCVkThXxuKK8bkMw3WUt5gqrts',
     'id': 'yt=PLbxg9IbgCVkThXxuKK8bkMw3WUt5gqrts',
     'title': 'Everyday Is Christmas - Sia',
@@ -283,6 +312,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nDG2F1rgP_OVqXtQRjV260ZeuCiijByxs',
     'id': 'yt=OLAK5uy_nDG2F1rgP_OVqXtQRjV260ZeuCiijByxs',
     'title': 'Thank u,next - Ariana Grande',
@@ -292,6 +322,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lnx0vO7zWw_AcGVVHsaDvsowsRQiIjBMk',
     'id': 'yt=OLAK5uy_lnx0vO7zWw_AcGVVHsaDvsowsRQiIjBMk',
     'title': 'Evolve - Imagine Dragons',
@@ -301,6 +332,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_l38zxOdBaYnNtz_thk94HRP8V5s6_oGsU',
     'id': 'yt=OLAK5uy_l38zxOdBaYnNtz_thk94HRP8V5s6_oGsU',
     'title': 'This Is Acting - Sia',
@@ -310,6 +342,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nRIwFxK9HoO5lNT4THuPKYfit57ZgBxdM',
     'id': 'yt=OLAK5uy_nRIwFxK9HoO5lNT4THuPKYfit57ZgBxdM',
     'title': 'What Is Love? - Clean Bandit',
@@ -319,6 +352,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lTUCPSiT_kZOCY1BlJ1t5T5nsxeG6v20s',
     'id': 'yt=OLAK5uy_lTUCPSiT_kZOCY1BlJ1t5T5nsxeG6v20s',
     'title': 'DRIVE - Tiësto',
@@ -328,6 +362,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nF3Y8B3Dljpk27p5o0adXl0jQJXR_pVj8',
     'id': 'yt=OLAK5uy_nF3Y8B3Dljpk27p5o0adXl0jQJXR_pVj8',
     'title': 'Don Juan - Maluma',
@@ -337,6 +372,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nRTHZ_yD4II6q7KlgQo1Fd6I05cPyThs8',
     'id': 'yt=OLAK5uy_nRTHZ_yD4II6q7KlgQo1Fd6I05cPyThs8',
     'title': 'THINK LATER - Tate McRae',
@@ -346,6 +382,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nxmoDMMD7YOXBekv9Pt-55UoMI0tKDlyU',
     'id': 'yt=OLAK5uy_nxmoDMMD7YOXBekv9Pt-55UoMI0tKDlyU',
     'title': 'Scorpion - Drake',
@@ -355,6 +392,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mC1dIZC9-5x3XR2TJP-KpxiVaA_L_U9K8',
     'id': 'yt=OLAK5uy_mC1dIZC9-5x3XR2TJP-KpxiVaA_L_U9K8',
     'title': 'LOOK AT ME - XXXTENTACION',
@@ -364,6 +402,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m5riLsB5iVpADmWfHmzkFNc8QGBWwBkWM',
     'id': 'yt=OLAK5uy_m5riLsB5iVpADmWfHmzkFNc8QGBWwBkWM',
     'title': 'SKINS - XXXTENTACION',
@@ -373,6 +412,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lqRFvHXwqV_C6J-_ruobnyZgR2K6Ql8Qk',
     'id': 'yt=OLAK5uy_lqRFvHXwqV_C6J-_ruobnyZgR2K6Ql8Qk',
     'title': '? - XXXTENTACION',
@@ -382,6 +422,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lkSMrwgF3m0BCgIA0v1G1VZhSscZg37cY',
     'id': 'yt=OLAK5uy_lkSMrwgF3m0BCgIA0v1G1VZhSscZg37cY',
     'title': 'The Show - Niall Horan',
@@ -391,6 +432,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kq_gJdWJ9LUwgYzXMWeocvSyee4OqsvOQ',
     'id': 'yt=OLAK5uy_kq_gJdWJ9LUwgYzXMWeocvSyee4OqsvOQ',
     'title': 'Norman Fucking Rockwell! - Lana Del Rey',
@@ -400,6 +442,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lFbfW_UOra8dYRTa69lxR3fxYjogNtiQw',
     'id': 'yt=OLAK5uy_lFbfW_UOra8dYRTa69lxR3fxYjogNtiQw',
     'title': 'THE TORTURED POETS DEPARTMENT - Taylor Swift',
@@ -409,6 +452,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lVxq_QCXDlleCnpsszQyiFextilkX12_w',
     'id': 'yt=OLAK5uy_lVxq_QCXDlleCnpsszQyiFextilkX12_w',
     'title': "WE DON'T TRUST YOU - Future, Metro Boomin",
@@ -418,6 +462,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kZqVnh5DXwZ95R5yuAnWUX20OjrNJh09U',
     'id': 'yt=OLAK5uy_kZqVnh5DXwZ95R5yuAnWUX20OjrNJh09U',
     'title': 'Fireworks & Rollerblades - Benson Boone',
@@ -427,6 +472,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mbcpEgHbfi3deQRnyGfQWnlzgQd86_tMI',
     'id': 'yt=OLAK5uy_mbcpEgHbfi3deQRnyGfQWnlzgQd86_tMI',
     'title': 'Wasteland, Baby! - Hozier',
@@ -436,6 +482,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mG42_gxfZ-Cq6Y921XWm43Z75YAiaSIWI',
     'id': 'yt=OLAK5uy_mG42_gxfZ-Cq6Y921XWm43Z75YAiaSIWI',
     'title': 'eternal sunshine (slightly deluxe) - Ariana Grande',
@@ -445,6 +492,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kmtA2RV4sA_baCJwuaazeDtKmBM85j-yo',
     'id': 'yt=OLAK5uy_kmtA2RV4sA_baCJwuaazeDtKmBM85j-yo',
     'title': 'UTOPIA - Travis Scott',
@@ -454,6 +502,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kDuqdPyyBdToRV-mvWklRE_ysv7-LqveI',
     'id': 'yt=OLAK5uy_kDuqdPyyBdToRV-mvWklRE_ysv7-LqveI',
     'title': 'One Thing At A Time - Morgan Wallen',
@@ -463,6 +512,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kFa9tOyLsP4JH1EqSD3hIudVdkmQWfKT0',
     'id': 'yt=OLAK5uy_kFa9tOyLsP4JH1EqSD3hIudVdkmQWfKT0',
     'title': 'DECIDE - Djo',
@@ -472,6 +522,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_ngyCd9rAr-KZ5eI5juhaOe-LgrjlteONU',
     'id': 'yt=OLAK5uy_ngyCd9rAr-KZ5eI5juhaOe-LgrjlteONU',
     'title':
@@ -482,6 +533,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m2MkFaiKAqsvU8RR3o1qAGMLkSCtIl8vU',
     'id': 'yt=OLAK5uy_m2MkFaiKAqsvU8RR3o1qAGMLkSCtIl8vU',
     'title': '12 Notes - Alec Benjamin',
@@ -491,6 +543,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nH6vZsFvVyJt06PcH5O9SXqV5lT3-I5hY',
     'id': 'yt=OLAK5uy_nH6vZsFvVyJt06PcH5O9SXqV5lT3-I5hY',
     'title': 'Narrated For You - Alec Benjamin',
@@ -500,6 +553,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kClWWfWghQXro7ONQ-DfH3RZ1oxiu0kMA',
     'id': 'yt=OLAK5uy_kClWWfWghQXro7ONQ-DfH3RZ1oxiu0kMA',
     'title': 'Blonde - Frank Ocean',
@@ -509,6 +563,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lhps_W4LDJGQ--XKY8-4s1-DT98XKn7PI',
     'id': 'yt=OLAK5uy_lhps_W4LDJGQ--XKY8-4s1-DT98XKn7PI',
     'title': 'Cigarettes After Sex - Cigarettes After Sex',
@@ -518,6 +573,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m4lOn8HJoLfTETxg2d6QouxcQd3nM4Gf0',
     'id': 'yt=OLAK5uy_m4lOn8HJoLfTETxg2d6QouxcQd3nM4Gf0',
     'title': 'Parachutes - Coldplay',
@@ -527,6 +583,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mI1LaRKdjRV-QCXbqdSLwRgG7vHthQgnQ',
     'id': 'yt=OLAK5uy_mI1LaRKdjRV-QCXbqdSLwRgG7vHthQgnQ',
     'title': 'Ariana Grande - Positions',
@@ -537,6 +594,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_k4LFwctseSNnXT0MyeNB1j9boPLFjO-ZI',
     'id': 'yt=OLAK5uy_k4LFwctseSNnXT0MyeNB1j9boPLFjO-ZI',
     'title': 'One Direction - Four',
@@ -547,6 +605,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mJzZNV67c56hX-m1jSQ9wQImckazmxN5s',
     'id': 'yt=OLAK5uy_mJzZNV67c56hX-m1jSQ9wQImckazmxN5s',
     'title': 'Melanie Martinez - Cry Baby',
@@ -557,6 +616,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kTAMVwktrxHt4YYl0HVqtInDsZZu-842I',
     'id': 'yt=OLAK5uy_kTAMVwktrxHt4YYl0HVqtInDsZZu-842I',
     'title': 'Camila Cabello - Romance',
@@ -567,6 +627,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kgvDzTzHW2NHKXbZ6kzcoCY-XfVE0c-Sc',
     'id': 'yt=OLAK5uy_kgvDzTzHW2NHKXbZ6kzcoCY-XfVE0c-Sc',
     'title': 'Luis Fonsi - Vida',
@@ -577,6 +638,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_k-LckFrVH6iHyG_RDQCBDQ-k9rJNnZ85c',
     'id': 'yt=OLAK5uy_k-LckFrVH6iHyG_RDQCBDQ-k9rJNnZ85c',
     'title': 'Rauw Alejandro - Vice Versa',
@@ -587,6 +649,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m6Sss1kO7j8so_ce3sDT8Xa5RZz6mERNQ',
     'id': 'yt=OLAK5uy_m6Sss1kO7j8so_ce3sDT8Xa5RZz6mERNQ',
     'title': 'Drake - Take Care',
@@ -597,6 +660,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nUljIDktkB7qCIEoc-vn1J26T-nHtC1cM',
     'id': 'yt=OLAK5uy_nUljIDktkB7qCIEoc-vn1J26T-nHtC1cM',
     'title': 'Peso Pluma - Genesis',
@@ -607,6 +671,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kng4OEgFEJ1lxWRj7wjxewLbSAu6vmzzE',
     'id': 'yt=OLAK5uy_kng4OEgFEJ1lxWRj7wjxewLbSAu6vmzzE',
     'title': 'One Direction - Made In The A.M.',
@@ -617,6 +682,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_keyJA-JsoAdfCylvyyIQMRjenzX6MzmnE',
     'id': 'yt=OLAK5uy_keyJA-JsoAdfCylvyyIQMRjenzX6MzmnE',
     'title': 'Kanye West - The Life Of Pablo',
@@ -627,6 +693,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nQNRQA99R_mdFaftHhYqCHyNLgWjUhHZ0',
     'id': 'yt=OLAK5uy_nQNRQA99R_mdFaftHhYqCHyNLgWjUhHZ0',
     'title': 'Karol G - Kg0516',
@@ -637,6 +704,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m-vSVOiVeY_z2lPgThmS6Nn0TJExXZtOg',
     'id': 'yt=OLAK5uy_m-vSVOiVeY_z2lPgThmS6Nn0TJExXZtOg',
     'title': 'Taylor Swift - Evermore',
@@ -647,6 +715,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lHYbVGaxOAVNP1tAgVKXBAxnIJ-OqbfLQ',
     'id': 'yt=OLAK5uy_lHYbVGaxOAVNP1tAgVKXBAxnIJ-OqbfLQ',
     'title': 'Jonas Blue - Blue',
@@ -657,6 +726,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nbgX8HX7Q8nc2RBTqm3EAxH38mt4be-qo',
     'id': 'yt=OLAK5uy_nbgX8HX7Q8nc2RBTqm3EAxH38mt4be-qo',
     'title': 'James Arthur - Back From The Edge',
@@ -667,6 +737,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_llBNVDBNncoPNlOvXcZSny32SLEFepdwQ',
     'id': 'yt=OLAK5uy_llBNVDBNncoPNlOvXcZSny32SLEFepdwQ',
     'title': '50 Cent - Get Rich Or Die Tryin',
@@ -677,6 +748,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mJLUX067d816Ur3BYLtUFRVE5AkK6PR8U',
     'id': 'yt=OLAK5uy_mJLUX067d816Ur3BYLtUFRVE5AkK6PR8U',
     'title': 'Calvin Harris - 18 Months',
@@ -687,6 +759,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nAZAs495Fuv7ij62C3N50Ga7TAp60sq0w',
     'id': 'yt=OLAK5uy_nAZAs495Fuv7ij62C3N50Ga7TAp60sq0w',
     'title': 'Linkin Park - Meteora',
@@ -697,6 +770,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kPdPDkmggFWnDaTPs651iSKiz0gsp9R4s',
     'id': 'yt=OLAK5uy_kPdPDkmggFWnDaTPs651iSKiz0gsp9R4s',
     'title': 'Macklemore & Ryan Lewis - The Heist',
@@ -707,6 +781,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kFAycOAlgpI743eKRTeGG82mwcwDoV4mc',
     'id': 'yt=OLAK5uy_kFAycOAlgpI743eKRTeGG82mwcwDoV4mc',
     'title': 'Calvin Harris - Motion',
@@ -717,6 +792,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kvi6xfWSkfUFjGtPHjvxuOcNsdnIlSUr8',
     'id': 'yt=OLAK5uy_kvi6xfWSkfUFjGtPHjvxuOcNsdnIlSUr8',
     'title': 'Ariana Grande - Sweetener',
@@ -727,6 +803,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_k-fR8UG9108cSGptPFWTQpRabw7Kyzc5c',
     'id': 'yt=OLAK5uy_k-fR8UG9108cSGptPFWTQpRabw7Kyzc5c',
     'title': 'One Direction - Midnight Memories',
@@ -737,6 +814,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lmkszQnwSe59ADO4IPsiGylSTgz15P_yY',
     'id': 'yt=OLAK5uy_lmkszQnwSe59ADO4IPsiGylSTgz15P_yY',
     'title': 'Michael Jackson - Thriller',
@@ -747,6 +825,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_n13hmdsIozcCRyaY4cRDuuviphpfbzPrw',
     'id': 'yt=OLAK5uy_n13hmdsIozcCRyaY4cRDuuviphpfbzPrw',
     'title': "Guns N' Roses - Appetite For Destruction",
@@ -757,6 +836,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_k0BfPls_ABfQsEcJfS4xxF81jXMHY3cjI',
     'id': 'yt=OLAK5uy_k0BfPls_ABfQsEcJfS4xxF81jXMHY3cjI',
     'title': 'The Neighbourhood - I Love You.',
@@ -767,6 +847,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lYlHqVN8M2AcghVbRCbX5rFHezLakV1Ds',
     'id': 'yt=OLAK5uy_lYlHqVN8M2AcghVbRCbX5rFHezLakV1Ds',
     'title': 'The Chainsmokers - Memories...Do Not Open',
@@ -777,6 +858,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nSf7ffoPgkzoAncS2eatbownOaZ2_X8i8',
     'id': 'yt=OLAK5uy_nSf7ffoPgkzoAncS2eatbownOaZ2_X8i8',
     'title': 'David Guetta - Nothing But The Beat',
@@ -787,6 +869,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lQN_yR7RQie0jnpJ349k9psVApO4peUhc',
     'id': 'yt=OLAK5uy_lQN_yR7RQie0jnpJ349k9psVApO4peUhc',
     'title': 'Dr. Dre - 2001',
@@ -797,6 +880,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nc7f_y7E_3cXhJmMkV8yq9CU2iqpnooug',
     'id': 'yt=OLAK5uy_nc7f_y7E_3cXhJmMkV8yq9CU2iqpnooug',
     'title': 'Sza - Ctrl',
@@ -807,6 +891,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mAGTQmYeosOR-Pp17OnnzkKHPeEbzSFOg',
     'id': 'yt=OLAK5uy_mAGTQmYeosOR-Pp17OnnzkKHPeEbzSFOg',
     'title': 'Frank Ocean - Channel Orange',
@@ -817,6 +902,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_l6QK8fTSEZec6_jvhhDu1fmdM7a7ieYf4',
     'id': 'yt=OLAK5uy_l6QK8fTSEZec6_jvhhDu1fmdM7a7ieYf4',
     'title': 'Halsey - Manic',
@@ -827,6 +913,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nyRZBNr6_NOMq4osjNSBbB7xpS2L_AH8w',
     'id': 'yt=OLAK5uy_nyRZBNr6_NOMq4osjNSBbB7xpS2L_AH8w',
     'title': 'Eminem - The Marshall Mathers Lp',
@@ -837,6 +924,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nXEjdKtro80D3OQL2t0mnymJfQ6gTJGz4',
     'id': 'yt=OLAK5uy_nXEjdKtro80D3OQL2t0mnymJfQ6gTJGz4',
     'title': 'Shawn Mendes - Handwritten',
@@ -847,6 +935,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m_LZ0LzQ487cBuuRehdrodyEkfoAUFiws',
     'id': 'yt=OLAK5uy_m_LZ0LzQ487cBuuRehdrodyEkfoAUFiws',
     'title': "Luke Combs - This One'S For You",
@@ -857,6 +946,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mDdGJSv2u-3CO_Zb9Hm7rGGCo1e1L9_1s',
     'id': 'yt=OLAK5uy_mDdGJSv2u-3CO_Zb9Hm7rGGCo1e1L9_1s',
     'title': 'The Weeknd - Dawn Fm',
@@ -867,6 +957,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_ltXJSKxGWPdvV31htBGb_B9iQcSF7DH1w',
     'id': 'yt=OLAK5uy_ltXJSKxGWPdvV31htBGb_B9iQcSF7DH1w',
     'title': 'Paulo Londra - Homerun',
@@ -877,6 +968,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nBJRluT6ptlsBxn57aycyN-Fwh7k6_CAo',
     'id': 'yt=OLAK5uy_nBJRluT6ptlsBxn57aycyN-Fwh7k6_CAo',
     'title': 'David Guetta - 7',
@@ -887,6 +979,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m_oiFQ5FK6PCTzskpi60YNQwxKZqkVD1M',
     'id': 'yt=OLAK5uy_m_oiFQ5FK6PCTzskpi60YNQwxKZqkVD1M',
     'title': 'Eminem - Recovery',
@@ -897,6 +990,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_n64_SDF0otQBvjlDb_A5cSkkwT4R5ln00',
     'id': 'yt=OLAK5uy_n64_SDF0otQBvjlDb_A5cSkkwT4R5ln00',
     'title': 'Cardi B - Invasion Of Privacy',
@@ -907,6 +1001,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mla7F1QRwv6mBD0XEgHWm4eS-wmdNf97s',
     'id': 'yt=OLAK5uy_mla7F1QRwv6mBD0XEgHWm4eS-wmdNf97s',
     'title': 'Rihanna - Unapologetic',
@@ -917,6 +1012,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_kDChrO3UQuY4qQfOfgLj22p69pwGA4m0c',
     'id': 'yt=OLAK5uy_kDChrO3UQuY4qQfOfgLj22p69pwGA4m0c',
     'title': 'Avicii - Stories',
@@ -927,6 +1023,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m1WZWUtrntyrrtCUSATYfs84K3ZnZl9P0',
     'id': 'yt=OLAK5uy_m1WZWUtrntyrrtCUSATYfs84K3ZnZl9P0',
     'title': 'Billie Eilish - Hit Me Hard And Soft',
@@ -937,6 +1034,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mvRgYPh8u-KBTbU6mkGyrg5CBduos_LEY',
     'id': 'yt=OLAK5uy_mvRgYPh8u-KBTbU6mkGyrg5CBduos_LEY',
     'title': "Taylor Swift - 1989 (Taylor's Version)",
@@ -947,6 +1045,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_m8NVy-6HVgRJ4e9gErhkY8LD0CRS1ORw8',
     'id': 'yt=OLAK5uy_m8NVy-6HVgRJ4e9gErhkY8LD0CRS1ORw8',
     'title': 'Khalid - Free Spirit',
@@ -957,6 +1056,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mDm6sHCjqUcRpQaPVAGHHEY6uobsh0fVc',
     'id': 'yt=OLAK5uy_mDm6sHCjqUcRpQaPVAGHHEY6uobsh0fVc',
     'title': 'Avicii - True',
@@ -967,6 +1067,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mr6DjxLeVO2rPk8zAZx0F2_k5BaGuXlyQ',
     'id': 'yt=OLAK5uy_mr6DjxLeVO2rPk8zAZx0F2_k5BaGuXlyQ',
     'title': "Sabrina Carpenter - Short N' Sweet",
@@ -977,6 +1078,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_k7FTSn7ydw3cNY9X5w2UJYVO7fLXPDTik',
     'id': 'yt=OLAK5uy_k7FTSn7ydw3cNY9X5w2UJYVO7fLXPDTik',
     'title': 'Tame Impala - Currents',
@@ -987,6 +1089,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lMaQ4IrRX4WFH9Kg2QBhJwMFFfnRx5wOE',
     'id': 'yt=OLAK5uy_lMaQ4IrRX4WFH9Kg2QBhJwMFFfnRx5wOE',
     'title': "Oasis - (What's The Story) Morning Glory?",
@@ -997,6 +1100,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_k4igJBedQoNGRnRdPx2NP-ARZ64c03zHM',
     'id': 'yt=OLAK5uy_k4igJBedQoNGRnRdPx2NP-ARZ64c03zHM',
     'title': 'Vance Joy - Dream Your Life Away',
@@ -1007,6 +1111,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lUwH9j_s3ZEeayUSm5o93gtQVz0If_kd8',
     'id': 'yt=OLAK5uy_lUwH9j_s3ZEeayUSm5o93gtQVz0If_kd8',
     'title': "Taylor Swift - Fearless (Taylor's Version)",
@@ -1017,6 +1122,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_l3qf_fJNreo3L6_ZPIaLOquqfTda--gZc',
     'id': 'yt=OLAK5uy_l3qf_fJNreo3L6_ZPIaLOquqfTda--gZc',
     'title': 'Metallica - Metallica (Black Album)',
@@ -1027,6 +1133,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nN6ToczJSrgaKwaWT3jyvNgedNcs2D94Y',
     'id': 'yt=OLAK5uy_nN6ToczJSrgaKwaWT3jyvNgedNcs2D94Y',
     'title': 'Doja Cat - Hot Pink',
@@ -1037,6 +1144,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_mRFuqe0IIrexXkU7JOxo4rOb0WLEcwuz8',
     'id': 'yt=OLAK5uy_mRFuqe0IIrexXkU7JOxo4rOb0WLEcwuz8',
     'title': 'Kanye West - My Beautiful Dark Twisted Fantasy',
@@ -1047,6 +1155,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lbTwA-JDtWuF6vKJAtp98wZ512LtuqVoM',
     'id': 'yt=OLAK5uy_lbTwA-JDtWuF6vKJAtp98wZ512LtuqVoM',
     'title': 'Amy Winehouse - Back To Black',
@@ -1057,6 +1166,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_nPamPQG3Yr23yUuXbMsvyHeIB6nnUjxak',
     'id': 'yt=OLAK5uy_nPamPQG3Yr23yUuXbMsvyHeIB6nnUjxak',
     'title': 'Lorde - Pure Heroine',
@@ -1066,6 +1176,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'OLAK5uy_lXRdq2EQXbT8pGSDQCSwKSXFt3LPVrWao',
     'id': 'yt=OLAK5uy_lXRdq2EQXbT8pGSDQCSwKSXFt3LPVrWao',
     'title': 'Bryson Tiller - Trapsoul',
@@ -1076,6 +1187,7 @@ List albumsDB = [
   },
   {
     'source': 'youtube',
+    'primary-type': 'playlist',
     'ytid': 'PLK2zhq9oy0K7r-ypb3QN2L30rkLDZxYd5',
     'id': 'yt=PLK2zhq9oy0K7r-ypb3QN2L30rkLDZxYd5',
     'title': 'The Weeknd - Hurry Up Tomorrow',
