@@ -437,7 +437,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       context.l10n!.songRemoved,
       context.l10n!.undo.toUpperCase(),
       () {
-        addSongInCustomPlaylist(
+        addSongToCustomPlaylist(
           context,
           _playlist['title'],
           songToRemove,

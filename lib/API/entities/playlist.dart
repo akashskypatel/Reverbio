@@ -205,12 +205,12 @@ String addSongsToPlaylist(
   List<dynamic> songList,
 ) {
   for (final song in songList) {
-    addSongInCustomPlaylist(context, playlistName, song);
+    addSongToCustomPlaylist(context, playlistName, song);
   }
   return context.l10n!.addedSuccess;
 }
 
-String addSongInCustomPlaylist(
+String addSongToCustomPlaylist(
   BuildContext context,
   String playlistName,
   Map song, {
