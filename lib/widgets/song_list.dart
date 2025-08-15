@@ -261,7 +261,7 @@ class _SongListState extends State<SongList> {
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.add_circle_24_filled),
       iconSize: listHeaderIconSize,
-      onPressed: () {
+      onPressed: () async {
         if (widget.page != 'queue') {
           addSongsToQueue(widget.songBars);
           showToast(context.l10n!.songAdded);
@@ -269,7 +269,7 @@ class _SongListState extends State<SongList> {
         if (audioHandler.queueSongBars.isNotEmpty &&
             audioHandler.songValueNotifier.value == null &&
             widget.songBars.isNotEmpty) {
-          audioHandler.prepare(skipOnError: true);
+          await audioHandler.prepare(skipOnError: true);
         }
       },
     );
