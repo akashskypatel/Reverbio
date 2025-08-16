@@ -743,6 +743,7 @@ Future<bool> checkOfflineFiles() async {
       ).listSync().map((file) => basenameWithoutExtension(file.path)).toSet();
   final offlineSongsSet = userOfflineSongs.toSet();
   userOfflineSongs.removeWhere((e) => !fileList.any((f) => checkSong(e, f)));
+  if (fileList.isEmpty && userOfflineSongs.isEmpty) return true;
   if ((userOfflineSongs.isEmpty && fileList.isNotEmpty) ||
       userOfflineSongs.length != fileList.length)
     return false;
@@ -772,7 +773,7 @@ Future<void> getExistingOfflineSongs() async {
           }
         }
       }
-      currentOfflineSongsLength.value = userOfflineSongs.length;
+    currentOfflineSongsLength.value = userOfflineSongs.length;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
