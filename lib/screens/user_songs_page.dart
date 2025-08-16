@@ -53,7 +53,7 @@ class UserSongsPage extends StatefulWidget {
 
 class _UserSongsPageState extends State<UserSongsPage> {
   late ThemeData _theme;
-  bool _isEditEnabled = false;
+  final _isEditEnabled = ValueNotifier(false);
   late final ValueNotifier<int> _lengthNotifier;
   late final String _title;
   late final IconData _icon;
@@ -63,13 +63,13 @@ class _UserSongsPageState extends State<UserSongsPage> {
     _title = getTitle(widget.page);
     _icon = getIcon(widget.page);
     _lengthNotifier = getLength(widget.page);
-    _lengthNotifier.addListener(_listener);
+    //_lengthNotifier.addListener(_listener);
   }
 
   @override
   void dispose() {
     super.dispose();
-    _lengthNotifier.removeListener(_listener);
+    //_lengthNotifier.removeListener(_listener);
   }
 
   @override
@@ -81,20 +81,24 @@ class _UserSongsPageState extends State<UserSongsPage> {
         actions: [
           if (_title == context.l10n!.queue)
             Row(children: [_buildQueueActionsList()]),
-          IconButton(
-            iconSize: pageHeaderIconSize,
-            onPressed: () {
-              if (mounted)
-                setState(() {
-                  _isEditEnabled = !_isEditEnabled;
-                });
+          StatefulBuilder(
+            builder: (context, setState) {
+              return IconButton(
+                iconSize: pageHeaderIconSize,
+                onPressed: () {
+                  if (mounted)
+                    setState(() {
+                      _isEditEnabled.value = !_isEditEnabled.value;
+                    });
+                },
+                icon: Icon(
+                  _isEditEnabled.value
+                      ? FluentIcons.edit_off_24_filled
+                      : FluentIcons.edit_line_horizontal_3_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+              );
             },
-            icon: Icon(
-              _isEditEnabled
-                  ? FluentIcons.edit_off_24_filled
-                  : FluentIcons.edit_line_horizontal_3_24_filled,
-              color: _theme.colorScheme.primary,
-            ),
           ),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
@@ -422,32 +426,26 @@ class _UserSongsPageState extends State<UserSongsPage> {
     IconData icon,
     Future songsListFuture,
   ) {
-    return FutureBuilder(
-      future: songsListFuture,
-      builder: (context, snapshot) {
-        return CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: buildPlaylistHeader(title, icon, _lengthNotifier),
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: buildPlaylistHeader(title, icon, _lengthNotifier),
+          ),
+        ),
+        ValueListenableBuilder(
+          valueListenable: _isEditEnabled,
+          builder:
+              (context, value, child) => SongList(
+                page: widget.page,
+                title: getTitle(widget.page),
+                isEditable: value,
+                future: songsListFuture,
               ),
-            ),
-            ValueListenableBuilder(
-              valueListenable: currentOfflineSongsLength,
-              builder: (context, _context, ___) {
-                return SongList(
-                  page: widget.page,
-                  title: getTitle(widget.page),
-                  isEditable: _isEditEnabled,
-                  future: songsListFuture,
-                );
-              },
-            ),
-          ],
-        );
-      },
+        ),
+      ],
     );
   }
 
