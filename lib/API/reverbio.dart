@@ -32,11 +32,13 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/proxy_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-final yt = YoutubeExplode();
+final pxm = ProxyManager();
+final yt = YoutubeExplode(pxm.randomYoutubeProxyClient());
 final DiscogsApiClient dc = DiscogsApiClient();
 final mb = MusicBrainzApiClient();
 

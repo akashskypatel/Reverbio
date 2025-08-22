@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -69,23 +70,27 @@ class ProxyManager {
 
   Future<void> _fetchProxies() async {
     try {
-      logger.log('Fetching proxies...', null, null);
-      final futures =
-          <Future>[]
-            //..add(_fetchSpysMe())
-            ..add(_fetchProxyScrape())
-            ..add(_fetchOpenProxyList())
-            ..add(_fetchJetkaiProxyList());
-      _fetchingList = Future.wait(futures);
-      await _fetchingList?.whenComplete(() {
-        _fetched = true;
-        logger.log(
-          'Done fetching Proxies. Fetched: ${_proxies.length}',
-          null,
-          null,
-        );
-        _lastFetched = DateTime.now();
-      });
+      if (kDebugMode) logger.log('Fetching proxies...', null, null);
+      if (_fetchingList == null) {
+        final futures =
+            <Future>[]
+              //..add(_fetchSpysMe())
+              ..add(_fetchProxyScrape())
+              ..add(_fetchOpenProxyList())
+              ..add(_fetchJetkaiProxyList());
+        _fetchingList = Future.wait(futures);
+        await _fetchingList?.whenComplete(() {
+          _fetched = true;
+          if (kDebugMode)
+            logger.log(
+              'Done fetching Proxies. Fetched: ${_proxies.length}',
+              null,
+              null,
+            );
+          _lastFetched = DateTime.now();
+          _fetchingList = null;
+        });
+      }
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -97,7 +102,8 @@ class ProxyManager {
 
   Future<void> _fetchJetkaiProxyList() async {
     try {
-      logger.log('Fetching from jetkai/proxy-list...', null, null);
+      if (kDebugMode)
+        logger.log('Fetching from jetkai/proxy-list...', null, null);
       const url =
           'https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/json/proxies-advanced.json';
       final response = await http.get(Uri.parse(url));
@@ -124,7 +130,8 @@ class ProxyManager {
         }
         return v;
       });
-      logger.log('Proxies fetched: ${_proxies.length}', null, null);
+      if (kDebugMode)
+        logger.log('Proxies fetched: ${_proxies.length}', null, null);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -136,7 +143,7 @@ class ProxyManager {
 
   Future<void> _fetchOpenProxyList() async {
     try {
-      logger.log('Fetching from openproxylist...', null, null);
+      if (kDebugMode) logger.log('Fetching from openproxylist...', null, null);
       const url =
           'https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt';
       final response = await http.get(Uri.parse(url));
@@ -170,7 +177,8 @@ class ProxyManager {
         }
         return v;
       });
-      logger.log('Proxies fetched: ${_proxies.length}', null, null);
+      if (kDebugMode)
+        logger.log('Proxies fetched: ${_proxies.length}', null, null);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -182,7 +190,7 @@ class ProxyManager {
 
   Future<void> _fetchSpysMe() async {
     try {
-      logger.log('Fetching from spys.me...', null, null);
+      if (kDebugMode) logger.log('Fetching from spys.me...', null, null);
       const url = 'https://spys.me/proxy.txt';
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) {
@@ -221,7 +229,8 @@ class ProxyManager {
         }
         return v;
       });
-      logger.log('Proxies fetched: ${_proxies.length}', null, null);
+      if (kDebugMode)
+        logger.log('Proxies fetched: ${_proxies.length}', null, null);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -233,7 +242,8 @@ class ProxyManager {
 
   Future<void> _fetchProxyScrape() async {
     try {
-      logger.log('Fetching from proxyscrape.com...', null, null);
+      if (kDebugMode)
+        logger.log('Fetching from proxyscrape.com...', null, null);
       const url =
           'https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=json';
       final response = await http.get(Uri.parse(url));
@@ -259,7 +269,8 @@ class ProxyManager {
         }
         return v;
       });
-      logger.log('Proxies fetched: ${_proxies.length}', null, null);
+      if (kDebugMode)
+        logger.log('Proxies fetched: ${_proxies.length}', null, null);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -271,11 +282,16 @@ class ProxyManager {
 
   Future<StreamManifest?> _validateDirect(String songId, int timeout) async {
     try {
-      logger.log('Validating direct connection...', null, null);
+      if (kDebugMode) logger.log('Validating direct connection...', null, null);
       final manifest = await yt.videos.streams
           .getManifest(songId)
           .timeout(Duration(seconds: timeout));
-      logger.log('Direct connection succeeded. Proxy not needed.', null, null);
+      if (kDebugMode)
+        logger.log(
+          'Direct connection succeeded. Proxy not needed.',
+          null,
+          null,
+        );
       return manifest;
     } catch (e) {
       logger.log('Direct connection failed', e, null);
@@ -288,7 +304,7 @@ class ProxyManager {
     String songId,
     int timeout,
   ) async {
-    logger.log('Validating proxy...', null, null);
+    if (kDebugMode) logger.log('Validating proxy...', null, null);
     IOClient? ioClient;
     HttpClient? client;
     try {
@@ -312,6 +328,55 @@ class ProxyManager {
       logger.log('Proxy ${proxy.source} - ${proxy.address} failed', e, null);
       client?.close(force: true);
       ioClient?.close();
+      return null;
+    }
+  }
+
+  Proxy? _randomProxySync({String? preferredCountry}) {
+    try {
+      if (_proxies.isEmpty) return null;
+      Proxy proxy;
+      String countryCode;
+      if (_workingProxies.isNotEmpty) {
+        final idx =
+            _workingProxies.length == 1
+                ? 0
+                : _random.nextInt(_workingProxies.length);
+        proxy = _workingProxies.elementAt(idx);
+        _workingProxies.remove(proxy);
+      } else {
+        if (preferredCountry != null &&
+            _proxies.containsKey(preferredCountry)) {
+          countryCode = preferredCountry;
+        } else {
+          countryCode = userGeolocation['countryCode'] ?? _proxies.keys.first;
+        }
+        final countryProxies =
+            _proxies[countryCode] ?? _proxies.values.expand((x) => x).toList();
+        if (countryProxies.isEmpty) {
+          return null;
+        }
+        if (countryProxies.length == 1) {
+          proxy = countryProxies.removeLast();
+        } else {
+          proxy = countryProxies.removeAt(
+            _random.nextInt(countryProxies.length),
+          );
+        }
+        if (kDebugMode)
+          logger.log(
+            'Selected proxy: ${proxy.source} - ${proxy.address}',
+            null,
+            null,
+          );
+      }
+      return proxy;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       return null;
     }
   }
@@ -352,11 +417,12 @@ class ProxyManager {
             _random.nextInt(countryProxies.length),
           );
         }
-        logger.log(
-          'Selected proxy: ${proxy.source} - ${proxy.address}',
-          null,
-          null,
-        );
+        if (kDebugMode)
+          logger.log(
+            'Selected proxy: ${proxy.source} - ${proxy.address}',
+            null,
+            null,
+          );
       }
       return proxy;
     } catch (e, stackTrace) {
@@ -396,5 +462,41 @@ class ProxyManager {
       manifest = await _validateProxy(proxy, songId, timeout);
     } while (manifest == null);
     return manifest;
+  }
+
+  YoutubeHttpClient randomYoutubeProxyClient() {
+    IOClient? ioClient;
+    HttpClient? client;
+    try {
+      if (_workingProxies.isEmpty) unawaited(_fetchProxies());
+      client =
+          HttpClient()
+            ..findProxy = (_) {
+              final proxy = _randomProxySync();
+              if (kDebugMode && proxy == null)
+                logger.log(
+                  'Could not find a proxy. Using direct connection.',
+                  null,
+                  null,
+                );
+              return proxy != null
+                  ? 'PROXY ${proxy.address}; DIRECT;'
+                  : 'DIRECT;';
+            }
+            ..badCertificateCallback = (_, __, ___) {
+              return false;
+            };
+      ioClient = IOClient(client);
+      return YoutubeHttpClient(ioClient);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      client?.close(force: true);
+      ioClient?.close();
+      return YoutubeHttpClient();
+    }
   }
 }
