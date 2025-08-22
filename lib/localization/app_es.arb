@@ -186,7 +186,7 @@
   "previous": "Anterior",
   "repeat": "Repetir",
   "youtubeInaccessible": "Error 403 Prohibido al intentar reproducir la transmisión de YouTube. YouTube puede haber bloqueado temporalmente tu dirección IP. Intenta cambiar de red o vuelve a intentarlo más tarde.",
-  "prepareNextSong": "Preparar automáticamente la siguiente canción para una reproducción más rápida",
+  "prepareNextSong": "Preparar la siguiente canción para una reproducción más rápida",
   "useProxies": "Usar servidores proxy (puede ayudar con problemas de acceso a YouTube)",
   "currentVersion": "Versión actual",
   "latestVersion": "Última versión",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Debido a las limitaciones legales de Spotify, Reverbio no puede conectarse directamente a Spotify para importar listas de reproducción. Utilice uno de estos servicios de exportación para exportar sus listas a formato CSV y luego súbalas a Reverbio. Asegúrese de incluir Artista, Canción (Pista), Álbum e ISRC si está disponible en su exportación.",
   "import": "Importar",
   "importPlaylists": "Importar listas de reproducción",
-  "importNotice": "Debido a las restricciones legales de varios servicios de transmisión pagos, Reverbio no puede conectarse directamente a los servicios de transmisión para importar listas de reproducción. Utilice uno de estos servicios de exportación para exportar sus listas a formato CSV y luego súbalas a Reverbio. Puede importar una lista de reproducción de cualquier servicio siempre que el archivo esté en formato CSV, con encabezados, y el archivo contenga, como mínimo, Artista y Canción. Incluya ISRC (si está disponible) para un análisis más preciso de los datos de las canciones.",
+  "importNotice": "Debido a restricciones legales, Reverbio no puede conectarse directamente a otros servicios de streaming. Para importar una lista de reproducción, primero expórtala como archivo CSV desde tu servicio actual utilizando uno de los servicios listados a continuación, luego súbelo aquí. Tu archivo CSV debe incluir las columnas 'Artista' y 'Canción'. Agregar 'ISRC' garantiza la coincidencia más precisa.",
   "addedPlaylistFiles": "Archivos añadidos como listas de reproducción",
   "addedSomePlaylistFiles": "Se añadieron algunos archivos como listas de reproducción antes de que ocurriera un error. Consulte los registros para más detalles. Archivos añadidos",
   "imported": "Importado",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "No se puede recargar el complemento desde un archivo local en móvil. Elimina el complemento y vuelve a añadirlo para actualizarlo. Nombre del complemento",
   "addedBackgroundJob": "añadido a la cola en segundo plano",
   "updated": "Actualizado",
-  "autoCacheOffline": "Hacer que las canciones que se escuchan estén disponibles automáticamente sin conexión",
+  "autoCacheOffline": "Almacenar canciones automáticamente para escuchar sin conexión",
   "storageWarning": "Advertencia: Esta opción utilizará mucho espacio de almacenamiento. ¡Asegúrate de que tu dispositivo tenga suficiente espacio disponible antes de activarla! Las canciones estarán disponibles en línea solo después de reproducirse en línea por primera vez.",
   "autoCacheOfflinePlaylist": "Guardar lista automáticamente para reproducción offline",
   "urlError": "No se pudo resolver la URL de la canción",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Toque en Configuración para desarrolladores",
   "androidAutoStep7": "7. Desplácese hacia abajo y active \"Fuentes desconocidas\"",
   "stop": "Detener",
-  "downloaded": "Descargado"
+  "downloaded": "Descargado",
+  "checkBackLater": "Estamos trabajando en ello. Por favor, vuelva más tarde...",
+  "unableToDownload": "No se puede descargar",
+  "downloadingInBackground": "Descargando canción en segundo plano"
 }

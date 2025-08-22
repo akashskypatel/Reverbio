@@ -186,7 +186,7 @@
   "previous": "Önceki",
   "repeat": "Tekrarla",
   "youtubeInaccessible": "YouTube akışını oynatmaya çalışırken 403 Yasak hatası. YouTube IP adresinizi geçici olarak engellemiş olabilir. Ağınızı değiştirmeyi deneyin veya bir süre sonra tekrar deneyin.",
-  "prepareNextSong": "Bir sonraki şarkıyı daha hızlı çalmak için otomatik olarak hazırla",
+  "prepareNextSong": "Daha hızlı çalma için sonraki şarkıyı hazırla",
   "useProxies": "Proxy sunucuları kullan (YouTube erişim sorunlarına yardımcı olabilir)",
   "currentVersion": "Mevcut sürüm",
   "latestVersion": "En son sürüm",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Spotify'nin yasal sınırlamaları nedeniyle Reverbio, çalma listelerini içe aktarmak için doğrudan Spotify'a bağlanamaz. Lütfen çalma listelerinizi CSV formatında dışa aktarmak için bu dışa aktarma hizmetlerinden birini kullanın ve ardından bunları Reverbio'ya yükleyin. Dışa aktarımınızda Sanatçı, Şarkı (Parça) adı, Albüm ve ISRC (varsa) bilgilerini eklediğinizden emin olun.",
   "import": "İçe aktar",
   "importPlaylists": "Çalma listelerini içe aktar",
-  "importNotice": "Çeşitli ücretli akış hizmetlerinin yasal kısıtlamaları nedeniyle Reverbio, çalma listelerini içe aktarmak için doğrudan akış hizmetlerine bağlanamaz. Lütfen çalma listelerinizi CSV formatında dışa aktarmak için bu dışa aktarma hizmetlerinden birini kullanın ve ardından bunları Reverbio'ya yükleyin. Dosya CSV formatında olduğu, başlıkları içerdiği ve dosyada en az Sanatçı ve Şarkı bilgileri bulunduğu sürece herhangi bir hizmetten çalma listesi içe aktarabilirsiniz. Daha doğru şarkı verisi ayrıştırması için ISRC'yi (varsa) ekleyin.",
+  "importNotice": "Yasal kısıtlamalar nedeniyle Reverbio, diğer akış hizmetlerine doğrudan bağlanamaz. Bir çalma listesini içe aktarmak için, önce aşağıda listelenen hizmetlerden birini kullanarak mevcut hizmetinizden bir CSV dosyası olarak dışa aktarın,然后 ardından buraya yükleyin. CSV dosyanız 'Sanatçı' ve 'Şarkı' sütunlarını içermelidir. 'ISRC' eklemek en doğru eşleştirmeyi sağlar.",
   "addedPlaylistFiles": "Dosyalar çalma listesi olarak eklendi",
   "addedSomePlaylistFiles": "Bir hata oluşmadan önce bazı dosyalar çalma listesi olarak eklendi. Daha fazla ayrıntı için günlükleri inceleyin. Eklenen dosyalar",
   "imported": "İçe aktarıldı",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "Mobil cihazda yerel dosya kaynağından eklenti yeniden yüklenemez. Güncellemek için eklentiyi silin ve yeniden ekleyin. Eklenti adı",
   "addedBackgroundJob": "arka plan kuyruğuna eklendi",
   "updated": "Güncellendi",
-  "autoCacheOffline": "Dinlenen şarkıları otomatik olarak çevrimdışı kullanılabilir yap",
+  "autoCacheOffline": "Çevrimdışı dinleme için şarkıları otomatik önbelleğe al",
   "storageWarning": "Uyarı: Bu seçenek çok fazla depolama alanı kullanacaktır. Etkinleştirmeden önce cihazınızda yeterli alan olduğundan emin olun! Şarkılar ilk kez çevrimiçi oynatıldıktan sonra çevrimiçi olarak kullanılabilir hale gelecektir.",
   "autoCacheOfflinePlaylist": "Çevrimdışı oynatma için çalma listesini otomatik kaydet",
   "urlError": "Şarkı URL'si çözülemedi",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Geliştirici Ayarları'na dokunun",
   "androidAutoStep7": "7. Aşağı kaydırın ve \"Bilinmeyen kaynaklar\"ı etkinleştirin",
   "stop": "Durdur",
-  "downloaded": "İndirildi"
+  "downloaded": "İndirildi",
+  "checkBackLater": "Üzerinde çalışıyoruz. Lütfen daha sonra tekrar kontrol edin...",
+  "unableToDownload": "İndirilemiyor",
+  "downloadingInBackground": "Şarkı arka planda indiriliyor"
 }

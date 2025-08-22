@@ -186,7 +186,7 @@
   "previous": "Precedente",
   "repeat": "Ripeti",
   "youtubeInaccessible": "Errore 403 Accesso negato durante il tentativo di riproduzione dello stream YouTube. YouTube potrebbe aver temporaneamente bloccato il tuo indirizzo IP. Prova a cambiare rete o riprova più tardi.",
-  "prepareNextSong": "Prepara automaticamente la prossima canzone per una riproduzione più veloce",
+  "prepareNextSong": "Prepara la prossima canzone per una riproduzione più veloce",
   "useProxies": "Usa server proxy (può aiutare con problemi di accesso a YouTube)",
   "currentVersion": "Versione attuale",
   "latestVersion": "Ultima versione",
@@ -196,7 +196,7 @@
   "spotifyNotice": "A causa delle limitazioni legali di Spotify, Reverbio non può connettersi direttamente a Spotify per importare le playlist. Utilizza uno di questi servizi di esportazione per esportare le tue playlist in formato CSV, quindi caricale su Reverbio. Assicurati di includere Artista, Nome canzone (Traccia), Album e ISRC se disponibile nella tua esportazione.",
   "import": "Importa",
   "importPlaylists": "Importa playlist",
-  "importNotice": "A causa delle restrizioni legali di vari servizi di streaming a pagamento, Reverbio non può connettersi direttamente ai servizi di streaming per importare playlist. Utilizza uno di questi servizi di esportazione per esportare le tue playlist in formato CSV, quindi caricale su Reverbio. Puoi importare una playlist da qualsiasi servizio purché il file sia in formato CSV, con intestazioni, e il file contenga, come minimo, Artista e Canzone. Includi ISRC (se disponibile) per un'analisi più accurata dei dati delle canzoni.",
+  "importNotice": "A causa di restrizioni legali, Reverbio non può connettersi direttamente ad altri servizi di streaming. Per importare una playlist, esportala prima come file CSV dal tuo servizio attuale utilizzando uno dei servizi elencati di seguito, quindi caricalo qui. Il tuo file CSV deve includere le colonne 'Artista' e 'Brano'. Aggiungere 'ISRC' garantisce la corrispondenza più accurata.",
   "addedPlaylistFiles": "File aggiunti come playlist",
   "addedSomePlaylistFiles": "Aggiunti alcuni file come playlist prima del verificarsi di un errore. Consultare i log per maggiori dettagli. File aggiunti",
   "imported": "Importato",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "Impossibile ricaricare il plugin da un file locale su Mobile. Elimina il plugin e aggiungilo nuovamente per aggiornarlo. Nome plugin",
   "addedBackgroundJob": "aggiunto alla coda in background",
   "updated": "Aggiornato",
-  "autoCacheOffline": "Rendi automaticamente disponibili offline le canzoni in ascolto",
+  "autoCacheOffline": "Memorizza automaticamente le canzoni per l'ascolto offline",
   "storageWarning": "Avviso: Questa opzione utilizzerà molto spazio di archiviazione. Assicurati che il tuo dispositivo abbia spazio sufficiente prima di abilitarla! Le canzoni saranno disponibili online solo dopo essere state riprodotte online per la prima volta.",
   "autoCacheOfflinePlaylist": "Salva automaticamente playlist per riproduzione offline",
   "urlError": "L'URL della canzone non può essere risolto",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Tocca Impostazioni sviluppatore",
   "androidAutoStep7": "7. Scorri verso il basso e abilita \"Origini sconosciute\"",
   "stop": "Ferma",
-  "downloaded": "Scaricato"
+  "downloaded": "Scaricato",
+  "checkBackLater": "Ci stiamo lavorando. Si prega di controllare più tardi...",
+  "unableToDownload": "Impossibile scaricare",
+  "downloadingInBackground": "Download della canzone in background"
 }

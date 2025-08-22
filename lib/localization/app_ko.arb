@@ -186,7 +186,7 @@
   "previous": "이전",
   "repeat": "반복",
   "youtubeInaccessible": "YouTube 스트림 재생 시도 중 403 금지 오류가 발생했습니다. YouTube에서 일시적으로 귀하의 IP 주소를 차단했을 수 있습니다. 네트워크를 변경하거나 잠시 후 다시 시도해 보세요.",
-  "prepareNextSong": "다음 곡 더 빠른 재생을 위해 자동 준비",
+  "prepareNextSong": "더 빠른 재생을 위해 다음 노래 준비",
   "useProxies": "프록시 서버 사용 (YouTube 접근 문제 해결에 도움이 될 수 있음)",
   "currentVersion": "현재 버전",
   "latestVersion": "최신 버전",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Spotify의 법적 제한으로 인해 Reverbio는 플레이리스트를 가져오기 위해 Spotify에 직접 연결할 수 없습니다. 다음 내보내기 서비스 중 하나를 사용하여 플레이리스트를 CSV 형식으로 내보낸 다음 Reverbio에 업로드하세요. 내보내기 시 아티스트, 곡(트랙) 이름, 앨범 및 가능한 경우 ISRC를 포함해야 합니다.",
   "import": "가져오기",
   "importPlaylists": "재생목록 가져오기",
-  "importNotice": "유료 스트리밍 서비스의 다양한 법적 제한으로 인해 Reverbio는 플레이리스트를 가져오기 위해 스트리밍 서비스에 직접 연결할 수 없습니다. 다음 내보내기 서비스 중 하나를 사용하여 플레이리스트를 CSV 형식으로 내보낸 다음 Reverbio에 업로드하세요. 파일이 CSV 형식이고 헤더가 있으며 파일에 최소한 아티스트와 곡이 포함되어 있는 한 모든 서비스에서 플레이리스트를 가져올 수 있습니다. 더 정확한 곡 데이터 구문 분석을 위해 ISRC(사용 가능한 경우)를 포함하세요.",
+  "importNotice": "법적 제한으로 인해 Reverbio는 다른 스트리밍 서비스에 직접 연결할 수 없습니다. 플레이리스트를 가져오려면 아래 나열된 서비스 중 하나를 사용하여 현재 사용 중인 서비스에서 CSV 파일로 내보낸 다음 여기에 업로드하세요. CSV 파일에는 '아티스트'와 '곡' 열이 포함되어야 합니다. 'ISRC'를 추가하면 가장 정확한 일치가 보장됩니다.",
   "addedPlaylistFiles": "파일을 재생목록으로 추가함",
   "addedSomePlaylistFiles": "오류 발생 전 일부 파일을 재생목록으로 추가했습니다. 자세한 내용은 로그를 참조하세요. 추가된 파일",
   "imported": "가져옴",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "모바일에서는 로컬 파일 소스에서 플러그인을 다시 로드할 수 없습니다. 플러그인을 삭제하고 다시 추가하여 업데이트하세요. 플러그인 이름",
   "addedBackgroundJob": "백그라운드 대기열에 추가됨",
   "updated": "업데이트됨",
-  "autoCacheOffline": "듣고 있는 음악을 자동으로 오프라인에서 사용 가능하게 함",
+  "autoCacheOffline": "오프라인 청취를 위해 노래 자동 캐시",
   "storageWarning": "경고: 이 옵션은 많은 저장 공간을 사용합니다. 활성화하기 전에 기기에 충분한 저장 공간이 있는지 확인하세요! 노래는 온라인에서 처음 재생된 후에만 온라인에서 사용할 수 있습니다.",
   "autoCacheOfflinePlaylist": "오프라인 재생을 위한 플레이리스트 자동 저장",
   "urlError": "노래 URL을 확인할 수 없음",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. 개발자 설정을 탭하세요",
   "androidAutoStep7": "7. 아래로 스크롤하여 \"알 수 없는 출처\" 활성화",
   "stop": "중지",
-  "downloaded": "다운로드됨"
+  "downloaded": "다운로드됨",
+  "checkBackLater": "작업 중입니다. 나중에 다시 확인해 주세요...",
+  "unableToDownload": "다운로드할 수 없음",
+  "downloadingInBackground": "백그라운드에서 노래를 다운로드하는 중"
 }

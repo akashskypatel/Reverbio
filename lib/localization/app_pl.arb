@@ -186,7 +186,7 @@
   "previous": "Poprzedni",
   "repeat": "Powtórz",
   "youtubeInaccessible": "Błąd 403 Zabronione podczas próby odtwarzania strumienia YouTube. YouTube mógł tymczasowo zablokować Twój adres IP. Spróbuj zmienić sieć lub spróbuj ponownie za jakiś czas.",
-  "prepareNextSong": "Automatycznie przygotuj następną piosenkę dla szybszego odtwarzania",
+  "prepareNextSong": "Przygotuj następną piosenkę do szybszego odtwarzania",
   "useProxies": "Używaj serwerów proxy (może pomóc w problemach z dostępem do YouTube)",
   "currentVersion": "Aktualna wersja",
   "latestVersion": "Najnowsza wersja",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Ze względu na ograniczenia prawne Spotify, Reverbio nie może połączyć się bezpośrednio z Spotify w celu importowania playlist. Użyj jednej z tych usług eksportu, aby wyeksportować swoje playlisty do formatu CSV, a następnie prześlij je do Reverbio. Upewnij się, że w eksporcie znajdują się wykonawca, utwór (ścieżka), album i ISRC (jeśli jest dostępny).",
   "import": "Importuj",
   "importPlaylists": "Importuj playlisty",
-  "importNotice": "Ze względu na ograniczenia prawne różnych płatnych usług streamingowych, Reverbio nie może połączyć się bezpośrednio z usługami streamingowymi w celu importowania playlist. Użyj jednej z tych usług eksportu, aby wyeksportować swoje playlisty do formatu CSV, a następnie prześlij je do Reverbio. Możesz zaimportować playlistę z dowolnej usługi, o ile plik jest w formacie CSV, zawiera nagłówki i plik zawiera co najmniej Wykonawcę i Utwór. Dołącz ISRC (jeśli dostępne) w celu dokładniejszego parsowania danych utworów.",
+  "importNotice": "Z powodu ograniczeń prawnych, Reverbio nie może łączyć się bezpośrednio z innymi usługami streamingowymi. Aby zaimportować playlistę, najpierw wyeksportuj ją jako plik CSV z bieżącej usługi za pomocą jednej z usług wymienionych poniżej, a następnie prześlij go tutaj. Twój plik CSV musi zawierać kolumny „Artist” i „Song”. Dodanie „ISRC” zapewnia najdokładniejsze dopasowanie.",
   "addedPlaylistFiles": "Dodano pliki jako playlisty",
   "addedSomePlaylistFiles": "Dodano niektóre pliki jako playlisty przed wystąpieniem błędu. Szczegóły w dziennikach. Dodane pliki",
   "imported": "Zaimportowano",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "Nie można przeładować wtyczki z lokalnego pliku na urządzeniu mobilnym. Usuń wtyczkę i dodaj ją ponownie, aby zaktualizować. Nazwa wtyczki",
   "addedBackgroundJob": "dodano do kolejki w tle",
   "updated": "Zaktualizowano",
-  "autoCacheOffline": "Automatycznie udostępniaj odtwarzane utwory w trybie offline",
+  "autoCacheOffline": "Automatycznie zapisuj piosenki w pamięci podręcznej do odsłuchu offline",
   "storageWarning": "Ostrzeżenie: Ta opcja zużyje dużo miejsca w pamięci. Upewnij się, że Twoje urządzenie ma wystarczająco dużo wolnego miejsca przed włączeniem! Utwory staną się dostępne online dopiero po pierwszym odtworzeniu online.",
   "autoCacheOfflinePlaylist": "Automatycznie zapisuj playlistę do odtwarzania offline",
   "urlError": "Nie można rozpoznać adresu URL utworu",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Dotknij Ustawienia dla programistów",
   "androidAutoStep7": "7. Przewiń w dół i włącz \"Nieznane źródła\"",
   "stop": "Zatrzymaj",
-  "downloaded": "Pobrano"
+  "downloaded": "Pobrano",
+  "checkBackLater": "Nad tym pracujemy. Proszę sprawdzić później...",
+  "unableToDownload": "Nie można pobrać",
+  "downloadingInBackground": "Piosenka jest pobierana w tle"
 }

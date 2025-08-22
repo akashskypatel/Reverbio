@@ -186,7 +186,7 @@
   "previous": "Iliyopita",
   "repeat": "Rudia",
   "youtubeInaccessible": "Hitilafu 403 Forbidden wakati wa kujaribu kucheza mkondo wa YouTube. YouTube inaweza kuwa imefunga muda wa anwani yako ya IP. Jaribu kubadilisha mtandao wako au jaribu tena baada ya muda.",
-  "prepareNextSong": "Andaa wimbo ujao kiotomatiki kwa uchezaji wa haraka kwenye wimbo ujao",
+  "prepareNextSong": "Andaa wimbo unaofuata kwa upakiaji wa haraka",
   "useProxies": "Tumia seva za wakala (inaweza kusaidia masuala ya ufikiaji wa YouTube)",
   "currentVersion": "Toleo la sasa",
   "latestVersion": "Toleo mpya",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Kwa sababu ya vikwazo vya kisheria vya Spotify, Reverbio haiwezi kuunganisha moja kwa moja na Spotify kuagiza orodha za kucheza. Tafadhali tumia moja ya huduma hizi za uhamishaji ili kuhamisha orodha yako kucheza kwa umbizo la CSV, kisha upakie kwa Reverbio. Hakikisha unajumuisha Msanii, Wimbo (Wimbo), Albamu na ISRC ikiwa inapatikana kwenye uhamishaji wako.",
   "import": "Ingiza",
   "importPlaylists": "Ingiza orodha ya kucheza",
-  "importNotice": "Kwa sababu ya vikwazo vya kisheria vya huduma mbalimbali za utiririshaji wa malipo, Reverbio haiwezi kuunganisha moja kwa moja na huduma za utiririshaji kuagiza orodha za kucheza. Tafadhali tumia moja ya huduma hizi za uhamishaji ili kuhamisha orodha yako kucheza kwa umbizo la CSV, kisha upakie kwa Reverbio. Unaweza kuagiza orodha ya kucheza kutoka kwa huduma yoyote kadiri faili iko katika umbizo la CSV, na vichwa, na faili ina, kwa ufupi, Msanii, na Wimbo. Jumuisha ISRC (ikiwa inapatikana) kwa uchambuzi sahihi zaidi wa data za wimbo.",
+  "importNotice": "Kwa sababu ya vikwazo vya kisheria, Reverbio haiwezi kuunganisha moja kwa moja kwa huduma nyingine za utiririshaji. Ili kuingiza orodha ya kucheza, haya fuata ya kwanza kama faili CSV kutoka kwa huduma yako ya sasa kwa kutumia moja ya huduma zilizoorodheshwa hapa chini,然后 pakia hapa. Faili yako ya CSV lazima ije na safu wima za 'Msanii' na 'Wimbo'. Kuongeza 'ISRC' kuhakikisha ulinganifu sahihi zaidi.",
   "addedPlaylistFiles": "Faili zimeongezwa kama orodha ya kucheza",
   "addedSomePlaylistFiles": "Baadhi ya faili ziliongezwa kama orodha ya kucheza kabla ya hitilafu kutokea. Tafadhali angalia magazeti kwa maelezo zaidi. Faili zilizoongezwa",
   "imported": "Imeingizwa",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "Haiwezi kupakia tena programu-jalizi kutoka kwa faili ya ndani kwenye Rununu. Futa programu-jalizi na uongeze tena kusasisha. Jina la programu-jalizi",
   "addedBackgroundJob": "imeongezwa kwenye foleni ya nyuma",
   "updated": "ImeSasishwa",
-  "autoCacheOffline": "Fanya muziki unaosikilizwa ipasavyo kwa kiotomatiki bila mtandao",
+  "autoCacheOffline": "Weka wimbo kiotomatiki kwa sikio la nje ya mtandao",
   "storageWarning": "Onyo: Chaguo hili litatumia nafasi nyingi ya kuhifadhi. Hakikisha kifaa chako kina nafasi ya kutosha kabla ya kuwezesha! Nyimbo zitapatikana mkondoni baada ya kuchezwa mkondoni kwa mara ya kwanza.",
   "autoCacheOfflinePlaylist": "Hifadhi orodha kiotomatiki kwa kucheza nje ya mtandao",
   "urlError": "URL ya wimbo haikuweza kutambuliwa",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Gonga kwenye Mipangilio ya Wasanidi Programu",
   "androidAutoStep7": "7. Songa chini na wezesha \"Vyanzo visivyojulikana\"",
   "stop": "Simama",
-  "downloaded": "Imepakwa"
+  "downloaded": "Imepakwa",
+  "checkBackLater": "Tunafanya kazi juu yake. Tafadhali angalia tena baadaye...",
+  "unableToDownload": "Hawezi kupakua",
+  "downloadingInBackground": "Wimbo unapakuliwa kwa nyuma"
 }

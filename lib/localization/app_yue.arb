@@ -186,7 +186,7 @@
   "previous": "上一首",
   "repeat": "重複",
   "youtubeInaccessible": "嘗試播放 YouTube 串流時出現 403 禁止錯誤。YouTube 可能暫時封鎖咗你嘅 IP 地址。試下轉換網絡或者等一陣再試。",
-  "prepareNextSong": "自動準備下一首歌，令切換時播放更流暢",
+  "prepareNextSong": "預先準備下一首歌曲以實現更快播放",
   "useProxies": "使用代理伺服器（可能解決YouTube訪問問題）",
   "currentVersion": "目前版本",
   "latestVersion": "最新版本",
@@ -196,7 +196,7 @@
   "spotifyNotice": "由於Spotify嘅法律限制，Reverbio無法直接連接Spotify來導入播放清單。請使用以下其中一個導出服務將你嘅播放清單導出為CSV格式，然後上傳到Reverbio。確保你嘅導出包含藝人、歌曲（曲目）名稱、專輯同ISRC（如果有嘅話）。",
   "import": "導入",
   "importPlaylists": "導入播放清單",
-  "importNotice": "由於各種付費串流服務嘅法律限制，Reverbio無法直接連接串流服務來導入播放清單。請使用以下其中一個導出服務將你嘅播放清單導出為CSV格式，然後上傳到Reverbio。只要檔案係CSV格式、有標題，同埋檔案至少包含藝人同歌曲名稱，你就可以從任何服務導入播放清單。包含ISRC（如果有嘅話）可以更準確解析歌曲數據。",
+  "importNotice": "由於法律限制，Reverbio 無法直接連接其他串流媒體服務。要導入播放列表，請先使用下面列出的服務之一從您目前的服務將其導出為 CSV 文件，然後上傳到呢度。您的 CSV 文件必須包含「Artist」同「Song」欄。加入「ISRC」可確保最準確嘅匹配。",
   "addedPlaylistFiles": "已將檔案加入為播放清單",
   "addedSomePlaylistFiles": "錯誤發生前已將部分檔案加入為播放清單。詳情請查看日誌。已加入檔案",
   "imported": "已導入",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "無法在流動裝置上從本地檔案來源重新載入插件。請刪除插件並重新添加以更新。插件名稱",
   "addedBackgroundJob": "已加入背景隊列",
   "updated": "已更新",
-  "autoCacheOffline": "自動將正在收聽嘅歌曲設為離線可用",
+  "autoCacheOffline": "自動緩存歌曲以供離線收聽",
   "storageWarning": "警告：此選項會佔用大量儲存空間。啟用前請確保你嘅裝置有足夠空間！歌曲首次在線播放後才會在線提供。",
   "autoCacheOfflinePlaylist": "自動儲存播放清單以供離線播放",
   "urlError": "無法解析歌曲URL",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. 點擊開發者設定",
   "androidAutoStep7": "7. 向下滑動並啟用「未知來源」",
   "stop": "停止",
-  "downloaded": "已下載"
+  "downloaded": "已下載",
+  "checkBackLater": "處理中，請稍後再試...",
+  "unableToDownload": "無法下載",
+  "downloadingInBackground": "正在背景下载歌曲"
 }

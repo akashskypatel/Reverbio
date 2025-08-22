@@ -186,7 +186,7 @@
   "previous": "Zurück",
   "repeat": "Wiederholen",
   "youtubeInaccessible": "Fehler 403 – Zugriff verweigert beim Abspielen des YouTube-Streams. YouTube hat Ihre IP-Adresse möglicherweise vorübergehend gesperrt. Versuchen Sie, Ihr Netzwerk zu wechseln, oder versuchen Sie es später erneut.",
-  "prepareNextSong": "Nächstes Lied automatisch vorbereiten für schnelleren Abspielbeginn",
+  "prepareNextSong": "Nächstes Lied für schnelleres Abspielen vorbereiten",
   "useProxies": "Proxy-Server verwenden (kann bei YouTube-Zugriffsproblemen helfen)",
   "currentVersion": "Aktuelle Version",
   "latestVersion": "Neueste Version",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Aufgrund der rechtlichen Beschränkungen von Spotify kann Reverbio nicht direkt mit Spotify verbinden, um Playlists zu importieren. Bitte verwenden Sie einen dieser Exportdienste, um Ihre Playlists in das CSV-Format zu exportieren, und laden Sie sie dann in Reverbio hoch. Stellen Sie sicher, dass Künstler, Song (Track), Album und ISRC (falls verfügbar) in Ihrem Export enthalten sind.",
   "import": "Importieren",
   "importPlaylists": "Playlists importieren",
-  "importNotice": "Aufgrund der rechtlichen Beschränkungen verschiedener kostenpflichtiger Streaming-Dienste kann Reverbio nicht direkt mit Streaming-Diensten verbinden, um Playlists zu importieren. Bitte verwenden Sie einen dieser Exportdienste, um Ihre Playlists in das CSV-Format zu exportieren, und laden Sie sie dann in Reverbio hoch. Sie können eine Playlist von jedem Dienst importieren, solange die Datei im CSV-Format vorliegt, Kopfzeilen enthält und die Datei mindestens Künstler und Song enthält. Fügen Sie ISRC (falls verfügbar) für eine genauere Analyse der Songdaten hinzu.",
+  "importNotice": "Aufgrund rechtlicher Beschränkungen kann Reverbio keine direkte Verbindung zu anderen Streaming-Diensten herstellen. Um eine Playlist zu importieren, exportiere sie zunächst als CSV-Datei aus deinem aktuellen Dienst über einen der unten aufgeführten Dienste und lade sie dann hier hoch. Deine CSV-Datei muss die Spalten 'Artist' und 'Song' enthalten. Die Angabe der 'ISRC' gewährleistet die genaueste Zuordnung.",
   "addedPlaylistFiles": "Dateien als Playlists hinzugefügt",
   "addedSomePlaylistFiles": "Einige Dateien wurden als Playlists hinzugefügt, bevor ein Fehler auftrat. Weitere Details finden Sie in den Protokollen. Hinzugefügte Dateien",
   "imported": "Importiert",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "Plugin kann von lokaler Dateiquelle auf Mobilgeräten nicht neu geladen werden. Löschen Sie das Plugin und fügen Sie es erneut hinzu, um es zu aktualisieren. Plugin-Name",
   "addedBackgroundJob": "Zur Hintergrund-Warteschlange hinzugefügt",
   "updated": "Aktualisiert",
-  "autoCacheOffline": "Automatisch offline verfügbare Songs zwischenspeichern",
+  "autoCacheOffline": "Songs automatisch für Offline-Nutzung zwischenspeichern",
   "storageWarning": "Warnung: Diese Option benötigt viel Speicherplatz. Bitte stellen Sie sicher, dass Ihr Gerät genügend Speicher hat, bevor Sie sie aktivieren! Songs werden erst nach dem ersten Online-Abspielen online verfügbar sein.",
   "autoCacheOfflinePlaylist": "Playlist automatisch für Offline-Wiedergabe speichern",
   "urlError": "Song-URL konnte nicht aufgelöst werden",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Tippen Sie auf Entwicklereinstellungen",
   "androidAutoStep7": "7. Scrollen Sie nach unten und aktivieren Sie \"Unbekannte Quellen\"",
   "stop": "Stopp",
-  "downloaded": "Heruntergeladen"
+  "downloaded": "Heruntergeladen",
+  "checkBackLater": "Wir arbeiten daran. Bitte schauen Sie später noch einmal vorbei...",
+  "unableToDownload": "Download nicht möglich",
+  "downloadingInBackground": "Lied wird im Hintergrund heruntergeladen"
 }

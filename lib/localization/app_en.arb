@@ -186,7 +186,7 @@
   "previous": "Previous",
   "repeat": "Repeat",
   "youtubeInaccessible": "403 Forbidden error when trying to play YouTube Stream. YouTube may have temporarily blocked your IP address. Try changing your network or try again a little while later.",
-  "prepareNextSong": "Automatically prepare next song for quicker playback on next song",
+  "prepareNextSong": "Prepare next song for faster playback",
   "useProxies": "Use proxy servers (may help YouTube access issues)",
   "currentVersion": "Current version",
   "latestVersion": "Latest version",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Due to Spotify's legal limitations Reverbio cannot connect directly to Spotify to import playlists. Please use one of these exporting services to export your playlists to CSV format, then upload them to Reverbio. Be sure to include Artist, Song (Track) name, Album, and ISRC if available in your export.",
   "import": "Import",
   "importPlaylists": "Import Playlists",
-  "importNotice": "Due to various paid streaming services' legal restrictions Reverbio cannot connect directly to the streaming services to import playlists. Please use one of these exporting services to export your playlists to CSV format, then upload them to Reverbio. You can import a playlist from any service as long as the file is in CSV format, with headers, and the file contains, at a minimum, Artist, and Song. Include ISRC (if available) for more accurate song data parsing.",
+  "importNotice": "Due to legal restrictions, Reverbio cannot connect directly to other streaming services. To import a playlist, first export it as a CSV file from your current service using one of the below listed services, then upload it here. Your CSV file must include 'Artist' and 'Song' columns. Adding 'ISRC' ensures the most accurate matching.",
   "addedPlaylistFiles": "Added files as Playlists",
   "addedSomePlaylistFiles": "Added some files as Playlists before error an error occurred. Please see logs for more details. Files added",
   "imported": "Imported",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "Cannot reload Plugin from local file source on Mobile. Delete the plugin and re-add it to update it. Plugin name",
   "addedBackgroundJob": "added to background queue",
   "updated": "Updated",
-  "autoCacheOffline": "Automatically make songs being listened to available offline",
+  "autoCacheOffline": "Automatically cache songs for offline listening",
   "storageWarning": "Warning: This option will use significant storage space. Ensure your device has enough available storage before enabling! Songs will become available online only after being played online first.",
   "autoCacheOfflinePlaylist": "Auto-save playlist for offline playback",
   "urlError": "Song url could not be resolved",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Tap on Developer Settings",
   "androidAutoStep7": "7. Scroll down and enable \"Unknown sources\"",
   "stop": "Stop",
-  "downloaded": "Downloaded"
+  "downloaded": "Downloaded",
+  "checkBackLater": "Working on it. Please check back later...",
+  "unableToDownload": "Unable to download",
+  "downloadingInBackground": "Downloading song in background"
 }

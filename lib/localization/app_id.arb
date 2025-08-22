@@ -186,7 +186,7 @@
   "previous": "Sebelumnya",
   "repeat": "Ulangi",
   "youtubeInaccessible": "Error 403 Terlarang saat mencoba memutar YouTube Stream. YouTube mungkin telah memblokir sementara alamat IP Anda. Coba ubah jaringan Anda atau coba lagi nanti.",
-  "prepareNextSong": "Secara otomatis menyiapkan lagu berikutnya untuk pemutaran lebih cepat",
+  "prepareNextSong": "Siapkan lagu berikutnya untuk pemutaran yang lebih cepat",
   "useProxies": "Gunakan server proxy (dapat membantu masalah akses YouTube)",
   "currentVersion": "Versi saat ini",
   "latestVersion": "Versi terbaru",
@@ -196,7 +196,7 @@
   "spotifyNotice": "Karena batasan hukum Spotify, Reverbio tidak dapat terhubung langsung ke Spotify untuk mengimpor playlist. Silakan gunakan salah satu layanan ekspor ini untuk mengekspor playlist Anda ke format CSV, lalu unggah ke Reverbio. Pastikan untuk menyertakan Artis, Judul Lagu (Track), Album, dan ISRC jika tersedia dalam ekspor Anda.",
   "import": "Impor",
   "importPlaylists": "Impor Daftar Putar",
-  "importNotice": "Karena pembatasan hukum dari berbagai layanan streaming berbayar, Reverbio tidak dapat terhubung langsung ke layanan streaming untuk mengimpor daftar putar. Silakan gunakan salah satu layanan ekspor ini untuk mengekspor daftar putar Anda ke format CSV, lalu unggah ke Reverbio. Anda dapat mengimpor daftar putar dari layanan apa pun selama file dalam format CSV, dengan header, dan file tersebut berisi, minimal, Artis dan Lagu. Sertakan ISRC (jika tersedia) untuk penguraian data lagu yang lebih akurat.",
+  "importNotice": "Karena batasan hukum, Reverbio tidak dapat terhubung langsung ke layanan streaming lainnya. Untuk mengimpor playlist, ekspor terlebih dahulu sebagai file CSV dari layanan Anda saat ini menggunakan salah satu layanan yang tercantum di bawah ini, kemudian unggah di sini. File CSV Anda harus menyertakan kolom 'Artis' dan 'Lagu'. Menambahkan 'ISRC' memastikan pencocokan yang paling akurat.",
   "addedPlaylistFiles": "File ditambahkan sebagai Daftar Putar",
   "addedSomePlaylistFiles": "Menambahkan beberapa file sebagai Daftar Putar sebelum terjadi kesalahan. Lihat log untuk detail lebih lanjut. File yang ditambahkan",
   "imported": "Diimpor",
@@ -206,7 +206,7 @@
   "cannotReloadLocalPlugin": "Tidak dapat memuat ulang Plugin dari sumber file lokal di Ponsel. Hapus plugin dan tambahkan kembali untuk memperbaruinya. Nama plugin",
   "addedBackgroundJob": "ditambahkan ke antrian latar belakang",
   "updated": "Diperbarui",
-  "autoCacheOffline": "Otomatis membuat lagu yang sedang didengarkan tersedia secara offline",
+  "autoCacheOffline": "Simpan lagu otomatis untuk didengarkan offline",
   "storageWarning": "Peringatan: Opsi ini akan menggunakan banyak ruang penyimpanan. Pastikan perangkat Anda memiliki cukup ruang penyimpanan sebelum mengaktifkannya! Lagu akan tersedia online hanya setelah diputar online terlebih dahulu.",
   "autoCacheOfflinePlaylist": "Simpan otomatis playlist untuk pemutaran offline",
   "urlError": "URL lagu tidak dapat diselesaikan",
@@ -239,5 +239,8 @@
   "androidAutoStep6": "6. Ketuk Pengaturan Pengembang",
   "androidAutoStep7": "7. Gulir ke bawah dan aktifkan \"Sumber tidak dikenal\"",
   "stop": "Berhenti",
-  "downloaded": "Unduhan selesai"
+  "downloaded": "Unduhan selesai",
+  "checkBackLater": "Sedang dalam pengerjaan. Silakan periksa kembali nanti...",
+  "unableToDownload": "Tidak dapat mengunduh",
+  "downloadingInBackground": "Lagu sedang diunduh di latar belakang"
 }
