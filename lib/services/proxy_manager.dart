@@ -337,39 +337,29 @@ class ProxyManager {
       if (_proxies.isEmpty) return null;
       Proxy proxy;
       String countryCode;
-      if (_workingProxies.isNotEmpty) {
-        final idx =
-            _workingProxies.length == 1
-                ? 0
-                : _random.nextInt(_workingProxies.length);
-        proxy = _workingProxies.elementAt(idx);
-        _workingProxies.remove(proxy);
+      if (preferredCountry != null && _proxies.containsKey(preferredCountry)) {
+        countryCode = preferredCountry;
       } else {
-        if (preferredCountry != null &&
-            _proxies.containsKey(preferredCountry)) {
-          countryCode = preferredCountry;
-        } else {
-          countryCode = userGeolocation['countryCode'] ?? _proxies.keys.first;
-        }
-        final countryProxies =
-            _proxies[countryCode] ?? _proxies.values.expand((x) => x).toList();
-        if (countryProxies.isEmpty) {
-          return null;
-        }
-        if (countryProxies.length == 1) {
-          proxy = countryProxies.removeLast();
-        } else {
-          proxy = countryProxies.removeAt(
-            _random.nextInt(countryProxies.length),
-          );
-        }
-        if (kDebugMode)
-          logger.log(
-            'Selected proxy: ${proxy.source} - ${proxy.address}',
-            null,
-            null,
-          );
+        countryCode = userGeolocation['countryCode'] ?? _proxies.keys.first;
       }
+      final countryProxies =
+          _proxies[countryCode] ?? _proxies.values.expand((x) => x).toList();
+      if (countryProxies.isEmpty) {
+        return null;
+      }
+      if (countryProxies.length == 1) {
+        proxy = countryProxies.last;
+      } else {
+        proxy = countryProxies.elementAt(
+          _random.nextInt(countryProxies.length),
+        );
+      }
+      if (kDebugMode)
+        logger.log(
+          'Selected proxy: ${proxy.source} - ${proxy.address}',
+          null,
+          null,
+        );
       return proxy;
     } catch (e, stackTrace) {
       logger.log(
