@@ -221,10 +221,10 @@ packages:
     dependency: "direct main"
     description:
       name: discogs_api_client
-      sha256: e9310b17e67e3530eac69d6046f419810a7856528ba663ec3173a3daa99277da
+      sha256: "30118c4cba27c7e4735cb232e847e41850e27c110a6a5c8d568a1ace058aa3f9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.6"
+    version: "0.2.0"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -298,10 +298,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_dotenv
-      sha256: b7c7be5cd9f6ef7a78429cabd2774d3c4af50e79cb2b7593e3d5d763ef95c61b
+      sha256: d4130c4a43e0b13fefc593bc3961f2cb46e30cb79e253d4a526b1b5d24ae1ce4
       url: "https://pub.dev"
     source: hosted
-    version: "5.2.1"
+    version: "6.0.0"
   flutter_flip_card:
     dependency: "direct main"
     description:
@@ -601,10 +601,10 @@ packages:
     dependency: "direct main"
     description:
       name: musicbrainz_api_client
-      sha256: "23edf07f1ba88f97a3bb60281d3a1c9b565e10c81b2cfc1cb02fc28edd889c9b"
+      sha256: "88576cc1eae0c9e89a829e931e41b6e050ede9486d33d33e6b922629369ac873"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.10"
+    version: "0.2.0"
   octo_image:
     dependency: transitive
     description:

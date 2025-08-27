@@ -19,7 +19,7 @@ dependencies:
   cached_network_image: ^3.4.1
   crypto: ^3.0.6
   csv: ^6.0.0
-  discogs_api_client: ^0.1.6
+  discogs_api_client: ^0.2.0
   dynamic_color: ^1.7.0
   file_picker: ^10.1.2
   fluentui_system_icons: ^1.1.273
@@ -39,7 +39,7 @@ dependencies:
   intl: 0.20.2
   media_kit: ^1.1.11
   media_kit_libs_audio: ^1.0.5
-  musicbrainz_api_client: ^0.1.8
+  musicbrainz_api_client: ^0.2.0
   open_settings_plus: ^0.4.0
   path: ^1.9.1
   path_provider: ^2.1.5
