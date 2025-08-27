@@ -250,6 +250,8 @@ Future<void> initialization() async {
       await Hive.openBox(boxName);
     }
 
+    await getExistingOfflineSongs();
+
     // Init router
     NavigationManager.instance;
 

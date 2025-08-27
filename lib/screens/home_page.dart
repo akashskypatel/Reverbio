@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -172,10 +173,7 @@ class _HomePageState extends State<HomePage> {
               if (e['artist'] != null && e['artist'].isNotEmpty) {
                 v.addAll(
                   splitArtists(
-                    e['artist']
-                        .split('~')[0]
-                        .replaceAll(RegExp(r'\s+'), ' ')
-                        .trim()
+                    (e['artist']?.split('~')[0] as String).collapsed
                         .toLowerCase(),
                   ),
                 );
@@ -183,10 +181,7 @@ class _HomePageState extends State<HomePage> {
               if (e['channelName'] != null && e['channelName'].isNotEmpty) {
                 v.addAll(
                   splitArtists(
-                    e['channelName']
-                        .split('~')[0]
-                        .replaceAll(RegExp(r'\s+'), ' ')
-                        .trim()
+                    (e['channelName']?.split('~')[0] as String).collapsed
                         .toLowerCase(),
                   ),
                 );

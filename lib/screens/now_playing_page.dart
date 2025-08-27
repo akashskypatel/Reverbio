@@ -937,7 +937,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
             artistData['name'] ??
             artistData['artist'] ??
             artistData['title'] ??
-            '',
+            'unknown',
         fontColor: Theme.of(context).colorScheme.secondary,
         fontSize: screenHeight * 0.025,
         fontWeight: FontWeight.w500,

@@ -19,18 +19,20 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-Map<String, dynamic> returnYtSongLayout(int index, Video song) {
+Map<String, dynamic> returnYtSongLayout(Video song) {
   final songInfo = tryParseTitleAndArtist(song);
   return {
-    'index': index,
     'id': 'yt=${song.id}',
     'ytid': song.id.toString(),
     'title': songInfo['title'],
-    'source': 'youtube',
     'artist': songInfo['artist'],
+    'ytTitle': song.title,
+    'ytArtist': song.author,
+    'source': 'youtube',
     'image': song.thumbnails.standardResUrl,
     'lowResImage': song.thumbnails.lowResUrl,
     'highResImage': song.thumbnails.maxResUrl,
@@ -41,6 +43,12 @@ Map<String, dynamic> returnYtSongLayout(int index, Video song) {
     'channelId': song.channelId.value,
     'views': song.engagement.viewCount,
     'isError': false,
+    'isDerivative': isSongDerivative(
+      songInfo['artist'],
+      songInfo['album'],
+      songInfo['title'],
+      song.title,
+    ),
   };
 }
 

@@ -284,7 +284,9 @@ class _MiniPlayerState extends State<MiniPlayer> {
       builder: (context, value, __) {
         if (audioHandler.hasNext)
           return IconButton(
-            onPressed: () => audioHandler.skipToNext(),
+            onPressed: () async {
+              await audioHandler.skipToNext();
+            },
             icon: Icon(
               FluentIcons.next_24_filled,
               color: _theme.colorScheme.primary,
@@ -303,7 +305,9 @@ class _MiniPlayerState extends State<MiniPlayer> {
       builder: (context, value, __) {
         if (audioHandler.hasPrevious)
           return IconButton(
-            onPressed: () => audioHandler.skipToPrevious(),
+            onPressed: () async {
+              await audioHandler.skipToPrevious();
+            },
             icon: Icon(
               FluentIcons.previous_24_filled,
               color: _theme.colorScheme.primary,
@@ -368,7 +372,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      audioHandler.songValueNotifier.value?.song['title'],
+                      audioHandler.songValueNotifier.value?.song['title'] ?? 'unknown',
                       style: TextStyle(
                         color: titleColor,
                         fontSize: 16,
@@ -406,7 +410,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
         } catch (_) {}
       },
       child: Text(
-        artistData['name'] ?? artistData['artist'] ?? artistData['title'] ?? '',
+        artistData['name'] ?? artistData['artist'] ?? artistData['title'] ?? 'unknown',
         style: TextStyle(
           color: _theme.colorScheme.secondary,
           fontSize: 14,

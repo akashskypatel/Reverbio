@@ -88,7 +88,6 @@ class _LibraryPageState extends State<LibraryPage> {
         actions: [
           if (!offlineMode.value)
             IconButton(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
               onPressed: _showAddPlaylistDialog,
               icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
               iconSize: pageHeaderIconSize,
@@ -167,6 +166,15 @@ class _LibraryPageState extends State<LibraryPage> {
                   () =>
                       NavigationManager.router.go('/library/userSongs/offline'),
               cardIcon: FluentIcons.cellular_off_24_filled,
+              showBuildActions: false,
+            ),
+            PlaylistBar(
+              context.l10n!.offlinePlaylists,
+              onPressed:
+                  () => NavigationManager.router.go(
+                    '/library/userSongs/offlinePlaylists',
+                  ),
+              cardIcon: FluentIcons.arrow_download_24_filled,
               borderRadius: commonCustomBarRadiusLast,
               showBuildActions: false,
             ),
@@ -176,7 +184,6 @@ class _LibraryPageState extends State<LibraryPage> {
                 title: context.l10n!.customPlaylists,
                 actions: [
                   IconButton(
-                    padding: const EdgeInsets.only(right: 5),
                     onPressed: _showAddPlaylistDialog,
                     icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
                     iconSize: pageHeaderIconSize,
@@ -205,7 +212,6 @@ class _LibraryPageState extends State<LibraryPage> {
                         title: context.l10n!.addedPlaylists,
                         actions: [
                           IconButton(
-                            padding: const EdgeInsets.only(right: 5),
                             onPressed: _showAddPlaylistDialog,
                             icon: Icon(
                               FluentIcons.add_24_filled,
@@ -326,9 +332,9 @@ class _LibraryPageState extends State<LibraryPage> {
       userPlaylistBars.add(
         PlaylistBar(
           key: ValueKey(
-            playlist['id'] ?? playlist['ytid'] ?? playlist['title'],
+            playlist['id'] ?? playlist['ytid'] ?? playlist['title'] ?? 'unknown',
           ),
-          playlist['title'],
+          playlist['title'] ?? 'unknown',
           playlistId: playlist['ytid'],
           playlistArtwork: playlist['image'],
           isAlbum: playlist['isAlbum'],

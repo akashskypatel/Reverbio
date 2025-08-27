@@ -23,7 +23,9 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/common_variables.dart';
 
 extension DoubleExtensions on double {
   /// Checks if the double is nearly zero within a given tolerance.
@@ -52,6 +54,37 @@ extension ListOfMapsAddOrUpdate<T, K> on List<dynamic> {
       }
     } else {
       // Add a new map with the key-value pair
+      add(value);
+    }
+  }
+
+  void addOrUpdateWhere(bool Function(Map, Map) predicate, dynamic value) {
+    // Find the first map that contains the key
+    final mapWithKey = firstWhere(
+      (map) => predicate(map, value),
+      // Return an empty map if no map contains the key
+      orElse: () => <String, dynamic>{},
+    );
+
+    if (mapWithKey.isNotEmpty) {
+      // Update the value in the existing map
+      for (final k in mapWithKey.keys) {
+        if (value[k] != null) mapWithKey[k] = value[k];
+      }
+    } else {
+      // Add a new map with the key-value pair
+      add(value);
+    }
+  }
+}
+
+extension ListOfStringsAddOrUpdate<T> on List<String> {
+  void addOrUpdateWhere(bool Function(String, String) predicate, String value) {
+    final index = indexWhere((s) => predicate(s, value));
+
+    if (index >= 0) {
+      this[index] = value;
+    } else {
       add(value);
     }
   }
@@ -168,5 +201,364 @@ extension StringParenthesesExtension on String {
       }
     }
     return stack.isEmpty;
+  }
+}
+
+extension MapAddIfNotExistExtension on Map {
+  void putAllIfAbsent(Map other) {
+    other.forEach((key, value) {
+      putIfAbsent(key, () => value);
+    });
+  }
+}
+
+extension MapToIdExtension on Map<String, String> {
+  String get toId {
+    final ids = <String, String>{};
+    for (final key in this.keys) {
+      if (['mb', 'dc', 'uc', 'is', 'yt'].contains(key) &&
+          this[key] != null &&
+          this[key]!.isNotEmpty)
+        ids[key] = this[key]!;
+    }
+    return Uri(
+      host: '',
+      queryParameters: ids,
+    ).toString().replaceAll('?', '').replaceAll('//', '');
+  }
+
+  Map<String, String> mergeReplaceIds(Map<String, String> replaceWith) {
+    if (this.isEmpty) return Map<String, String>.from(replaceWith);
+    for (final key in replaceWith.keys) {
+      if (['mb', 'dc', 'uc', 'is', 'yt'].contains(key) &&
+          replaceWith[key] != null &&
+          replaceWith[key]!.isNotEmpty)
+        this[key] = replaceWith[key]!;
+    }
+    return this;
+  }
+
+  String mergedReplacedId(Map<String, String> replaceWith) {
+    return this.mergeReplaceIds(replaceWith).toId;
+  }
+
+  String mergedReplacedIdFrom(String replaceWith) {
+    return this.mergedReplacedId(replaceWith.toIds);
+  }
+
+  Map<String, String> mergedReplacedIdsFrom(String otherId) {
+    return this.mergedReplacedId(otherId.toIds).toIds;
+  }
+
+  Map<String, String> mergeAbsentIds(Map<String, String> addFrom) {
+    if (this.isEmpty) return Map<String, String>.from(addFrom);
+    for (final key in addFrom.keys) {
+      if (['mb', 'dc', 'uc', 'is', 'yt'].contains(key) &&
+          !this.containsKey(key) &&
+          addFrom[key] != null &&
+          addFrom[key]!.isNotEmpty)
+        this[key] = addFrom[key]!;
+    }
+    return this;
+  }
+
+  String mergedAbsentId(Map<String, String> addFrom) {
+    return this.mergeAbsentIds(addFrom).toId;
+  }
+
+  String mergedAbsentIdFrom(String addFrom) {
+    return this.mergedAbsentId(addFrom.toIds);
+  }
+
+  Map<String, String> mergedAbsentIdsFrom(String addFrom) {
+    return this.mergedAbsentId(addFrom.toIds).toIds;
+  }
+}
+
+extension StringToIdsExtension on String {
+  Map<String, String> get toIds {
+    if (this.isEmpty) return {};
+    final id = parseEntityId(this);
+    final ids = Map<String, String>.from(Uri.parse('?$id').queryParameters);
+    return ids;
+  }
+
+  String get mbid {
+    if (this.isEmpty) return '';
+    final mbRx = RegExp(
+      '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+      caseSensitive: false,
+    );
+    return mbRx.firstMatch(this)?.group(1) ?? '';
+  }
+
+  String get isrc {
+    if (this.isEmpty) return '';
+    final isRx = RegExp(
+      r'([A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5})',
+      caseSensitive: false,
+    );
+    return isRx.firstMatch(this)?.group(1) ?? '';
+  }
+
+  String get dcid {
+    if (this.isEmpty) return '';
+    final id = int.tryParse(this);
+    return id != null ? id.toString() : '';
+  }
+
+  String get ucid {
+    if (this.isEmpty) return '';
+    return this.startsWith('UC-') ? this : '';
+  }
+
+  String get ytid {
+    if (this.isEmpty) return '';
+    if (this.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+      final ids = Map<String, String>.from(
+        Uri.parse('?${parseEntityId(this)}').queryParameters,
+      );
+      return ids['yt'] ?? '';
+    } else if (this.mbid.isEmpty &&
+        this.isrc.isEmpty &&
+        this.dcid.isEmpty &&
+        this.ucid.isEmpty) {
+      final ids = Map<String, String>.from(
+        Uri.parse('?${parseEntityId(this)}').queryParameters,
+      );
+      return ids['yt'] ?? '';
+    }
+    return '';
+  }
+
+  String mergedReplacedId(String replaceWith) {
+    if (this.isEmpty) return replaceWith;
+    final ids = this.toIds;
+    final otherIds = replaceWith.toIds;
+    return ids.mergedReplacedId(otherIds);
+  }
+
+  Map<String, String> mergedReplacedIds(String replaceWith) {
+    final ids = this.toIds;
+    final otherIds = replaceWith.toIds;
+    return ids.mergeReplaceIds(otherIds);
+  }
+
+  String mergedReplacedIdFrom(Map<String, String> replaceWith) {
+    final ids = this.toIds;
+    return ids.mergedReplacedId(replaceWith);
+  }
+
+  Map<String, String> mergedReplacedIdsFrom(Map<String, String> replaceWith) {
+    final ids = this.toIds;
+    return ids.mergeReplaceIds(replaceWith);
+  }
+
+  String mergedAbsentId(String addFrom) {
+    if (this.isEmpty) return addFrom;
+    final ids = this.toIds;
+    final otherIds = addFrom.toIds;
+    return ids.mergedAbsentId(otherIds);
+  }
+
+  Map<String, String> mergedAbsentIds(String addFrom) {
+    final ids = this.toIds;
+    final otherIds = addFrom.toIds;
+    return ids.mergeAbsentIds(otherIds);
+  }
+
+  String mergedAbsentIdFrom(Map<String, String> addFrom) {
+    final ids = this.toIds;
+    return ids.mergedAbsentId(addFrom);
+  }
+
+  Map<String, String> mergedAbsentIdsFrom(Map<String, String> addFrom) {
+    final ids = this.toIds;
+    return ids.mergeAbsentIds(addFrom);
+  }
+}
+
+extension StringSanitizeExtension on String {
+  /// Remove extra white spaces
+  String get collapsed => this.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+  /// Replace special characters and remove extra white spaces
+  String get sanitized {
+    final pattern = RegExp(
+      replacementCharacters.keys.map(RegExp.escape).join('|'),
+    );
+    return this
+        .replaceAllMapped(
+          pattern,
+          (match) => replacementCharacters[match.group(0)] ?? '',
+        )
+        .replaceAll(symbolsRegex, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  /// Remove special characters
+  String get cleansed =>
+      this
+          .replaceAllMapped(
+            RegExp(replacementCharacters.keys.map(RegExp.escape).join('|')),
+            (match) => replacementCharacters[match.group(0)] ?? '',
+          )
+          .replaceAll(symbolsRegex, ' ')
+          .replaceAll(allSymbolsRegex, '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+}
+
+extension StringReplaceFromList on String {
+  /// Replace multiple strings from a list
+  String replaceMultiple(
+    List<String> toReplace, {
+    String replaceWith = '',
+    bool caseSensitive = false,
+  }) {
+    String fStr = this;
+    for (final str in toReplace)
+      fStr = fStr.replaceAll(
+        RegExp(str, caseSensitive: caseSensitive),
+        replaceWith,
+      );
+    return fStr;
+  }
+}
+
+extension SmartStringReplacement on String {
+  /// Replace all occurrences of longest subsequence
+  String replaceAllSubsequence(
+    String other, {
+    String replacement = '',
+    bool caseSensitive = true,
+  }) {
+    if (other.isEmpty) return this;
+
+    // Find the longest common contiguous substring
+    final match = _findSubsequence(this, other, caseSensitive: caseSensitive);
+    if (match.isEmpty) return this; // No match found
+
+    return replaceAll(
+      RegExp(RegExp.escape(match), caseSensitive: caseSensitive),
+      replacement,
+    );
+  }
+
+  /// Replaces first instance of longest subsequence
+  String replaceFirstSubsequence(
+    String other, {
+    String replacement = '',
+    bool caseSensitive = true,
+  }) {
+    if (other.isEmpty) return this;
+
+    // Find the longest common contiguous substring
+    final match = _findSubsequence(this, other, caseSensitive: caseSensitive);
+    if (match.isEmpty) return this; // No match found
+
+    // Replace in the original string
+    return replaceFirst(
+      RegExp(RegExp.escape(match), caseSensitive: caseSensitive),
+      replacement,
+    );
+  }
+
+  /// Replace all longest subsequences from a list
+  (String, List<String>) replaceSubsequenceList(
+    List<String> list, {
+    String replacement = '',
+    bool caseSensitive = true,
+  }) {
+    var result = this;
+    final matched = <String>[];
+    if (list.isEmpty) return (this, matched);
+    for (final other in list) {
+      final match = findSubsequence(other, caseSensitive: caseSensitive);
+      if (match.isNotEmpty) {
+        result = result.replaceAll(
+          RegExp(match, caseSensitive: caseSensitive),
+          replacement,
+        );
+        matched.add(match);
+      }
+    }
+    return (result, matched);
+  }
+
+  /// Find the longest subsequence
+  String findSubsequence(String other, {bool caseSensitive = false}) {
+    return _findSubsequence(this, other, caseSensitive: caseSensitive);
+  }
+
+  /// Optimized O(n + m) solution using sliding window + hashing
+  String _findSubsequence(String a, String b, {bool caseSensitive = false}) {
+    final wordsA = a.split(' ');
+    final wordsB = b.split(' ');
+    if (wordsA.isEmpty || wordsB.isEmpty) return '';
+
+    // Precompute word hashes for faster comparison
+    final hashA =
+        wordsA
+            .map(
+              (word) => hashCodeCased(word.cleansed.collapsed, caseSensitive),
+            )
+            .toList();
+    final hashB =
+        wordsB
+            .map(
+              (word) => hashCodeCased(word.cleansed.collapsed, caseSensitive),
+            )
+            .toList();
+
+    String longestMatch = '';
+    final matchMap = <int, List<int>>{};
+
+    // Build a map of word hashes to positions in B
+    for (int i = 0; i < hashB.length; i++) {
+      matchMap.putIfAbsent(hashB[i], () => []).add(i);
+    }
+
+    // Sliding window to find the longest match
+    int start = 0;
+    while (start < hashA.length) {
+      final currentHash = hashA[start];
+      if (matchMap.containsKey(currentHash)) {
+        for (final bPos in matchMap[currentHash]!) {
+          int aPos = start;
+          int bIndex = bPos;
+          int matchLength = 0;
+
+          // Expand the match as far as possible
+          while (aPos < hashA.length &&
+              bIndex < hashB.length &&
+              hashA[aPos] == hashB[bIndex]) {
+            aPos++;
+            bIndex++;
+            matchLength++;
+          }
+
+          // Update longest match if needed
+          if (matchLength > 0) {
+            final matchedWords = wordsA
+                .sublist(start, start + matchLength)
+                .join(' ');
+
+            if (matchedWords.length > longestMatch.length) {
+              longestMatch = matchedWords;
+            }
+          }
+        }
+      }
+      start++;
+    }
+
+    return longestMatch;
+  }
+
+  /// Simple hash function for case-sensitive/insensitive comparison
+  int hashCodeCased(String word, bool caseSensitive) {
+    return caseSensitive ? word.hashCode : word.toLowerCase().hashCode;
   }
 }

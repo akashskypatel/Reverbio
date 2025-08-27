@@ -23,10 +23,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:open_settings_plus/core/open_settings_plus.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -52,6 +55,7 @@ import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/playlist_import.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -186,7 +190,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         CustomBar(
           tileName: context.l10n!.dynamicColor,
-          tileIcon: FluentIcons.toggle_left_24_filled,
+          tileIcon: FluentIcons.inking_tool_accent_24_filled,
           trailing: Switch(
             value: useSystemColor.value,
             onChanged: (value) => _toggleSystemColor(context, value),
@@ -195,12 +199,26 @@ class _SettingsPageState extends State<SettingsPage> {
         if (themeMode == ThemeMode.dark)
           CustomBar(
             tileName: context.l10n!.pureBlackTheme,
-            tileIcon: FluentIcons.color_background_24_filled,
+            tileIcon: FluentIcons.cellular_off_24_filled,
             trailing: Switch(
               value: usePureBlackColor.value,
               onChanged: (value) => _togglePureBlack(context, value),
             ),
           ),
+        ValueListenableBuilder<bool>(
+          valueListenable: autoCacheOffline,
+          builder: (context, value, __) {
+            return CustomBar(
+              tileName: context.l10n!.autoCacheOffline,
+              tileIcon: FluentIcons.data_bar_vertical_arrow_down_24_filled,
+              trailing: Switch(
+                value: value,
+                onChanged:
+                    (value) => _showAutoCacheOfflineDialog(context, value),
+              ),
+            );
+          },
+        ),
         ValueListenableBuilder<bool>(
           valueListenable: predictiveBack,
           builder: (context, value, __) {
@@ -235,7 +253,7 @@ class _SettingsPageState extends State<SettingsPage> {
               tileIcon:
                   value
                       ? FluentIcons.plug_connected_24_regular
-                      : FluentIcons.plug_disconnected_24_regular,
+                      : FluentIcons.plug_disconnected_24_filled,
               trailing: Switch(
                 value: value,
                 onChanged: (value) => _togglePluginsSupport(context, value),
@@ -498,72 +516,67 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _showAndroidAutoMessage(
-    BuildContext context,
-  ) async => showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(context.l10n!.androidAuto),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Follow these steps to enable Android Auto for Reverbio:',
+  Future<void> _showAndroidAutoMessage(BuildContext context) async =>
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(context.l10n!.androidAuto),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoInstructions),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoStep1),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoStep2),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoStep3),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoStep4),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoStep5),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoStep6),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(context.l10n!.androidAutoStep7),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  GoRouter.of(context).pop();
+                },
+                child: Text(context.l10n!.cancel.toUpperCase()),
               ),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('1. Go to settings'),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('2. Tap on Connection Preferences'),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('3. Tap on Android Auto'),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '4. Scroll down and Tap Version several times until you are asked to enable developer mode',
+              TextButton(
+                onPressed: () async {
+                  const settings = OpenSettingsPlusAndroid();
+                  await settings.bluetooth();
+                },
+                child: Text(context.l10n!.settings.toUpperCase()),
               ),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('5. Tap on 3 dots on the top right corner'),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('6. Tap on Developer Settings'),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('7. Scroll down and enable "Unknown sources"'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              GoRouter.of(context).pop();
-            },
-            child: Text(context.l10n!.cancel.toUpperCase()),
-          ),
-          TextButton(
-            onPressed: () async {
-              const settings = OpenSettingsPlusAndroid();
-              await settings.bluetooth();
-            },
-            child: Text(context.l10n!.settings.toUpperCase()),
-          ),
-        ],
+            ],
+          );
+        },
       );
-    },
-  );
 
   void _showAccentColorPicker(BuildContext context) {
     showCustomBottomSheet(
@@ -1469,7 +1482,49 @@ class _SettingsPageState extends State<SettingsPage> {
   void _toggleUseProxies(BuildContext context, bool value) {
     addOrUpdateData('settings', 'useProxies', value);
     useProxies.value = value;
+    yt.close();
+    dc.close();
+    mb.close();
+    yt = YoutubeExplode(
+      YoutubeHttpClient(useProxies.value ? pxd.randomProxyClient() : null),
+    );
+    ytm = YoutubeExplode(
+      YoutubeHttpClient(useProxies.value ? pxm.randomProxyClient() : null),
+    );
+    dc = DiscogsApiClient(
+      httpClient: useProxies.value ? pxd.randomProxyClient() : null,
+    );
+    mb = MusicBrainzApiClient(
+      httpClient: useProxies.value ? pxd.randomProxyClient() : null,
+    );
     showToast(context.l10n!.settingChangedMsg);
+  }
+
+  void _toggleAutoCacheOffline(BuildContext context, bool value) {
+    addOrUpdateData('settings', 'autoCacheOffline', value);
+    autoCacheOffline.value = value;
+    showToast(context.l10n!.settingChangedMsg);
+  }
+
+  void _showAutoCacheOfflineDialog(BuildContext context, bool value) async {
+    if (!value)
+      _toggleAutoCacheOffline(context, value);
+    else {
+      final enable =
+          await showDialog<bool>(
+            context: context,
+            builder:
+                (context) => ConfirmationDialog(
+                  confirmText: context.l10n!.confirm,
+                  cancelText: context.l10n!.cancel,
+                  message: context.l10n!.storageWarning,
+                  onCancel: () => Navigator.pop(context, false),
+                  onSubmit: () => Navigator.pop(context, true),
+                ),
+          ) ??
+          false;
+      if (enable) _toggleAutoCacheOffline(context, enable);
+    }
   }
 
   void _showClearSearchHistoryDialog(BuildContext context) {
@@ -1504,7 +1559,7 @@ class _SettingsPageState extends State<SettingsPage> {
           onSubmit:
               () => {
                 Navigator.of(context).pop(),
-                userRecentlyPlayed = [],
+                userRecentlyPlayed.clear(),
                 deleteData('user', 'recentlyPlayedSongs'),
                 showToast('${context.l10n!.recentlyPlayedMsg}!'),
               },

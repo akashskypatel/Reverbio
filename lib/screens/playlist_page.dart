@@ -28,13 +28,14 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
-import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -61,7 +62,11 @@ class _PlaylistPageState extends State<PlaylistPage> {
   dynamic _playlist;
   late ThemeData _theme;
   var _currentLastLoadedId = 0;
+  final _isEditEnabled = ValueNotifier(false);
   late final likeStatus = ValueNotifier<bool>(getLikeStatus());
+  late final autoOffline = ValueNotifier<bool>(
+    isPlaylistAlreadyOffline(widget.playlistData),
+  );
 
   @override
   void initState() {
@@ -89,8 +94,12 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   Future<void> _initializePlaylist() async {
-    if (widget.playlistData?['source'] == 'musicbrainz') {
-      await getTrackList(widget.playlistData);
+    parseEntityId(widget.playlistData);
+    if (widget.playlistData?['mbid'] != null &&
+        widget.playlistData?['primary-type'] != null &&
+        (widget.playlistData?['list'] == null ||
+            widget.playlistData?['list'].isEmpty)) {
+      await getAlbumDetailsById(widget.playlistData);
     }
     if (widget.playlistData['id'] != null &&
         widget.playlistData['id']?.contains('yt=')) {
@@ -113,15 +122,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                       widget.playlistData,
                       isArtist: widget.isArtist,
                     )
-                    : ([
-                          'album',
-                          'single',
-                          'ep',
-                          'broadcast',
-                          'other',
-                        ].contains(
-                          widget.playlistData['primary-type']?.toLowerCase(),
-                        )
+                    : (widget.playlistData?['mbid'] != null
                         ? await getAlbumDetailsById(widget.playlistData)
                         : null)));
 
@@ -135,7 +136,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
       if (mounted) {
         setState(() {
           if (fetchedList.isNotEmpty) {
-            _songsList.addAll(fetchedList);
+            for (final item in fetchedList) {
+              _songsList.add(Map<String, dynamic>.from(item));
+            }
           }
         });
       }
@@ -159,6 +162,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
+    for (final song in _songsList) {
+      song['autoCacheOffline'] = widget.playlistData['autoCacheOffline'];
+    }
     return Scaffold(
       appBar: _buildNavigationBar(),
       body:
@@ -180,10 +186,14 @@ class _PlaylistPageState extends State<PlaylistPage> {
             child: _buildPlaylistHeader(),
           ),
         ),
-        SongList(
-          page: 'playlist',
-          inputData: _songsList,
-          isEditable: _playlist['source'] == ['user-created'],
+        ValueListenableBuilder(
+          valueListenable: _isEditEnabled,
+          builder:
+              (context, value, child) => SongList(
+                page: 'playlist',
+                inputData: _songsList,
+                isEditable: value,
+              ),
         ),
       ],
     );
@@ -192,17 +202,15 @@ class _PlaylistPageState extends State<PlaylistPage> {
   PreferredSizeWidget _buildNavigationBar() {
     return AppBar(
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
+        icon: const Icon(FluentIcons.arrow_left_24_filled),
         iconSize: pageHeaderIconSize,
-        onPressed:
-            () => GoRouter.of(context).pop(),
+        onPressed: () => GoRouter.of(context).pop(),
       ),
       actions: [
-        _buildLikeButton(),
-        const SizedBox(width: 10),
+        _buildAutoCacheOfflineButton(),
+        if (_playlist?['source'] != 'user-created') _buildLikeButton(),
         if (_playlist != null) ...[
           _buildSyncButton(),
-          const SizedBox(width: 10),
           if (_playlist['source'] == 'user-created')
             IconButton(
               icon: const Icon(FluentIcons.share_24_regular),
@@ -211,7 +219,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 final encodedPlaylist = PlaylistSharingService.encodePlaylist(
                   _playlist,
                 );
-
                 final url = 'Reverbio://playlist/custom/$encodedPlaylist';
                 await Clipboard.setData(ClipboardData(text: url));
               },
@@ -231,6 +238,25 @@ class _PlaylistPageState extends State<PlaylistPage> {
           ),
           if (_playlist != null && _playlist['source'] == 'user-created')
             _buildEditButton(),
+          StatefulBuilder(
+            builder: (context, setState) {
+              return IconButton(
+                iconSize: pageHeaderIconSize,
+                onPressed: () {
+                  if (mounted)
+                    setState(() {
+                      _isEditEnabled.value = !_isEditEnabled.value;
+                    });
+                },
+                icon: Icon(
+                  _isEditEnabled.value
+                      ? FluentIcons.edit_off_24_filled
+                      : FluentIcons.edit_line_horizontal_3_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+              );
+            },
+          ),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ],
@@ -257,7 +283,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       inputData: _playlist,
       size: isLandscape ? 300 : screenWidth / 2.5,
       icon: widget.cardIcon,
-      showLike: true,
+      showLike: _playlist?['source'] != 'user-created',
     );
   }
 
@@ -273,6 +299,55 @@ class _PlaylistPageState extends State<PlaylistPage> {
               : _playlist['title']
           : _playlist['title'],
       _songsLength,
+    );
+  }
+
+  Future<bool> _confirmAutoCacheOfflineButton(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => ConfirmationDialog(
+                confirmText: context.l10n!.confirm,
+                cancelText: context.l10n!.cancel,
+                title: context.l10n!.autoCacheOfflinePlaylist,
+                message: context.l10n!.storageWarning,
+                onCancel: () => Navigator.pop(context, false),
+                onSubmit: () => Navigator.pop(context, true),
+              ),
+        ) ??
+        false;
+  }
+
+  Widget _buildAutoCacheOfflineButton() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: autoOffline,
+      builder: (context, value, __) {
+        return IconButton(
+          iconSize: pageHeaderIconSize,
+          tooltip:
+              value
+                  ? context.l10n!.playlistAutoOfflineEnabled
+                  : context.l10n!.playlistAutoOfflineDisabled,
+          onPressed: () async {
+            if (!mounted) return;
+
+            final bool newValue =
+                !value && await _confirmAutoCacheOfflineButton(context);
+
+            if (newValue != value) {
+              setState(() {
+                autoOffline.value = newValue;
+                widget.playlistData['autoCacheOffline'] = newValue;
+                updateOfflinePlaylist(widget.playlistData, newValue);
+              });
+            }
+          },
+          icon:
+              value
+                  ? const Icon(FluentIcons.arrow_download_24_filled)
+                  : const Icon(FluentIcons.arrow_download_off_24_filled),
+        );
+      },
     );
   }
 
@@ -328,7 +403,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       onPressed:
           () => showDialog(
             context: context,
-            builder: (BuildContext context) {
+            builder: (context) {
               var customPlaylistName = _playlist['title'];
               var imageUrl = _playlist['image'];
 
@@ -350,6 +425,11 @@ class _PlaylistPageState extends State<PlaylistPage> {
                       ),
                       const SizedBox(height: 7),
                       TextField(
+                        inputFormatters: [
+                          FilteringTextInputFormatter.deny(
+                            RegExp(r'[/\\:*?"<>|&=]'),
+                          ),
+                        ],
                         controller: TextEditingController(text: imageUrl),
                         decoration: InputDecoration(
                           labelText: context.l10n!.customPlaylistImgUrl,
@@ -367,33 +447,12 @@ class _PlaylistPageState extends State<PlaylistPage> {
                     onPressed: () {
                       if (mounted)
                         setState(() {
-                          final index = userCustomPlaylists.value.indexOf(
+                          updateCustomPlaylist(
                             widget.playlistData,
+                            customPlaylistName,
+                            imageUrl: imageUrl,
                           );
-
-                          if (index != -1) {
-                            final newPlaylist = {
-                              'id':
-                                  'uc=${customPlaylistName.replaceAll(r'\s+', '_')}',
-                              'title': customPlaylistName,
-                              'source': 'user-created',
-                              'primary-type': 'playlist',
-                              if (imageUrl != null) 'image': imageUrl,
-                              'list': widget.playlistData['list'],
-                            };
-                            final updatedPlaylists = List<Map>.from(
-                              userCustomPlaylists.value,
-                            );
-                            updatedPlaylists[index] = newPlaylist;
-                            userCustomPlaylists.value = updatedPlaylists;
-                            addOrUpdateData(
-                              'user',
-                              'customPlaylists',
-                              updatedPlaylists,
-                            );
-                            _playlist = newPlaylist;
-                            showToast(context.l10n!.playlistUpdated);
-                          }
+                          showToast(context.l10n!.playlistUpdated);
                           GoRouter.of(context).pop();
                         });
                     },

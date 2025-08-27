@@ -32,13 +32,17 @@ import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 
-List userLikedArtistsList = Hive.box(
-  'user',
-).get('likedArtists', defaultValue: []);
+final List userLikedArtistsList =
+    (Hive.box('user').get('likedArtists', defaultValue: []) as List).map((e) {
+      e = Map<String, dynamic>.from(e);
+      return e;
+    }).toList();
 
-List cachedArtistsList = Hive.box(
-  'cache',
-).get('cachedArtists', defaultValue: []);
+final List cachedArtistsList =
+    (Hive.box('cache').get('cachedArtists', defaultValue: []) as List).map((e) {
+      e = Map<String, dynamic>.from(e);
+      return e;
+    }).toList();
 
 final ValueNotifier<int> currentLikedArtistsLength = ValueNotifier<int>(
   userLikedArtistsList.length,
@@ -123,7 +127,7 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
     return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return artistData;
   }
 }
 
@@ -196,7 +200,7 @@ Future<dynamic> searchArtistDetails(
   bool paginated = false,
 }) async {
   try {
-    final q = query.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final q = query.collapsed;
     final cached = _searchCachedArtists(q);
     if (cached != null && cached.isNotEmpty) return cached.first;
     final res = await _callApis(
@@ -229,10 +233,7 @@ Future<dynamic> searchArtistsDetails(
   bool paginated = false,
 }) async {
   try {
-    final queries =
-        query
-            .map((e) => e.replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase())
-            .toList();
+    final queries = query.map((e) => e.collapsed.toLowerCase()).toList();
     final result = [];
     final uncached = <String>[];
     for (final q in queries) {
@@ -305,7 +306,7 @@ Future<List<dynamic>> _callApis(
     return results;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return [];
   }
 }
 
@@ -315,12 +316,6 @@ Future<Map<String, dynamic>> _combineResults({
   Map ytRes = const {},
 }) async {
   try {
-    await Hive.openBox('cache').whenComplete(
-      () =>
-          cachedArtistsList = Hive.box(
-            'cache',
-          ).get('cachedArtists', defaultValue: []),
-    );
     final ids = <String, String>{};
     if (mbRes['id'] != null) ids['mb'] = mbRes['id'].toString();
     if (dcRes['id'] != null) ids['dc'] = dcRes['id'].toString();
@@ -331,6 +326,9 @@ Future<Map<String, dynamic>> _combineResults({
     ).toString().replaceAll('//?', '');
     final res = {
       'id': id,
+      'mbid': ids['mb'],
+      'dcid': ids['dc'],
+      'ytid': ids['yt'],
       'artist': mbRes['name'],
       'musicbrainzName': mbRes['name'],
       'discogsName': dcRes['name'],
@@ -359,7 +357,7 @@ dynamic _getCachedArtist(String id) {
       return null;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return null;
   }
 }
 
@@ -459,9 +457,8 @@ Future<dynamic> _getArtistDetailsMB(
 }
 
 Future<dynamic> _getArtistDetailsDC(String query) async {
+  dynamic res;
   try {
-    dynamic res;
-
     if (query == '') return;
 
     if (int.tryParse(query) != null) {
@@ -510,7 +507,7 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow;
+    return res;
   }
 }
 
@@ -520,9 +517,9 @@ int? getArtistHashCode(dynamic artist) {
     if ((artist['name'] ?? artist['artist'] ?? artist['musicbrainzName']) ==
         null)
       return null;
-    return (artist['name'] ?? artist['artist'] ?? artist['musicbrainzName'])
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim()
+    return ((artist['name'] ?? artist['artist'] ?? artist['musicbrainzName'])
+            as String)
+        .collapsed
         .toLowerCase()
         .hashCode;
   } catch (e, stackTrace) {

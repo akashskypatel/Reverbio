@@ -41,6 +41,7 @@ import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_list.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class UserSongsPage extends StatefulWidget {
   const UserSongsPage({super.key, required this.page});
@@ -192,7 +193,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   void _showExistingPlaylists() => showDialog(
     context: context,
-    builder: (BuildContext savecontext) {
+    builder: (savecontext) {
       // Moved state management outside StatefulBuilder
       final allPlaylists = getPlaylistNames(); // Your original playlist
 
@@ -292,7 +293,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   void _showSaveAsPlaylistDialog() => showDialog(
     context: context,
-    builder: (BuildContext savecontext) {
+    builder: (savecontext) {
       var customPlaylistName = '';
       String? imageUrl;
 
@@ -424,7 +425,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Widget _buildCustomScrollView(
     String title,
     IconData icon,
-    Future songsListFuture,
+    Future<List<dynamic>> songsListFuture,
   ) {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -435,15 +436,40 @@ class _UserSongsPageState extends State<UserSongsPage> {
             child: buildPlaylistHeader(title, icon, _lengthNotifier),
           ),
         ),
-        ValueListenableBuilder(
-          valueListenable: _isEditEnabled,
-          builder:
-              (context, value, child) => SongList(
-                page: widget.page,
-                title: getTitle(widget.page),
-                isEditable: value,
-                future: songsListFuture,
-              ),
+        FutureBuilder(
+          future: songsListFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting)
+              return SliverToBoxAdapter(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(context.l10n!.checkBackLater,),
+                    const SizedBox(height: 10,),
+                    const Spinner(),
+                  ],
+                ),
+              );
+            if (snapshot.hasError)
+              return SliverToBoxAdapter(
+                child: Icon(
+                  FluentIcons.error_circle_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+              );
+            final _songList = snapshot.data ?? [];
+            return ValueListenableBuilder(
+              valueListenable: _isEditEnabled,
+              builder:
+                  (context, value, child) => SongList(
+                    page: widget.page,
+                    title: getTitle(widget.page),
+                    isEditable: value,
+                    inputData: _songList,
+                  ),
+            );
+          },
         ),
       ],
     );

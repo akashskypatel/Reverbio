@@ -46,6 +46,75 @@ const commonBarContentPadding = EdgeInsets.symmetric(
   vertical: 12,
   horizontal: 10,
 );
-final specialRegex = RegExp(r'''[+\-\—\–&,|!(){}[\]^"~*?:\\']''');
+
+final replacementCharacters = {
+  '  ': ' - ',
+  '[': '',
+  ']': '',
+  '(': '',
+  ')': '',
+  '{': '',
+  '}': '',
+  '<': '',
+  '>': '',
+  '_': ' ',
+  '|': '-',
+  '\\': '-',
+  '/': '-',
+  '&amp;': '&',
+  '&#039;': "'",
+  '&quot;': '"',
+  '“': '"',
+  '”': '"',
+  '‘': "'",
+  '’': "'",
+  '`': "'",
+  '—': '-',
+  '–': '-',
+  '+': '-',
+  ':': '-',
+  ';': '-',
+  '@': ' at ',
+  '·': '-',
+  '.': ' ',
+};
+
+final symbolsRegex = RegExp('[~!¡#%^*=?¿؟]', caseSensitive: false);
+
+final allSymbolsRegex = RegExp(r'''[`@$&(){}\[\]<>,./\\|+-:";'~!¡#%^*=?¿؟]''', caseSensitive: false);
+
+final separatorRegex = RegExp('-,', caseSensitive: false);
+
+final boundExtrasRegex = RegExp(
+  r'''[\(\[\{\<]+(?:[^)\]\}\>]*\b(official|\bm\W?v\b|special|session|song|music|video|clip|music|lyrics?|video|audio|vi[sz]uali[sz]er?|\bhd\b|4k|\bhq\b|high|quality|version|stripped|acoustic|instrumental|solo|a\s?capella|demo|vocals|reverb|slowed|sped\s*up|speed|remix(?:|es|ed)\b|re(?:\s?|-|)mix(?:|es|ed)\b|cover(?:|s|ed)\b|perform(?:ance|ed)\b|mash(?:\s?|-|)up|parod(?:y|ies|ied)\b|edit(?:|s|ed)\b|live\s*(?:|at|\@|from|in|on|perform(?:ance|ed)\b)|stage|show|concert|tour|cover|perform(?:ance|ed)\b)\b[^(\[\{\<]*)[\)\]\}\>]+''',
+  caseSensitive: false,
+);
+
+final unboundExtrasRegex = RegExp(
+  r'\b(?:official|m\W?v|special|session|music|video|clip|music|lyrics?|video|audio|vi[sz]uali[sz]er?|hd|hq|4k|high|quality|version|stripped|acoustic|instrumental|a\s?capella|demo|vocals|reverb|slowed|sped\s*up|speed|remix(?:|es|ed)|re(?:\s?|-)mix(?:|es|ed)|cover(?:|s|ed)|parod(?:y|ies|ied)|mash(?:\s?|-|)up|edit(?:|s|ed)|perform(?:ance|ed)|(live\s*(?:at|\@|from|in|on|perform(?:ance|ed)|))|(?:stage|show|concert|tour|cover|perform(?:ance|ed)))\b',
+  caseSensitive: false,
+);
+
+final liveRegex = RegExp(
+  r'\b(live\s*(?:at|\@|from|in|on|perform(?:ance|ed)|))|(stage|show|concert|tour|perform(?:ance|ed))\b',
+  caseSensitive: false,
+);
+
+final derivativeRegex = RegExp(
+  r'\b(version|a\s?capella|demo|vocals|reverb|slowed|sped\s*up|speed|acoustic|stripped|instrumental|solo|re(?:\s?|-|)mix(?:|es|ed)|cover(?:|s|ed)|parod(?:y|ies|ied)|mash(?:\s?|-|)up|edit(?:|s|ed))\b',
+  caseSensitive: false,
+);
+
+final artistSplitRegex = RegExp(
+  r'(?:\s*(?:,\s*|\s+&\s+|\s+(?:and|with|ft(?:\.)|feat(?:\.|uring)?)\s+|\s*\/\s*|\s*\\\s*|\s*\+\s*|\s*;\s*|\s*[|]\s*|\s* vs(?:\.)?\s*|\s* x\s*|\s*,\s*(?:and|&)\s*)(?![^()]*\)))',
+  caseSensitive: false,
+);
+
+final singleQuotedRegEx = RegExp(
+  r"(?<!\w)'(?<value>(?:\\'|''|(?<=\w)'(?=\w)|[^'])*)'(?!\w)",
+  caseSensitive: false,
+);
+
+final doubleQuotedRegEx = RegExp('"(?<value>[^"]*)"');
 
 const navigationRailWidth = 80.0;

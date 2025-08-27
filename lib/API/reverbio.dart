@@ -37,10 +37,22 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-final pxm = ProxyManager();
-final yt = YoutubeExplode(pxm.randomYoutubeProxyClient());
-final DiscogsApiClient dc = DiscogsApiClient();
-final mb = MusicBrainzApiClient();
+final pxm = ProxyManager(); // ProxyManager for manifest
+final pxd = ProxyManager(); // ProxyManager for data
+// YouTube client for Data
+YoutubeExplode yt = YoutubeExplode(
+  YoutubeHttpClient(useProxies.value ? pxd.randomProxyClient() : null),
+);
+// YouTube client for Manifest
+YoutubeExplode ytm = YoutubeExplode(
+  YoutubeHttpClient(useProxies.value ? pxm.randomProxyClient() : null),
+);
+DiscogsApiClient dc = DiscogsApiClient(
+  httpClient: useProxies.value ? pxd.randomProxyClient() : null,
+);
+MusicBrainzApiClient mb = MusicBrainzApiClient(
+  httpClient: useProxies.value ? pxd.randomProxyClient() : null,
+);
 
 List<YoutubeApiClient> userChosenClients = [
   YoutubeApiClient.tv,
@@ -48,67 +60,104 @@ List<YoutubeApiClient> userChosenClients = [
   YoutubeApiClient.safari,
 ];
 
-bool youtubeValidate(String url) {
+bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
     r'^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.*(list=([a-zA-Z0-9_-]+)).*$',
   );
   return regExp.hasMatch(url);
 }
 
+bool youtubeValidate(String url) {
+  final regExp = RegExp(
+    r'^(?:https?:\/\/)?(?:www\.)?(youtube\.com|youtu\.be)\/(?:watch\?)(.*)$',
+  );
+  return regExp.hasMatch(url);
+}
+
 String? getCombinedId(dynamic entity) {
+  if (entity is String) return entity;
   String? combinedId;
-  if (entity['ytid'] != null) {
-    combinedId = 'yt=${entity['ytid']}';
-  }
-  if (entity['mbid'] != null) {
-    combinedId =
-        combinedId == null || combinedId.isEmpty
-            ? 'mb=${entity['mbid']}'
-            : joinIfNotEmpty([combinedId, 'mb=${entity['mbid']}'], '&');
-  }
-  if (entity['dcid'] != null) {
-    combinedId =
-        combinedId == null || combinedId.isEmpty
-            ? 'dc=${entity['dcid']}'
-            : joinIfNotEmpty([combinedId, 'dc=${entity['dcid']}'], '&');
-  }
-  if (entity['ucid'] != null) {
-    combinedId =
-        combinedId == null || combinedId.isEmpty
-            ? 'uc=${entity['ucid']}'
-            : joinIfNotEmpty([combinedId, 'uc=${entity['ucid']}'], '&');
-  }
-  if (entity['isrc'] != null) {
-    combinedId =
-        combinedId == null || combinedId.isEmpty
-            ? 'is=${entity['isrc']}'
-            : joinIfNotEmpty([combinedId, 'is=${entity['isrc']}'], '&');
+  if (entity is Map) {
+    final ids = Uri.parse('?${entity['id']}').queryParameters;
+    if ((entity['ytid'] != null && entity['ytid'].isNotEmpty) ||
+        (ids['yt'] != null && ids['yt']!.isNotEmpty)) {
+      final ytid = ((entity['ytid'] ?? ids['yt'] ?? '') as String).replaceAll(
+        RegExp('yt=|yt%3d', caseSensitive: false),
+        '',
+      );
+      combinedId = 'yt=$ytid';
+    }
+    if ((entity['mbid'] != null && entity['mbid'].isNotEmpty) ||
+        (ids['mb'] != null && ids['mb']!.isNotEmpty)) {
+      final mbid = ((entity['mbid'] ?? ids['mb'] ?? '') as String).replaceAll(
+        RegExp('mb=|mb%3d', caseSensitive: false),
+        '',
+      );
+      combinedId =
+          combinedId == null || combinedId.isEmpty
+              ? 'mb=$mbid'
+              : joinIfNotEmpty([combinedId, 'mb=$mbid'], '&');
+    }
+    if ((entity['dcid'] != null && entity['dcid'].isNotEmpty) ||
+        (ids['dc'] != null && ids['dc']!.isNotEmpty)) {
+      final dcid = ((entity['dcid'] ?? ids['dc'] ?? '') as String).replaceAll(
+        RegExp('dc=|dc%3d', caseSensitive: false),
+        '',
+      );
+      combinedId =
+          combinedId == null || combinedId.isEmpty
+              ? 'dc=$dcid'
+              : joinIfNotEmpty([combinedId, 'dc=$dcid'], '&');
+    }
+    if ((entity['ucid'] != null && entity['ucid'].isNotEmpty) ||
+        (ids['uc'] != null && ids['uc']!.isNotEmpty)) {
+      final ucid = ((entity['ucid'] ?? ids['uc'] ?? '') as String).replaceAll(
+        RegExp('uc=|uc%3d', caseSensitive: false),
+        '',
+      );
+      combinedId =
+          combinedId == null || combinedId.isEmpty
+              ? 'uc=$ucid'
+              : joinIfNotEmpty([combinedId, 'uc=$ucid'], '&');
+    }
+    if ((entity['isrc'] != null && entity['isrc'].isNotEmpty) ||
+        (ids['is'] != null && ids['is']!.isNotEmpty)) {
+      final isrc = ((entity['isrc'] ?? ids['is'] ?? '') as String).replaceAll(
+        RegExp('is=|is%3d', caseSensitive: false),
+        '',
+      );
+      combinedId =
+          combinedId == null || combinedId.isEmpty
+              ? 'is=$isrc'
+              : joinIfNotEmpty([combinedId, 'is=$isrc'], '&');
+    }
   }
   return combinedId;
 }
 
 String parseEntityId(dynamic entity) {
+  if (entity == null || entity.isEmpty) return getCombinedId(entity) ?? '';
   dynamic ids;
   String entityId =
-      entity is String ? entity : getCombinedId(entity) ?? entity['id'] ?? '';
+      entity is String ? entity : entity['id'] ?? getCombinedId(entity) ?? '';
   final mbRx = RegExp(
-    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    r'^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$',
     caseSensitive: false,
   );
   final isRx = RegExp(
-    r'^[A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5}$',
+    r'^([A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5})$',
     caseSensitive: false,
   );
-  if (entityId.contains('=')) {
+  if (entityId.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
     ids = Uri.parse('?$entityId').queryParameters;
     entityId = Uri(
       host: '',
       queryParameters: ids,
-    ).toString().replaceAll('?', '').replaceAll('//', '');
+    ).toString().replaceAll(RegExp(r'\?|\/'), '');
   } else if (mbRx.hasMatch(entityId)) {
-    entityId = 'mb=$entityId';
+    entityId = 'mb=${mbRx.firstMatch(entityId)!.group(1)}';
   } else if (isRx.hasMatch(entityId)) {
-    entityId = 'is=$entityId';
+    entityId = 'is=${isRx.firstMatch(entityId)!.group(1)}';
   } else if (int.tryParse(entityId) != null) {
     entityId = 'dc=$entityId';
   } else if (entityId.startsWith('UC-')) {
@@ -118,22 +167,37 @@ String parseEntityId(dynamic entity) {
   }
   ids = Uri.parse('?$entityId').queryParameters;
   if (entity is Map) {
-    entity['id'] = entityId;
-    if (ids['yt'] != null) entity['ytid'] = ids['yt'];
-    if (ids['mb'] != null) entity['mbid'] = ids['mb'];
-    if (ids['is'] != null) entity['isrc'] = ids['is'];
-    if (ids['dc'] != null) entity['dcid'] = ids['dc'];
-    if (ids['uc'] != null) entity['ucid'] = ids['uc'];
+    entity['id'] = entityId = getCombinedId(entity) ?? entityId;
+    if (ids['yt'] != null && ids['yt'].isNotEmpty) entity['ytid'] = ids['yt'];
+    if (ids['mb'] != null && ids['mb'].isNotEmpty) entity['mbid'] = ids['mb'];
+    if (ids['is'] != null && ids['is'].isNotEmpty) entity['isrc'] = ids['is'];
+    if (ids['dc'] != null && ids['dc'].isNotEmpty) entity['dcid'] = ids['dc'];
+    if (ids['uc'] != null && ids['uc'].isNotEmpty) entity['ucid'] = ids['uc'];
   }
+  entityId = getCombinedId(entity is Map ? entity : entityId) ?? entityId;
   return entityId;
 }
 
 String? combineArtists(dynamic value) {
   if (value == null) return null;
-  final artists =
+  final artistList =
       ((value['artist-credit'] ?? []) as List)
-          .map((e) => (e['name'] ?? e['artist']) as String)
-          .toList();
+          .map(
+            (e) => ((e['name'] ??
+                        (e['artist'] is Map
+                            ? e['artist']['name']
+                            : e['artist'] is String
+                            ? e['artist']
+                            : ''))
+                    as String)
+                .replaceAll(',', ' '),
+          )
+          .toSet();
+  if (value['channelName'] is String && value['mbid'] == null)
+    artistList.addAll(splitArtists(value['channelName']));
+  if (value['artist'] is String && value['mbid'] == null)
+    artistList.addAll(splitArtists(value['artist']));
+  final artists = artistList.toList()..sort((a, b) => a.compareTo(b));
   final result = artists
       .fold<Set<String>>(<String>{}, (result, str) {
         final names = str.split(RegExp(r'\s*[&,]\s*')).map((n) => n.trim());
@@ -153,7 +217,7 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
   bool minimal = true,
 }) async {
   entity = entity.trim().toLowerCase();
-  query = query.replaceAll(RegExp(r'\s+'), ' ').trim().replaceAll(' ', '|');
+  query = query.collapsed.replaceAll(' ', '|');
   final entityName = <String, dynamic>{
     'artist': {'function': mb.artists.search, 'name': 'artists', 'type': null},
     'artists': {'function': mb.artists.search, 'name': 'artists', 'type': null},
@@ -240,7 +304,7 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
             'title': e['title'],
             'artist-credit': e['artist-credit'],
             'artist': combineArtists(e),
-            'id': 'mb=${e['id']}',
+            'id': '${e['id']}',
             'rid': e['id'],
             'duration': (e['length'] ?? 0) ~/ 1000,
             'mbidType': 'recording',
@@ -525,11 +589,31 @@ Future<Map<String, dynamic>> getIPGeolocation() async {
 }
 
 bool checkEntityId(String id, String otherId) {
-  if (id.contains('=') || id.contains('&')) {
-    final ids = Uri.parse('?$id').queryParameters;
-    return ids.values.any((i) => otherId.contains(i));
+  if (id.isEmpty || otherId.isEmpty) return false;
+  id = parseEntityId(id);
+  otherId = parseEntityId(otherId);
+  var result = false;
+  if ((otherId.contains('=') || otherId.contains('&')) &&
+      !(id.contains('=') || id.contains('&'))) {
+    final ids = otherId.split('&');
+    result = ids.any((i) => i.contains(id));
+    if (result) return result;
   }
-  return id.contains(otherId) || otherId.contains(id);
+  if (!(otherId.contains('=') || otherId.contains('&')) &&
+      (id.contains('=') || id.contains('&'))) {
+    final ids = id.split('&');
+    result = ids.any((i) => i.contains(otherId));
+    if (result) return result;
+  }
+  if (id.contains('=') ||
+      id.contains('&') && (otherId.contains('=') || otherId.contains('&'))) {
+    final ids = id.split('&');
+    final otherIds = otherId.split('&');
+    result = ids.any((i) => otherIds.any((e) => i == e));
+    if (result) return result;
+  }
+  result = id == otherId;
+  return result;
 }
 
 Future<void> clearFilePickerTempFiles() async {

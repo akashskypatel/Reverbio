@@ -354,12 +354,6 @@ class ProxyManager {
           _random.nextInt(countryProxies.length),
         );
       }
-      if (kDebugMode)
-        logger.log(
-          'Selected proxy: ${proxy.source} - ${proxy.address}',
-          null,
-          null,
-        );
       return proxy;
     } catch (e, stackTrace) {
       logger.log(
@@ -454,7 +448,7 @@ class ProxyManager {
     return manifest;
   }
 
-  YoutubeHttpClient randomYoutubeProxyClient() {
+  IOClient randomProxyClient() {
     IOClient? ioClient;
     HttpClient? client;
     try {
@@ -463,12 +457,6 @@ class ProxyManager {
           HttpClient()
             ..findProxy = (_) {
               final proxy = _randomProxySync();
-              if (kDebugMode && proxy == null)
-                logger.log(
-                  'Could not find a proxy. Using direct connection.',
-                  null,
-                  null,
-                );
               return proxy != null
                   ? 'PROXY ${proxy.address}; DIRECT;'
                   : 'DIRECT;';
@@ -477,7 +465,7 @@ class ProxyManager {
               return false;
             };
       ioClient = IOClient(client);
-      return YoutubeHttpClient(ioClient);
+      return ioClient;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -486,7 +474,7 @@ class ProxyManager {
       );
       client?.close(force: true);
       ioClient?.close();
-      return YoutubeHttpClient();
+      return IOClient();
     }
   }
 }

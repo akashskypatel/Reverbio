@@ -26,15 +26,18 @@ import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart' as audio_session;
+import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -298,6 +301,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _setupEventSubscriptions();
     if (isMobilePlatform()) unawaited(getSession());
     _updatePlaybackState();
+    FileDownloader().start();
   }
   final AudioPlayerService audioPlayer = AudioPlayerService();
   audio_session.AudioSession? _session;
@@ -312,6 +316,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   late final StreamSubscription<Playlist?> _sequenceStateSubscription;
   late final StreamSubscription<PositionData> _positionDataSubscription;
   late final StreamSubscription<MediaItem?> _mediaItemSubscription;
+  late final StreamSubscription<TaskUpdate?> _downloadStatusSubscription;
+  /* late final StreamController<TaskUpdate?> _downloadProgressController =
+      StreamController.broadcast(); */
   late final StreamSubscription<audio_session.AudioInterruptionEvent>
   _sessionEventStream;
   //late final StreamSubscription<audio_session.AudioDevicesChangedEvent>
@@ -347,6 +354,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _positionDataSubscription.cancel();
     await _mediaItemSubscription.cancel();
     await _sessionEventStream.cancel();
+    await _downloadStatusSubscription.cancel();
     //await _sessionDeviceEventStream.cancel();
     await audioPlayer.dispose();
   }
@@ -548,7 +556,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         }
       } else {
         showToast(
-          'Failed to fetch song too many times',
+          songBar.context.l10n!.errorCouldNotFindAStream,
           context: songBar.context,
         );
       }
@@ -803,8 +811,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           final category = checkSegment.first['category'];
           if ((category == 'sponsor' && sponsorBlockSupport.value) ||
               (category != 'sponsor' && skipNonMusic.value))
-            if (seekTo != null)
-              await audioPlayer.seek(Duration(microseconds: seekTo));
+            if (seekTo != null) {
+              if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100)
+                await audioHandler.skipToNext();
+              await audioHandler.seek(Duration(microseconds: seekTo));
+            }
         }
       }
     }
@@ -812,6 +823,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   void _setupEventSubscriptions() {
+    _downloadStatusSubscription = FileDownloader().updates.listen(
+      _handleFileDownloadState,
+    );
     _playbackEventSubscription = audioPlayer.playbackEventStream.listen(
       _handlePlaybackEvent,
     );
@@ -833,6 +847,38 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _mediaItemSubscription = audioPlayer.mediaItemStream.listen(
       _handleMediaItemChange,
     );
+  }
+
+  void _handleFileDownloadState(TaskUpdate update) {
+    final context = NavigationManager().context;
+    if (update.task.displayName.isNotEmpty)
+      switch (update) {
+        case TaskStatusUpdate():
+          // process the TaskStatusUpdate, e.g.
+          switch (update.status) {
+            case TaskStatus.complete:
+              userOfflineSongs.addOrUpdateWhere(
+                checkEntityId,
+                update.task.taskId,
+              );
+              addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+              showToast(
+                '${context.l10n!.downloaded}: "${update.task.displayName}"',
+              );
+            case TaskStatus.canceled:
+              break;
+            case TaskStatus.paused:
+              break;
+            default:
+              break;
+          }
+        case TaskProgressUpdate():
+          break; //TODO add progress update
+        /* // process the TaskProgressUpdate, e.g.
+          _downloadProgressController.add(
+            update,
+          ); // pass on to widget for indicator */
+      }
   }
 
   void _updatePlaybackState() {

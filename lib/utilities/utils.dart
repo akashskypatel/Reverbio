@@ -27,6 +27,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -172,6 +173,8 @@ class CancelledException implements Exception {
 }
 
 class FutureTracker<T> {
+  FutureTracker(this.data);
+  T? data;
   Completer<T>? completer;
   bool isLoading = false;
   bool get isComplete => completer?.isCompleted ?? false;
@@ -213,82 +216,158 @@ String getFormattedDateTimeNow() {
 }
 
 String sanitizeSongTitle(String title) {
-  final wordsPatternForSongTitle = RegExp(
-    //r'\b(?:official(?:\s(?:music|lyrics?|audio|vi[sz]uali[sz]er|hd|4k)?\s*(?:video|audio|vi[sz]uali[sz]er)?)|lyrics?(?:\s(?:music)?\s*(?:video|visuali[sz]er|vizuali[sz]er)))\b',
-    r'(\bofficial\b|\bmusic\b|\blyrics?\b|\bvideo\b|\baudio\b|\bvi[sz]uali[sz]er?\b|\bhd\b|\b4k\b|\bhigh\b|\bquality\b)+?',
-    caseSensitive: false,
-  );
+  var finalTitle = title.replaceAll(boundExtrasRegex, '');
 
-  final replacementsForSongTitle = {
-    '[': '',
-    ']': '',
-    '(': '',
-    ')': '',
-    '|': '',
-    '&amp;': '&',
-    '&#039;': "'",
-    '&quot;': '"',
-    '“': '"',
-    '”': '"',
-    '‘': "'",
-    '’': "'",
-    '  ': '-',
-    '—': '-',
-    '–': '-',
-  };
-  final pattern = RegExp(
-    replacementsForSongTitle.keys.map(RegExp.escape).join('|'),
-  );
+  finalTitle =
+      finalTitle.replaceAll(unboundExtrasRegex, '').isNotEmpty
+          ? finalTitle.replaceAll(unboundExtrasRegex, '').sanitized
+          : finalTitle.sanitized;
 
-  var finalTitle =
-      title
-          .replaceAllMapped(
-            pattern,
-            (match) => replacementsForSongTitle[match.group(0)] ?? '',
-          )
-          .trimLeft();
-
-  finalTitle = finalTitle.replaceAll(wordsPatternForSongTitle, '');
-
-  return finalTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return finalTitle.collapsed;
 }
 
 List<String> splitArtists(String input) {
-  final artistSplitRegex = RegExp(
-    r'''(?:\s*(?:,\s*|\s+&\s+|\s+(?:and|with|ft(?:\.)|feat(?:\.|uring)?)\s+|\s*\/\s*|\s*\\\s*|\s*\+\s*|\s*;\s*|\s*[|]\s*|\s* vs(?:\.)?\s*|\s* x\s*|\s*,\s*(?:and|&)\s*)(?![^()]*\)))''',
-    caseSensitive: false,
-  );
   return input
       .split(artistSplitRegex)
       .where((artist) => artist.trim().isNotEmpty)
-      .map(
-        (artist) =>
-            artist
-                .replaceAll(specialRegex, '')
-                .replaceAll(RegExp(r'\s+'), ' ')
-                .trim(),
-      )
+      .map((artist) => artist.sanitized)
       .toList();
 }
 
-Map<String, String> tryParseTitleAndArtist(dynamic song) {
-  final title = song is Video ? song.title : song;
-  final formattedTitle = sanitizeSongTitle(title);
-  final strings = sanitizeSongTitle(formattedTitle).split(RegExp('-|—|–'));
-  final artists = splitArtists(formattedTitle);
+Map<String, dynamic> tryParseTitleAndArtist(Video song) {
+  final sdRx = RegExp(r'(^(?:\s*-\s*-*))|((?:\s*\-*)*\-\s*$)');
+  //final mdRx = RegExp(r'(-(?:\s*-)+)');
+  final musicData = song.musicData;
+  final formattedTitle =
+      sanitizeSongTitle(song.title).replaceAll(sdRx, '').collapsed;
+  final cleanTitle =
+      formattedTitle
+          .replaceAll(separatorRegex, '')
+          .replaceAll(sdRx, '')
+          .collapsed;
+  final strings =
+      sanitizeSongTitle(
+          formattedTitle,
+        ).split(RegExp('-')).map((s) => s.sanitized).toList()
+        ..removeWhere((e) => e.isEmpty);
+  final artists = splitArtists(formattedTitle)..removeWhere((e) => e.isEmpty);
+  final formattedAuthor = song.author.sanitized;
+  final formattedArtist =
+      artists.length != 1
+          ? artists.join(', ')
+          : artists.first == cleanTitle
+          ? formattedAuthor
+          : artists.first;
   if (strings.length > 2) {
     strings.removeWhere((value) => int.tryParse(value.trim()) != null);
   }
-  if (strings.length == 2) {
-    if (song is Video &&
-        strings.last.trim().contains(sanitizeSongTitle(song.author)))
-      return {'artist': strings.last.trim(), 'title': strings.first.trim()};
-    return {'title': strings.last.trim(), 'artist': strings.first.trim()};
-  } else {
+  if (musicData.isNotEmpty) {
+    for (final data in musicData) {
+      final videoExtras = boundExtrasRegex.firstMatch(data.song ?? song.title);
+      final musicExtras = boundExtrasRegex.firstMatch(song.title);
+      final extrasCheck =
+          (videoExtras?[0] != null
+              ? videoExtras![0]!.cleansed.toLowerCase()
+              : null) ==
+          (musicExtras?[0] != null
+              ? musicExtras![0]!.cleansed.toLowerCase()
+              : null);
+      final title =
+          extrasCheck
+              ? (data.song ?? formattedTitle)
+              : (data.song ?? formattedTitle).replaceAll(boundExtrasRegex, '');
+      final artist = data.artist ?? formattedArtist;
+      if (weightedRatio(title, formattedTitle) >= 90 &&
+          weightedRatio(artist, formattedArtist) >= 90)
+        return {
+          'artist': data.artist ?? formattedArtist,
+          'title': title,
+          'musicData': [
+            {'title': data.song, 'artist': data.artist, 'album': data.album},
+          ],
+        };
+    }
+  }
+  final quoted = [
+    ...singleQuotedRegEx.allMatches(song.title.sanitized),
+    ...doubleQuotedRegEx.allMatches(song.title.sanitized),
+  ];
+  if (strings.length == 1 &&
+      quoted.isNotEmpty &&
+      quoted.length == 1 &&
+      (quoted[0].namedGroup('value') != null ||
+          quoted[0].namedGroup('value')!.isNotEmpty)) {
+    final title = quoted[0].namedGroup('value')!;
+    final artist =
+        sanitizeSongTitle(song.title)
+            .replaceAll(
+              RegExp(quoted[0].namedGroup('value')!, caseSensitive: false),
+              '',
+            )
+            .replaceAll(allSymbolsRegex, '')
+            .collapsed;
     return {
-      'title': formattedTitle,
-      'artist': artists.isNotEmpty ? artists.join(', ') : formattedTitle,
+      'title': title.replaceAll(sdRx, '').collapsed,
+      'artist': artist.replaceAll(sdRx, ''),
+      'musicData': musicData.map(
+        (e) => {'title': e.song, 'artist': e.artist, 'album': e.album},
+      ),
     };
+  } else if (strings.length == 2 && quoted.isEmpty) {
+    if (weightedRatio(strings.last, formattedAuthor) >= 50)
+      return {
+        'artist': strings.last.replaceAll(sdRx, '').collapsed,
+        'title': strings.first.replaceAll(sdRx, '').collapsed.trim(),
+        'musicData': musicData.map(
+          (e) => {'title': e.song, 'artist': e.artist, 'album': e.album},
+        ),
+      };
+    return {
+      'title': strings.last.replaceAll(sdRx, '').collapsed.trim(),
+      'artist': strings.first.replaceAll(sdRx, '').collapsed,
+      'musicData': musicData.map(
+        (e) => {'title': e.song, 'artist': e.artist, 'album': e.album},
+      ),
+    };
+  } else {
+    if (quoted.isNotEmpty) {
+      final title = quoted[0].namedGroup('value')!;
+      final truncatedTitle =
+          formattedTitle.replaceFirstSubsequence(title).collapsed;
+      final artist =
+          '$truncatedTitle - $formattedAuthor'.collapsed
+              .split(RegExp('-'))
+              .map(
+                (e) =>
+                    e
+                        .replaceAll(allSymbolsRegex, '')
+                        .replaceAll(sdRx, '')
+                        .collapsed,
+              )
+              .toSet()
+            ..removeWhere((e) => e.isEmpty);
+      return {
+        'title': title.replaceAll(sdRx, '').collapsed,
+        'artist': artist.join(', '),
+        'musicData': musicData.map(
+          (e) => {'title': e.song, 'artist': e.artist, 'album': e.album},
+        ),
+      };
+    } else {
+      final truncatedTitle = cleanTitle.replaceFirstSubsequence(
+        formattedArtist,
+      );
+      return {
+        'title':
+            truncatedTitle.isNotEmpty
+                ? truncatedTitle.replaceAll(sdRx, '').collapsed
+                : formattedTitle.replaceAll(sdRx, '').collapsed,
+        'artist': formattedArtist,
+        'musicData': musicData.map(
+          (e) => {'title': e.song, 'artist': e.artist, 'album': e.album},
+        ),
+      };
+    }
   }
 }
 
@@ -419,9 +498,8 @@ Future<int> checkUrl(String url) async {
       }, null);
     }
     return response.statusCode;
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
-    rethrow;
+  } catch (_) {
+    return 400;
   }
 }
 
@@ -488,7 +566,7 @@ String removeDuplicates(String input, {int phraseLength = 1}) {
     i++;
   }
 
-  return buffer.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+  return buffer.toString().collapsed;
 }
 
 bool isImage(String path) {
@@ -691,6 +769,44 @@ bool isMobilePlatform() {
 String joinIfNotEmpty(List<String?> strings, String separator) {
   return [
     for (final s in strings)
-      if (s != null && s.trim().isNotEmpty) s
+      if (s != null && s.trim().isNotEmpty) s,
   ].join(separator);
+}
+
+List<String> splitLatinNonLatin(String text) {
+  // Matches sequences of Latin characters
+  final latinPattern = RegExp(
+    r'[\u0000-\u007F\u0080-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]+',
+  );
+
+  // Matches sequences of non-Latin characters
+  final nonLatinPattern = RegExp(
+    r'[^\u0000-\u007F\u0080-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]+',
+  );
+
+  final List<String> result = [];
+  int index = 0;
+
+  while (index < text.length) {
+    // Try to match Latin characters first
+    final latinMatch = latinPattern.matchAsPrefix(text, index);
+    if (latinMatch != null) {
+      result.add(latinMatch.group(0)!);
+      index = latinMatch.end;
+      continue;
+    }
+
+    // Then try to match non-Latin characters
+    final nonLatinMatch = nonLatinPattern.matchAsPrefix(text, index);
+    if (nonLatinMatch != null) {
+      result.add(nonLatinMatch.group(0)!);
+      index = nonLatinMatch.end;
+      continue;
+    }
+
+    // If neither matches (shouldn't happen), advance by one character
+    index++;
+  }
+
+  return result;
 }

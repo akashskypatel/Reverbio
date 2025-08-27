@@ -71,6 +71,12 @@ class _SongListState extends State<SongList> {
   var _currentLastLoadedId = 0;
   final int _itemsPerPage = 35;
   late final ValueNotifier<int> _songBarsLength;
+  final Map<String, bool> _sortState = {
+    'title': false,
+    'artist': false,
+    'downloaded': false,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -197,23 +203,63 @@ class _SongListState extends State<SongList> {
           ],
         ),
       ),
+      PopupMenuItem<String>(
+        value: 'downloaded',
+        child: Row(
+          children: [
+            Icon(
+              FluentIcons.arrow_download_24_filled,
+              color: _theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(context.l10n!.download),
+          ],
+        ),
+      ),
     ];
   }
 
   void _sortMenuItemAction(String value) {
     void sortBy(String key) {
+      final reverse = _sortState[key] ?? false;
       _songsList.sort((a, b) {
         final valueA = a[key].toString().toLowerCase();
         final valueB = b[key].toString().toLowerCase();
-        return valueA.compareTo(valueB);
+        return reverse ? valueB.compareTo(valueA) : valueA.compareTo(valueB);
       });
       widget.songBars.sort((a, b) {
         final valueA = a.song[key].toString().toLowerCase();
         final valueB = b.song[key].toString().toLowerCase();
-        return valueA.compareTo(valueB);
+        return reverse ? valueB.compareTo(valueA) : valueA.compareTo(valueB);
       });
       if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
-      if (mounted) setState(() {});
+      if (mounted)
+        setState(() {
+          _sortState[key] = !(_sortState[key] ?? false);
+        });
+    }
+
+    void sortByDownloaded() {
+      final reverse = _sortState['downloaded'] ?? false;
+      _songsList.sort((a, b) {
+        final valueA = isSongAlreadyOffline(a);
+        final valueB = isSongAlreadyOffline(b);
+        if (valueA && !valueB) return reverse ? 1 : -1;
+        if (!valueA && valueB) return reverse ? -1 : 1;
+        return 0;
+      });
+      widget.songBars.sort((a, b) {
+        final valueA = isSongAlreadyOffline(a);
+        final valueB = isSongAlreadyOffline(b);
+        if (valueA && !valueB) return reverse ? 1 : -1;
+        if (!valueA && valueB) return reverse ? -1 : 1;
+        return 0;
+      });
+      if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
+      if (mounted)
+        setState(() {
+          _sortState['downloaded'] = !(_sortState['downloaded'] ?? false);
+        });
     }
 
     switch (value) {
@@ -222,6 +268,9 @@ class _SongListState extends State<SongList> {
         break;
       case 'artist':
         sortBy('artist');
+        break;
+      case 'downloaded':
+        sortByDownloaded();
         break;
     }
   }
@@ -325,21 +374,20 @@ class _SongListState extends State<SongList> {
   }
 
   void _buildSongBars(BuildContext context) {
-    if (widget.page != 'queue') {
-      widget.songBars.clear();
-      for (var i = 0; i < _songsList.length; i++) {
-        final borderRadius = getItemBorderRadius(i, _songsList.length);
-        widget.songBars.add(
-          SongBar(
-            _songsList[i],
-            context,
-            borderRadius: borderRadius,
-            showMusicDuration: true,
-          ),
-        );
-      }
-      _songBarsLength.value = widget.songBars.length;
+    widget.songBars.clear();
+    for (var i = 0; i < _songsList.length; i++) {
+      final borderRadius = getItemBorderRadius(i, _songsList.length);
+      _songsList[i] = Map<String, dynamic>.from(_songsList[i]);
+      widget.songBars.add(
+        SongBar(
+          _songsList[i],
+          context,
+          borderRadius: borderRadius,
+          showMusicDuration: true,
+        ),
+      );
     }
+    _songBarsLength.value = widget.songBars.length;
   }
 
   void moveSongBar(int oldIndex, int newIndex) {
@@ -376,7 +424,7 @@ class _SongListState extends State<SongList> {
           widget.page == 'queue' ? activeQueueLength : _songBarsLength,
       builder: (context, value, _) {
         return SliverReorderableList(
-          itemCount: value,
+          itemCount: widget.songBars.length,
           itemBuilder: (context, index) {
             final song = widget.songBars[index].song;
             final songBar =
