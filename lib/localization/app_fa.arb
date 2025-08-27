@@ -242,5 +242,6 @@
   "downloaded": "دانلود شده",
   "checkBackLater": "در حال کار روی آن هستیم. لطفاً بعداً دوباره بررسی کنید...",
   "unableToDownload": "قادر به دانلود نیست",
-  "downloadingInBackground": "آهنگ در حال دانلود در پس‌زمینه است"
+  "downloadingInBackground": "آهنگ در حال دانلود در پس‌زمینه است",
+  "openInMusicBrainz": "باز کردن در پایگاه داده MusicBrainz"
 }

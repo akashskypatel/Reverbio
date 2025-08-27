@@ -242,5 +242,6 @@
   "downloaded": "Загружено",
   "checkBackLater": "Работаем над этим. Пожалуйста, проверьте позже...",
   "unableToDownload": "Не удалось скачать",
-  "downloadingInBackground": "Загрузка песни в фоновом режиме"
+  "downloadingInBackground": "Загрузка песни в фоновом режиме",
+  "openInMusicBrainz": "Открыть в базе данных MusicBrainz"
 }

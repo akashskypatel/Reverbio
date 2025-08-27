@@ -242,5 +242,6 @@
   "downloaded": "Unduhan selesai",
   "checkBackLater": "Sedang dalam pengerjaan. Silakan periksa kembali nanti...",
   "unableToDownload": "Tidak dapat mengunduh",
-  "downloadingInBackground": "Lagu sedang diunduh di latar belakang"
+  "downloadingInBackground": "Lagu sedang diunduh di latar belakang",
+  "openInMusicBrainz": "Buka di database MusicBrainz"
 }

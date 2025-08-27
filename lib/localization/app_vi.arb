@@ -242,5 +242,6 @@
   "downloaded": "Đã tải xuống",
   "checkBackLater": "Đang thực hiện. Vui lòng kiểm tra lại sau...",
   "unableToDownload": "Không thể tải xuống",
-  "downloadingInBackground": "Đang tải xuống bài hát trong nền"
+  "downloadingInBackground": "Đang tải xuống bài hát trong nền",
+  "openInMusicBrainz": "Mở trong cơ sở dữ liệu MusicBrainz"
 }

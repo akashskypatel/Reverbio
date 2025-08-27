@@ -242,5 +242,6 @@
   "downloaded": "Descargado",
   "checkBackLater": "Estamos trabajando en ello. Por favor, vuelva más tarde...",
   "unableToDownload": "No se puede descargar",
-  "downloadingInBackground": "Descargando canción en segundo plano"
+  "downloadingInBackground": "Descargando canción en segundo plano",
+  "openInMusicBrainz": "Abrir en base de datos MusicBrainz"
 }

@@ -242,5 +242,6 @@
   "downloaded": "డౌన్‌లోడ్ చేయబడింది",
   "checkBackLater": "దానిపై పని చేస్తున్నాము. దయచేసి తర్వాత తనిఖీ చేయండి...",
   "unableToDownload": "డౌన్‌లోడ్ చేయలేకపోయింది",
-  "downloadingInBackground": "పాట పరదా వెనుక డౌన్‌లోడ్ అవుతుంది"
+  "downloadingInBackground": "పాట పరదా వెనుక డౌన్‌లోడ్ అవుతుంది",
+  "openInMusicBrainz": "MusicBrainz డేటాబేస్‌లో తెరవండి"
 }

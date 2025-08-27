@@ -242,5 +242,6 @@
   "downloaded": "已下載",
   "checkBackLater": "處理中，請稍後再試...",
   "unableToDownload": "無法下載",
-  "downloadingInBackground": "正在背景下载歌曲"
+  "downloadingInBackground": "正在背景下载歌曲",
+  "openInMusicBrainz": "在 MusicBrainz 數據庫中打開"
 }

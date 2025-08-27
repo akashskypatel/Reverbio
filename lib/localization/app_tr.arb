@@ -242,5 +242,6 @@
   "downloaded": "İndirildi",
   "checkBackLater": "Üzerinde çalışıyoruz. Lütfen daha sonra tekrar kontrol edin...",
   "unableToDownload": "İndirilemiyor",
-  "downloadingInBackground": "Şarkı arka planda indiriliyor"
+  "downloadingInBackground": "Şarkı arka planda indiriliyor",
+  "openInMusicBrainz": "MusicBrainz veritabanında aç"
 }

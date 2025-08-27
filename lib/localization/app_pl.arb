@@ -242,5 +242,6 @@
   "downloaded": "Pobrano",
   "checkBackLater": "Nad tym pracujemy. Proszę sprawdzić później...",
   "unableToDownload": "Nie można pobrać",
-  "downloadingInBackground": "Piosenka jest pobierana w tle"
+  "downloadingInBackground": "Piosenka jest pobierana w tle",
+  "openInMusicBrainz": "Otwórz w bazie danych MusicBrainz"
 }

@@ -242,5 +242,6 @@
   "downloaded": "डाउनलोड किया गया",
   "checkBackLater": "इस पर काम चल रहा है। कृपया बाद में पुनः जांचें...",
   "unableToDownload": "डाउनलोड करने में असमर्थ",
-  "downloadingInBackground": "सॉन्ग पृष्ठभूमि में डाउनलोड हो रहा है"
+  "downloadingInBackground": "सॉन्ग पृष्ठभूमि में डाउनलोड हो रहा है",
+  "openInMusicBrainz": "MusicBrainz डेटाबेस में खोलें"
 }
