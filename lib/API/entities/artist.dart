@@ -228,42 +228,30 @@ Future<dynamic> searchArtistDetails(
 }
 
 Future<List<dynamic>> getRecommendedArtists() async {
-  return Future.microtask(() async {
-    try {
-      final songList = globalSongs;
-      if (globalArtists.isEmpty) {
-        final searchList = LinkedHashSet<String>();
-        for (final song in songList) {
-          if (song['artist-credit'] != null && song['artist-credit'] is List) {
-            for (final artist in song['artist-credit']) {
-              if (artist['artist'] != null && artist['artist'] is Map) {
-                artist['artist']['primary-type'] = 'artist';
-                artist['artist']['isArtist'] = 'true';
-                globalArtists.addOrUpdateWhere(checkArtist, artist['artist']);
-              }
-            }
-          } else if (song['artist'] is String) {
-            final artists = splitArtists(song['artist']);
-            searchList.addAll(artists);
+  final songList = globalSongs;
+  if (globalArtists.isEmpty) {
+    final searchList = LinkedHashSet<String>();
+    for (final song in songList) {
+      if (song['artist-credit'] != null && song['artist-credit'] is List) {
+        for (final artist in song['artist-credit']) {
+          if (artist['artist'] != null && artist['artist'] is Map) {
+            artist['artist']['primary-type'] = 'artist';
+            artist['artist']['isArtist'] = 'true';
+            globalArtists.addOrUpdateWhere(checkArtist, artist['artist']);
           }
         }
-        if (searchList.isNotEmpty)
-          globalArtists.addOrUpdateAllWhere(
-            checkArtist,
-            await searchArtistsDetails(searchList.toList()),
-          );
+      } else if (song['artist'] is String) {
+        final artists = splitArtists(song['artist']);
+        searchList.addAll(artists);
       }
-      return globalArtists;
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-      return [];
     }
-  });
-  //return pickRandomItems(await searchArtistsDetails(query), itemsNumber);
+    if (searchList.isNotEmpty)
+      globalArtists.addOrUpdateAllWhere(
+        checkArtist,
+        await searchArtistsDetails(searchList.toList()),
+      );
+  }
+  return globalArtists;
 }
 
 Future<List<dynamic>> searchArtistsDetails(

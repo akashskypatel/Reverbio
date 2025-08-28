@@ -95,36 +95,29 @@ Future<List> getSongsList(String searchQuery) async {
 
 Future<List<dynamic>> getRecommendedSongs() async {
   try {
-    return Future.microtask(() async {
-      try {
-        if (globalSongs.isEmpty) {
-          const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
-          globalSongs =
-              (await getSongsFromPlaylist(
-                playlistId,
-              )).map((e) => Map<String, dynamic>.from(e)).toList();
-          if (userCustomPlaylists.value.isNotEmpty) {
-            for (final userPlaylist in userCustomPlaylists.value) {
-              final _list = userPlaylist['list'] as List;
-              globalSongs.addOrUpdateAllWhere(checkSong, _list);
-            }
-          }
-          globalSongs
-            ..addOrUpdateAllWhere(checkSong, await getUserOfflineSongs())
-            ..addOrUpdateAllWhere(checkSong, userLikedSongsList)
-            ..addOrUpdateAllWhere(checkSong, userRecentlyPlayed)
-            ..addOrUpdateAllWhere(checkSong, cachedSongsList);
+    if (globalSongs.isEmpty) {
+      const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
+      globalSongs =
+          (await getSongsFromPlaylist(
+            playlistId,
+          )).map((e) => Map<String, dynamic>.from(e)).toList();
+      if (userCustomPlaylists.value.isNotEmpty) {
+        for (final userPlaylist in userCustomPlaylists.value) {
+          final _list =
+              ((userPlaylist['list'] ?? []) as List).map((e) {
+                e = Map<String, dynamic>.from(e);
+                return e;
+              }).toList();
+          globalSongs.addOrUpdateAllWhere(checkSong, _list);
         }
-        return globalSongs;
-      } catch (e, stackTrace) {
-        logger.log(
-          'Error in ${stackTrace.getCurrentMethodName()}:',
-          e,
-          stackTrace,
-        );
-        return [];
       }
-    });
+      globalSongs
+        ..addOrUpdateAllWhere(checkSong, await getUserOfflineSongs())
+        ..addOrUpdateAllWhere(checkSong, userLikedSongsList)
+        ..addOrUpdateAllWhere(checkSong, userRecentlyPlayed)
+        ..addOrUpdateAllWhere(checkSong, cachedSongsList);
+    }
+    return globalSongs;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
@@ -553,11 +546,11 @@ Future<StreamManifest> getSongManifest(String songId) async {
             ? await pxm.getSongManifest(songId) ??
                 await yt.videos.streams.getManifest(
                   songId,
-                  ytClients: userChosenClients,
+                  //ytClients: userChosenClients,
                 )
             : await yt.videos.streams.getManifest(
               songId,
-              ytClients: userChosenClients,
+              //ytClients: userChosenClients,
             );
     return manifest;
   } catch (e, stackTrace) {
