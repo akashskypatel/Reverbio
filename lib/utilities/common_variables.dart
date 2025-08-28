@@ -101,7 +101,7 @@ final liveRegex = RegExp(
 );
 
 final derivativeRegex = RegExp(
-  r'\b(version|a\s?capella|demo|vocals|reverb|slowed|sped\s*up|speed|acoustic|stripped|instrumental|solo|re(?:\s?|-|)mix(?:|es|ed)|cover(?:|s|ed)|parod(?:y|ies|ied)|mash(?:\s?|-|)up|edit(?:|s|ed))\b',
+  r'\b(version|a\s?capella|live|demo|vocals|reverb|slowed|sped\s*up|speed|acoustic|stripped|instrumental|solo|re(?:\s?|-|)mix(?:|es|ed)|cover(?:|s|ed)|parod(?:y|ies|ied)|mash(?:\s?|-|)up|edit(?:|s|ed))\b',
   caseSensitive: false,
 );
 
