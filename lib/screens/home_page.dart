@@ -25,11 +25,10 @@ import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
-import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/models/paginated_list.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
-import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/announcement_box.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_list.dart';
@@ -48,20 +47,16 @@ class _HomePageState extends State<HomePage> {
     pageSize: recommendedCardsNumber,
     randomSeed: DateTime.now().millisecond,
   );
-  Future<dynamic> _recommendedSongsFuture = getRecommendedSongs();
-  dynamic _recommendedSongs;
-  Future<dynamic>? _recommendedArtistsFuture;
+  final PaginatedList _dbSongs = PaginatedList.fromAsync(getRecommendedSongs());
+  late final PaginatedList _dbArtists = PaginatedList.fromAsync(
+    _dbSongs.initializationFuture!.then((v) async {
+      return getRecommendedArtists();
+    }),
+  );
+
   @override
   void initState() {
     super.initState();
-    _recommendedSongsFuture.then((songs) {
-      if (mounted) {
-        setState(() {
-          _recommendedSongs = songs;
-        });
-        _parseArtistList(_recommendedSongs);
-      }
-    });
   }
 
   @override
@@ -106,10 +101,10 @@ class _HomePageState extends State<HomePage> {
               child: ValueListenableBuilder<int>(
                 valueListenable: currentLikedPlaylistsLength,
                 builder: (context, value, __) {
-                  //TODO: add pagination suggestedPlaylists
-                  return StatefulBuilder(
+                  return ListenableBuilder(
+                    listenable: _dbPlaylists,
                     builder:
-                        (context, setState) => HorizontalCardScroller(
+                        (context, child) => HorizontalCardScroller(
                           title: context.l10n!.suggestedPlaylists,
                           future: Future.value(_dbPlaylists.getCurrentPage()),
                           headerActions: _buildPrevNextButtons(
@@ -119,8 +114,6 @@ class _HomePageState extends State<HomePage> {
                             _dbPlaylists.hasNextPage
                                 ? _dbPlaylists.getNextPage
                                 : null,
-                            context,
-                            setState,
                           ),
                         ),
                   );
@@ -128,48 +121,55 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          if (_recommendedSongs != null && _recommendedArtistsFuture != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: commonBarPadding,
-                child: FutureBuilder(
-                  future: _recommendedSongsFuture,
-                  builder: (context, snapshot) {
-                    //TODO: add pagination suggestedArtists
-                    return HorizontalCardScroller(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: commonBarPadding,
+              child: ListenableBuilder(
+                listenable: _dbArtists,
+                builder:
+                    (context, child) => HorizontalCardScroller(
                       title: context.l10n!.suggestedArtists,
-                      future: _recommendedArtistsFuture,
+                      future: Future.value(_dbArtists.getCurrentPage()),
                       icon: FluentIcons.mic_sparkle_24_filled,
-                      //headerActions: _buildPrevNextButtons(),
-                    );
-                  },
-                ),
+                      headerActions: _buildPrevNextButtons(
+                        (!_dbArtists.isLoading && _dbArtists.hasPreviousPage)
+                            ? _dbArtists.getPreviousPage
+                            : null,
+                        (_dbArtists.hasNextPage)
+                            ? _dbArtists.getNextPage
+                            : null,
+                      ),
+                    ),
               ),
             ),
-          //TODO: add pagination recommendedForYou
-          SongList(
-            page: 'recommended',
-            title: context.l10n!.recommendedForYou,
-            future: _recommendedSongsFuture,
+          ),
+          ListenableBuilder(
+            listenable: _dbSongs,
+            builder:
+                (context, child) => SongList(
+                  page: 'recommended',
+                  title: context.l10n!.recommendedForYou,
+                  future: _dbSongs.getCurrentPageAsync(),
+                  expandedActions: _buildPrevNextButtons(
+                    (!_dbSongs.isLoading && _dbSongs.hasPreviousPage)
+                        ? _dbSongs.getPreviousPage
+                        : null,
+                    (_dbSongs.hasNextPage) ? _dbSongs.getNextPage : null,
+                  ),
+                ),
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _buildPrevNextButtons(
-    Function? previous,
-    Function? next,
-    BuildContext context,
-    void Function(void Function()) setState,
-  ) {
+  List<Widget> _buildPrevNextButtons(Function? previous, Function? next) {
     return [
       IconButton(
         onPressed:
             previous != null
                 ? () {
                   previous();
-                  if (context.mounted) setState(() {});
                 }
                 : null,
         icon: Icon(
@@ -185,7 +185,6 @@ class _HomePageState extends State<HomePage> {
             next != null
                 ? () {
                   next();
-                  if (context.mounted) setState(() {});
                 }
                 : null,
         icon: Icon(
@@ -206,45 +205,12 @@ class _HomePageState extends State<HomePage> {
       icon: const Icon(FluentIcons.arrow_sync_24_filled),
       iconSize: pageHeaderIconSize,
       onPressed: () {
-        setState(() {
-          _recommendedSongsFuture =
-              getRecommendedSongs()..then((songs) {
-                if (mounted) {
-                  setState(() {
-                    _recommendedSongs = songs;
-                  });
-                  _parseArtistList(_recommendedSongs);
-                }
-              });
-        });
+        if (mounted)
+          setState(() {
+            _dbSongs.reset();
+            _dbArtists.reset();
+          });
       },
     );
-  }
-
-  void _parseArtistList(List<dynamic> data) {
-    final artists =
-        data
-            .fold(<String>[], (v, e) {
-              if (e['artist'] != null && e['artist'].isNotEmpty) {
-                v.addAll(
-                  splitArtists(
-                    (e['artist']?.split('~')[0] as String).collapsed
-                        .toLowerCase(),
-                  ),
-                );
-              }
-              if (e['channelName'] != null && e['channelName'].isNotEmpty) {
-                v.addAll(
-                  splitArtists(
-                    (e['channelName']?.split('~')[0] as String).collapsed
-                        .toLowerCase(),
-                  ),
-                );
-              }
-              return v;
-            })
-            .toSet()
-            .toList();
-    _recommendedArtistsFuture = getRecommendedArtists(artists, 8);
   }
 }

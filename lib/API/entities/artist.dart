@@ -25,6 +25,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:hive/hive.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
@@ -32,6 +33,7 @@ import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 
+List globalArtists = [];
 final List userLikedArtistsList =
     (Hive.box('user').get('likedArtists', defaultValue: []) as List).map((e) {
       e = Map<String, dynamic>.from(e);
@@ -218,17 +220,45 @@ Future<dynamic> searchArtistDetails(
   }
 }
 
-Future<dynamic> getRecommendedArtists(
-  List<String> query,
-  int itemsNumber,
-) async {
-  return pickRandomItems(await searchArtistsDetails(query), itemsNumber);
+Future<List<dynamic>> getRecommendedArtists() async {
+  return Future.microtask(() async {
+    try {
+      final songList = globalSongs;
+      if (globalArtists.isEmpty) {
+        final searchList = LinkedHashSet<String>();
+        for (final song in songList) {
+          if (song['artist-credit'] != null && song['artist-credit'] is List) {
+            for (final artist in song['artist-credit']) {
+              if (artist['artist'] != null && artist['artist'] is Map)
+                globalArtists.addOrUpdateWhere(checkArtist, artist['artist']);
+            }
+          } else if (song['artist'] is String) {
+            final artists = splitArtists(song['artist']);
+            searchList.addAll(artists);
+          }
+        }
+        if (searchList.isNotEmpty)
+          globalArtists.addOrUpdateAllWhere(
+            checkArtist,
+            await searchArtistsDetails(searchList.toList()),
+          );
+      }
+      return globalArtists;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      return [];
+    }
+  });
+  //return pickRandomItems(await searchArtistsDetails(query), itemsNumber);
 }
 
-Future<dynamic> searchArtistsDetails(
+Future<List<dynamic>> searchArtistsDetails(
   List<String> query, {
   bool exact = true,
-  int limit = 100,
   int offset = 0,
   bool paginated = false,
 }) async {
@@ -239,27 +269,35 @@ Future<dynamic> searchArtistsDetails(
     for (final q in queries) {
       final cached = _searchCachedArtists(q);
       if (cached != null && cached.isNotEmpty && exact) {
-        result.add(cached);
+        result.addOrUpdateWhere(checkArtist, cached);
       } else
         uncached.add(q);
     }
-    final qry = uncached.map((e) => '"${e.replaceAll(' ', '|')}"').join(' OR ');
-    final artistsSearch = await mb.artists.search(qry, limit: limit);
-    final artistList = LinkedHashSet<String>();
-    for (final artist in (artistsSearch?['artists'] ?? [])) {
-      if (artistList.add(artist['name'].toLowerCase())) {
-        if (uncached.contains(artist['name'].toLowerCase()) ||
-            uncached.contains(artist['sort-name'].toLowerCase())) {
-          artist['primary-type'] = 'artist';
-          await PM.triggerHook(artist, 'onGetArtistInfo');
-          result.add(artist);
+    for (int i = 0; i < uncached.length; i += 25) {
+      final str = uncached.getRange(
+        i - 25 <= 0 ? 0 : i - 25,
+        i + 25 >= uncached.length ? uncached.length - 1 : i + 25,
+      );
+      final qry =
+          'artist:(${str.map((e) => '"${e.replaceAll(' ', '|')}"').join(' OR ')})';
+      final artistsSearch = await mb.artists.search(qry, limit: str.length);
+      final artistList = LinkedHashSet<String>();
+      for (final artist in (artistsSearch?['artists'] ?? [])) {
+        if (artistList.add(artist['name'].toLowerCase())) {
+          if (uncached.contains(artist['name'].toLowerCase()) ||
+              uncached.contains(artist['sort-name'].toLowerCase())) {
+            artist['primary-type'] = 'artist';
+            await PM.triggerHook(artist, 'onGetArtistInfo');
+            result.addOrUpdateWhere(checkArtist, artist);
+          }
         }
       }
     }
+
     return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return {};
+    return [];
   }
 }
 
@@ -513,7 +551,8 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
 
 int? getArtistHashCode(dynamic artist) {
   try {
-    if (!(artist is Map)) return null;
+    if (!(artist is Map) && artist is String)
+      return artist.collapsed.toLowerCase().hashCode;
     if ((artist['name'] ?? artist['artist'] ?? artist['musicbrainzName']) ==
         null)
       return null;
@@ -530,15 +569,35 @@ int? getArtistHashCode(dynamic artist) {
 
 bool checkArtist(dynamic artistA, dynamic artistB) {
   try {
-    if (artistA == null || artistB == null) return false;
-    if (artistA is String ||
-        artistB is String ||
-        (artistA is Map &&
-            artistB is Map &&
-            (artistA['id'] == null || artistB['id'] == null)))
-      return getArtistHashCode(artistA) == getArtistHashCode(artistB) &&
-          getArtistHashCode(artistA) != null &&
-          getArtistHashCode(artistB) != null;
+    if (artistA == null ||
+        artistB == null ||
+        artistA.isEmpty ||
+        artistB.isEmpty)
+      return false;
+    if (artistA is Map) artistA['id'] = parseEntityId(artistA);
+    if (artistB is Map) artistB['id'] = parseEntityId(artistB);
+    if (artistA is String && artistB is String)
+      return (artistA.isNotEmpty && artistB.isNotEmpty) &&
+          checkEntityId(artistA, artistB);
+    if (artistA is String && artistB is Map)
+      return (artistA.isNotEmpty &&
+              artistB['id'] != null &&
+              artistB['id'].isNotEmpty) &&
+          (checkEntityId(artistA, artistB['id']) ||
+              checkEntityId(artistB['id'], artistA) ||
+              getArtistHashCode(artistA) == getArtistHashCode(artistB));
+    if (artistB is String && artistA is Map)
+      return (artistB.isNotEmpty &&
+              artistA['id'] != null &&
+              artistA['id'].isNotEmpty) &&
+          (checkEntityId(artistB, artistA['id']) ||
+              checkEntityId(artistA['id'], artistB) ||
+              getArtistHashCode(artistA) == getArtistHashCode(artistB));
+    if (artistA['id'] == null ||
+        artistB['id'] == null ||
+        artistA['id'].isEmpty ||
+        artistB['id'].isEmpty)
+      return getArtistHashCode(artistA) == getArtistHashCode(artistB);
     parseEntityId(artistA);
     parseEntityId(artistB);
     return checkEntityId(artistA['id'], artistB['id']);

@@ -76,6 +76,15 @@ extension ListOfMapsAddOrUpdate<T, K> on List<dynamic> {
       add(value);
     }
   }
+
+  void addOrUpdateAllWhere(
+    bool Function(Map, Map) predicate,
+    List<dynamic> list,
+  ) {
+    for (final value in list) {
+      addOrUpdateWhere(predicate, value);
+    }
+  }
 }
 
 extension ListOfStringsAddOrUpdate<T> on List<String> {

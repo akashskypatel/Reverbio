@@ -175,6 +175,7 @@ class CancelledException implements Exception {
 class FutureTracker<T> {
   FutureTracker(this.data);
   T? data;
+  dynamic result;
   Completer<T>? completer;
   bool isLoading = false;
   bool get isComplete => completer?.isCompleted ?? false;
@@ -188,6 +189,7 @@ class FutureTracker<T> {
           .then((result) {
             if (!completer!.isCompleted) {
               completer!.complete(result);
+              this.result = result;
             }
             isLoading = false;
           })

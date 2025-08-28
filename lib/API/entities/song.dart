@@ -93,35 +93,38 @@ Future<List> getSongsList(String searchQuery) async {
   }
 }
 
-Future<List<Map<String, dynamic>>> getRecommendedSongs() async {
+Future<List<dynamic>> getRecommendedSongs() async {
   try {
-    final playlistSongs = [...userLikedSongsList, ...userRecentlyPlayed];
-    if (globalSongs.isEmpty) {
-      const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
-      globalSongs =
-          (await getSongsFromPlaylist(
-            playlistId,
-          )).map((e) => Map<String, dynamic>.from(e)).toList();
-    }
-    playlistSongs.addAll(pickRandomItems(globalSongs, 10));
-
-    if (userCustomPlaylists.value.isNotEmpty) {
-      for (final userPlaylist in userCustomPlaylists.value) {
-        final _list = (userPlaylist['list'] as List)..shuffle();
-        playlistSongs.addAll(_list.take(5));
+    return Future.microtask(() async {
+      try {
+        if (globalSongs.isEmpty) {
+          const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
+          globalSongs =
+              (await getSongsFromPlaylist(
+                playlistId,
+              )).map((e) => Map<String, dynamic>.from(e)).toList();
+          if (userCustomPlaylists.value.isNotEmpty) {
+            for (final userPlaylist in userCustomPlaylists.value) {
+              final _list = userPlaylist['list'] as List;
+              globalSongs.addOrUpdateAllWhere(checkSong, _list);
+            }
+          }
+          globalSongs
+            ..addOrUpdateAllWhere(checkSong, await getUserOfflineSongs())
+            ..addOrUpdateAllWhere(checkSong, userLikedSongsList)
+            ..addOrUpdateAllWhere(checkSong, userRecentlyPlayed)
+            ..addOrUpdateAllWhere(checkSong, cachedSongsList);
+        }
+        return globalSongs;
+      } catch (e, stackTrace) {
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()}:',
+          e,
+          stackTrace,
+        );
+        return [];
       }
-    }
-    playlistSongs.shuffle();
-    final seenYtIds = <String>{};
-    playlistSongs.removeWhere((song) {
-      if (song['ytid'] != null) return !seenYtIds.add(song['ytid']);
-      return false;
     });
-    final songs = List<Map<String, dynamic>>.empty(growable: true);
-    for (final song in playlistSongs.take(15)) {
-      songs.add(Map<String, dynamic>.from(song));
-    }
-    return songs;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
