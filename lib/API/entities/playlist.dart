@@ -20,6 +20,7 @@
  */
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
@@ -80,6 +81,188 @@ final ValueNotifier<int> currentLikedPlaylistsLength = ValueNotifier(
 final ValueNotifier<int> currentOfflinePlaylistsLength = ValueNotifier(
   userOfflinePlaylists.length,
 );
+
+class PaginatedList<T> {
+  PaginatedList(List<T> items, {int pageSize = 10, int? randomSeed})
+    : _allItems = List.from(items),
+      _pageSize = pageSize,
+      _random = randomSeed != null ? Random(randomSeed) : Random() {
+    _initialize();
+    _loadFirstPage();
+  }
+  final List<T> _allItems;
+  final Random _random;
+  final int _pageSize;
+
+  // Track selected indices and navigation history
+  final Set<int> _selectedIndices = {};
+  final List<List<int>> _pageHistory = []; // Stores indices for each page
+  int _currentPageIndex = -1; // Current position in history
+
+  void _initialize() {
+    // Initial shuffle of all items
+    final indices = List.generate(_allItems.length, (index) => index)
+      ..shuffle(_random);
+
+    // Store the shuffled order for consistent navigation
+    _selectedIndices.addAll(indices);
+  }
+
+  void _loadFirstPage() {
+    if (_selectedIndices.isEmpty) {
+      _pageHistory.add([]);
+      _currentPageIndex = 0;
+      return;
+    }
+
+    // Get the first page of items
+    final availableIndices = _selectedIndices.toList();
+    final itemsToTake = min(_pageSize, availableIndices.length);
+
+    // Take the first batch from available indices
+    final indicesForPage = availableIndices.take(itemsToTake).toList();
+
+    // Remove these indices from available pool
+    _selectedIndices.removeAll(indicesForPage);
+
+    // Add to history and set current position
+    _pageHistory.add(indicesForPage);
+    _currentPageIndex = 0;
+  }
+
+  // Get the next page of random items
+  List<T> getNextPage() {
+    if (_selectedIndices.isEmpty) {
+      return [];
+    }
+
+    // If we're in the middle of history, remove future pages
+    if (_currentPageIndex < _pageHistory.length - 1) {
+      _pageHistory.removeRange(_currentPageIndex + 1, _pageHistory.length);
+    }
+
+    // Get available indices (not yet shown in current session)
+    final availableIndices = _selectedIndices.toList();
+    final itemsToTake = min(_pageSize, availableIndices.length);
+
+    // Take the next batch from available indices
+    final indicesForPage = availableIndices.take(itemsToTake).toList();
+
+    // Remove these indices from available pool
+    _selectedIndices.removeAll(indicesForPage);
+
+    // Add to history and update current position
+    _pageHistory.add(indicesForPage);
+    _currentPageIndex = _pageHistory.length - 1;
+
+    return indicesForPage.map((index) => _allItems[index]).toList();
+  }
+
+  // Get the previous page
+  List<T> getPreviousPage() {
+    if (_currentPageIndex <= 0) {
+      return []; // No previous pages
+    }
+
+    _currentPageIndex--;
+
+    // Return the indices from the selected pool to available pool
+    final previousPageIndices = _pageHistory[_currentPageIndex];
+    _selectedIndices.addAll(previousPageIndices);
+
+    return previousPageIndices.map((index) => _allItems[index]).toList();
+  }
+
+  // Get the current page
+  List<T> getCurrentPage() {
+    if (_currentPageIndex < 0 || _currentPageIndex >= _pageHistory.length) {
+      return [];
+    }
+
+    return _pageHistory[_currentPageIndex]
+        .map((index) => _allItems[index])
+        .toList();
+  }
+
+  // Check if there's a next page available
+  bool get hasNextPage => _selectedIndices.isNotEmpty;
+
+  // Check if there's a previous page available
+  bool get hasPreviousPage => _currentPageIndex > 0;
+
+  // Get current page number (1-based)
+  int get currentPageNumber => _currentPageIndex + 1;
+
+  // Get total pages available (including future pages)
+  int get totalPages =>
+      _pageHistory.length + (_selectedIndices.length / _pageSize).ceil();
+
+  // Get total pages viewed so far
+  int get pagesViewed => _pageHistory.length;
+
+  // Jump to a specific page in history
+  List<T> goToPage(int pageNumber) {
+    if (pageNumber < 1 || pageNumber > _pageHistory.length) {
+      throw ArgumentError('Page number $pageNumber is out of range');
+    }
+
+    final targetIndex = pageNumber - 1;
+
+    if (targetIndex > _currentPageIndex) {
+      // Moving forward - need to get pages until we reach target
+      while (_currentPageIndex < targetIndex && hasNextPage) {
+        getNextPage();
+      }
+    } else if (targetIndex < _currentPageIndex) {
+      // Moving backward - need to go back to target
+      while (_currentPageIndex > targetIndex && hasPreviousPage) {
+        getPreviousPage();
+      }
+    }
+
+    return getCurrentPage();
+  }
+
+  // Reset the paginator completely
+  void reset() {
+    _selectedIndices.clear();
+    _pageHistory.clear();
+    _currentPageIndex = -1;
+    _initialize();
+  }
+
+  // Get progress information
+  double get progress {
+    if (_allItems.isEmpty) return 1.0;
+
+    final totalSelected = _pageHistory.fold<int>(
+      0,
+      (sum, page) => sum + page.length,
+    );
+    return totalSelected / _allItems.length;
+  }
+
+  // Get all available items that haven't been shown yet
+  List<T> get availableItems =>
+      _selectedIndices.map((index) => _allItems[index]).toList();
+
+  // Get all items that have been shown (in order of appearance)
+  List<T> get viewedItems =>
+      _pageHistory
+          .expand((page) => page)
+          .map((index) => _allItems[index])
+          .toList();
+
+  @override
+  String toString() {
+    return 'EfficientRandomPaginator('
+        'currentPage: $currentPageNumber, '
+        'hasNext: $hasNextPage, '
+        'hasPrevious: $hasPreviousPage, '
+        'progress: ${(progress * 100).toStringAsFixed(1)}%'
+        ')';
+  }
+}
 
 bool isPlaylistAlreadyOffline(dynamic playlist) {
   final isOffline =

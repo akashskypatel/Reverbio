@@ -40,12 +40,15 @@ class HorizontalCardScroller extends StatefulWidget {
     this.title = '',
     this.icon = FluentIcons.music_note_1_24_regular,
     this.future,
+    this.headerActions,
+    this.actionsExpanded = true,
   });
 
   final IconData icon;
   final String title;
   final Future<dynamic>? future;
-
+  final List<Widget>? headerActions;
+  final bool actionsExpanded;
   @override
   State<HorizontalCardScroller> createState() => _HorizontalCardScrollerState();
 }
@@ -77,7 +80,11 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
     playlistHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
     return Column(
       children: [
-        SectionHeader(title: widget.title),
+        SectionHeader(
+          title: widget.title,
+          actions: widget.headerActions,
+          actionsExpanded: widget.actionsExpanded,
+        ),
         ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: playlistHeight + (isLargeScreen() ? 44 : 60),

@@ -43,8 +43,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late ThemeData _theme;
-  Future<dynamic> _recommendedPlaylistsFuture = getPlaylists(
-    playlistsNum: recommendedCardsNumber,
+  final _dbPlaylists = PaginatedList(
+    dbPlaylists,
+    pageSize: recommendedCardsNumber,
+    randomSeed: DateTime.now().millisecond,
   );
   Future<dynamic> _recommendedSongsFuture = getRecommendedSongs();
   dynamic _recommendedSongs;
@@ -105,9 +107,22 @@ class _HomePageState extends State<HomePage> {
                 valueListenable: currentLikedPlaylistsLength,
                 builder: (context, value, __) {
                   //TODO: add pagination suggestedPlaylists
-                  return HorizontalCardScroller(
-                    title: context.l10n!.suggestedPlaylists,
-                    future: _recommendedPlaylistsFuture,
+                  return StatefulBuilder(
+                    builder:
+                        (context, setState) => HorizontalCardScroller(
+                          title: context.l10n!.suggestedPlaylists,
+                          future: Future.value(_dbPlaylists.getCurrentPage()),
+                          headerActions: _buildPrevNextButtons(
+                            _dbPlaylists.hasPreviousPage
+                                ? _dbPlaylists.getPreviousPage
+                                : null,
+                            _dbPlaylists.hasNextPage
+                                ? _dbPlaylists.getNextPage
+                                : null,
+                            context,
+                            setState,
+                          ),
+                        ),
                   );
                 },
               ),
@@ -125,6 +140,7 @@ class _HomePageState extends State<HomePage> {
                       title: context.l10n!.suggestedArtists,
                       future: _recommendedArtistsFuture,
                       icon: FluentIcons.mic_sparkle_24_filled,
+                      //headerActions: _buildPrevNextButtons(),
                     );
                   },
                 ),
@@ -141,6 +157,48 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  List<Widget> _buildPrevNextButtons(
+    Function? previous,
+    Function? next,
+    BuildContext context,
+    void Function(void Function()) setState,
+  ) {
+    return [
+      IconButton(
+        onPressed:
+            previous != null
+                ? () {
+                  previous();
+                  if (context.mounted) setState(() {});
+                }
+                : null,
+        icon: Icon(
+          FluentIcons.chevron_left_24_filled,
+          color:
+              previous != null
+                  ? _theme.colorScheme.primary
+                  : _theme.colorScheme.inversePrimary,
+        ),
+      ),
+      IconButton(
+        onPressed:
+            next != null
+                ? () {
+                  next();
+                  if (context.mounted) setState(() {});
+                }
+                : null,
+        icon: Icon(
+          FluentIcons.chevron_right_24_filled,
+          color:
+              next != null
+                  ? _theme.colorScheme.primary
+                  : _theme.colorScheme.inversePrimary,
+        ),
+      ),
+    ];
+  }
+
   Widget _buildSyncButton() {
     return IconButton(
       splashColor: Colors.transparent,
@@ -149,9 +207,6 @@ class _HomePageState extends State<HomePage> {
       iconSize: pageHeaderIconSize,
       onPressed: () {
         setState(() {
-          _recommendedPlaylistsFuture = getPlaylists(
-            playlistsNum: recommendedCardsNumber,
-          );
           _recommendedSongsFuture =
               getRecommendedSongs()..then((songs) {
                 if (mounted) {
