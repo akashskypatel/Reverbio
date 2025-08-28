@@ -159,29 +159,28 @@ class _BaseCardState extends State<BaseCard> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      clipBehavior: Clip.antiAlias,
-                      child: SizedBox(
-                        width: widget.size,
-                        height: widget.size,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(borderRadius),
-                            color: colorScheme.secondary,
-                          ),
-                          child: Stack(
-                            children: [
-                              if (mounted)
-                                GestureDetector(
-                                  onDoubleTapDown:
-                                      (details) => _toggleLike(
-                                        context,
-                                        details: details,
-                                      ),
-                                  onTap: widget.onPressed,
-                                  child: FutureBuilder(
+                    GestureDetector(
+                      onDoubleTapDown:
+                          (details) => _toggleLike(context, details: details),
+                      onTap: () {
+                        if (widget.onPressed != null) widget.onPressed!();
+                      },
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        clipBehavior: Clip.antiAlias,
+                        child: SizedBox(
+                          width: widget.size,
+                          height: widget.size,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(borderRadius),
+                              color: colorScheme.secondary,
+                            ),
+                            child: Stack(
+                              children: [
+                                if (mounted)
+                                  FutureBuilder(
                                     initialData:
                                         widget.loadingWidget != null
                                             ? SizedBox(
@@ -207,10 +206,10 @@ class _BaseCardState extends State<BaseCard> {
                                       return snapshot.data!;
                                     },
                                   ),
-                                ),
-                              if (widget.showLabel) _buildLabel(),
-                              if (widget.showLike) _buildLiked(),
-                            ],
+                                if (widget.showLabel) _buildLabel(),
+                                if (widget.showLike) _buildLiked(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
