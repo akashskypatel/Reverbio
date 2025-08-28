@@ -798,7 +798,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-
+/*
   void _showClientPicker(
     BuildContext context,
     Color activatedColor,
@@ -849,7 +849,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-
+*/
   void _showPluginList(
     BuildContext context,
     Color activatedColor,

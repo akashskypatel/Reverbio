@@ -53,12 +53,14 @@ DiscogsApiClient dc = DiscogsApiClient(
 MusicBrainzApiClient mb = MusicBrainzApiClient(
   httpClient: useProxies.value ? pxd.randomProxyClient() : null,
 );
-
+/*
 List<YoutubeApiClient> userChosenClients = [
   YoutubeApiClient.tv,
   YoutubeApiClient.androidVr,
   YoutubeApiClient.safari,
 ];
+*/
+final List<dynamic> notificationLog = [];
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(

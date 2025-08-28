@@ -276,7 +276,7 @@ Future<void> initialization() async {
           chosenClients.add(_client);
         }
       }
-      userChosenClients = chosenClients;
+      //userChosenClients = chosenClients;
     }
 
     currentLikedPlaylistsLength.value = userLikedPlaylists.length;

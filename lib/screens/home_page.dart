@@ -71,6 +71,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('Reverbio'),
         actions: [
+          _buildAlertButton(),
           _buildSyncButton(),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
@@ -210,6 +211,18 @@ class _HomePageState extends State<HomePage> {
             _dbSongs.reset();
             _dbArtists.reset();
           });
+      },
+    );
+  }
+
+  Widget _buildAlertButton() {
+    return IconButton(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      icon: const Icon(FluentIcons.alert_badge_24_filled),
+      iconSize: pageHeaderIconSize,
+      onPressed: () {
+
       },
     );
   }
