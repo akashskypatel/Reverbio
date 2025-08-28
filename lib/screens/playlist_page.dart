@@ -34,6 +34,7 @@ import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
@@ -236,6 +237,45 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 : 'PlaylistPageHeader',
             context,
           ),
+          if ([
+                'album',
+                'single',
+                'ep',
+                'broadcast',
+                'other',
+              ].contains(widget.page) &&
+              _playlist['mbid'] != null)
+            IconButton(
+              iconSize: pageHeaderIconSize,
+              onPressed: () {
+                if (_playlist['mbid'] != null) {
+                  final uri = Uri.parse(
+                    'https://musicbrainz.org/release-group/${_playlist['mbid']}',
+                  );
+                  launchURL(uri);
+                }
+              },
+              icon: Icon(
+                FluentIcons.database_link_24_filled,
+                color: _theme.colorScheme.primary,
+              ),
+            ),
+          if (widget.page == 'playlist' && _playlist['ytid'] != null)
+            IconButton(
+              iconSize: pageHeaderIconSize,
+              onPressed: () {
+                if (_playlist['ytid'] != null) {
+                  final uri = Uri.parse(
+                    'https://www.youtube.com/playlist?list=${_playlist['ytid']}',
+                  );
+                  launchURL(uri);
+                }
+              },
+              icon: Icon(
+                FluentIcons.link_24_regular,
+                color: _theme.colorScheme.primary,
+              ),
+            ),
           if (_playlist != null && _playlist['source'] == 'user-created')
             _buildEditButton(),
           StatefulBuilder(
