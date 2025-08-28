@@ -150,26 +150,24 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
       showLabel: !isArtist,
       showOverflowLabel: true,
       showLike: true,
-      onPressed:
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              settings: RouteSettings(
-                name: '$dataType?${data['id'] ?? 'yt=${data['ytid']}'}',
-              ),
-              builder: (context) {
-                switch (dataType) {
-                  case 'artist':
-                    return ArtistPage(page: 'artist', artistData: data);
-                  default:
-                    return PlaylistPage(
-                      page: dataType ?? '',
-                      playlistData: data,
-                    );
-                }
-              },
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            settings: RouteSettings(
+              name: '$dataType?${data['id'] ?? 'yt=${data['ytid']}'}',
             ),
+            builder: (context) {
+              switch (dataType) {
+                case 'artist':
+                  return ArtistPage(page: 'artist', artistData: data);
+                default:
+                  return PlaylistPage(page: dataType ?? '', playlistData: data);
+              }
+            },
           ),
+        );
+      },
     );
   }
 
