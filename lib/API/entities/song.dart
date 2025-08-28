@@ -547,10 +547,7 @@ Future<StreamManifest> getSongManifest(String songId) async {
   try {
     final manifest =
         useProxies.value
-            ? await pxm.getSongManifest(
-                  songId,
-                  timeout: streamRequestTimeout.value,
-                ) ??
+            ? await pxm.getSongManifest(songId) ??
                 await yt.videos.streams.getManifest(
                   songId,
                   ytClients: userChosenClients,
@@ -572,11 +569,12 @@ Future<void> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   song['isError'] = false;
   song?.remove('error');
   final offlinePath = await getOfflinePath(song);
-  if (song['mbid'] == null) await queueSongInfoRequest(song);
+  if (!isMusicbrainzSongValid(song)) await queueSongInfoRequest(song);
   if (offlinePath != null) {
     song['songUrl'] = offlinePath;
   }
-  await PM.getSongUrl(song, getSongYoutubeUrl);
+  if (offlinePath == null || offlinePath.isEmpty)
+    await PM.getSongUrl(song, getSongYoutubeUrl);
   if (((song['autoCacheOffline'] ?? false) || autoCacheOffline.value) &&
       (song['songUrl'] != null && offlinePath == null) &&
       !skipDownload &&
@@ -754,14 +752,22 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
       }
     }
     if (song['songUrl'] == null || song['songUrl'].isEmpty) {
-      logger.log('Could not find YouTube stream for this song.', null, null);
+      logger.log(
+        'Could not find YouTube stream for this song. ${song['artist']} - ${song['title']}',
+        null,
+        null,
+      );
       song['error'] = context.l10n!.errorCouldNotFindAStream;
       song['isError'] = true;
       return '';
     }
     //check if url resolves
     if (await checkUrl(song['songUrl']) >= 400) {
-      logger.log('Song url could not be resolved.', null, null);
+      logger.log(
+        'Song url could not be resolved. ${song['songUrl']}',
+        null,
+        null,
+      );
       song['error'] = context.l10n!.urlError;
       song['isError'] = true;
       return '';
@@ -852,6 +858,7 @@ bool isSongAlreadyOffline(songToCheck) => userOfflineSongs.any((song) {
 
 Future<void> makeSongOffline(dynamic song) async {
   try {
+    await getUserOfflineSongs();
     if (isSongAlreadyOffline(song)) return;
     final _dir = await getApplicationSupportDirectory();
     final _audioDirPath =
@@ -862,7 +869,7 @@ Future<void> makeSongOffline(dynamic song) async {
     await Directory(_artworkDirPath).create(recursive: true);
 
     final id = song['id'] = parseEntityId(song);
-    if (song['ytid'] == null || song['ytid'].isEmpty)
+    if (!isYouTubeSongValid(song))
       song.addAll(Map<String, dynamic>.from(await _findYTSong(song)));
     final _audioFile =
         '$_audioDirPath$id.m4a'; // File('$_audioDirPath$id.m4a');

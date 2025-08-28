@@ -97,7 +97,7 @@ IconDataAndAction getIconFromProcessingState(
       color: iconColor,
     ),
   );
-  Widget spinner() => SizedBox.square(dimension: size, child: const Spinner());
+  Widget spinner() => const SizedBox(width: 24, height: 24, child: Spinner());
   IconDataAndAction playOrPause() => IconDataAndAction(
     iconData:
         (audioHandler.duration - audioHandler.position).inMilliseconds <= 100 &&

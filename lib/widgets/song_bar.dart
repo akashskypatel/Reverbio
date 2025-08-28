@@ -127,7 +127,8 @@ class SongBar extends StatefulWidget {
       if (_songMetadataFuture.value == null ||
           !isSongValid(song) ||
           !isMusicbrainzSongValid(song)) {
-        _songMetadataFuture.value = queueSongInfoRequest(song) ?? _songMetadataFuture.value;
+        _songMetadataFuture.value =
+            queueSongInfoRequest(song) ?? _songMetadataFuture.value;
         return _songMetadataFuture.value!;
       } else {
         return _songMetadataFuture.value!;
@@ -142,11 +143,8 @@ class SongBar extends StatefulWidget {
     }
   }
 
-  Future<void> prepareSong({bool shouldWait = false}) async {
-    if (shouldWait)
-      await _songFutureTracker.runFuture(_prepareSong());
-    else
-      unawaited(_songFutureTracker.runFuture(_prepareSong()));
+  Future<void> prepareSong() async {
+    await _songFutureTracker.runFuture(_prepareSong());
   }
 
   void setBorder({BorderRadius borderRadius = BorderRadius.zero}) {
@@ -222,6 +220,7 @@ class _SongBarState extends State<SongBar> {
                     songBar: widget,
                     play: true,
                     skipOnError: true,
+                    force: true,
                   );
                 },
                 child: Card(
@@ -537,7 +536,7 @@ class _SongBarState extends State<SongBar> {
               ],
             ),
           ),
-        if (widget.song['mbid'] != null)
+        if (widget.song['rid'] != null)
           PopupMenuItem<String>(
             value: 'musicbrainz',
             child: Row(
@@ -610,7 +609,7 @@ class _SongBarState extends State<SongBar> {
       case 'musicbrainz':
         if (widget.song['ytid'] != null) {
           final uri = Uri.parse(
-            'https://musicbrainz.org/recording/${widget.song['mbid']}',
+            'https://musicbrainz.org/recording/${widget.song['rid']}',
           );
           launchURL(uri);
         }

@@ -30,6 +30,7 @@ import 'package:http/io_client.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class Proxy {
@@ -280,8 +281,9 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> _validateDirect(String songId, int timeout) async {
+  Future<StreamManifest?> _validateDirect(String songId) async {
     try {
+      final timeout = streamRequestTimeout.value;
       if (kDebugMode) logger.log('Validating direct connection...', null, null);
       final manifest = await yt.videos.streams
           .getManifest(songId)
@@ -419,28 +421,23 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> getSongManifest(
-    String songId, {
-    int timeout = 5,
-  }) async {
+  Future<StreamManifest?> getSongManifest(String songId) async {
     try {
-      StreamManifest? manifest = await _validateDirect(songId, timeout);
+      StreamManifest? manifest = await _validateDirect(songId);
       if (manifest != null) return manifest;
       if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
         await _fetchProxies();
-      manifest = await _cycleProxies(songId, timeout: timeout);
+      manifest = await _cycleProxies(songId);
       return manifest;
     } catch (_) {
       return null;
     }
   }
 
-  Future<StreamManifest?> _cycleProxies(
-    String songId, {
-    int timeout = 5,
-  }) async {
+  Future<StreamManifest?> _cycleProxies(String songId) async {
     StreamManifest? manifest;
     do {
+      final timeout = streamRequestTimeout.value;
       final proxy = await _randomProxy();
       if (proxy == null) break;
       manifest = await _validateProxy(proxy, songId, timeout);

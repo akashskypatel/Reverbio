@@ -200,6 +200,10 @@ class AudioPlayerService {
     }
   }
 
+  void setProcessingState(AudioProcessingState newState) {
+    _updateProcessingState(processingState);
+  }
+
   Future<void> play() async {
     _updateProcessingState(AudioProcessingState.ready);
     await _player.play();
@@ -256,7 +260,7 @@ class AudioPlayerService {
   Future<void> prepare(SongBar songBar, {bool play = false}) async {
     _updateProcessingState(AudioProcessingState.loading);
     songValueNotifier.value = songBar;
-    await songBar.prepareSong(shouldWait: play);
+    await songBar.prepareSong();
     _mediaItemSubscription = songBar.mediaItemStream.listen(
       _mediaItemStreamController.add,
     );
@@ -265,6 +269,7 @@ class AudioPlayerService {
   Future<void> queue(Media media) async {
     await open(media);
     await player.seek(Duration.zero);
+    _updateProcessingState(AudioProcessingState.ready);
     return pause();
   }
 
@@ -307,6 +312,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   audio_session.AudioSession? _session;
   Timer? _sleepTimer;
   bool sleepTimerExpired = false;
+  FutureTracker? _preparingFuture;
   late bool wasPlayingBeforeCall = false;
   List<SongBar> get queueSongBars => audioPlayer.queueSongBars;
   late final StreamSubscription<bool?> _playbackEventSubscription;
@@ -390,6 +396,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> play() async {
     if (await sessionActive()) {
       await audioPlayer.play();
+      audioPlayer.setProcessingState(AudioProcessingState.loading);
       _updatePlaybackState();
     }
   }
@@ -397,6 +404,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> pause() async {
     await audioPlayer.pause();
+    audioPlayer.setProcessingState(AudioProcessingState.ready);
     _updatePlaybackState();
     await sessionActive(active: false);
   }
@@ -404,6 +412,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> stop() async {
     await audioPlayer.stop();
+    audioPlayer.setProcessingState(AudioProcessingState.ready);
     _updatePlaybackState();
     await sessionActive(active: false);
   }
@@ -420,14 +429,16 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (!audioPlayer.hasNext && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value?.song == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
-    if (loopAllSongs && index == queueSongBars.length - 1) {
+    if (loopAllSongs &&
+        index == queueSongBars.length - 1 &&
+        _preparingFuture == null) {
       await this.prepare(
         songBar: queueSongBars.first,
         play: play,
         skipOnError: skipOnError,
       );
       audioPlayer.skipToNext(0);
-    } else if (index < queueSongBars.length - 1) {
+    } else if (index < queueSongBars.length - 1 && _preparingFuture == null) {
       await this.prepare(
         songBar: queueSongBars[index + 1],
         play: play,
@@ -447,14 +458,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (!audioPlayer.hasPrevious && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
-    if (loopAllSongs && index == 0) {
+    if (loopAllSongs && index == 0 && _preparingFuture == null) {
       await this.prepare(
         songBar: queueSongBars.last,
         play: play,
         skipOnError: skipOnError,
       );
       audioPlayer.skipToPrevious(queueSongBars.length - 1);
-    } else if (index > 0) {
+    } else if (index > 0 && _preparingFuture == null) {
       await this.prepare(
         songBar: queueSongBars[index - 1],
         play: play,
@@ -529,11 +540,33 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     bool play = false,
     bool skipOnError = false,
     int skipCount = 0,
+    bool force = false,
+  }) async {
+    if (_preparingFuture == null || force) {
+      _preparingFuture = FutureTracker(songBar);
+      final future = _queue(
+        songBar: songBar,
+        play: play,
+        skipOnError: skipOnError,
+        skipCount: skipCount,
+      );
+      await _preparingFuture!.runFuture(future).whenComplete(() {
+        _preparingFuture = null;
+      });
+    }
+  }
+
+  Future<void> _queue({
+    SongBar? songBar,
+    bool play = false,
+    bool skipOnError = false,
+    int skipCount = 0,
   }) async {
     if (songBar != null && !isSongInQueue(songBar)) {
       addSongToQueue(songBar);
     }
     if (queueSongBars.isEmpty) return;
+    audioPlayer.setProcessingState(AudioProcessingState.loading);
     songBar = songBar ?? audioPlayer.queueSongBars.first;
     play = play || audioPlayer.playing;
     await audioPlayer.prepare(songBar, play: play);
@@ -543,6 +576,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     } else if (skipOnError &&
         audioPlayer.queueSongBars.length > 1 &&
         songBar.isError) {
+      _preparingFuture = null;
       if (skipCount < audioPlayer.queueSongBars.length || skipCount <= 10) {
         final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
         if (next != null) {
