@@ -108,12 +108,19 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
     final mbRes = await mb.artists.get(
       ids['mb']!,
       inc: [
+        'recordings',
+        'releases',
         'release-groups',
+        'works',
         'aliases',
+        'annotation',
         'tags',
         'genres',
         'ratings',
+        'recording-rels',
+        'release-rels',
         'release-group-rels',
+        'work-rels',
         'url-rels',
       ],
     );
@@ -229,8 +236,11 @@ Future<List<dynamic>> getRecommendedArtists() async {
         for (final song in songList) {
           if (song['artist-credit'] != null && song['artist-credit'] is List) {
             for (final artist in song['artist-credit']) {
-              if (artist['artist'] != null && artist['artist'] is Map)
+              if (artist['artist'] != null && artist['artist'] is Map) {
+                artist['artist']['primary-type'] = 'artist';
+                artist['artist']['isArtist'] = 'true';
                 globalArtists.addOrUpdateWhere(checkArtist, artist['artist']);
+              }
             }
           } else if (song['artist'] is String) {
             final artists = splitArtists(song['artist']);
