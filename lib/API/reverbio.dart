@@ -30,6 +30,9 @@ import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/proxy_manager.dart';
@@ -39,20 +42,15 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final pxm = ProxyManager(); // ProxyManager for manifest
 final pxd = ProxyManager(); // ProxyManager for data
+final client = useProxies.value ? pxd.randomProxyClient() : null;
 // YouTube client for Data
-YoutubeExplode yt = YoutubeExplode(
-  YoutubeHttpClient(useProxies.value ? pxd.randomProxyClient() : null),
-);
+YoutubeExplode yt = YoutubeExplode(YoutubeHttpClient(client));
 // YouTube client for Manifest
 YoutubeExplode ytm = YoutubeExplode(
   YoutubeHttpClient(useProxies.value ? pxm.randomProxyClient() : null),
 );
-DiscogsApiClient dc = DiscogsApiClient(
-  httpClient: useProxies.value ? pxd.randomProxyClient() : null,
-);
-MusicBrainzApiClient mb = MusicBrainzApiClient(
-  httpClient: useProxies.value ? pxd.randomProxyClient() : null,
-);
+DiscogsApiClient dc = DiscogsApiClient(httpClient: client);
+MusicBrainzApiClient mb = MusicBrainzApiClient(httpClient: client);
 /*
 List<YoutubeApiClient> userChosenClients = [
   YoutubeApiClient.tv,
@@ -60,7 +58,6 @@ List<YoutubeApiClient> userChosenClients = [
   YoutubeApiClient.safari,
 ];
 */
-final List<dynamic> notificationLog = [];
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
@@ -681,4 +678,19 @@ Future<String?> pickImageFile({int maxAttempts = 100}) async {
   final copy = await copyFileToDir(file.path!, _artworkDirPath);
 
   return copy.path;
+}
+
+void cacheEntity(dynamic entity) {
+  if (entity['primary-type'] == null) return;
+  if (['song', 'recording'].contains(entity['primary-type']))
+    return addSongToCache(entity);
+  if ([
+    'album',
+    'single',
+    'ep',
+    'broadcast',
+    'other',
+  ].contains(entity['primary-type']))
+    return addAlbumToCache(entity);
+  if (entity['primary-type'] == 'artist') return addArtistToCache(entity);
 }

@@ -64,7 +64,7 @@ class ProxyManager {
 
   Future<void>? _fetchingList;
   bool _fetched = false;
-  final Map<String, List<Proxy>> _proxies = {};
+  final Map<String, Set<Proxy>> _proxies = {};
   final Set<Proxy> _workingProxies = {};
   final _random = Random();
   DateTime _lastFetched = DateTime.now();
@@ -76,22 +76,78 @@ class ProxyManager {
         final futures =
             <Future>[]
               //..add(_fetchSpysMe())
+              //..add(_fetchOpenProxyListXyz())
               ..add(_fetchProxyScrape())
               ..add(_fetchOpenProxyList())
               ..add(_fetchJetkaiProxyList());
         _fetchingList = Future.wait(futures);
-        await _fetchingList?.whenComplete(() {
-          _fetched = true;
-          if (kDebugMode)
-            logger.log(
-              'Done fetching Proxies. Fetched: ${_proxies.length}',
-              null,
-              null,
+        unawaited(
+          _fetchingList?.whenComplete(() {
+            _fetched = true;
+            if (kDebugMode) logger.log('Done fetching Proxies.', null, null);
+            _lastFetched = DateTime.now();
+            _fetchingList = null;
+          }),
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
+  Future<void> _fetchOpenProxyListXyz() async {
+    try {
+      if (kDebugMode)
+        logger.log('Fetching from OpenProxyList.xyz...', null, null);
+      const sources = [
+        //'https://api.openproxylist.xyz/https.txt',
+        'https://api.openproxylist.xyz/socks4.txt',
+        'https://api.openproxylist.xyz/socks5.txt',
+      ];
+      int current = 0;
+      for (final url in sources) {
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode != 200) {
+          logger.log('Failed to fetch from OpenProxyList.xyz', null, null);
+          return;
+        }
+        response.body.split('\n').fold(_proxies, (v, e) {
+          final rgx = RegExp(r'(?<ip>\d+\.\d+\.\d+\.\d+)\:(?<port>\d+)$');
+          final rgxm = rgx.firstMatch(e);
+          Map d = {};
+          if (rgxm != null)
+            d = {
+              'ip': (rgxm.namedGroup('ip') ?? '').trim(),
+              'port': (rgxm.namedGroup('port') ?? '').trim(),
+              'country': 'US',
+              'ssl': true,
+            };
+
+          if (d.isNotEmpty && d['country'].isNotEmpty && d['ssl']) {
+            current++;
+            v[d['country']] = v[d['country']] ?? {};
+            v[d['country']]!.add(
+              Proxy(
+                source: 'openproxylist.xyz',
+                address: '${d['ip']}:${d['port']}',
+                country: d['country'],
+                ssl: d['ssl'],
+              ),
             );
-          _lastFetched = DateTime.now();
-          _fetchingList = null;
+          }
+          return v;
         });
       }
+      if (kDebugMode)
+        logger.log(
+          'Proxies fetched: $current from OpenProxyList.xyz',
+          null,
+          null,
+        );
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -107,6 +163,7 @@ class ProxyManager {
         logger.log('Fetching from jetkai/proxy-list...', null, null);
       const url =
           'https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/json/proxies-advanced.json';
+      int current = 0;
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) {
         logger.log('Failed to fetch from jetkai/proxy-list', null, null);
@@ -114,12 +171,20 @@ class ProxyManager {
       }
       final result = jsonDecode(response.body);
       (result as List).fold(_proxies, (v, e) {
-        final isSSL = (e['protocols'] as List).any((e) => e['type'] == 'https');
+        final isSSL = (e['protocols'] as List).any(
+          (e) =>
+              [
+                //'https',
+                'socks4', 'socks5',
+              ].contains(e['type']) &&
+              e['tls'] == true,
+        );
         if (e['ip'] != null &&
             e['port'] != null &&
             e['location']['isocode'] != null &&
             isSSL) {
-          v[e['location']['isocode']] = v[e['location']['isocode']] ?? [];
+          current++;
+          v[e['location']['isocode']] = v[e['location']['isocode']] ?? {};
           v[e['location']['isocode']]!.add(
             Proxy(
               source: 'jetkai/proxy-list',
@@ -132,7 +197,11 @@ class ProxyManager {
         return v;
       });
       if (kDebugMode)
-        logger.log('Proxies fetched: ${_proxies.length}', null, null);
+        logger.log(
+          'Proxies fetched: $current from jetkai/proxy-list',
+          null,
+          null,
+        );
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -145,41 +214,48 @@ class ProxyManager {
   Future<void> _fetchOpenProxyList() async {
     try {
       if (kDebugMode) logger.log('Fetching from openproxylist...', null, null);
-      const url =
-          'https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt';
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
-        logger.log('Failed to fetch from openproxylist', null, null);
-        return;
-      }
-      response.body.split('\n').fold(_proxies, (v, e) {
-        final rgx = RegExp(
-          r'(.)\s(?<ip>\d+\.\d+\.\d+\.\d+)\:(?<port>\d+)\s(?:(?<responsetime>\d+)(?:ms))\s(?<country>[A-Z]{2})\s(?<isp>.+)$',
-        );
-        final rgxm = rgx.firstMatch(e);
-        Map d = {};
-        if (rgxm != null)
-          d = {
-            'ip': (rgxm.namedGroup('ip') ?? '').trim(),
-            'port': (rgxm.namedGroup('port') ?? '').trim(),
-            'country': (rgxm.namedGroup('country') ?? '').trim(),
-          };
-
-        if (d.isNotEmpty && d['country'].isNotEmpty) {
-          v[d['country']] = v[d['country']] ?? [];
-          v[d['country']]!.add(
-            Proxy(
-              source: 'openproxylist',
-              address: '${d['ip']}:${d['port']}',
-              country: d['country'],
-              ssl: true,
-            ),
-          );
+      const sources = [
+        //'https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS.txt',
+        'https://raw.githubusercontent.com/roosterkid/openproxylist/refs/heads/main/SOCKS4.txt',
+        'https://raw.githubusercontent.com/roosterkid/openproxylist/refs/heads/main/SOCKS5.txt',
+      ];
+      int current = 0;
+      for (final url in sources) {
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode != 200) {
+          logger.log('Failed to fetch from openproxylist', null, null);
+          return;
         }
-        return v;
-      });
+        response.body.split('\n').fold(_proxies, (v, e) {
+          final rgx = RegExp(
+            r'(.)\s(?<ip>\d+\.\d+\.\d+\.\d+)\:(?<port>\d+)\s(?:(?<responsetime>\d+)(?:ms))\s(?<country>[A-Z]{2})\s(?<isp>.+)$',
+          );
+          final rgxm = rgx.firstMatch(e);
+          Map d = {};
+          if (rgxm != null)
+            d = {
+              'ip': (rgxm.namedGroup('ip') ?? '').trim(),
+              'port': (rgxm.namedGroup('port') ?? '').trim(),
+              'country': (rgxm.namedGroup('country') ?? '').trim(),
+            };
+
+          if (d.isNotEmpty && d['country'].isNotEmpty) {
+            current++;
+            v[d['country']] = v[d['country']] ?? {};
+            v[d['country']]!.add(
+              Proxy(
+                source: 'openproxylist',
+                address: '${d['ip']}:${d['port']}',
+                country: d['country'],
+                ssl: true,
+              ),
+            );
+          }
+          return v;
+        });
+      }
       if (kDebugMode)
-        logger.log('Proxies fetched: ${_proxies.length}', null, null);
+        logger.log('Proxies fetched: $current from openproxylist', null, null);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -193,6 +269,7 @@ class ProxyManager {
     try {
       if (kDebugMode) logger.log('Fetching from spys.me...', null, null);
       const url = 'https://spys.me/proxy.txt';
+      int current = 0;
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) {
         logger.log('Failed to fetch from spys.me', null, null);
@@ -218,7 +295,8 @@ class ProxyManager {
             d['country'].isNotEmpty &&
             d['ssl'] &&
             d['google']) {
-          v[d['country']] = v[d['country']] ?? [];
+          current++;
+          v[d['country']] = v[d['country']] ?? {};
           v[d['country']]!.add(
             Proxy(
               source: 'spys.me',
@@ -231,7 +309,7 @@ class ProxyManager {
         return v;
       });
       if (kDebugMode)
-        logger.log('Proxies fetched: ${_proxies.length}', null, null);
+        logger.log('Proxies fetched: $current from spys.me', null, null);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -246,7 +324,8 @@ class ProxyManager {
       if (kDebugMode)
         logger.log('Fetching from proxyscrape.com...', null, null);
       const url =
-          'https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=json';
+          'https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&ssl=yes&proxy_format=protocolipport&format=json';
+      int current = 0;
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) {
         logger.log('Failed to fetch from proxyscrape', null, null);
@@ -258,7 +337,8 @@ class ProxyManager {
             (e['alive'] ?? false) &&
             e['ip_data']['countryCode'] != null &&
             (e['ssl'] ?? false)) {
-          v[e['ip_data']['countryCode']] = v[e['ip_data']['countryCode']] ?? [];
+          current++;
+          v[e['ip_data']['countryCode']] = v[e['ip_data']['countryCode']] ?? {};
           v[e['ip_data']['countryCode']]!.add(
             Proxy(
               source: 'proxyscrape.com',
@@ -271,7 +351,11 @@ class ProxyManager {
         return v;
       });
       if (kDebugMode)
-        logger.log('Proxies fetched: ${_proxies.length}', null, null);
+        logger.log(
+          'Proxies fetched: $current from proxyscrape.com',
+          null,
+          null,
+        );
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -392,16 +476,18 @@ class ProxyManager {
               _proxies.keys.first;
         }
         final countryProxies =
-            _proxies[countryCode] ?? _proxies.values.expand((x) => x).toList();
+            _proxies[countryCode] ?? _proxies.values.expand((x) => x).toSet();
         if (countryProxies.isEmpty) {
           return null;
         }
         if (countryProxies.length == 1) {
-          proxy = countryProxies.removeLast();
+          proxy = countryProxies.first;
+          countryProxies.remove(proxy);
         } else {
-          proxy = countryProxies.removeAt(
+          proxy = countryProxies.elementAt(
             _random.nextInt(countryProxies.length),
           );
+          countryProxies.remove(proxy);
         }
         if (kDebugMode)
           logger.log(

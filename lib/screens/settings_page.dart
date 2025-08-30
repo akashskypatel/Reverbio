@@ -759,7 +759,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Color activatedColor,
     Color inactivatedColor,
   ) {
-    final availableValues = [10, 30, 45, 60];
+    final availableValues = [5, 15, 30, 45, 60];
     showCustomBottomSheet(
       context,
       StatefulBuilder(
@@ -798,7 +798,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-/*
+
+  /*
   void _showClientPicker(
     BuildContext context,
     Color activatedColor,
@@ -1485,17 +1486,18 @@ class _SettingsPageState extends State<SettingsPage> {
     yt.close();
     dc.close();
     mb.close();
+    final client = useProxies.value ? pxd.randomProxyClient() : null;
     yt = YoutubeExplode(
-      YoutubeHttpClient(useProxies.value ? pxd.randomProxyClient() : null),
+      YoutubeHttpClient(client),
     );
     ytm = YoutubeExplode(
       YoutubeHttpClient(useProxies.value ? pxm.randomProxyClient() : null),
     );
     dc = DiscogsApiClient(
-      httpClient: useProxies.value ? pxd.randomProxyClient() : null,
+      httpClient: client,
     );
     mb = MusicBrainzApiClient(
-      httpClient: useProxies.value ? pxd.randomProxyClient() : null,
+      httpClient: client,
     );
     showToast(context.l10n!.settingChangedMsg);
   }
