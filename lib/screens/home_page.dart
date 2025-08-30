@@ -234,9 +234,12 @@ class _HomePageState extends State<HomePage> {
                     ? const Icon(FluentIcons.alert_badge_24_filled)
                     : const Icon(FluentIcons.alert_24_regular),
             iconSize: pageHeaderIconSize,
-            onPressed: () async {
-              await _showNotificationLog(context);
-            },
+            onPressed:
+                notificationLog.isNotEmpty
+                    ? () async {
+                      await _showNotificationLog(context);
+                    }
+                    : null,
           ),
     );
   }

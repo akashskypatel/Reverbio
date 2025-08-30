@@ -890,6 +890,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       case TaskStatusUpdate():
         // process the TaskStatusUpdate, e.g.
         switch (update.status) {
+          case TaskStatus.enqueued:
+            showToast(
+              '${context.l10n!.downloadingInBackground}: "${update.task.displayName}"',
+              id: update.task.taskId,
+              data: ValueNotifier<int>(0),
+            );
+            break;
           case TaskStatus.complete:
             userOfflineSongs.addOrUpdateWhere(
               checkEntityId,
@@ -901,15 +908,22 @@ class ReverbioAudioHandler extends BaseAudioHandler {
               id: update.task.taskId,
             );
           case TaskStatus.canceled:
+            showToast(
+              '${context.l10n!.downloadCancelled}: "${update.task.displayName}"',
+              id: update.task.taskId,
+            );
             break;
           case TaskStatus.paused:
+            showToast(
+              '${context.l10n!.downloadPaused}: "${update.task.displayName}"',
+              id: update.task.taskId,
+            );
             break;
           default:
             break;
         }
       case TaskProgressUpdate():
-        final progress =
-            notificationLog[update.task.taskId]?['data'];
+        final progress = notificationLog[update.task.taskId]?['data'];
         if (progress is ValueNotifier<int>) {
           progress.value = (update.progress * 100).toInt();
         }

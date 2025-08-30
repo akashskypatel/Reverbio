@@ -853,13 +853,6 @@ Future<void> makeSongOffline(dynamic song) async {
         showToast(
           '${context.l10n!.unableToDownload}: ${song['title']} - ${song['artist']}',
         );
-      else
-        showToast(
-          '${context.l10n!.downloadingInBackground}: ${song['title']} - ${song['artist']}',
-          id: song['id'],
-          data: ValueNotifier<int>(0),
-        );
-      notificationLogLength.value = notificationLog.length;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
