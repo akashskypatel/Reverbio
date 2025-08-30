@@ -30,6 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -204,7 +205,7 @@ class FutureTracker<T> {
     return completer!.future;
   }
 
-  void reset() {
+  void cancel() {
     if (!isComplete && !isLoading) {
       completer?.completeError(CancelledException());
     }
@@ -711,14 +712,26 @@ List<String>? parseImage(dynamic obj) {
 
 Future<Uri?> getValidImage(dynamic obj) async {
   try {
+    if (obj['validImage'] != null) {
+      if (isFilePath(obj['validImage']))
+        return Uri.file(obj['validImage']);
+      else if (await checkUrl(obj['validImage'].toString()) <= 300)
+        return Uri.parse(obj['validImage']);
+    }
     final images = parseImage(obj) ?? [];
     if (images.isEmpty) return null;
     for (final path in images) {
-      if (isFilePath(path) && doesFileExist(path))
+      if (isFilePath(path) && doesFileExist(path)) {
+        obj['validImage'] = path;
+        cacheEntity(obj);
         return Uri.file(path);
-      else {
+      } else {
         final imageUrl = Uri.parse(path);
-        if (await checkUrl(imageUrl.toString()) <= 300) return imageUrl;
+        if (await checkUrl(imageUrl.toString()) <= 300) {
+          obj['validImage'] = imageUrl.toString();
+          cacheEntity(obj);
+          return imageUrl;
+        }
       }
     }
     return null;
@@ -811,4 +824,30 @@ List<String> splitLatinNonLatin(String text) {
   }
 
   return result;
+}
+
+String formatRelativeTime(DateTime dateTime) {
+  final now = DateTime.now();
+  final difference =
+      dateTime.isAfter(now)
+          ? dateTime.difference(now)
+          : now.difference(dateTime);
+
+  final suffix = dateTime.isAfter(now) ? '' : '';
+
+  if (difference.inSeconds < 60) {
+    return '${difference.inSeconds}s$suffix';
+  } else if (difference.inMinutes < 60) {
+    return '${difference.inMinutes}m$suffix';
+  } else if (difference.inHours < 24) {
+    return '${difference.inHours}h$suffix';
+  } else if (difference.inDays < 30) {
+    return '${difference.inDays}d$suffix';
+  } else if (difference.inDays < 365) {
+    final months = (difference.inDays / 30).floor();
+    return '${months}mo$suffix';
+  } else {
+    final years = (difference.inDays / 365).floor();
+    return '${years}y$suffix';
+  }
 }

@@ -34,9 +34,15 @@ Map mediaItemToMap(MediaItem mediaItem) => {
 };
 
 MediaItem mapToMediaItem(Map song) {
+  final _imagePath =
+      song['validImage'] ??
+      (song['image'] is String ? song['image'] : null) ??
+      song['highResImage'] ??
+      song['lowResImage'] ??
+      song['offlineArtworkPath'];
   final imagePath =
-      (song['image'] != null && song['image'] is String)
-          ? song['image']
+      (_imagePath != null && _imagePath is String)
+          ? _imagePath
           : parseImage(song)?.first ?? '';
   return MediaItem(
     id: song['id'] ?? '',

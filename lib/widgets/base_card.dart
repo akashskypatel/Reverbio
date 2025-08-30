@@ -22,6 +22,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:background_downloader/background_downloader.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -231,14 +232,12 @@ class _BaseCardState extends State<BaseCard> {
 
   Future<Widget> _buildImage(BuildContext context) async {
     try {
-      final images = parseImage(widget.inputData) ?? [];
-      if (images.isEmpty) return _buildNoArtworkCard(context);
-      for (final path in images) {
-        if (isFilePath(path) && doesFileExist(path)) {
-          return _buildFileArtworkCard(path, context);
-        } else if (await checkUrl(path) <= 300)
-          return _buildOnlineArtworkCard(Uri.parse(path), context);
-      }
+      final image = await getValidImage(widget.inputData);
+      if (image == null) return _buildNoArtworkCard(context);
+      if (image.isFileUri && doesFileExist(image.toString())) {
+        return _buildFileArtworkCard(image.toFilePath(), context);
+      } else if (await checkUrl(image.toString()) <= 300)
+        return _buildOnlineArtworkCard(image, context);
       return _buildNoArtworkCard(context);
     } catch (e, stackTrace) {
       logger.log(
