@@ -21,11 +21,27 @@
 
 import 'package:flutter/material.dart';
 import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/utilities/utils.dart';
 
 const _toastDuration = Duration(seconds: 3);
 
-void showToast(String text, {BuildContext? context}) {
+final Map<String, dynamic> notificationLog = {};
+ValueNotifier<int> notificationLogLength = ValueNotifier(0);
+
+void showToast(String text, {BuildContext? context, String? id, dynamic data}) {
   context = context ?? NavigationManager().context;
+  final newId = id ?? stableHash('[${DateTime.now()}] $text');
+  notificationLog[newId] = {
+    'index':
+        data is ValueNotifier<int>
+            ? -(notificationLog.length + 1)
+            : notificationLog.length + 1,
+    'id': newId,
+    'message': text,
+    'dateTime': DateTime.now(),
+    'data': data,
+  };
+  notificationLogLength.value = notificationLog.length;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,

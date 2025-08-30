@@ -602,6 +602,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   Future<void> close() async {
+    _preparingFuture?.cancel();
     await audioPlayer.close();
     queue.add([]);
     playbackState.add(PlaybackState());
@@ -885,34 +886,35 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void _handleFileDownloadState(TaskUpdate update) {
     final context = NavigationManager().context;
-    if (update.task.displayName.isNotEmpty)
-      switch (update) {
-        case TaskStatusUpdate():
-          // process the TaskStatusUpdate, e.g.
-          switch (update.status) {
-            case TaskStatus.complete:
-              userOfflineSongs.addOrUpdateWhere(
-                checkEntityId,
-                update.task.taskId,
-              );
-              addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
-              showToast(
-                '${context.l10n!.downloaded}: "${update.task.displayName}"',
-              );
-            case TaskStatus.canceled:
-              break;
-            case TaskStatus.paused:
-              break;
-            default:
-              break;
-          }
-        case TaskProgressUpdate():
-          break; //TODO add progress update
-        /* // process the TaskProgressUpdate, e.g.
-          _downloadProgressController.add(
-            update,
-          ); // pass on to widget for indicator */
-      }
+    switch (update) {
+      case TaskStatusUpdate():
+        // process the TaskStatusUpdate, e.g.
+        switch (update.status) {
+          case TaskStatus.complete:
+            userOfflineSongs.addOrUpdateWhere(
+              checkEntityId,
+              update.task.taskId,
+            );
+            addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+            showToast(
+              '${context.l10n!.downloaded}: "${update.task.displayName}"',
+              id: update.task.taskId,
+            );
+          case TaskStatus.canceled:
+            break;
+          case TaskStatus.paused:
+            break;
+          default:
+            break;
+        }
+      case TaskProgressUpdate():
+        final progress =
+            notificationLog[update.task.taskId]?['data'];
+        if (progress is ValueNotifier<int>) {
+          progress.value = (update.progress * 100).toInt();
+        }
+        break;
+    }
   }
 
   void _updatePlaybackState() {

@@ -19,6 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:background_downloader/background_downloader.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,9 +30,14 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/models/paginated_list.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/announcement_box.dart';
+import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_list.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({super.key});
@@ -71,7 +77,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('Reverbio'),
         actions: [
-          _buildAlertButton(),
+          _buildAlertButton(context),
           _buildSyncButton(),
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
@@ -215,15 +221,93 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAlertButton() {
-    return IconButton(
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      icon: const Icon(FluentIcons.alert_badge_24_filled),
-      iconSize: pageHeaderIconSize,
-      onPressed: () {
+  Widget _buildAlertButton(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: notificationLogLength,
+      builder:
+          (context, value, child) => IconButton(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            icon:
+                notificationLog.isNotEmpty ||
+                        FileDownloader().taskQueues.isNotEmpty
+                    ? const Icon(FluentIcons.alert_badge_24_filled)
+                    : const Icon(FluentIcons.alert_24_regular),
+            iconSize: pageHeaderIconSize,
+            onPressed: () async {
+              await _showNotificationLog(context);
+            },
+          ),
+    );
+  }
 
-      },
+  Future<void> _showNotificationLog(BuildContext context) async {
+    final inactivatedColor = _theme.colorScheme.surfaceContainerHigh;
+    showCustomBottomSheet(
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          final _logList =
+              notificationLog.entries.map((entry) {
+                  return {'index': entry.value['index'], 'id': entry.key};
+                }).toList()
+                ..sort((a, b) => a['index'].compareTo(b['index']));
+          final _logKeys = _logList.map((e) => e['id']).toList();
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
+            padding: commonListViewBottomPadding,
+            itemCount: _logKeys.length,
+            itemBuilder: (context, index) {
+              final notification = notificationLog[_logKeys[index]];
+              final borderRadius = getItemBorderRadius(index, _logKeys.length);
+              final progress = notificationLog[notification['id']]?['data'];
+              final message = notification['message'];
+              final dateTime = notification['dateTime'];
+              if (progress is ValueNotifier<int>) {
+                return ValueListenableBuilder(
+                  valueListenable: progress,
+                  builder: (context, value, child) {
+                    final action = Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox.square(
+                          dimension: 35,
+                          child: Spinner(value: value / 100),
+                        ),
+                        Text('$value%'),
+                      ],
+                    );
+                    return BottomSheetBar(
+                      '$message · ${dateTime != null ? formatRelativeTime(dateTime) : ''}',
+                      inactivatedColor,
+                      borderRadius: borderRadius,
+                      actions: [action],
+                    );
+                  },
+                );
+              } else {
+                final action = IconButton(
+                  icon: const Icon(FluentIcons.dismiss_24_filled),
+                  onPressed: () {
+                    notificationLog.remove(_logKeys[index]);
+                    if (context.mounted)
+                      setState(() {
+                        notificationLogLength.value = notificationLog.length;
+                      });
+                  },
+                );
+                return BottomSheetBar(
+                  '$message · ${dateTime != null ? formatRelativeTime(dateTime) : ''}',
+                  inactivatedColor,
+                  borderRadius: borderRadius,
+                  actions: [action],
+                );
+              }
+            },
+          );
+        },
+      ),
     );
   }
 }
