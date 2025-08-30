@@ -248,16 +248,7 @@ Future<dynamic> _getSongByRecordingDetails(
     final cached = getCachedSong(song);
     if (isSongValid(cached) && isMusicbrainzSongValid(cached)) {
       final cytid = ((cached!['ytid'] ?? id.ytid) as String).ytid;
-      if (!isYouTubeSongValid(cached) && cytid.isNotEmpty) {
-        cached['ytid'] = cytid;
-        final ytSong = await _getYTSongDetails(cached);
-        if (ytSong.isNotEmpty) {
-          cached['ytid'] = cytid;
-          cached['id'] = parseEntityId(cached);
-          ytSong.remove('id');
-          cached.addAll(Map<String, dynamic>.from(ytSong));
-        }
-      }
+      cached['ytid'] = cytid;
       if (song is Map) {
         for (final key in song.keys) {
           if (!cached.containsKey(key) &&
@@ -268,17 +259,6 @@ Future<dynamic> _getSongByRecordingDetails(
       cached['id'] = parseEntityId(cached);
       recording = cached;
     } else {
-      if (!isYouTubeSongValid(song) && ytid.isNotEmpty) {
-        song['ytid'] = ytid;
-        final ytSong = await _getYTSongDetails(song);
-        if (ytSong.isNotEmpty) {
-          song['ytid'] = ytid;
-          song['id'] = parseEntityId(song);
-          ytSong.remove('id');
-          song.addAll(Map<String, dynamic>.from(ytSong));
-          recording = song;
-        }
-      }
       recording.addAll(
         Map<String, dynamic>.from(
           await mb.recordings.get(
@@ -320,18 +300,7 @@ Future<dynamic> _getSongByRecordingDetails(
                   url.contains('youtu.be');
             }, orElse: () => {})['url']?['resource'];
         ytid = Uri.parse('${ytLink ?? ''}').queryParameters['v'] ?? '';
-        final ytSong =
-            ytid.isEmpty
-                ? await _findYTSong(recording)
-                : await _getYTSongDetails(ytid);
-        if (ytSong.isNotEmpty) {
-          recording['ytid'] = ytid;
-          recording['id'] = parseEntityId(recording);
-          ytSong.removeWhere(
-            (key, value) => ['id', 'title', 'artist'].contains(key),
-          );
-          recording.addAll(ytSong);
-        }
+        recording['ytid'] = ytid;
       }
       recording.addAll(<String, dynamic>{
         'rid': (recording['id'] as String).mbid,
@@ -369,19 +338,7 @@ Future<dynamic> _findSongByIsrc(dynamic song) async {
   try {
     final id = parseEntityId(song);
     final rcdId = ((song['rid'] ?? id.mbid) as String).mbid;
-    final ytid = ((song['ytid'] ?? id.ytid) as String).ytid;
     final isrc = ((song['isrc'] ?? id.isrc) as String).isrc;
-    if (!isYouTubeSongValid(song) && ytid.isNotEmpty) {
-      song['ytid'] = ytid;
-      final ytSong = await _getYTSongDetails(song);
-      if (ytSong.isNotEmpty) {
-        song['ytid'] = ytid;
-        song['id'] = parseEntityId(song);
-        ytSong.remove('id');
-        song.addAll(Map<String, dynamic>.from(ytSong));
-        recording = song;
-      }
-    }
     if (rcdId.isNotEmpty)
       recording = await _getSongByRecordingDetails(song);
     else if (isrc.isEmpty)
@@ -417,17 +374,6 @@ Future<dynamic> _findMBSong(dynamic song) async {
   try {
     final cached = getCachedSong(song);
     if (isSongValid(cached) && isMusicbrainzSongValid(cached)) {
-      if (!isYouTubeSongValid(song) && !isYouTubeSongValid(cached)) {
-        final ytSong =
-            (cached!['id'] as String).ytid.isNotEmpty
-                ? await _getYTSongDetails(cached)
-                : await _findYTSong(cached);
-        if (ytSong.isNotEmpty) {
-          ytSong['id'] = parseEntityId(ytSong);
-          ytSong['id'] = (ytSong['id'] as String).mergedAbsentId(song['id']);
-          cached.addAll(Map<String, dynamic>.from(ytSong));
-        }
-      }
       if (song is Map && cached is Map) {
         for (final key in song.keys) {
           if (!cached!.containsKey(key) &&
@@ -442,22 +388,22 @@ Future<dynamic> _findMBSong(dynamic song) async {
       final mbid = ((song['mbid'] ?? id.mbid) as String).mbid;
       final isrc = ((song['isrc'] ?? id.isrc) as String).isrc;
       final ytid = ((song['ytid'] ?? id.ytid) as String).ytid;
-      if (!isYouTubeSongValid(song) && ytid.isNotEmpty) {
-        song['ytid'] = ytid;
-        final ytSong = await _getYTSongDetails(song);
-        if (ytSong.isNotEmpty) {
-          song['ytid'] = ytid;
-          song['id'] = parseEntityId(song);
-          ytSong.remove('id');
-          song.addAll(Map<String, dynamic>.from(ytSong));
-        }
-      }
       if (mbid.isNotEmpty &&
           (song['mbidType'] == 'recording' || song['mbidType'] == null)) {
         song.addAll(await _getSongByRecordingDetails(song));
       } else if (isrc.isNotEmpty) {
         song.addAll(await _findSongByIsrc(song));
       } else {
+        if (!isYouTubeSongValid(song) && ytid.isNotEmpty) {
+          song['ytid'] = ytid;
+          final ytSong = await _getYTSongDetails(song);
+          if (ytSong.isNotEmpty) {
+            song['ytid'] = ytid;
+            song['id'] = parseEntityId(song);
+            ytSong.remove('id');
+            song.addAll(Map<String, dynamic>.from(ytSong));
+          }
+        }
         final String iArtist =
             combineArtists(song) ??
             song['mbArtist'] ??
@@ -735,8 +681,19 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   final context = NavigationManager().context;
   try {
     if (song == null) return '';
-    if (song['mbid'] == null) await queueSongInfoRequest(song);
-    if (song['ytid'] != null && song['ytid'].isNotEmpty) {
+    if (!isMusicbrainzSongValid(song)) await queueSongInfoRequest(song);
+    if (!isYouTubeSongValid(song)) {
+        final ytSong =
+            (song['id'] as String).ytid.isNotEmpty
+                ? await _getYTSongDetails(song)
+                : await _findYTSong(song);
+        if (ytSong.isNotEmpty) {
+          ytSong['id'] = parseEntityId(ytSong);
+          ytSong['id'] = (ytSong['id'] as String).mergedAbsentId(song['id']);
+          song.addAll(Map<String, dynamic>.from(ytSong));
+        }
+      }
+    if (isYouTubeSongValid(song)) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
       if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
@@ -882,6 +839,7 @@ Future<void> makeSongOffline(dynamic song) async {
         url: songUrl,
         filename: '$id.m4a',
         directory: _audioDirPath,
+        updates: Updates.statusAndProgress,
         displayName:
             '${song['mbTitle'] ?? song['title'] ?? song['ytTitle']} - ${song['mbArtist'] ?? song['artist'] ?? song['ytArtist']}',
         metaData: jsonEncode({
@@ -898,7 +856,10 @@ Future<void> makeSongOffline(dynamic song) async {
       else
         showToast(
           '${context.l10n!.downloadingInBackground}: ${song['title']} - ${song['artist']}',
+          id: song['id'],
+          data: ValueNotifier<int>(0),
         );
+      notificationLogLength.value = notificationLog.length;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
