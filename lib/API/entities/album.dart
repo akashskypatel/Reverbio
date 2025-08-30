@@ -65,6 +65,13 @@ dynamic _getCachedAlbum(dynamic album) {
   }
 }
 
+void addAlbumToCache(Map<String, dynamic> album) {
+  if (isAlbumValid(album)) {
+    cachedAlbumsList.addOrUpdateWhere(checkAlbum, album);
+    addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
+  }
+}
+
 Future<Map> getAlbumDetailsById(dynamic album) async {
   try {
     final id = parseEntityId(album);

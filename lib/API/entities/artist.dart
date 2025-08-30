@@ -409,6 +409,11 @@ dynamic _searchCachedArtists(String query) {
   }
 }
 
+void addArtistToCache(Map<String, dynamic> artist) {
+  cachedArtistsList.addOrUpdateWhere(checkArtist, artist);
+  addOrUpdateData('cache', 'cachedArtists', cachedArtistsList);
+}
+
 Future<dynamic> _getArtistDetailsMB(
   String query, {
   bool exact = true,
