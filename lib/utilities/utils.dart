@@ -851,3 +851,11 @@ String formatRelativeTime(DateTime dateTime) {
     return '${years}y$suffix';
   }
 }
+
+/// Check if a and b are within a certain percentage of each other, 
+/// where percentage is provided as a whole number (ex. 15 for 15%).
+bool withinPercent(double a, double b, double percentage) {
+  if (a == b && b == 0) return true;
+  final maxVal = max(a.abs(), b.abs());
+  return (a - b).abs() / maxVal <= percentage / 100;
+}

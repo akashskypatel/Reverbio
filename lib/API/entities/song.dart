@@ -197,7 +197,14 @@ Future<Map<String, dynamic>> _findYTSong(dynamic song) async {
       results.sort((a, b) => b['views'].compareTo(a['views']));
       final result =
           results.where((value) {
-            return checkTitleAndArtist(value, song);
+            return checkTitleAndArtist(value, song) &&
+                ((song['duration'] ?? 0) == 0 ||
+                    (value['duration'] ?? 0) == 0 ||
+                    withinPercent(
+                      (song['duration'] as int).toDouble(),
+                      (value['duration'] as int).toDouble(),
+                      90,
+                    ));
           }).toList();
       if (result.isNotEmpty) {
         ytSong = await _getYTSongDetails(result.first);
@@ -683,16 +690,16 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
     if (song == null) return '';
     if (!isMusicbrainzSongValid(song)) await queueSongInfoRequest(song);
     if (!isYouTubeSongValid(song)) {
-        final ytSong =
-            (song['id'] as String).ytid.isNotEmpty
-                ? await _getYTSongDetails(song)
-                : await _findYTSong(song);
-        if (ytSong.isNotEmpty) {
-          ytSong['id'] = parseEntityId(ytSong);
-          ytSong['id'] = (ytSong['id'] as String).mergedAbsentId(song['id']);
-          song.addAll(Map<String, dynamic>.from(ytSong));
-        }
+      final ytSong =
+          (song['id'] as String).ytid.isNotEmpty
+              ? await _getYTSongDetails(song)
+              : await _findYTSong(song);
+      if (ytSong.isNotEmpty) {
+        ytSong['id'] = parseEntityId(ytSong);
+        ytSong['id'] = (ytSong['id'] as String).mergedAbsentId(song['id']);
+        song.addAll(Map<String, dynamic>.from(ytSong));
       }
+    }
     if (isYouTubeSongValid(song)) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
