@@ -243,5 +243,7 @@
   "checkBackLater": "Tunafanya kazi juu yake. Tafadhali angalia tena baadaye...",
   "unableToDownload": "Hawezi kupakua",
   "downloadingInBackground": "Wimbo unapakuliwa kwa nyuma",
-  "openInMusicBrainz": "Fungua katika hifadhidata ya MusicBrainz"
+  "openInMusicBrainz": "Fungua katika hifadhidata ya MusicBrainz",
+  "downloadCancelled": "Upakuli umeghairiwa",
+  "downloadPaused": "Upakuli umesitishwa"
 }

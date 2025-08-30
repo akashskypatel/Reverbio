@@ -243,5 +243,7 @@
   "checkBackLater": "対応中です。後でもう一度確認してください...",
   "unableToDownload": "ダウンロードできません",
   "downloadingInBackground": "バックグラウンドで曲をダウンロード中",
-  "openInMusicBrainz": "MusicBrainzデータベースで開く"
+  "openInMusicBrainz": "MusicBrainzデータベースで開く",
+  "downloadCancelled": "ダウンロードがキャンセルされました",
+  "downloadPaused": "ダウンロードが一時停止中"
 }

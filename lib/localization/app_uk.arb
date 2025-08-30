@@ -243,5 +243,7 @@
   "checkBackLater": "Працюємо над цим. Будь ласка, перевірте пізніше...",
   "unableToDownload": "Неможливо завантажити",
   "downloadingInBackground": "Пісня завантажується у фоновому режимі",
-  "openInMusicBrainz": "Відкрити в базі даних MusicBrainz"
+  "openInMusicBrainz": "Відкрити в базі даних MusicBrainz",
+  "downloadCancelled": "Завантаження скасовано",
+  "downloadPaused": "Завантаження призупинено"
 }

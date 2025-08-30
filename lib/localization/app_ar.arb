@@ -243,5 +243,7 @@
   "checkBackLater": "نعمل على ذلك. يرجى التحقق لاحقًا...",
   "unableToDownload": "تعذر التحميل",
   "downloadingInBackground": "يتم تنزيل الأغنية في الخلفية",
-  "openInMusicBrainz": "فتح في قاعدة بيانات MusicBrainz"
+  "openInMusicBrainz": "فتح في قاعدة بيانات MusicBrainz",
+  "downloadCancelled": "تم إلغاء التنزيل",
+  "downloadPaused": "التنزيل متوقف مؤقتًا"
 }

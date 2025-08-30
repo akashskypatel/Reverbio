@@ -243,5 +243,7 @@
   "checkBackLater": "దానిపై పని చేస్తున్నాము. దయచేసి తర్వాత తనిఖీ చేయండి...",
   "unableToDownload": "డౌన్‌లోడ్ చేయలేకపోయింది",
   "downloadingInBackground": "పాట పరదా వెనుక డౌన్‌లోడ్ అవుతుంది",
-  "openInMusicBrainz": "MusicBrainz డేటాబేస్‌లో తెరవండి"
+  "openInMusicBrainz": "MusicBrainz డేటాబేస్‌లో తెరవండి",
+  "downloadCancelled": "డౌన్‌లోడ్ రద్దు చేయబడింది",
+  "downloadPaused": "డౌన్‌లోడ్ విరామించబడింది"
 }

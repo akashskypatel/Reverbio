@@ -243,5 +243,7 @@
   "checkBackLater": "এটি নিয়ে কাজ করা হচ্ছে। পরে আবার চেক করুন...",
   "unableToDownload": "ডাউনলোড করতে অক্ষম",
   "downloadingInBackground": "গানটি ব্যাকগ্রাউন্ডে ডাউনলোড হচ্ছে",
-  "openInMusicBrainz": "MusicBrainz ডেটাবেসে খুলুন"
+  "openInMusicBrainz": "MusicBrainz ডেটাবেসে খুলুন",
+  "downloadCancelled": "ডাউনলোড বাতিল করা হয়েছে",
+  "downloadPaused": "ডাউনলোড বিরতিতে আছে"
 }

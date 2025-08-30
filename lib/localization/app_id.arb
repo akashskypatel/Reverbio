@@ -243,5 +243,7 @@
   "checkBackLater": "Sedang dalam pengerjaan. Silakan periksa kembali nanti...",
   "unableToDownload": "Tidak dapat mengunduh",
   "downloadingInBackground": "Lagu sedang diunduh di latar belakang",
-  "openInMusicBrainz": "Buka di database MusicBrainz"
+  "openInMusicBrainz": "Buka di database MusicBrainz",
+  "downloadCancelled": "Unduhan dibatalkan",
+  "downloadPaused": "Unduhan dijeda"
 }

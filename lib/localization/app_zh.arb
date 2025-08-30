@@ -243,5 +243,7 @@
   "checkBackLater": "正在处理，请稍后再试...",
   "unableToDownload": "无法下载",
   "downloadingInBackground": "正在后台下载歌曲",
-  "openInMusicBrainz": "在 MusicBrainz 数据库中打开"
+  "openInMusicBrainz": "在 MusicBrainz 数据库中打开",
+  "downloadCancelled": "下载已取消",
+  "downloadPaused": "下载已暂停"
 }

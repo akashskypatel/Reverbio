@@ -243,5 +243,7 @@
   "checkBackLater": "Δουλεύουμε πάνω σε αυτό. Παρακαλούμε ελέγξτε ξανά αργότερα...",
   "unableToDownload": "Αδυναμία λήψης",
   "downloadingInBackground": "Το τραγούδι γίνεται λήψη στο παρασκήνιο",
-  "openInMusicBrainz": "Άνοιγμα στη βάση δεδομένων MusicBrainz"
+  "openInMusicBrainz": "Άνοιγμα στη βάση δεδομένων MusicBrainz",
+  "downloadCancelled": "Η λήψη ακυρώθηκε",
+  "downloadPaused": "Η λήψη σε παύση"
 }

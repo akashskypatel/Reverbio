@@ -243,5 +243,7 @@
   "checkBackLater": "त्यावर काम चालू आहे. कृपया नंतर पुन्हा तपासा...",
   "unableToDownload": "डाउनलोड करण्यास अक्षम",
   "downloadingInBackground": "गाणे बॅकग्राउंडमध्ये डाउनलोड केले जात आहे",
-  "openInMusicBrainz": "MusicBrainz डेटाबेसमध्ये उघडा"
+  "openInMusicBrainz": "MusicBrainz डेटाबेसमध्ये उघडा",
+  "downloadCancelled": "डाउनलोड रद्द केले",
+  "downloadPaused": "डाउनलोड विराम दिलेला आहे"
 }
