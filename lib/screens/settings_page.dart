@@ -190,7 +190,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         CustomBar(
           tileName: context.l10n!.dynamicColor,
-          tileIcon: FluentIcons.inking_tool_accent_24_filled,
+          tileIcon: FluentIcons.paint_bucket_brush_24_filled,
           trailing: Switch(
             value: useSystemColor.value,
             onChanged: (value) => _toggleSystemColor(context, value),
@@ -199,7 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (themeMode == ThemeMode.dark)
           CustomBar(
             tileName: context.l10n!.pureBlackTheme,
-            tileIcon: FluentIcons.cellular_off_24_filled,
+            tileIcon: FluentIcons.color_background_24_filled,
             trailing: Switch(
               value: usePureBlackColor.value,
               onChanged: (value) => _togglePureBlack(context, value),
@@ -334,42 +334,6 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
-        //TODO: Fix playNextSongAutomatically
-        /*
-        ValueListenableBuilder<bool>(
-          valueListenable: playNextSongAutomatically,
-          builder: (context, value, __) {
-            return CustomBar(
-              context.l10n!.automaticSongPicker,
-              FluentIcons.music_note_2_play_20_filled,
-              trailing: Switch(
-                value: value,
-                onChanged: (value) {
-                  audioHandler.changeAutoPlayNextStatus();
-                  showToast(context, context.l10n!.settingChangedMsg);
-                },
-              ),
-            );
-          },
-        ),
-        */
-        //TODO: Fix defaultRecommendations
-        /*
-        ValueListenableBuilder<bool>(
-          valueListenable: defaultRecommendations,
-          builder: (context, value, __) {
-            return CustomBar(
-              context.l10n!.originalRecommendations,
-              FluentIcons.channel_share_24_regular,
-              trailing: Switch(
-                value: value,
-                onChanged:
-                    (value) => _toggleDefaultRecommendations(context, value),
-              ),
-            );
-          },
-        ),
-        */
         _buildToolsSection(context),
         _buildSponsorSection(context, primaryColor),
       ],
