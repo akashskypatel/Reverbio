@@ -301,30 +301,6 @@ class _SongBarState extends State<SongBar> {
                               }
                             },
                           ),
-                          /*
-                          Row(
-                            children: [
-                              ValueListenableBuilder(
-                                valueListenable: widget._isLoadingNotifier,
-                                builder: (context, value, _) {
-                                  if (value)
-                                    return _buildLoadingSpinner(context);
-                                  else
-                                    return const SizedBox.shrink();
-                                },
-                              ),
-                              ValueListenableBuilder(
-                                valueListenable: widget._isErrorNotifier,
-                                builder: (context, value, _) {
-                                  if (value)
-                                    return _buildErrorIconWidget(context);
-                                  else
-                                    return const SizedBox.shrink();
-                                },
-                              ),
-                            ],
-                          ),
-                          */
                         ),
                         _buildActionButtons(context, primaryColor),
                       ],
