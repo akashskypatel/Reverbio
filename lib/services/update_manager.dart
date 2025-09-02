@@ -205,16 +205,16 @@ Future<String> getDownloadUrl(Map<String, dynamic> map) async {
   return map[downloadLatest].toString();
 }
 
-void postUpdate() {
+void postUpdate() async {
   final hasPostUpdateRun = postUpdateRun[appVersion] ?? false;
   if (!hasPostUpdateRun) {
     //Make changes from here
     for (final e in userCustomPlaylists.value) {
       e['id'] = generatePlaylistId(e['title']);
     }
-    addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+    await addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
     //to here
   }
   postUpdateRun[appVersion] = true;
-  addOrUpdateData('settings', 'postUpdateRun', postUpdateRun);
+  await addOrUpdateData('settings', 'postUpdateRun', postUpdateRun);
 }

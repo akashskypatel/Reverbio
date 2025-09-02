@@ -24,11 +24,12 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 
-void addOrUpdateData(String category, String key, dynamic value) async {
+Future<void> addOrUpdateData(String category, String key, dynamic value) async {
   try {
     final _box = await _openBox(category);
     await _box.put(key, value);

@@ -100,7 +100,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
         widget.playlistData?['primary-type'] != null &&
         (widget.playlistData?['list'] == null ||
             widget.playlistData?['list'].isEmpty)) {
-      await getAlbumDetailsById(widget.playlistData);
+      await queueAlbumInfoRequest(widget.playlistData);
     }
     if (widget.playlistData['id'] != null &&
         widget.playlistData['id']?.contains('yt=')) {
@@ -124,7 +124,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                       isArtist: widget.isArtist,
                     )
                     : (widget.playlistData?['mbid'] != null
-                        ? await getAlbumDetailsById(widget.playlistData)
+                        ? await queueAlbumInfoRequest(widget.playlistData)
                         : null)));
 
     if (_playlist != null) {

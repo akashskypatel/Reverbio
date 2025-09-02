@@ -276,7 +276,7 @@ class AudioPlayerService {
   Future<void> setVolume(double volume) async {
     _volume = volume;
     _volumeNotifier.value = volume;
-    addOrUpdateData('settings', 'volume', volume.toInt());
+    await addOrUpdateData('settings', 'volume', volume.toInt());
     return _player.setVolume(volume);
   }
 
@@ -658,7 +658,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           'getCurrentAudioDevice',
         );
         audioDevice.value = device;
-        addOrUpdateData('settings', 'audioDevice', audioDevice.value);
+        await addOrUpdateData('settings', 'audioDevice', audioDevice.value);
         return device;
       }
     } catch (e, stackTrace) {
@@ -902,7 +902,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
               checkEntityId,
               update.task.taskId,
             );
-            addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+            unawaited(addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs));
             showToast(
               '${context.l10n!.downloaded}: "${update.task.displayName}"',
               id: update.task.taskId,
@@ -1053,19 +1053,19 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
   }
 
-  void changeSponsorBlockStatus() {
+  void changeSponsorBlockStatus() async {
     settings.sponsorBlockSupport.value = !settings.sponsorBlockSupport.value;
-    addOrUpdateData(
+    await addOrUpdateData(
       'settings',
       'sponsorBlockSupport',
       settings.sponsorBlockSupport.value,
     );
   }
 
-  void changeAutoPlayNextStatus() {
+  void changeAutoPlayNextStatus() async {
     settings.playNextSongAutomatically.value =
         !settings.playNextSongAutomatically.value;
-    addOrUpdateData(
+    await addOrUpdateData(
       'settings',
       'playNextSongAutomatically',
       settings.playNextSongAutomatically.value,

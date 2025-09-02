@@ -139,7 +139,7 @@ class _BaseCardState extends State<BaseCard> {
         case 'ep':
         case 'broadcast':
         case 'other':
-          return getAlbumDetailsById(widget.inputData);
+          return queueAlbumInfoRequest(widget.inputData);
         default:
       }
   }

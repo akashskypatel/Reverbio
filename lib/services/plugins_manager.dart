@@ -125,7 +125,7 @@ class PluginsManager {
           if (!result.isError) {
             flutterJs.dispose();
             await addPlugin(pluginData);
-            addOrUpdateData('settings', 'pluginsData', _pluginsData);
+            await addOrUpdateData('settings', 'pluginsData', _pluginsData);
             return true;
           }
         }
@@ -974,7 +974,7 @@ class PluginsManager {
     }
   }
 
-  static dynamic setUserSettings(String pluginName, dynamic settings) {
+  static Future<void> setUserSettings(String pluginName, dynamic settings) async {
     try {
       _pluginsData
           .firstWhere(
@@ -982,7 +982,7 @@ class PluginsManager {
             orElse: () => {},
           )['userSettings']
           .addAll(settings);
-      addOrUpdateData('settings', 'pluginsData', _pluginsData);
+     await addOrUpdateData('settings', 'pluginsData', _pluginsData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1010,7 +1010,7 @@ class PluginsManager {
     }
   }
 
-  static void saveSettings(String pluginName) {
+  static Future<void> saveSettings(String pluginName) async {
     try {
       final (result, _) = _executeMethod(
         pluginName: pluginName,
@@ -1022,7 +1022,7 @@ class PluginsManager {
       );
       final userSettings = getUserSettings(pluginName);
       if (userSettings != null) (userSettings as Map).addAll(settings);
-      addOrUpdateData('settings', 'pluginsData', _pluginsData);
+      await addOrUpdateData('settings', 'pluginsData', _pluginsData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1032,7 +1032,7 @@ class PluginsManager {
     }
   }
 
-  static void restSettings(String pluginName) {
+  static Future<void> restSettings(String pluginName) async {
     try {
       final defaultSettings = getDefaultSettings(pluginName);
       final userSettings = getUserSettings(pluginName);
@@ -1040,7 +1040,7 @@ class PluginsManager {
         userSettings.clear();
         userSettings.addAll(defaultSettings);
       }
-      addOrUpdateData('settings', 'pluginsData', _pluginsData);
+      await addOrUpdateData('settings', 'pluginsData', _pluginsData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1114,7 +1114,7 @@ class PluginsManager {
     }
   }
 
-  static void cacheData(String pluginName, dynamic entity, {String? key}) {
+  static Future<void> cacheData(String pluginName, dynamic entity, {String? key}) async {
     final entityCacheMap = {
       'song': {'key': 'cachedSongs', 'cache': cachedSongsList},
       'album': {'key': 'cachedAlbums', 'cache': cachedAlbumsList},
@@ -1151,7 +1151,7 @@ class PluginsManager {
           cache.add(entity);
         else
           cache.insert(index, entity);
-        addOrUpdateData('cache', cacheKey, cache);
+        await addOrUpdateData('cache', cacheKey, cache);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -1162,7 +1162,7 @@ class PluginsManager {
     }
   }
 
-  static dynamic triggerHook(dynamic entity, String hookName) async {
+  static Future<void> triggerHook(dynamic entity, String hookName) async {
     const hooks = {
       'onQueueSong': {'isAsync': true, 'isBackground': false},
       'onEntityLiked': {'isAsync': true, 'isBackground': true},
@@ -1207,24 +1207,24 @@ class PluginsManager {
           if (entity is List) {
             entity = result;
             for (final e in entity) {
-              cacheData(plugin['name'], e, key: e['cacheKey']);
+              await cacheData(plugin['name'], e, key: e['cacheKey']);
             }
             continue;
           } else if (entity is Map) {
             entity[plugin['name']][hookName] = result;
-            cacheData(plugin['name'], entity, key: entity['cacheKey']);
+            await cacheData(plugin['name'], entity, key: entity['cacheKey']);
             continue;
           }
         }
         if (result is Map) {
           if (entity is Map) {
             entity.addAll(entity);
-            cacheData(plugin['name'], entity, key: entity['cacheKey']);
+            await cacheData(plugin['name'], entity, key: entity['cacheKey']);
             continue;
           } else if (entity is List) {
             for (final e in entity) {
               e[plugin['name']][hookName] = result;
-              cacheData(plugin['name'], e, key: e['cacheKey']);
+              await cacheData(plugin['name'], e, key: e['cacheKey']);
               continue;
             }
           }

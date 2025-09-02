@@ -132,12 +132,12 @@ Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
       userLikedSongsList.addOrUpdateWhere(checkSong, song);
       currentLikedSongsLength.value = userLikedSongsList.length;
       song['song'] = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
-      PM.triggerHook(song, 'onEntityLiked');
+      unawaited(PM.triggerHook(song, 'onEntityLiked'));
     } else {
       userLikedSongsList.removeWhere((s) => checkSong(s, song));
       currentLikedSongsLength.value = userLikedSongsList.length;
     }
-    addOrUpdateData('user', 'likedSongs', userLikedSongsList);
+    unawaited(addOrUpdateData('user', 'likedSongs', userLikedSongsList));
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -151,7 +151,7 @@ void moveLikedSong(int oldIndex, int newIndex) {
     ..removeAt(oldIndex)
     ..insert(newIndex, _song);
   currentLikedSongsLength.value = userLikedSongsList.length;
-  addOrUpdateData('user', 'likedSongs', userLikedSongsList);
+  unawaited(addOrUpdateData('user', 'likedSongs', userLikedSongsList));
 }
 
 bool isSongAlreadyLiked(songToCheck) =>
@@ -238,7 +238,6 @@ Map<String, dynamic>? getCachedSong(dynamic song) {
 void addSongToCache(Map<String, dynamic> song) {
   if (isSongValid(song)) {
     cachedSongsList.addOrUpdateWhere(checkSong, song);
-    addOrUpdateData('cache', 'cachedSongs', cachedSongsList);
   }
 }
 
@@ -309,33 +308,35 @@ Future<dynamic> _getSongByRecordingDetails(
         ytid = Uri.parse('${ytLink ?? ''}').queryParameters['v'] ?? '';
         recording['ytid'] = ytid;
       }
-      recording.addAll(<String, dynamic>{
-        'rid': (recording['id'] as String).mbid,
-        'mbid': (recording['id'] as String).mbid,
-        'mbTitle': recording['title'],
-        'mbArtist': recording['artist'],
-        'mbidType': 'recording',
-        'duration': (recording['length'] ?? 0) ~/ 1000,
-        'primary-type': 'song',
-        'cachedAt': DateTime.now().toString(),
-        'artist': recording['artist'],
-        'musicbrainz': true,
-        'isDerivative':
-            derivativeRegex.hasMatch(recording['title'] ?? '') &&
-            boundExtrasRegex.hasMatch(recording['title'] ?? ''),
-        'derivative-type':
-            (derivativeRegex.hasMatch(recording['title'] ?? '')
-                    ? boundExtrasRegex
-                        .firstMatch(recording['title'] ?? '')
-                        ?.group(1)
-                    : null)
-                as dynamic,
-      });
+      if (recording['error'] == null) {
+        recording.addAll(<String, dynamic>{
+          'rid': (recording['id'] as String).mbid,
+          'mbid': (recording['id'] as String).mbid,
+          'mbTitle': recording['title'],
+          'mbArtist': recording['artist'],
+          'mbidType': 'recording',
+          'duration': (recording['length'] ?? 0) ~/ 1000,
+          'primary-type': 'song',
+          'cachedAt': DateTime.now().toString(),
+          'artist': recording['artist'],
+          'musicbrainz': true,
+          'isDerivative':
+              derivativeRegex.hasMatch(recording['title'] ?? '') &&
+              boundExtrasRegex.hasMatch(recording['title'] ?? ''),
+          'derivative-type':
+              (derivativeRegex.hasMatch(recording['title'] ?? '')
+                      ? boundExtrasRegex
+                          .firstMatch(recording['title'] ?? '')
+                          ?.group(1)
+                      : null)
+                  as dynamic,
+        });
+        recording['id'] = parseEntityId(recording);
+      }
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-  recording['id'] = parseEntityId(recording);
   recording = Map<String, dynamic>.from(recording);
   return recording;
 }
@@ -395,9 +396,18 @@ Future<dynamic> _findMBSong(dynamic song) async {
       final mbid = ((song['mbid'] ?? id.mbid) as String).mbid;
       final isrc = ((song['isrc'] ?? id.isrc) as String).isrc;
       final ytid = ((song['ytid'] ?? id.ytid) as String).ytid;
-      if (mbid.isNotEmpty &&
-          (song['mbidType'] == 'recording' || song['mbidType'] == null)) {
-        song.addAll(await _getSongByRecordingDetails(song));
+      if (mbid.isNotEmpty) {
+        dynamic songInfo = Map<String, dynamic>.from(
+          await _getSongByRecordingDetails(song),
+        );
+        if (isSongValid(songInfo)) {
+          song.addAll(songInfo);
+        } else {
+          songInfo = Map<String, dynamic>.from(await getAlbumInfo(song));
+        }
+        if (isSongValid(songInfo)) {
+          song.addAll(songInfo);
+        }
       } else if (isrc.isNotEmpty) {
         song.addAll(await _findSongByIsrc(song));
       } else {
@@ -565,10 +575,13 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
               : (song['id'] as String).mergedAbsentId(offlineId);
       song = Map<String, dynamic>.from(song);
       song['primary-type'] = song['primary-type'] ?? 'song';
-      if (song['primary-type'].toLowerCase() == 'single')
-        song.addAll(await getSinglesDetails(song));
-      else
-        song.addAll(await _findMBSong(song));
+      dynamic songInfo = await _findMBSong(song);
+      if (!isSongValid(songInfo)) {
+        songInfo = await getAlbumInfo(song);
+      }
+      if (isSongValid(songInfo)) {
+        song.addAll(songInfo);
+      }
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -578,8 +591,10 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   song['id'] = parseEntityId(song);
   song = Map<String, dynamic>.from(song);
   addSongToCache(song as Map<String, dynamic>);
-  PM.triggerHook(song, 'getSongInfo');
+  unawaited(PM.triggerHook(song, 'onGetSongInfo'));
   getSongInfoQueue.removeWhere((e) => checkSong(e.data, song));
+  if (getSongInfoQueue.isEmpty)
+    await addOrUpdateData('cache', 'cachedSongs', cachedSongsList);
   return song;
 }
 
@@ -668,7 +683,7 @@ bool isSongTitleValid(dynamic song) {
       song['mbTitle'] ?? song['title'] ?? song['ytTitle'] ?? song['song'];
   final isValid =
       song.isNotEmpty &&
-      (title != null && title.isNotEmpty && title != 'unknown');
+      (title != null && title.isNotEmpty && title.toLowerCase() != 'unknown');
   return isValid;
 }
 
@@ -680,7 +695,9 @@ bool isSongArtistValid(dynamic song) {
           : null);
   final isValid =
       song.isNotEmpty &&
-      (artist != null && artist.isNotEmpty && artist != 'unknown');
+      (artist != null &&
+          artist.isNotEmpty &&
+          artist.toLowerCase() != 'unknown');
   return isValid;
 }
 
@@ -763,7 +780,7 @@ Future<String?> getYouTubeAudioUrl(String songId) async {
     final manifest = await getSongManifest(songId);
     final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
     final audioUrl = audioQuality.url.toString();
-    addOrUpdateData('cache', cacheKey, audioUrl);
+    unawaited(addOrUpdateData('cache', cacheKey, audioUrl));
     return audioUrl;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -957,7 +974,7 @@ Future<void> getExistingOfflineSongs() async {
         }
       }
     currentOfflineSongsLength.value = userOfflineSongs.length;
-    addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+    await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -976,7 +993,7 @@ Future<void> _matchFileToSongInfo(File file) async {
     }
     song['offlineAudioPath'] = file.path;
     userOfflineSongs.addOrUpdateWhere(checkEntityId, song['id']);
-    addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+    await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -1054,7 +1071,7 @@ Future<void> removeSongFromOffline(dynamic song) async {
   song['isOffline'] = false;
   userOfflineSongs.removeWhere((s) => checkEntityId(song['id'], s));
   currentOfflineSongsLength.value = userOfflineSongs.length;
-  addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+  await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   showToast(context.l10n!.songRemovedFromOffline);
 }
 
@@ -1100,7 +1117,7 @@ Future<void> updateRecentlyPlayed(dynamic song) async {
 
     userRecentlyPlayed.insert(0, song);
     currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
-    addOrUpdateData('user', 'recentlyPlayedSongs', userRecentlyPlayed);
+    await addOrUpdateData('user', 'recentlyPlayedSongs', userRecentlyPlayed);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;

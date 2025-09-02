@@ -33,6 +33,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/utils.dart';
 
 final List userLikedAlbumsList =
     (Hive.box('user').get('likedAlbums', defaultValue: []) as List).map((e) {
@@ -49,6 +50,8 @@ final List cachedAlbumsList =
 final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(
   userLikedAlbumsList.length,
 );
+
+final Set<FutureTracker> getAlbumInfoQueue = {};
 
 dynamic _getCachedAlbum(dynamic album) {
   try {
@@ -68,11 +71,65 @@ dynamic _getCachedAlbum(dynamic album) {
 void addAlbumToCache(Map<String, dynamic> album) {
   if (isAlbumValid(album)) {
     cachedAlbumsList.addOrUpdateWhere(checkAlbum, album);
-    addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
   }
 }
 
-Future<Map> getAlbumDetailsById(dynamic album) async {
+Future? queueAlbumInfoRequest(dynamic album) {
+  try {
+    final existing = getAlbumInfoQueue.where((e) => checkAlbum(e.data, album));
+    if (existing.isEmpty) {
+      final futureTracker = FutureTracker(album);
+      getAlbumInfoQueue.add(futureTracker);
+      return futureTracker.runFuture(getAlbumInfo(album));
+    }
+    return getAlbumInfoQueue.isNotEmpty
+        ? existing.first.completer!.future
+        : Future.value(album);
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return Future.value(album);
+  }
+}
+
+Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
+  Map<String, dynamic> albumData = {};
+  try {
+    if (album is String && album.mbid.isEmpty) {
+      albumData = Map<String, dynamic>.from(await _findMBAlbum(album));
+    } else {
+      final id = parseEntityId(album);
+      final ids = Uri.parse('?$id').queryParameters;
+      final mbid =
+          ((album['id'] ?? album['mbid'] ?? id.mbid ?? ids['mb'] ?? '')
+                  as String)
+              .mbid;
+      if (mbid.isNotEmpty) {
+        albumData = Map<String, dynamic>.from(
+          await _getAlbumDetailsById(album),
+        );
+      } else if (isAlbumTitleValid(album)) {
+        albumData = Map<String, dynamic>.from(
+          await _findMBAlbum(
+            album['title'],
+            artist: isAlbumArtistValid(album) ? album['artist'] : null,
+          ),
+        );
+      }
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  album = Map<String, dynamic>.from(albumData);
+  album['id'] = parseEntityId(album);
+  addAlbumToCache(album);
+  unawaited(PM.triggerHook(album, 'onGetAlbumInfo'));
+  getAlbumInfoQueue.removeWhere((e) => checkAlbum(e.data, album));
+  if (getAlbumInfoQueue.isEmpty)
+    await addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
+  return album;
+}
+
+Future<Map> _getAlbumDetailsById(dynamic album) async {
   try {
     final id = parseEntityId(album);
     final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
@@ -110,22 +167,18 @@ Future<Map> getAlbumDetailsById(dynamic album) async {
       if (album['primary-type'].toLowerCase() != 'single')
         await getTrackList(album);
       else
-        await getSinglesDetails(album);
+        await _getSinglesDetails(album);
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
   album = Map<String, dynamic>.from(album);
   parseEntityId(album);
-  if (isAlbumValid(album)) {
-    cachedAlbumsList.addOrUpdateWhere(checkAlbum, album);
-    addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
-  }
-  await PM.triggerHook(album, 'onGetAlbumInfo');
+  addAlbumToCache(album as Map<String, dynamic>);
   return album;
 }
 
-Future<Map<String, dynamic>> findMBAlbum(
+Future<Map<String, dynamic>> _findMBAlbum(
   String title, {
   String? artist,
   int? limit,
@@ -156,11 +209,7 @@ Future<Map<String, dynamic>> findMBAlbum(
     return {'id': null, 'title': title, 'artist': artist};
   }
   parseEntityId(albumData);
-  if (isAlbumValid(albumData)) {
-    cachedAlbumsList.addOrUpdateWhere(checkAlbum, albumData);
-    addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
-  }
-  await PM.triggerHook(albumData, 'onGetAlbumInfo');
+  addAlbumToCache(albumData);
   return albumData;
 }
 
@@ -211,12 +260,12 @@ Future<dynamic> getAlbumsCoverArt(List<dynamic> albums) async {
   return albums;
 }
 
-Future<dynamic> getSinglesDetails(dynamic song) async {
+Future<dynamic> _getSinglesDetails(dynamic song) async {
   final id = parseEntityId(song);
   final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
   final rgid =
       song['mbidType'] == 'release-group'
-          ? (song['rgid'] as String).mbid
+          ? ((song['rgid'] ?? song['mbid'] ?? '') as String).mbid
           : (ids['mb'] ?? (song['mbid'] as String).mbid);
   if (rgid.isEmpty) return song;
   try {
@@ -253,7 +302,8 @@ Future<dynamic> getSinglesDetails(dynamic song) async {
         recording['artist'] = combineArtists(recording);
         if (song['ytid'] != null && song['ytid'].isNotEmpty)
           recording['ytid'] = song['ytid'];
-        if (checkTitleAndArtist(song, recording)) {
+        if (checkTitleAndArtist(song, recording) ||
+            (!isSongTitleValid(song) && !isSongArtistValid(song))) {
           final result = Map<String, dynamic>.from(
             await getSongInfo(recording),
           );
@@ -276,10 +326,7 @@ Future<dynamic> getSinglesDetails(dynamic song) async {
   }
   parseEntityId(song);
   song = Map<String, dynamic>.from(song);
-  if (isAlbumValid(song)) {
-    cachedAlbumsList.addOrUpdateWhere(checkAlbum, song);
-    addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
-  }
+  addAlbumToCache(song as Map<String, dynamic>);
   return song;
 }
 
@@ -287,7 +334,7 @@ Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
   try {
     final tracks = [];
     for (final releaseGroup in singlesReleases) {
-      tracks.add(await getSinglesDetails(releaseGroup));
+      tracks.add(await _getSinglesDetails(releaseGroup));
     }
     return tracks.toList();
   } catch (e, stackTrace) {
@@ -343,10 +390,7 @@ Future<List?> getTrackList(dynamic album) async {
   }
   parseEntityId(album);
   album = Map<String, dynamic>.from(album);
-  if (isAlbumValid(album)) {
-    cachedAlbumsList.addOrUpdateWhere(checkAlbum, album);
-    addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
-  }
+  addAlbumToCache(album as Map<String, dynamic>);
   return album['list'];
 }
 
@@ -369,12 +413,12 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       });
       currentLikedAlbumsLength.value++;
       album['album'] = album['title'];
-      PM.triggerHook(album, 'onEntityLiked');
+      unawaited(PM.triggerHook(album, 'onEntityLiked'));
     } else {
       userLikedAlbumsList.removeWhere((value) => checkAlbum(album, value));
       currentLikedAlbumsLength.value--;
     }
-    addOrUpdateData('user', 'likedAlbums', userLikedAlbumsList);
+    unawaited(addOrUpdateData('user', 'likedAlbums', userLikedAlbumsList));
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

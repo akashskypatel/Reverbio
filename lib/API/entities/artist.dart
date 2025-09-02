@@ -67,12 +67,12 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
         'primary-type': 'artist',
       });
       currentLikedArtistsLength.value++;
-      PM.triggerHook(artist, 'onEntityLiked');
+      await PM.triggerHook(artist, 'onEntityLiked');
     } else {
       userLikedArtistsList.removeWhere((value) => checkArtist(artist, value));
       currentLikedArtistsLength.value--;
     }
-    addOrUpdateData('user', 'likedArtists', userLikedArtistsList);
+    unawaited(addOrUpdateData('user', 'likedArtists', userLikedArtistsList));
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -374,8 +374,7 @@ Future<Map<String, dynamic>> _combineResults({
       'primary-type': 'artist',
       'cachedAt': DateTime.now().toString(),
     };
-    cachedArtistsList.addOrUpdate('id', id, res);
-    addOrUpdateData('cache', 'cachedArtists', cachedArtistsList);
+    await addArtistToCache(res);
     return res;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -409,9 +408,9 @@ dynamic _searchCachedArtists(String query) {
   }
 }
 
-void addArtistToCache(Map<String, dynamic> artist) {
+Future<void> addArtistToCache(Map artist) async {
   cachedArtistsList.addOrUpdateWhere(checkArtist, artist);
-  addOrUpdateData('cache', 'cachedArtists', cachedArtistsList);
+  await addOrUpdateData('cache', 'cachedArtists', cachedArtistsList);
 }
 
 Future<dynamic> _getArtistDetailsMB(

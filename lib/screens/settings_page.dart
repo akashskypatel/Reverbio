@@ -25,7 +25,6 @@ import 'dart:io';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -557,9 +556,9 @@ class _SettingsPageState extends State<SettingsPage> {
           final isSelected = color == primaryColorSetting;
 
           return GestureDetector(
-            onTap: () {
-              addOrUpdateData('settings', 'accentColor', color.toARGB32());
-              Reverbio.updateAppState(
+            onTap: () async {
+              await addOrUpdateData('settings', 'accentColor', color.toARGB32());
+              await Reverbio.updateAppState(
                 context,
                 newAccentColor: color,
                 useSystemColor: false,
@@ -612,9 +611,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
           return BottomSheetBar(
             mode.name,
-            onTap: () {
-              addOrUpdateData('settings', 'themeMode', mode.name);
-              Reverbio.updateAppState(context, newThemeMode: mode);
+            onTap: () async {
+              await addOrUpdateData('settings', 'themeMode', mode.name);
+              await Reverbio.updateAppState(context, newThemeMode: mode);
               GoRouter.of(context).pop();
             },
             themeMode == mode ? activatedColor : inactivatedColor,
@@ -692,13 +691,13 @@ class _SettingsPageState extends State<SettingsPage> {
                           devices[index]['name'] == 'auto'
                               ? FluentIcons.flash_auto_24_filled
                               : FluentIcons.speaker_box_24_filled,
-                      onTap: () {
+                      onTap: () async {
                         if (context.mounted)
                           setState(() {
                             audioDevice.value = devices[index];
                             audioHandler.setAudioDevice(devices[index]);
                           });
-                        addOrUpdateData(
+                        await addOrUpdateData(
                           'settings',
                           'audioDevice',
                           audioDevice.value,
@@ -742,12 +741,12 @@ class _SettingsPageState extends State<SettingsPage> {
               );
               return BottomSheetBar(
                 threshold.toString(),
-                onTap: () {
+                onTap: () async {
                   if (context.mounted)
                     setState(() {
                       streamRequestTimeout.value = threshold;
                     });
-                  addOrUpdateData(
+                  await addOrUpdateData(
                     'settings',
                     'streamRequestTimeout',
                     streamRequestTimeout.value,
@@ -924,13 +923,13 @@ class _SettingsPageState extends State<SettingsPage> {
                                                         GoRouter.of(
                                                           context,
                                                         ).pop(),
-                                                onSubmit: () {
+                                                onSubmit: () async {
                                                   setState(() {
                                                     PM.removePlugin(
                                                       PM.pluginsData[index]['name'],
                                                     );
                                                   });
-                                                  addOrUpdateData(
+                                                  await addOrUpdateData(
                                                     'settings',
                                                     'pluginsData',
                                                     PM.pluginsData,
@@ -1226,9 +1225,9 @@ class _SettingsPageState extends State<SettingsPage> {
                             value
                                 ? () {
                                   if (isValid) {
-                                    setState(() {
-                                      PM.addPluginData(pluginData);
-                                      addOrUpdateData(
+                                    setState(() async {
+                                      await PM.addPluginData(pluginData);
+                                      await addOrUpdateData(
                                         'settings',
                                         'pluginsData',
                                         PM.pluginsData,
@@ -1286,9 +1285,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
           return BottomSheetBar(
             language,
-            onTap: () {
-              addOrUpdateData('settings', 'language', newLocaleFullCode);
-              Reverbio.updateAppState(context, newLocale: newLocale);
+            onTap: () async {
+              await addOrUpdateData('settings', 'language', newLocaleFullCode);
+              await Reverbio.updateAppState(context, newLocale: newLocale);
               showToast(context.l10n!.languageMsg);
               GoRouter.of(context).pop();
             },
@@ -1326,8 +1325,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
           return BottomSheetBar(
             quality,
-            onTap: () {
-              addOrUpdateData('settings', 'audioQuality', quality);
+            onTap: () async {
+              await addOrUpdateData('settings', 'audioQuality', quality);
               audioQualitySetting.value = quality;
               showToast(context.l10n!.audioQualityMsg);
               GoRouter.of(context).pop();
@@ -1340,10 +1339,10 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _toggleSystemColor(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'useSystemColor', value);
+  void _toggleSystemColor(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'useSystemColor', value);
     useSystemColor.value = value;
-    Reverbio.updateAppState(
+    await Reverbio.updateAppState(
       context,
       newAccentColor: primaryColorSetting,
       useSystemColor: value,
@@ -1351,21 +1350,21 @@ class _SettingsPageState extends State<SettingsPage> {
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _togglePureBlack(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'usePureBlackColor', value);
+  void _togglePureBlack(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'usePureBlackColor', value);
     usePureBlackColor.value = value;
-    Reverbio.updateAppState(context);
+    await Reverbio.updateAppState(context);
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _togglePredictiveBack(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'predictiveBack', value);
+  void _togglePredictiveBack(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'predictiveBack', value);
     predictiveBack.value = value;
     transitionsBuilder =
         value
             ? const PredictiveBackPageTransitionsBuilder()
             : const CupertinoPageTransitionsBuilder();
-    Reverbio.updateAppState(context);
+    await Reverbio.updateAppState(context);
     showToast(context.l10n!.settingChangedMsg);
   }
 
@@ -1395,7 +1394,7 @@ class _SettingsPageState extends State<SettingsPage> {
         false;
     if (shouldSave) {
       showToast(context.l10n!.restartAppMsg);
-      addOrUpdateData('settings', 'offlineMode', value);
+      await addOrUpdateData('settings', 'offlineMode', value);
       offlineMode.value = value;
       Timer(const Duration(milliseconds: 500), () async => exitApp());
     }
@@ -1414,38 +1413,38 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  void _toggleSponsorBlock(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'sponsorBlockSupport', value);
+  void _toggleSponsorBlock(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'sponsorBlockSupport', value);
     sponsorBlockSupport.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _toggleSkipNonMusic(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'skipNonMusic', value);
+  void _toggleSkipNonMusic(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'skipNonMusic', value);
     skipNonMusic.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _toggleDefaultRecommendations(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'defaultRecommendations', value);
+  void _toggleDefaultRecommendations(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'defaultRecommendations', value);
     defaultRecommendations.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _togglePluginsSupport(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'pluginsSupport', value);
+  void _togglePluginsSupport(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'pluginsSupport', value);
     enablePlugins.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _togglePrepareNextSong(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'prepareNextSong', value);
+  void _togglePrepareNextSong(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'prepareNextSong', value);
     prepareNextSong.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _toggleUseProxies(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'useProxies', value);
+  void _toggleUseProxies(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'useProxies', value);
     useProxies.value = value;
     yt.close();
     dc.close();
@@ -1466,8 +1465,8 @@ class _SettingsPageState extends State<SettingsPage> {
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _toggleAutoCacheOffline(BuildContext context, bool value) {
-    addOrUpdateData('settings', 'autoCacheOffline', value);
+  void _toggleAutoCacheOffline(BuildContext context, bool value) async {
+    await addOrUpdateData('settings', 'autoCacheOffline', value);
     autoCacheOffline.value = value;
     showToast(context.l10n!.settingChangedMsg);
   }

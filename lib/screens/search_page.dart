@@ -83,10 +83,10 @@ class _SearchPageState extends State<SearchPage> {
     final searchEntity = {
       'artist': getArtistDetails,
       'artists': getArtistDetails,
-      'album': getAlbumDetailsById,
-      'albums': getAlbumDetailsById,
-      'release-group': getAlbumDetailsById,
-      'release-groups': getAlbumDetailsById,
+      'album': queueAlbumInfoRequest,
+      'albums': queueAlbumInfoRequest,
+      'release-group': queueAlbumInfoRequest,
+      'release-groups': queueAlbumInfoRequest,
       'playlist': getPlaylistInfoForWidget,
       'playlists': getPlaylistInfoForWidget,
     };
@@ -154,7 +154,7 @@ class _SearchPageState extends State<SearchPage> {
         setState(() {
           searchHistory.insert(0, _searchBar.text);
         });
-      addOrUpdateData('user', 'searchHistory', searchHistory);
+      unawaited(addOrUpdateData('user', 'searchHistory', searchHistory));
     }
   }
 
@@ -489,7 +489,7 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             searchHistory.remove(query);
                           });
-                        addOrUpdateData('user', 'searchHistory', searchHistory);
+                        unawaited(addOrUpdateData('user', 'searchHistory', searchHistory));
                       }
                     },
                     trailing:

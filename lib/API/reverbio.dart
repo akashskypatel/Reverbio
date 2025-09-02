@@ -680,7 +680,7 @@ Future<String?> pickImageFile({int maxAttempts = 100}) async {
   return copy.path;
 }
 
-void cacheEntity(dynamic entity) {
+Future<void> cacheEntity(dynamic entity) async {
   if (entity['primary-type'] == null) return;
   if (['song', 'recording'].contains(entity['primary-type']))
     return addSongToCache(entity);

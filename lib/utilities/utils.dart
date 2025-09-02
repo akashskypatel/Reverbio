@@ -723,13 +723,13 @@ Future<Uri?> getValidImage(dynamic obj) async {
     for (final path in images) {
       if (isFilePath(path) && doesFileExist(path)) {
         obj['validImage'] = path;
-        cacheEntity(obj);
+        await cacheEntity(obj);
         return Uri.file(path);
       } else {
         final imageUrl = Uri.parse(path);
         if (await checkUrl(imageUrl.toString()) <= 300) {
           obj['validImage'] = imageUrl.toString();
-          cacheEntity(obj);
+          await cacheEntity(obj);
           return imageUrl;
         }
       }

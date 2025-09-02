@@ -143,7 +143,7 @@ class _ReverbioState extends State<Reverbio> {
           if (systemColorStatus != null &&
               useSystemColor.value != systemColorStatus) {
             useSystemColor.value = systemColorStatus;
-            addOrUpdateData('settings', 'useSystemColor', systemColorStatus);
+            unawaited(addOrUpdateData('settings', 'useSystemColor', systemColorStatus));
           }
           primaryColorSetting = newAccentColor;
         }
@@ -320,7 +320,7 @@ void handleIncomingLink(Uri? uri) async {
 
         if (playlist != null) {
           userCustomPlaylists.value = [...userCustomPlaylists.value, playlist];
-          addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+          await addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
           showToast(context.l10n!.addedSuccess);
         } else {
           showToast(context.l10n!.invalidPlaylistData);
