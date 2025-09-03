@@ -118,6 +118,15 @@ Complete or verify all features on Library Page.
 - [ ] Remove local playlist.
 - [ ] Navigate to each library page- Recently Played, Liked Songs, Liked Artists, Liked Albums, and Offline Songs.
 
+## Offline Playlist
+
+Complete or verify all features on a playlist.
+
+- [ ] Enable offline caching on a playlist.
+- [ ] Confirm songs are cached for offline listening as songs in the playlist are played.
+- [ ] Confirm download status on home page alerts updates correctly.
+- [ ] Confirm cached indicator is shows next to downloaded songs.
+
 ## Recently Played page
 
 Complete or verify all features on Recently Played Page.
@@ -186,6 +195,7 @@ Complete or verify all features on Settings Page.
 - [ ] Confirm Pure black theme changes work.
 - [ ] Confirm Predictive Black changes work. (Android only)
 - [ ] Confirm Offline Mode changes work.
+- [ ] Confirm Automatic caching for offline listening works.
 - [ ] Confirm enabling plugins works.
 - [ ] Confirm Skip Sponsor Segment changes work.
 - [ ] Confirm Skip non-music segment changes work.
