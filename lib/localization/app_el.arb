@@ -245,5 +245,7 @@
   "downloadingInBackground": "Το τραγούδι γίνεται λήψη στο παρασκήνιο",
   "openInMusicBrainz": "Άνοιγμα στη βάση δεδομένων MusicBrainz",
   "downloadCancelled": "Η λήψη ακυρώθηκε",
-  "downloadPaused": "Η λήψη σε παύση"
+  "downloadPaused": "Η λήψη σε παύση",
+  "extendedPlay": "Extended Play",
+  "broadcast": "Μετάδοση"
 }

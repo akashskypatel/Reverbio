@@ -245,5 +245,7 @@
   "downloadingInBackground": "பின்னணியில் பாடல் பதிவிறக்கம் செய்யப்படுகிறது",
   "openInMusicBrainz": "MusicBrainz தரவுத்தளத்தில் திறக்க",
   "downloadCancelled": "பதிவிறக்கம் ரத்து செய்யப்பட்டது",
-  "downloadPaused": "பதிவிறக்கம் இடைநிறுத்தப்பட்டது"
+  "downloadPaused": "பதிவிறக்கம் இடைநிறுத்தப்பட்டது",
+  "extendedPlay": "நீட்டிக்கப்பட்ட ப்ளே",
+  "broadcast": "ஒலிபரப்பு"
 }

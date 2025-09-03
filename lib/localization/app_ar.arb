@@ -245,5 +245,7 @@
   "downloadingInBackground": "يتم تنزيل الأغنية في الخلفية",
   "openInMusicBrainz": "فتح في قاعدة بيانات MusicBrainz",
   "downloadCancelled": "تم إلغاء التنزيل",
-  "downloadPaused": "التنزيل متوقف مؤقتًا"
+  "downloadPaused": "التنزيل متوقف مؤقتًا",
+  "extendedPlay": "تشغيل موسع",
+  "broadcast": "بث"
 }

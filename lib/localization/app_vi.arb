@@ -245,5 +245,7 @@
   "downloadingInBackground": "Đang tải xuống bài hát trong nền",
   "openInMusicBrainz": "Mở trong cơ sở dữ liệu MusicBrainz",
   "downloadCancelled": "Đã hủy tải xuống",
-  "downloadPaused": "Đã tạm dừng tải xuống"
+  "downloadPaused": "Đã tạm dừng tải xuống",
+  "extendedPlay": "Extended Play",
+  "broadcast": "Phát sóng"
 }

@@ -245,5 +245,7 @@
   "downloadingInBackground": "A fazer download da música em segundo plano",
   "openInMusicBrainz": "Abrir na base de dados MusicBrainz",
   "downloadCancelled": "Download cancelado",
-  "downloadPaused": "Download em pausa"
+  "downloadPaused": "Download em pausa",
+  "extendedPlay": "Extended Play",
+  "broadcast": "Transmissão"
 }

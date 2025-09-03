@@ -245,5 +245,7 @@
   "downloadingInBackground": "Lagu sedang diunduh di latar belakang",
   "openInMusicBrainz": "Buka di database MusicBrainz",
   "downloadCancelled": "Unduhan dibatalkan",
-  "downloadPaused": "Unduhan dijeda"
+  "downloadPaused": "Unduhan dijeda",
+  "extendedPlay": "Extended Play",
+  "broadcast": "Siaran"
 }

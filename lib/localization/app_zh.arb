@@ -245,5 +245,7 @@
   "downloadingInBackground": "正在后台下载歌曲",
   "openInMusicBrainz": "在 MusicBrainz 数据库中打开",
   "downloadCancelled": "下载已取消",
-  "downloadPaused": "下载已暂停"
+  "downloadPaused": "下载已暂停",
+  "extendedPlay": "扩展播放",
+  "broadcast": "广播"
 }

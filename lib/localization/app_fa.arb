@@ -245,5 +245,7 @@
   "downloadingInBackground": "آهنگ در حال دانلود در پس‌زمینه است",
   "openInMusicBrainz": "باز کردن در پایگاه داده MusicBrainz",
   "downloadCancelled": "دانلود لغو شد",
-  "downloadPaused": "دانلود متوقف شد"
+  "downloadPaused": "دانلود متوقف شد",
+  "extendedPlay": "پخش گسترده",
+  "broadcast": "پخش"
 }

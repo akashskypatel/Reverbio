@@ -245,5 +245,7 @@
   "downloadingInBackground": "Wimbo unapakuliwa kwa nyuma",
   "openInMusicBrainz": "Fungua katika hifadhidata ya MusicBrainz",
   "downloadCancelled": "Upakuli umeghairiwa",
-  "downloadPaused": "Upakuli umesitishwa"
+  "downloadPaused": "Upakuli umesitishwa",
+  "extendedPlay": "Uchezaji Ulioongezwa",
+  "broadcast": "Utangazaji"
 }

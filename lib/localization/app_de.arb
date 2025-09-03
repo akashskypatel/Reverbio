@@ -245,5 +245,7 @@
   "downloadingInBackground": "Lied wird im Hintergrund heruntergeladen",
   "openInMusicBrainz": "In MusicBrainz-Datenbank öffnen",
   "downloadCancelled": "Download abgebrochen",
-  "downloadPaused": "Download pausiert"
+  "downloadPaused": "Download pausiert",
+  "extendedPlay": "Extended Play",
+  "broadcast": "Sendung"
 }

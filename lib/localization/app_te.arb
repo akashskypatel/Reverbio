@@ -245,5 +245,7 @@
   "downloadingInBackground": "పాట పరదా వెనుక డౌన్‌లోడ్ అవుతుంది",
   "openInMusicBrainz": "MusicBrainz డేటాబేస్‌లో తెరవండి",
   "downloadCancelled": "డౌన్‌లోడ్ రద్దు చేయబడింది",
-  "downloadPaused": "డౌన్‌లోడ్ విరామించబడింది"
+  "downloadPaused": "డౌన్‌లోడ్ విరామించబడింది",
+  "extendedPlay": "విస్తరించిన ప్లే",
+  "broadcast": "ప్రసారం"
 }

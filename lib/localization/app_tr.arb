@@ -245,5 +245,7 @@
   "downloadingInBackground": "Şarkı arka planda indiriliyor",
   "openInMusicBrainz": "MusicBrainz veritabanında aç",
   "downloadCancelled": "İndirme iptal edildi",
-  "downloadPaused": "İndirme duraklatıldı"
+  "downloadPaused": "İndirme duraklatıldı",
+  "extendedPlay": "Extended Play",
+  "broadcast": "Yayın"
 }

@@ -245,5 +245,7 @@
   "downloadingInBackground": "バックグラウンドで曲をダウンロード中",
   "openInMusicBrainz": "MusicBrainzデータベースで開く",
   "downloadCancelled": "ダウンロードがキャンセルされました",
-  "downloadPaused": "ダウンロードが一時停止中"
+  "downloadPaused": "ダウンロードが一時停止中",
+  "extendedPlay": "エクステンデッド・プレイ",
+  "broadcast": "ブロードキャスト"
 }

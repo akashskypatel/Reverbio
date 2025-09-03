@@ -245,5 +245,7 @@
   "downloadingInBackground": "Пісня завантажується у фоновому режимі",
   "openInMusicBrainz": "Відкрити в базі даних MusicBrainz",
   "downloadCancelled": "Завантаження скасовано",
-  "downloadPaused": "Завантаження призупинено"
+  "downloadPaused": "Завантаження призупинено",
+  "extendedPlay": "Розширене відтворення",
+  "broadcast": "Трансляція"
 }

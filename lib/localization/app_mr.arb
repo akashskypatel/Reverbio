@@ -245,5 +245,7 @@
   "downloadingInBackground": "गाणे बॅकग्राउंडमध्ये डाउनलोड केले जात आहे",
   "openInMusicBrainz": "MusicBrainz डेटाबेसमध्ये उघडा",
   "downloadCancelled": "डाउनलोड रद्द केले",
-  "downloadPaused": "डाउनलोड विराम दिलेला आहे"
+  "downloadPaused": "डाउनलोड विराम दिलेला आहे",
+  "extendedPlay": "विस्तारित प्ले",
+  "broadcast": "प्रसारण"
 }
