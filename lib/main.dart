@@ -250,8 +250,6 @@ Future<void> initialization() async {
       await Hive.openBox(boxName);
     }
 
-    await getExistingOfflineSongs();
-
     // Init router
     NavigationManager.instance;
 
@@ -290,6 +288,8 @@ Future<void> initialization() async {
     await PM.initialize();
 
     postUpdate();
+
+    await getExistingOfflineSongs();
 
     try {
       // Listen to incoming links while app is running
