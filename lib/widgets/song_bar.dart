@@ -498,7 +498,7 @@ class _SongBarState extends State<SongBar> {
             },
           ),
         ),
-        if (widget.song['ytid'] != null)
+        if (widget.song['ytid'] != null && widget.song['ytid'].isNotEmpty)
           PopupMenuItem<String>(
             value: 'youtube',
             child: Row(
@@ -512,7 +512,7 @@ class _SongBarState extends State<SongBar> {
               ],
             ),
           ),
-        if (widget.song['rid'] != null)
+        if (widget.song['rid'] != null && widget.song['rid'].isNotEmpty)
           PopupMenuItem<String>(
             value: 'musicbrainz',
             child: Row(
@@ -576,14 +576,14 @@ class _SongBarState extends State<SongBar> {
         songOfflineStatus.value = !songOfflineStatus.value;
         break;
       case 'youtube':
-        if (widget.song['ytid'] != null) {
+        if (widget.song['ytid'] != null && widget.song['ytid'].isNotEmpty) {
           final uri = Uri.parse(
             'https://www.youtube.com/watch?v=${widget.song['ytid']}',
           );
           launchURL(uri);
         }
       case 'musicbrainz':
-        if (widget.song['ytid'] != null) {
+        if (widget.song['rid'] != null && widget.song['rid'].isNotEmpty) {
           final uri = Uri.parse(
             'https://musicbrainz.org/recording/${widget.song['rid']}',
           );
