@@ -479,25 +479,34 @@ class _BaseCardState extends State<BaseCard> {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
           overflow: TextOverflow.ellipsis,
-          dataType == 'artist'
-              ? ''
-              : dataType == 'playlist'
-              ? context.l10n!.playlist
-              : [
-                'album',
-                'single',
-                'ep',
-                'broadcast',
-                'other',
-              ].contains(dataType)
-              ? context.l10n!.album
-              : dataType?.toTitleCase ?? 'Unknown',
+          _labelType(),
           style: _theme.textTheme.labelSmall?.copyWith(
             color: colorScheme.onSecondaryContainer,
           ),
         ),
       ),
     );
+  }
+
+  String _labelType() {
+    switch (dataType) {
+      case 'artist':
+        return context.l10n!.artist;
+      case 'playlist':
+        return context.l10n!.playlist;
+      case 'album':
+        return context.l10n!.album;
+      case 'single':
+        return context.l10n!.single;
+      case 'ep':
+        return context.l10n!.extendedPlay;
+      case 'broadcast':
+        return context.l10n!.broadcast;
+      case 'other':
+        return context.l10n!.other;
+      default:
+        return context.l10n!.other;
+    }
   }
 
   Widget _buildOverflowLabel(BuildContext context) {
