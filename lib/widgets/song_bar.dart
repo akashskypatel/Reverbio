@@ -42,6 +42,7 @@ import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
@@ -242,40 +243,53 @@ class _SongBarState extends State<SongBar> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    widget.song['title'] ??
-                                        widget.song['ytTitle'] ??
-                                        'unknown',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: commonBarTitleStyle.copyWith(
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                  if (isSongAlreadyOffline(widget.song))
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsGeometry.symmetric(
-                                            horizontal: 8,
+                                  Expanded(
+                                    child: MarqueeWidget(
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            widget.song['title'] ??
+                                                widget.song['ytTitle'] ??
+                                                'unknown',
+                                            overflow: TextOverflow.ellipsis,
+                                            style: commonBarTitleStyle.copyWith(
+                                              color: primaryColor,
+                                            ),
                                           ),
-                                      child: Icon(
-                                        FluentIcons.arrow_download_24_filled,
-                                        size: 14,
-                                        color: _theme.colorScheme.primary,
+                                          if (isSongAlreadyOffline(widget.song))
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsetsGeometry.symmetric(
+                                                    horizontal: 8,
+                                                  ),
+                                              child: Icon(
+                                                FluentIcons
+                                                    .arrow_download_24_filled,
+                                                size: 14,
+                                                color:
+                                                    _theme.colorScheme.primary,
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 3),
-                              Text(
-                                combineArtists(widget.song) ??
-                                    widget.song['artist'] ??
-                                    widget.song['originalArtist'] ??
-                                    'unknown',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 13,
-                                  color: _theme.colorScheme.secondary,
+                              MarqueeWidget(
+                                child: Text(
+                                  combineArtists(widget.song) ??
+                                      widget.song['artist'] ??
+                                      widget.song['originalArtist'] ??
+                                      'unknown',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 13,
+                                    color: _theme.colorScheme.secondary,
+                                  ),
                                 ),
                               ),
                             ],

@@ -595,7 +595,7 @@ Future<Map?> getPlaylistInfo(Map playlist) async {
   return data;
 }
 
-Future<Map> getPlaylistInfoForWidget(
+Future<Map<String, dynamic>> getPlaylistInfoForWidget(
   dynamic playlistData, {
   bool isArtist = false,
 }) async {

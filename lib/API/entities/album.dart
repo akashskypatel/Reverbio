@@ -94,7 +94,7 @@ Future<void> _writeToCache() async {
   }
 }
 
-Future? queueAlbumInfoRequest(dynamic album) {
+Future queueAlbumInfoRequest(dynamic album) {
   try {
     final existing = getAlbumInfoQueue.where((e) => checkAlbum(e.data, album));
     if (existing.isEmpty) {
