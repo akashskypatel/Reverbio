@@ -36,6 +36,7 @@ Future<void> addOrUpdateData(String category, String key, dynamic value) async {
     if (category == 'cache') {
       await _box.put('${key}_date', DateTime.now());
     }
+    await _box.compact();
   } catch (e, stackTrace) {
     logger.log(
       'Error in ${stackTrace.getCurrentMethodName()} writing $category, $key:',

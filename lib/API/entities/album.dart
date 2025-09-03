@@ -21,6 +21,7 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +54,8 @@ final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(
 
 final Set<FutureTracker> getAlbumInfoQueue = {};
 
+final FutureTracker _writeCacheFuture = FutureTracker(null);
+
 dynamic _getCachedAlbum(dynamic album) {
   try {
     Map cached = cachedAlbumsList.firstWhere(
@@ -71,6 +74,23 @@ dynamic _getCachedAlbum(dynamic album) {
 void addAlbumToCache(Map<String, dynamic> album) {
   if (isAlbumValid(album)) {
     cachedAlbumsList.addOrUpdateWhere(checkAlbum, album);
+  }
+}
+
+Future<void> _writeToCache() async {
+  try {
+    await _writeCacheFuture.runFuture(
+      addOrUpdateData(
+        'cache',
+        'cachedAlbums',
+        cachedAlbumsList.map((e) {
+          e = Map<String, dynamic>.from(jsonDecode(jsonEncode(e)));
+          return e;
+        }).toList(),
+      ),
+    );
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
 }
 
@@ -124,8 +144,11 @@ Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
   addAlbumToCache(album);
   unawaited(PM.triggerHook(album, 'onGetAlbumInfo'));
   getAlbumInfoQueue.removeWhere((e) => checkAlbum(e.data, album));
-  if (getAlbumInfoQueue.isEmpty)
-    await addOrUpdateData('cache', 'cachedAlbums', cachedAlbumsList);
+  if (getAlbumInfoQueue.isEmpty &&
+      (_writeCacheFuture.completer?.future == null ||
+          _writeCacheFuture.isComplete)) {
+    unawaited(_writeToCache());
+  }
   return album;
 }
 
@@ -134,9 +157,7 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
     final id = parseEntityId(album);
     final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
     final cached = _getCachedAlbum(album);
-    if (isAlbumValid(cached) &&
-        cached?['musicbrainz'] != null &&
-        cached?['musicbrainz'] != false) {
+    if (isAlbumValid(cached) && isMusicbrainzAlbumValid(cached)) {
       if (cached['images'] == null) {
         cached.addAll(await getAlbumCoverArt(cached));
       }
@@ -164,7 +185,7 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
       album['cachedAt'] = DateTime.now().toString();
       album['musicbrainz'] = true;
       await getAlbumCoverArt(album);
-      if (album['primary-type'].toLowerCase() != 'single')
+      if (album['primary-type']?.toLowerCase() != 'single')
         await getTrackList(album);
       else
         await _getSinglesDetails(album);
@@ -174,7 +195,6 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
   }
   album = Map<String, dynamic>.from(album);
   parseEntityId(album);
-  addAlbumToCache(album as Map<String, dynamic>);
   return album;
 }
 
@@ -209,7 +229,6 @@ Future<Map<String, dynamic>> _findMBAlbum(
     return {'id': null, 'title': title, 'artist': artist};
   }
   parseEntityId(albumData);
-  addAlbumToCache(albumData);
   return albumData;
 }
 
@@ -273,8 +292,7 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
     if (cached != null && cached['list'] != null && cached['list'].length > 1)
       cached.remove('list');
     if (isAlbumValid(cached) &&
-        cached?['musicbrainz'] != null &&
-        cached?['musicbrainz'] != false &&
+        isMusicbrainzAlbumValid(cached) &&
         cached['list'] != null &&
         cached['list'].isNotEmpty) {
       if (song is Map && cached is Map) {
@@ -286,8 +304,7 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
       }
       for (dynamic recording in cached['list']) {
         recording = await getSongInfo(recording);
-        if (recording['ytid'] != null &&
-            recording['ytid'].isNotEmpty &&
+        if (isYouTubeSongValid(recording) &&
             checkTitleAndArtist(cached, recording)) {
           cached['ytid'] = (recording['ytid'] as String).ytid;
           cached['id'] = parseEntityId(cached);
@@ -300,8 +317,7 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
           (await mb.recordings.search('rgid:$rgid'))?['recordings'] ?? [];
       for (final recording in recordings) {
         recording['artist'] = combineArtists(recording);
-        if (song['ytid'] != null && song['ytid'].isNotEmpty)
-          recording['ytid'] = song['ytid'];
+        if (isYouTubeSongValid(recording)) recording['ytid'] = song['ytid'];
         if (checkTitleAndArtist(song, recording) ||
             (!isSongTitleValid(song) && !isSongArtistValid(song))) {
           final result = Map<String, dynamic>.from(
@@ -326,7 +342,6 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
   }
   parseEntityId(song);
   song = Map<String, dynamic>.from(song);
-  addAlbumToCache(song as Map<String, dynamic>);
   return song;
 }
 
@@ -352,15 +367,12 @@ Future<List?> getTrackList(dynamic album) async {
         cached['list'].isNotEmpty) {
       return cached['list'];
     }
-    final ids = Uri.parse('?$albumId').queryParameters;
-    if (ids['mb'] == null ||
-        album['mbid'] == null ||
-        ids['mb']!.isEmpty ||
-        album['mbid'].isEmpty)
-      return album;
+    final ids = albumId.toIds;
+    final mbid = ((album['mbid'] ?? ids['mb'] ?? '') as String).mbid;
+    if (mbid.isEmpty) return album;
     final recordings =
         (await mb.recordings.search(
-          'rgid:${ids['mb'] ?? album['mbid']}',
+          'rgid:$mbid',
           paginated: false,
         ))?['recordings'] ??
         [];
@@ -390,7 +402,6 @@ Future<List?> getTrackList(dynamic album) async {
   }
   parseEntityId(album);
   album = Map<String, dynamic>.from(album);
-  addAlbumToCache(album as Map<String, dynamic>);
   return album['list'];
 }
 
@@ -424,6 +435,16 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return !add;
   }
+}
+
+bool isMusicbrainzAlbumValid(dynamic album) {
+  if (album == null || !(album is Map)) return false;
+  final idValid = isAlbumIdValid(album);
+  final titleValid = isAlbumTitleValid(album);
+  final artistValid = isAlbumArtistValid(album);
+  final isFetched =
+      album['musicbrainz'] != null && album['musicbrainz'] == true;
+  return idValid && titleValid && artistValid && isFetched;
 }
 
 bool isAlbumValid(dynamic album) {

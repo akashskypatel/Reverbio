@@ -571,3 +571,25 @@ extension SmartStringReplacement on String {
     return caseSensitive ? word.hashCode : word.toLowerCase().hashCode;
   }
 }
+
+extension MapMinimize on Map<String, dynamic> {
+  Map<String, dynamic> keepAll(List<String> keysToKeep) {
+    if (keysToKeep.isEmpty) return this;
+    if (keysToKeep.isNotEmpty) {
+      for (final key in this.keys) {
+        if (!keysToKeep.contains(key)) this.remove(key);
+      }
+    }
+    return this;
+  }
+
+  Map<String, dynamic> removeAll(List<String> keysToRemove) {
+    if (keysToRemove.isEmpty) return this;
+    if (keysToRemove.isNotEmpty) {
+      for (final key in this.keys) {
+        if (keysToRemove.contains(key)) this.remove(key);
+      }
+    }
+    return this;
+  }
+}

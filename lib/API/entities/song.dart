@@ -82,6 +82,8 @@ String? lastFetchedLyrics;
 
 final Set<FutureTracker> getSongInfoQueue = {};
 
+final FutureTracker _writeCacheFuture = FutureTracker(null);
+
 Future<List> getSongsList(String searchQuery) async {
   try {
     final List<Video> searchResults = await yt.search.search(searchQuery);
@@ -241,6 +243,23 @@ void addSongToCache(Map<String, dynamic> song) {
   }
 }
 
+Future<void> _writeToCache() async {
+  try {
+    await _writeCacheFuture.runFuture(
+      addOrUpdateData(
+        'cache',
+        'cachedSongs',
+        cachedSongsList.map((e) {
+          e = Map<String, dynamic>.from(jsonDecode(jsonEncode(e)));
+          return e;
+        }).toList(),
+      ),
+    );
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+}
+
 Future<dynamic> _getSongByRecordingDetails(
   dynamic song, {
   bool getImage = true,
@@ -276,10 +295,7 @@ Future<dynamic> _getSongByRecordingDetails(
               'isrcs',
               'url-rels',
               'artist-credits',
-              'annotation',
-              'tags',
               'genres',
-              'ratings',
               'artist-rels',
               'release-rels',
               'release-group-rels',
@@ -593,8 +609,11 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   addSongToCache(song as Map<String, dynamic>);
   unawaited(PM.triggerHook(song, 'onGetSongInfo'));
   getSongInfoQueue.removeWhere((e) => checkSong(e.data, song));
-  if (getSongInfoQueue.isEmpty)
-    await addOrUpdateData('cache', 'cachedSongs', cachedSongsList);
+  if (getSongInfoQueue.isEmpty &&
+      (_writeCacheFuture.completer?.future == null ||
+          _writeCacheFuture.isComplete)) {
+    unawaited(_writeToCache());
+  }
   return song;
 }
 

@@ -506,9 +506,22 @@ Future<int> checkUrl(String url) async {
   }
 }
 
-String? tryEncode(data) {
+String? tryEncode(object) {
   try {
-    return jsonEncode(data);
+    final seen = <Object?>{};
+
+    return jsonEncode(
+      object,
+      toEncodable: (value) {
+        if (value != null && (value is Map || value is Iterable)) {
+          if (seen.contains(value)) {
+            return null;
+          }
+          seen.add(value);
+        }
+        return value;
+      },
+    );
   } catch (e) {
     return null;
   }
@@ -852,7 +865,7 @@ String formatRelativeTime(DateTime dateTime) {
   }
 }
 
-/// Check if a and b are within a certain percentage of each other, 
+/// Check if a and b are within a certain percentage of each other,
 /// where percentage is provided as a whole number (ex. 15 for 15%).
 bool withinPercent(double a, double b, double percentage) {
   if (a == b && b == 0) return true;
