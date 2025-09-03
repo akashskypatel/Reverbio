@@ -872,3 +872,7 @@ bool withinPercent(double a, double b, double percentage) {
   final maxVal = max(a.abs(), b.abs());
   return (a - b).abs() / maxVal <= percentage / 100;
 }
+
+Map<String, dynamic> copyMap(Map<String, dynamic> map) {
+  return jsonDecode(jsonEncode(map));
+}

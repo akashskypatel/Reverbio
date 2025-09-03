@@ -596,7 +596,7 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
         songInfo = await getAlbumInfo(song);
       }
       if (isSongValid(songInfo)) {
-        song.addAll(songInfo);
+        song.addAll(copyMap(songInfo));
       }
     }
   } catch (e, stackTrace) {

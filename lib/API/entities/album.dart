@@ -303,7 +303,7 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
         }
       }
       for (dynamic recording in cached['list']) {
-        recording = await getSongInfo(recording);
+        recording = copyMap(await getSongInfo(recording));
         if (isYouTubeSongValid(recording) &&
             checkTitleAndArtist(cached, recording)) {
           cached['ytid'] = (recording['ytid'] as String).ytid;
@@ -320,9 +320,7 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
         if (isYouTubeSongValid(recording)) recording['ytid'] = song['ytid'];
         if (checkTitleAndArtist(song, recording) ||
             (!isSongTitleValid(song) && !isSongArtistValid(song))) {
-          final result = Map<String, dynamic>.from(
-            await getSongInfo(recording),
-          );
+          final result = copyMap(await getSongInfo(recording));
           song.addAll(<String, dynamic>{
             'rgid': (song['id'] as String).mbid,
             'rid': (result['id'] as String).mbid,
