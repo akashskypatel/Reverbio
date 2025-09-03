@@ -114,7 +114,7 @@ Future queueAlbumInfoRequest(dynamic album) {
 Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
   Map<String, dynamic> albumData = {};
   try {
-    if (album is String && album.mbid.isEmpty) {
+    if (album is String && album.mbid.isNotEmpty) {
       albumData = Map<String, dynamic>.from(await _findMBAlbum(album));
     } else {
       final id = parseEntityId(album);

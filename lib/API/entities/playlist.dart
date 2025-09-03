@@ -200,7 +200,7 @@ Future<String> addYTUserPlaylist(String input, BuildContext context) async {
     await PM.triggerHook(returnYTPlaylistLayout(_playlist), 'onPlaylistAdd');
     userPlaylists.value = [...userPlaylists.value, playlistId];
     unawaited(addOrUpdateData('user', 'playlists', userPlaylists.value));
-    return '${context.l10n!.addedSuccess}!';
+    return '${context.l10n!.playlist} ${context.l10n!.addedSuccess}!';
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return '${context.l10n!.error}: $e';
@@ -279,13 +279,13 @@ String createCustomPlaylist(
     unawaited(
       addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value),
     );
-    return '${context.l10n!.addedSuccess}!';
+    return '${context.l10n!.playlist} ${context.l10n!.addedSuccess}!';
   }
   userCustomPlaylists.value = [...userCustomPlaylists.value, customPlaylist];
   unawaited(
     addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value),
   );
-  return '${context.l10n!.addedSuccess}!';
+  return '${context.l10n!.playlist} ${context.l10n!.addedSuccess}!';
 }
 
 String addSongsToPlaylist(
@@ -619,14 +619,15 @@ Future<Map<String, dynamic>> getPlaylistInfoForWidget(
   // Check in user playlists if not found.
   if (playlist.isEmpty) {
     final userPl = await getUserYTPlaylists();
-    playlist = userPl.firstWhere((p) => p['ytid'] == id, orElse: () => {});
+    playlist = Map<String, dynamic>.from(
+      userPl.firstWhere((p) => p['ytid'] == id, orElse: () => {}),
+    );
   }
 
   // Check in cached online playlists if still not found.
   if (playlist.isEmpty) {
-    playlist = onlinePlaylists.firstWhere(
-      (p) => p['ytid'] == id,
-      orElse: () => {},
+    playlist = Map<String, dynamic>.from(
+      onlinePlaylists.firstWhere((p) => p['ytid'] == id, orElse: () => {}),
     );
   }
 
