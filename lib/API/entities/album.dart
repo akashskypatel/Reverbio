@@ -21,7 +21,6 @@
 
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +83,7 @@ Future<void> _writeToCache() async {
         'cache',
         'cachedAlbums',
         cachedAlbumsList.map((e) {
-          e = Map<String, dynamic>.from(jsonDecode(jsonEncode(e)));
+          e = copyMap(e);
           return e;
         }).toList(),
       ),
@@ -320,17 +319,17 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
         if (isYouTubeSongValid(recording)) recording['ytid'] = song['ytid'];
         if (checkTitleAndArtist(song, recording) ||
             (!isSongTitleValid(song) && !isSongArtistValid(song))) {
-          final result = copyMap(await getSongInfo(recording));
+          //final result = copyMap(await getSongInfo(recording['id']));
           song.addAll(<String, dynamic>{
             'rgid': (song['id'] as String).mbid,
-            'rid': (result['id'] as String).mbid,
+            'rid': (recording['id'] as String).mbid,
             'mbidType': 'release-group',
-            'list': (song['list'] ?? []).add(result),
+            'list': [recording],
           });
-          result.removeWhere(
+          recording.removeWhere(
             (key, value) => ['id', 'mbid', 'mbidType'].contains(key),
           );
-          song.addAll(result);
+          song.addAll(recording);
           break;
         }
       }
@@ -367,7 +366,7 @@ Future<List?> getTrackList(dynamic album) async {
     }
     final ids = albumId.toIds;
     final mbid = ((album['mbid'] ?? ids['mb'] ?? '') as String).mbid;
-    if (mbid.isEmpty) return album;
+    if (mbid.isEmpty) return album['list'] ?? [];
     final recordings =
         (await mb.recordings.search(
           'rgid:$mbid',

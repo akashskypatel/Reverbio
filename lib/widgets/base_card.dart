@@ -102,7 +102,7 @@ class _BaseCardState extends State<BaseCard> {
       _fetchingDataFuture?.then((data) {
         if (mounted)
           setState(() {
-            widget.inputData?.addAll(Map<String, dynamic>.from(data));
+            widget.inputData?.addAll(copyMap(data));
             dataType = _parseDataType();
           });
       }),

@@ -312,7 +312,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   audio_session.AudioSession? _session;
   Timer? _sleepTimer;
   bool sleepTimerExpired = false;
-  FutureTracker? _preparingFuture;
   late bool wasPlayingBeforeCall = false;
   List<SongBar> get queueSongBars => audioPlayer.queueSongBars;
   late final StreamSubscription<bool?> _playbackEventSubscription;
@@ -430,15 +429,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (audioPlayer.songValueNotifier.value?.song == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
     if (loopAllSongs &&
-        index == queueSongBars.length - 1 &&
-        _preparingFuture == null) {
+        index == queueSongBars.length - 1) {
       await this.prepare(
         songBar: queueSongBars.first,
         play: play,
         skipOnError: skipOnError,
       );
       audioPlayer.skipToNext(0);
-    } else if (index < queueSongBars.length - 1 && _preparingFuture == null) {
+    } else if (index < queueSongBars.length - 1) {
       await this.prepare(
         songBar: queueSongBars[index + 1],
         play: play,
@@ -458,14 +456,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (!audioPlayer.hasPrevious && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
-    if (loopAllSongs && index == 0 && _preparingFuture == null) {
+    if (loopAllSongs && index == 0) {
       await this.prepare(
         songBar: queueSongBars.last,
         play: play,
         skipOnError: skipOnError,
       );
       audioPlayer.skipToPrevious(queueSongBars.length - 1);
-    } else if (index > 0 && _preparingFuture == null) {
+    } else if (index > 0) {
       await this.prepare(
         songBar: queueSongBars[index - 1],
         play: play,
@@ -540,43 +538,27 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     bool play = false,
     bool skipOnError = false,
     int skipCount = 0,
-    bool force = false,
-  }) async {
-    if (_preparingFuture == null || force) {
-      _preparingFuture = FutureTracker(songBar);
-      final future = _queue(
-        songBar: songBar,
-        play: play,
-        skipOnError: skipOnError,
-        skipCount: skipCount,
-      );
-      await _preparingFuture!.runFuture(future).whenComplete(() {
-        _preparingFuture = null;
-      });
-    }
-  }
-
-  Future<void> _queue({
-    SongBar? songBar,
-    bool play = false,
-    bool skipOnError = false,
-    int skipCount = 0,
   }) async {
     if (songBar != null && !isSongInQueue(songBar)) {
       addSongToQueue(songBar);
     }
     if (queueSongBars.isEmpty) return;
+    songValueNotifier.value?.songPrepareTracker.value?.cancel();
     audioPlayer.setProcessingState(AudioProcessingState.loading);
     songBar = songBar ?? audioPlayer.queueSongBars.first;
     play = play || audioPlayer.playing;
     await audioPlayer.prepare(songBar, play: play);
-    if (!songBar.isError && songBar.media != null) {
+    if (!songBar.isError &&
+        songBar.media != null &&
+        !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
       await audioPlayer.queue(songBar.media!);
-      if (play) return unawaited(this.play());
+      if (play && !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
+        await this.play();
+        return;
+      }
     } else if (skipOnError &&
         audioPlayer.queueSongBars.length > 1 &&
         songBar.isError) {
-      _preparingFuture = null;
       if (skipCount < audioPlayer.queueSongBars.length || skipCount <= 10) {
         final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
         if (next != null) {
@@ -602,7 +584,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   Future<void> close() async {
-    _preparingFuture?.cancel();
+    cachedIsPlaying = false;
+    songValueNotifier.value?.songPrepareTracker.value?.cancel();
     await audioPlayer.close();
     queue.add([]);
     playbackState.add(PlaybackState());
@@ -902,7 +885,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
               checkEntityId,
               update.task.taskId,
             );
-            unawaited(addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs));
+            unawaited(
+              addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs),
+            );
             showToast(
               '${context.l10n!.downloaded}: "${update.task.displayName}"',
               id: update.task.taskId,

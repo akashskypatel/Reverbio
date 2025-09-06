@@ -179,13 +179,13 @@ class FutureTracker<T> {
   dynamic result;
   Completer<T>? completer;
   bool isLoading = false;
+  bool isCancelled = false;
   bool get isComplete => completer?.isCompleted ?? false;
 
   Future<T> runFuture(Future<T> future) async {
     if (!isLoading && !isComplete) {
       isLoading = true;
       completer = Completer<T>();
-
       await future
           .then((result) {
             if (!completer!.isCompleted) {
@@ -195,6 +195,11 @@ class FutureTracker<T> {
             isLoading = false;
           })
           .catchError((error) {
+            logger.log(
+              'Error occurred in FutureTracker runFuture',
+              error,
+              null,
+            );
             if (!completer!.isCompleted) {
               completer!.completeError(error);
             }
@@ -208,9 +213,11 @@ class FutureTracker<T> {
   void cancel() {
     if (!isComplete && !isLoading) {
       completer?.completeError(CancelledException());
+      completer?.future.timeout(Duration.zero);
+      completer?.future.ignore();
     }
-    completer = null;
     isLoading = false;
+    isCancelled = true;
   }
 }
 
@@ -725,6 +732,7 @@ List<String>? parseImage(dynamic obj) {
 
 Future<Uri?> getValidImage(dynamic obj) async {
   try {
+    if (obj == null) return null;
     if (obj['validImage'] != null) {
       if (isFilePath(obj['validImage']))
         return Uri.file(obj['validImage']);

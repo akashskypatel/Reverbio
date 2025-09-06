@@ -100,9 +100,10 @@ Future<List<dynamic>> getRecommendedSongs() async {
     if (globalSongs.isEmpty) {
       const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
       globalSongs =
-          (await getSongsFromPlaylist(
-            playlistId,
-          )).map((e) => Map<String, dynamic>.from(e)).toList();
+          (await getSongsFromPlaylist(playlistId)).map((e) {
+            parseEntityId(e);
+            return Map<String, dynamic>.from(e);
+          }).toList();
       if (userCustomPlaylists.value.isNotEmpty) {
         for (final userPlaylist in userCustomPlaylists.value) {
           final _list =
@@ -199,15 +200,19 @@ Future<Map<String, dynamic>> _findYTSong(dynamic song) async {
       results.sort((a, b) => b['views'].compareTo(a['views']));
       final result =
           results.where((value) {
-            return checkTitleAndArtist(value, song) &&
-                ((song['duration'] ?? 0) == 0 ||
-                    (value['duration'] ?? 0) == 0 ||
-                    withinPercent(
-                      (song['duration'] as int).toDouble(),
-                      (value['duration'] as int).toDouble(),
-                      90,
-                    ));
-          }).toList();
+              return checkTitleAndArtist(value, song) &&
+                  ((song['isDerivative'] ?? false) ==
+                      (value['isDerivative'] ?? false)) &&
+                  ((song['isLive'] ?? false) == (value['isLive'] ?? false)) &&
+                  ((song['duration'] ?? 0) == 0 ||
+                      (value['duration'] ?? 0) == 0 ||
+                      withinPercent(
+                        (song['duration'] as int).toDouble(),
+                        (value['duration'] as int).toDouble(),
+                        90,
+                      ));
+            }).toList()
+            ..sort((a, b) => a['title'].compareTo(b['title']));
       if (result.isNotEmpty) {
         ytSong = await _getYTSongDetails(result.first);
         if (ytSong.isNotEmpty) {
@@ -250,7 +255,7 @@ Future<void> _writeToCache() async {
         'cache',
         'cachedSongs',
         cachedSongsList.map((e) {
-          e = Map<String, dynamic>.from(jsonDecode(jsonEncode(e)));
+          e = copyMap(e);
           return e;
         }).toList(),
       ),
@@ -348,6 +353,8 @@ Future<dynamic> _getSongByRecordingDetails(
                   as dynamic,
         });
         recording['id'] = parseEntityId(recording);
+      } else {
+        recording = song;
       }
     }
   } catch (e, stackTrace) {
@@ -416,9 +423,7 @@ Future<dynamic> _findMBSong(dynamic song) async {
         dynamic songInfo = Map<String, dynamic>.from(
           await _getSongByRecordingDetails(song),
         );
-        if (isSongValid(songInfo)) {
-          song.addAll(songInfo);
-        } else {
+        if (!isSongValid(songInfo)) {
           songInfo = Map<String, dynamic>.from(await getAlbumInfo(song));
         }
         if (isSongValid(songInfo)) {
@@ -544,7 +549,6 @@ Future<void> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   song['isError'] = false;
   song?.remove('error');
   final offlinePath = await getOfflinePath(song);
-  if (!isMusicbrainzSongValid(song)) await queueSongInfoRequest(song);
   if (offlinePath != null) {
     song['songUrl'] = offlinePath;
   }
@@ -557,20 +561,19 @@ Future<void> getSongUrl(dynamic song, {bool skipDownload = false}) async {
     await makeSongOffline(song);
 }
 
-Future? queueSongInfoRequest(dynamic song) {
+Future queueSongInfoRequest(dynamic song) {
+  final futureTracker = FutureTracker(song);
   try {
     final existing = getSongInfoQueue.where((e) => checkSong(e.data, song));
     if (existing.isEmpty) {
-      final futureTracker = FutureTracker(song);
       getSongInfoQueue.add(futureTracker);
       return futureTracker.runFuture(getSongInfo(song));
+    } else {
+      return existing.first.completer!.future;
     }
-    return getSongInfoQueue.isNotEmpty
-        ? existing.first.completer!.future
-        : Future.value(song);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return Future.value(song);
+    return futureTracker.runFuture(Future.value(song));
   }
 }
 
@@ -724,7 +727,6 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   final context = NavigationManager().context;
   try {
     if (song == null) return '';
-    if (!isMusicbrainzSongValid(song)) await queueSongInfoRequest(song);
     if (!isYouTubeSongValid(song)) {
       final ytSong =
           (song['id'] as String).ytid.isNotEmpty
