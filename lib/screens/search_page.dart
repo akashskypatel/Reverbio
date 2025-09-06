@@ -80,23 +80,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Future<void> search({dynamic data, CustomBar? bar}) async {
     if (data == null) return;
-    final searchEntity = {
-      'artist': getArtistDetails,
-      'artists': getArtistDetails,
-      'album': queueAlbumInfoRequest,
-      'albums': queueAlbumInfoRequest,
-      'release-group': queueAlbumInfoRequest,
-      'release-groups': queueAlbumInfoRequest,
-      'playlist': getPlaylistInfoForWidget,
-      'playlists': getPlaylistInfoForWidget,
-    };
     if (!(data is String)) {
-      _fetching.value = true;
-      final searchData =
-          searchEntity[data['entity']] != null
-              ? await searchEntity[data['entity']]!(data['id'])
-              : null;
-      _fetching.value = false;
       switch (data['entity']) {
         case 'artist':
         case 'artists':
@@ -105,7 +89,7 @@ class _SearchPageState extends State<SearchPage> {
             MaterialPageRoute(
               builder:
                   (context) =>
-                      ArtistPage(page: '/artist', artistData: searchData),
+                      ArtistPage(page: '/artist', artistData: data),
               settings: RouteSettings(name: '/artist?${data['id']}'),
             ),
           );
@@ -120,7 +104,7 @@ class _SearchPageState extends State<SearchPage> {
             MaterialPageRoute(
               builder:
                   (context) =>
-                      PlaylistPage(page: '/album', playlistData: searchData),
+                      PlaylistPage(page: '/album', playlistData: data),
               settings: RouteSettings(name: '/album?${data['id']}'),
             ),
           );

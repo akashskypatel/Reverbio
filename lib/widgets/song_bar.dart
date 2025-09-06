@@ -42,6 +42,7 @@ import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
@@ -65,9 +66,10 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
   final ValueNotifier<MediaItem?> _mediaItemNotifier = ValueNotifier(null);
   final ValueNotifier<Media?> _mediaNotifier = ValueNotifier(null);
-  final ValueNotifier<Future<dynamic>?> _songMetadataFuture = ValueNotifier(
-    null,
-  );
+  final ValueNotifier<Future<dynamic>?> _songMetadataFutureNotifier =
+      ValueNotifier(null);
+  final ValueNotifier<Map<String, dynamic>?> songMetadataNotifier =
+      ValueNotifier(null);
   final ValueNotifier<int> _statusNotifier = ValueNotifier(0);
   late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
     this.borderRadius,
@@ -80,16 +82,27 @@ class SongBar extends StatefulWidget {
   Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
   MediaItem get mediaItem => _mediaItemNotifier.value ?? mapToMediaItem(song);
   Media? get media => _mediaNotifier.value;
-  late final FutureTracker _songFutureTracker = FutureTracker(null);
+  final ValueNotifier<FutureTracker<void>?> songPrepareTracker = ValueNotifier(
+    null,
+  );
 
   @override
   _SongBarState createState() => _SongBarState();
 
   Future<void> _prepareSong() async {
     try {
+      songMetadataNotifier.value = copyMap(song);
       _isLoadingNotifier.value = true;
       _statusNotifier.value = 1;
-      await getMetadataFuture();
+      _songMetadataFutureNotifier.value = getMetadataFuture(isPrepare: true);
+      unawaited(
+        _songMetadataFutureNotifier.value?.then((value) {
+          song.addAll(value);
+          songMetadataNotifier.value = copyMap(value);
+          _isLoadingNotifier.value = false;
+          _statusNotifier.value = 0;
+        }),
+      );
       if (!isPrepared) await getSongUrl(song);
       if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
         song['songUrl'] = null;
@@ -119,19 +132,16 @@ class SongBar extends StatefulWidget {
     if (isError) {
       showToast(context.l10n!.errorCouldNotFindAStream);
     }
+    songMetadataNotifier.value = copyMap(song);
   }
 
-  Future getMetadataFuture() async {
+  Future getMetadataFuture({bool isPrepare = false}) {
     try {
       parseEntityId(song);
-      if (_songMetadataFuture.value == null ||
-          !isSongValid(song) ||
-          !isMusicbrainzSongValid(song)) {
-        _songMetadataFuture.value =
-            queueSongInfoRequest(song) ?? _songMetadataFuture.value;
-        return _songMetadataFuture.value!;
+      if (!isSongValid(song) || (!isMusicbrainzSongValid(song) && isPrepare)) {
+        return queueSongInfoRequest(song);
       } else {
-        return _songMetadataFuture.value!;
+        return Future.value(song);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -139,12 +149,13 @@ class SongBar extends StatefulWidget {
         e,
         stackTrace,
       );
-      throw Exception('Could not load song bar metadata.');
+      return Future.value(song);
     }
   }
 
-  Future<void> prepareSong() async {
-    await _songFutureTracker.runFuture(_prepareSong());
+  Future prepareSong() async {
+    songPrepareTracker.value = FutureTracker(null);
+    return songPrepareTracker.value!.runFuture(_prepareSong());
   }
 
   void setBorder({BorderRadius borderRadius = BorderRadius.zero}) {
@@ -184,13 +195,23 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    if (mounted) unawaited(widget.getMetadataFuture());
+    widget.songMetadataNotifier.value = copyMap(widget.song);
+    widget._songMetadataFutureNotifier.addListener(_songMetadataListener);
   }
 
   @override
   void dispose() {
-    widget._songMetadataFuture.value?.ignore();
+    widget._songMetadataFutureNotifier.value?.ignore();
+    widget._songMetadataFutureNotifier.removeListener(_songMetadataListener);
     super.dispose();
+  }
+
+  void _songMetadataListener() {
+    if (mounted)
+      setState(() {
+        widget._isLoadingNotifier.value = true;
+        widget._statusNotifier.value = 1;
+      });
   }
 
   @override
@@ -198,13 +219,16 @@ class _SongBarState extends State<SongBar> {
     _theme = Theme.of(context);
     final primaryColor = _theme.colorScheme.primary;
     return FutureBuilder(
-      future: widget.getMetadataFuture(),
+      future:
+          widget._songMetadataFutureNotifier.value ??
+          widget.getMetadataFuture(),
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.waiting &&
             !snapshot.hasError &&
             snapshot.hasData &&
-            snapshot.data != null)
-          widget.song.addAll(snapshot.data);
+            snapshot.data != null) {
+          widget.song.addAll(snapshot.requireData);
+        }
         return Stack(
           children: [
             Padding(
@@ -220,7 +244,6 @@ class _SongBarState extends State<SongBar> {
                     songBar: widget,
                     play: true,
                     skipOnError: true,
-                    force: true,
                   );
                 },
                 child: Card(
@@ -242,40 +265,55 @@ class _SongBarState extends State<SongBar> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    widget.song['title'] ??
-                                        widget.song['ytTitle'] ??
-                                        'unknown',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: commonBarTitleStyle.copyWith(
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                  if (isSongAlreadyOffline(widget.song))
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsGeometry.symmetric(
-                                            horizontal: 8,
+                                  Expanded(
+                                    child: MarqueeWidget(
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            widget.song['mbTitle'] ??
+                                                widget.song['title'] ??
+                                                widget.song['ytTitle'] ??
+                                                'unknown',
+                                            overflow: TextOverflow.ellipsis,
+                                            style: commonBarTitleStyle.copyWith(
+                                              color: primaryColor,
+                                            ),
                                           ),
-                                      child: Icon(
-                                        FluentIcons.arrow_download_24_filled,
-                                        size: 14,
-                                        color: _theme.colorScheme.primary,
+                                          if (isSongAlreadyOffline(widget.song))
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsetsGeometry.symmetric(
+                                                    horizontal: 8,
+                                                  ),
+                                              child: Icon(
+                                                FluentIcons
+                                                    .arrow_download_24_filled,
+                                                size: 14,
+                                                color:
+                                                    _theme.colorScheme.primary,
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 3),
-                              Text(
-                                combineArtists(widget.song) ??
-                                    widget.song['artist'] ??
-                                    widget.song['originalArtist'] ??
-                                    'unknown',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 13,
-                                  color: _theme.colorScheme.secondary,
+                              MarqueeWidget(
+                                child: Text(
+                                  combineArtists(widget.song) ??
+                                      widget.song['mbArtist'] ??
+                                      widget.song['artist'] ??
+                                      widget.song['ytArtist'] ??
+                                      'unknown',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 13,
+                                    color: _theme.colorScheme.secondary,
+                                  ),
                                 ),
                               ),
                             ],

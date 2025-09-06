@@ -64,8 +64,8 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
   @override
   void dispose() {
-    super.dispose();
     audioHandler.songValueNotifier.removeListener(_songListener);
+    super.dispose();
   }
 
   @override
@@ -325,12 +325,23 @@ class _MiniPlayerState extends State<MiniPlayer> {
       padding: const EdgeInsets.only(top: 7, bottom: 7, right: 15),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 55, maxWidth: 55),
-        child: BaseCard(
-          icon: FluentIcons.music_note_2_24_filled,
-          size: 55,
-          paddingValue: 0,
-          loadingWidget: const Spinner(),
-          inputData: audioHandler.songValueNotifier.value?.song,
+        child: ValueListenableBuilder(
+          valueListenable: audioHandler.songValueNotifier,
+          builder: (context, songBar, child) {
+            if (songBar == null) return const SizedBox.shrink();
+            final songMetadataNotifier = songBar.songMetadataNotifier;
+            return ValueListenableBuilder(
+              valueListenable: songMetadataNotifier,
+              builder:
+                  (context, song, child) => BaseCard(
+                    icon: FluentIcons.music_note_2_24_filled,
+                    size: 55,
+                    paddingValue: 0,
+                    loadingWidget: const Spinner(),
+                    inputData: song,
+                  ),
+            );
+          },
         ),
       ),
     );
@@ -340,61 +351,72 @@ class _MiniPlayerState extends State<MiniPlayer> {
     final titleColor = _theme.colorScheme.primary;
     return ValueListenableBuilder(
       valueListenable: audioHandler.songValueNotifier,
-      builder: (context, value, child) {
-        final song = audioHandler.songValueNotifier.value!.song;
-        final artistData = (song['artist-credit'] ?? []) as List;
-        int index = 1;
-        final artistLabels = artistData.fold(<Widget>[], (v, e) {
-          v.add(_buildArtistLabel(e['artist']));
-          if (index != artistData.length)
-            v.add(
-              Text(
-                ', ',
-                style: TextStyle(
-                  color: _theme.colorScheme.secondary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
+      builder: (context, songBar, child) {
+        if (songBar == null) return const SizedBox.shrink();
+        final songMetadataNotifier = songBar.songMetadataNotifier;
+        return ValueListenableBuilder(
+          valueListenable: songMetadataNotifier,
+          builder: (context, song, child) {
+            if(song == null) return const SizedBox.shrink();
+            final artistData =
+                (song['artist-credit'] ?? [song['artist'] ?? 'unknown']) as List;
+            int index = 1;
+            final artistLabels = artistData.fold(<Widget>[], (v, e) {
+              v.add(_buildArtistLabel(e is String ? e : e['artist']));
+              if (index != artistData.length)
+                v.add(
+                  Text(
+                    ', ',
+                    style: TextStyle(
+                      color: _theme.colorScheme.secondary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                );
+              index++;
+              return v;
+            });
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: MarqueeWidget(
+                    manualScrollEnabled: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          song['mbTitle'] ??
+                              song['title'] ??
+                              song['ytTitle'] ??
+                              'unknown',
+                          style: TextStyle(
+                            color: titleColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (audioHandler
+                                    .audioPlayer
+                                    .songValueNotifier
+                                    .value
+                                    ?.song !=
+                                null)
+                              ...artistLabels,
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             );
-          index++;
-          return v;
-        });
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: MarqueeWidget(
-                manualScrollEnabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      audioHandler.songValueNotifier.value?.song['title'] ?? 'unknown',
-                      style: TextStyle(
-                        color: titleColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        if (audioHandler
-                                .audioPlayer
-                                .songValueNotifier
-                                .value
-                                ?.song !=
-                            null)
-                          ...artistLabels,
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          },
         );
       },
     );
@@ -402,15 +424,24 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
   Widget _buildArtistLabel(dynamic artistData) {
     return GestureDetector(
-      onTap: () async {
-        try {
-          if (!mounted || artistData == null || artistData.isEmpty)
-            throw Exception();
-          await widget.context.push('/artist', extra: artistData);
-        } catch (_) {}
-      },
+      onTap:
+          artistData is String ||
+                  !mounted ||
+                  artistData == null ||
+                  artistData.isEmpty
+              ? null
+              : () async {
+                try {
+                  await widget.context.push('/artist', extra: artistData);
+                } catch (_) {}
+              },
       child: Text(
-        artistData['name'] ?? artistData['artist'] ?? artistData['title'] ?? 'unknown',
+        artistData is String
+            ? artistData
+            : artistData['name'] ??
+                artistData['artist'] ??
+                artistData['title'] ??
+                'unknown',
         style: TextStyle(
           color: _theme.colorScheme.secondary,
           fontSize: 14,

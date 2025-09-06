@@ -1453,9 +1453,6 @@ class _SettingsPageState extends State<SettingsPage> {
     yt = YoutubeExplode(
       YoutubeHttpClient(client),
     );
-    ytm = YoutubeExplode(
-      YoutubeHttpClient(useProxies.value ? pxm.randomProxyClient() : null),
-    );
     dc = DiscogsApiClient(
       httpClient: client,
     );

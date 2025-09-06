@@ -43,21 +43,9 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 final pxm = ProxyManager(); // ProxyManager for manifest
 final pxd = ProxyManager(); // ProxyManager for data
 final client = useProxies.value ? pxd.randomProxyClient() : null;
-// YouTube client for Data
-YoutubeExplode yt = YoutubeExplode(YoutubeHttpClient(client));
-// YouTube client for Manifest
-YoutubeExplode ytm = YoutubeExplode(
-  YoutubeHttpClient(useProxies.value ? pxm.randomProxyClient() : null),
-);
+YoutubeExplode yt = YoutubeExplode(YoutubeHttpClient(client)); // YouTube client for Data
 DiscogsApiClient dc = DiscogsApiClient(httpClient: client);
 MusicBrainzApiClient mb = MusicBrainzApiClient(httpClient: client);
-/*
-List<YoutubeApiClient> userChosenClients = [
-  YoutubeApiClient.tv,
-  YoutubeApiClient.androidVr,
-  YoutubeApiClient.safari,
-];
-*/
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
