@@ -82,7 +82,7 @@ class _ArtistPageState extends State<ArtistPage> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(FluentIcons.arrow_left_24_filled),
           onPressed: () => GoRouter.of(context).pop(context),
           iconSize: pageHeaderIconSize,
         ),
