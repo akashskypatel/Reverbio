@@ -122,10 +122,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   Future<List<dynamic>> fetch() async {
     if (!_infoRequestFuture.isComplete)
-      await _infoRequestFuture.completer!.future.then((value) {
-        widget.playlistData.addAll(copyMap(_infoRequestFuture.result));
-      });
-
+      await _infoRequestFuture.completer!.future;
+    if (_infoRequestFuture.result != null) return _infoRequestFuture.result['list'] ?? [];
     //TODO: restore pagination to large playlists
     return widget.playlistData['list'] ?? [];
   }

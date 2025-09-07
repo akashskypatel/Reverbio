@@ -599,42 +599,42 @@ Future<Map<String, dynamic>> getPlaylistInfoForWidget(
   dynamic playlistData, {
   bool isArtist = false,
 }) async {
-  final ids = parseEntityId(playlistData);
-  final id =
-      playlistData is String
-          ? Uri.parse('?$ids').queryParameters['yt']
-          : playlistData['ytid'] as String? ?? playlistData['id'] as String?;
-  if (id == null || id.isEmpty) return {};
-  if (isArtist) {
-    return {'title': id, 'list': await getSongsList(id)};
-  }
-  if (playlistData is String) playlistData = {'id': 'yt=$id', 'ytid': id};
+  final id = parseEntityId(playlistData);
+  final ids = id.toIds;
+  final ytid = (ids['yt'] ?? id).ytid;
+  final mbid = (ids['mb'] ?? id).mbid;
+  if (id.isEmpty) return {};
+  if (mbid.isNotEmpty) return await queueAlbumInfoRequest(playlistData);
+  if (playlistData is String) playlistData = {'id': id, 'ytid': ytid};
   Map<String, dynamic> playlist;
 
   // Check in local playlists.
   playlist = Map<String, dynamic>.from(
-    dbPlaylists.firstWhere((p) => p['ytid'] == id, orElse: () => {}),
+    dbPlaylists.firstWhere((p) => checkEntityId(p['id'], id), orElse: () => {}),
   );
 
   // Check in user playlists if not found.
   if (playlist.isEmpty) {
     final userPl = await getUserYTPlaylists();
     playlist = Map<String, dynamic>.from(
-      userPl.firstWhere((p) => p['ytid'] == id, orElse: () => {}),
+      userPl.firstWhere((p) => checkEntityId(p['id'], id), orElse: () => {}),
     );
   }
 
   // Check in cached online playlists if still not found.
   if (playlist.isEmpty) {
     playlist = Map<String, dynamic>.from(
-      onlinePlaylists.firstWhere((p) => p['ytid'] == id, orElse: () => {}),
+      onlinePlaylists.firstWhere(
+        (p) => checkEntityId(p['id'], id),
+        orElse: () => {},
+      ),
     );
   }
 
   // If still not found, attempt to fetch playlist info.
-  if (playlist.isEmpty) {
+  if (playlist.isEmpty && ytid.isNotEmpty) {
     try {
-      final ytPlaylist = await yt.playlists.get(id);
+      final ytPlaylist = await yt.playlists.get(ytid);
       playlist = <String, dynamic>{
         'id': 'yt=${ytPlaylist.id}',
         'ytid': ytPlaylist.id.toString(),
