@@ -20,6 +20,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:reverbio/main.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/utilities/utils.dart';
 
@@ -51,6 +52,10 @@ void showToast(String text, {BuildContext? context, String? id, dynamic data}) {
         style: TextStyle(color: Theme.of(context).colorScheme.inverseSurface),
       ),
       duration: _toastDuration,
+      margin:
+          audioHandler.songValueNotifier.value == null
+              ? null
+              : const EdgeInsets.only(bottom: 117 + 20, left: 20, right: 20),
     ),
   );
 }
