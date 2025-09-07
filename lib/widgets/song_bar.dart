@@ -89,7 +89,7 @@ class SongBar extends StatefulWidget {
   @override
   _SongBarState createState() => _SongBarState();
 
-  Future<void> _prepareSong() async {
+  Future<void> _prepareSong({bool force = false}) async {
     try {
       songMetadataNotifier.value = copyMap(song);
       _isLoadingNotifier.value = true;
@@ -103,7 +103,7 @@ class SongBar extends StatefulWidget {
           _statusNotifier.value = 0;
         }),
       );
-      if (!isPrepared) await getSongUrl(song);
+      if (!isPrepared || force) await getSongUrl(song);
       if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
         song['songUrl'] = null;
         song['isError'] = true;
@@ -195,7 +195,9 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    if (mounted) widget.songMetadataNotifier.value = copyMap(widget.song);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.songMetadataNotifier.value = copyMap(widget.song);
+    });
     widget._songMetadataFutureNotifier.addListener(_songMetadataListener);
   }
 
@@ -419,7 +421,9 @@ class _SongBarState extends State<SongBar> {
       final RelativeRect position = RelativeRect.fromLTRB(
         details.globalPosition.dx - (isLargeScreen() ? navigationRailWidth : 0),
         details.globalPosition.dy,
-        tappedBox.size.width - details.globalPosition.dx - (isLargeScreen() ? navigationRailWidth : 0),
+        tappedBox.size.width -
+            details.globalPosition.dx -
+            (isLargeScreen() ? navigationRailWidth : 0),
         tappedBox.size.height - details.globalPosition.dy,
       );
 
@@ -428,7 +432,7 @@ class _SongBarState extends State<SongBar> {
         position: position,
         color: _theme.colorScheme.surface,
         items: _buildPopupMenuItems(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       );
       if (value != null) {
         _popupMenuItemAction(value);
@@ -537,6 +541,20 @@ class _SongBarState extends State<SongBar> {
             },
           ),
         ),
+        if (widget.song['ytid'] == null || widget.song['ytid'].isEmpty)
+          PopupMenuItem<String>(
+            value: 'get_youtube',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.link_24_regular,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.invalidYouTubePlaylist),
+              ],
+            ),
+          ),
         if (widget.song['ytid'] != null && widget.song['ytid'].isNotEmpty)
           PopupMenuItem<String>(
             value: 'youtube',
@@ -614,6 +632,9 @@ class _SongBarState extends State<SongBar> {
         }
         songOfflineStatus.value = !songOfflineStatus.value;
         break;
+      case 'get_youtube':
+        if (widget.song['ytid'] == null || widget.song['ytid'].isEmpty)
+          unawaited(widget._prepareSong(force: true));
       case 'youtube':
         if (widget.song['ytid'] != null && widget.song['ytid'].isNotEmpty) {
           final uri = Uri.parse(
@@ -621,6 +642,7 @@ class _SongBarState extends State<SongBar> {
           );
           launchURL(uri);
         }
+        break;
       case 'musicbrainz':
         if (widget.song['rid'] != null && widget.song['rid'].isNotEmpty) {
           final uri = Uri.parse(
@@ -628,6 +650,7 @@ class _SongBarState extends State<SongBar> {
           );
           launchURL(uri);
         }
+        break;
     }
   }
 
