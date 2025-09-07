@@ -854,10 +854,10 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
       valueListenable: audioHandler.songValueNotifier,
       builder: (context, value, child) {
         final song = audioHandler.songValueNotifier.value!.song;
-        final artistData = (song['artist-credit'] ?? []) as List;
+        final artistData = (song['artist-credit'] ?? [song['artist'] ?? 'unknown']) as List;
         int index = 1;
         final artistLabels = artistData.fold(<Widget>[], (v, e) {
-          v.add(_buildArtistLabel(e['artist']));
+          v.add(_buildArtistLabel(e is String ? e : e['artist']));
           if (index != artistData.length)
             v.add(
               Text(
@@ -881,7 +881,10 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
               child: Column(
                 children: [
                   MarqueeTextWidget(
-                    text: widget.mediaItem.title,
+                    text: song['mbTitle'] ??
+                              song['title'] ??
+                              song['ytTitle'] ??
+                              'unknown',
                     fontColor: Theme.of(context).colorScheme.primary,
                     fontSize: screenHeight * 0.028,
                     fontWeight: FontWeight.w600,
@@ -927,7 +930,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
               builder:
                   (context) =>
                       ArtistPage(page: '/artist', artistData: artistData),
-              settings: RouteSettings(name: '/artist?${artistData['id']}'),
+              settings: RouteSettings(name: '/artist?${artistData is String ? artistData : artistData['id']}'),
             ),
           );
         } catch (_) {}

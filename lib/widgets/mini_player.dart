@@ -37,8 +37,6 @@ import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
-const double playerHeight = 120;
-
 class MiniPlayer extends StatefulWidget {
   MiniPlayer({
     super.key,
@@ -357,9 +355,10 @@ class _MiniPlayerState extends State<MiniPlayer> {
         return ValueListenableBuilder(
           valueListenable: songMetadataNotifier,
           builder: (context, song, child) {
-            if(song == null) return const SizedBox.shrink();
+            if (song == null) return const SizedBox.shrink();
             final artistData =
-                (song['artist-credit'] ?? [song['artist'] ?? 'unknown']) as List;
+                (song['artist-credit'] ?? [song['artist'] ?? 'unknown'])
+                    as List;
             int index = 1;
             final artistLabels = artistData.fold(<Widget>[], (v, e) {
               v.add(_buildArtistLabel(e is String ? e : e['artist']));
