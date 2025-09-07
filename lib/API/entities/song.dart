@@ -212,7 +212,12 @@ Future<Map<String, dynamic>> _findYTSong(dynamic song) async {
                         90,
                       ));
             }).toList()
-            ..sort((a, b) => a['title'].compareTo(b['title']));
+            ..sort((a, b) => b['views'].compareTo(a['views']))
+            ..sort(
+              (a, b) => sanitizeSongTitle(
+                a['title'],
+              ).compareTo(sanitizeSongTitle(b['title'])),
+            );
       if (result.isNotEmpty) {
         ytSong = await _getYTSongDetails(result.first);
         if (ytSong.isNotEmpty) {
@@ -867,6 +872,7 @@ Future<void> makeSongOffline(dynamic song) async {
     await Directory(_artworkDirPath).create(recursive: true);
 
     final id = song['id'] = parseEntityId(song);
+    if (!isMusicbrainzSongValid(song)) await queueSongInfoRequest(song);
     if (!isYouTubeSongValid(song))
       song.addAll(Map<String, dynamic>.from(await _findYTSong(song)));
     final _audioFile =
