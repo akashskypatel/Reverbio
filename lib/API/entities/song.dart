@@ -212,12 +212,7 @@ Future<Map<String, dynamic>> _findYTSong(dynamic song) async {
                         90,
                       ));
             }).toList()
-            ..sort((a, b) => b['views'].compareTo(a['views']))
-            ..sort(
-              (a, b) => sanitizeSongTitle(
-                a['title'],
-              ).compareTo(sanitizeSongTitle(b['title'])),
-            );
+            ..sort((a, b) => b['views'].compareTo(a['views']));
       if (result.isNotEmpty) {
         ytSong = await _getYTSongDetails(result.first);
         if (ytSong.isNotEmpty) {
