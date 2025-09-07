@@ -195,7 +195,7 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    widget.songMetadataNotifier.value = copyMap(widget.song);
+    if (mounted) widget.songMetadataNotifier.value = copyMap(widget.song);
     widget._songMetadataFutureNotifier.addListener(_songMetadataListener);
   }
 
@@ -417,9 +417,9 @@ class _SongBarState extends State<SongBar> {
       //TODO: fix positioning to account for navigation rail on large screen
       final RenderBox tappedBox = context.findRenderObject() as RenderBox;
       final RelativeRect position = RelativeRect.fromLTRB(
-        details.globalPosition.dx,
+        details.globalPosition.dx - (isLargeScreen() ? navigationRailWidth : 0),
         details.globalPosition.dy,
-        tappedBox.size.width - details.globalPosition.dx,
+        tappedBox.size.width - details.globalPosition.dx - (isLargeScreen() ? navigationRailWidth : 0),
         tappedBox.size.height - details.globalPosition.dy,
       );
 
@@ -428,6 +428,7 @@ class _SongBarState extends State<SongBar> {
         position: position,
         color: _theme.colorScheme.surface,
         items: _buildPopupMenuItems(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
       );
       if (value != null) {
         _popupMenuItemAction(value);

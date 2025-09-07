@@ -257,13 +257,17 @@ class AudioPlayerService {
     return _player.open(media);
   }
 
-  Future<void> prepare(SongBar songBar, {bool play = false}) async {
-    _updateProcessingState(AudioProcessingState.loading);
-    songValueNotifier.value = songBar;
-    await songBar.prepareSong();
-    _mediaItemSubscription = songBar.mediaItemStream.listen(
-      _mediaItemStreamController.add,
-    );
+  Future<void> prepare(SongBar songBar, {bool setMetadata = true}) async {
+    if (setMetadata) {
+      _updateProcessingState(AudioProcessingState.loading);
+      songValueNotifier.value = songBar;
+      await songBar.prepareSong();
+      _mediaItemSubscription = songBar.mediaItemStream.listen(
+        _mediaItemStreamController.add,
+      );
+    } else {
+      unawaited(songBar.prepareSong());
+    }
   }
 
   Future<void> queue(Media media) async {
@@ -428,8 +432,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (!audioPlayer.hasNext && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value?.song == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
-    if (loopAllSongs &&
-        index == queueSongBars.length - 1) {
+    if (loopAllSongs && index == queueSongBars.length - 1) {
       await this.prepare(
         songBar: queueSongBars.first,
         play: play,
@@ -539,53 +542,72 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     bool skipOnError = false,
     int skipCount = 0,
   }) async {
-    if (songBar != null && !isSongInQueue(songBar)) {
-      addSongToQueue(songBar);
-    }
-    if (queueSongBars.isEmpty) return;
-    songValueNotifier.value?.songPrepareTracker.value?.cancel();
-    audioPlayer.setProcessingState(AudioProcessingState.loading);
-    songBar = songBar ?? audioPlayer.queueSongBars.first;
-    play = play || audioPlayer.playing;
-    await audioPlayer.prepare(songBar, play: play);
-    if (!songBar.isError &&
-        songBar.media != null &&
-        !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
-      await audioPlayer.queue(songBar.media!);
-      if (play && !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
-        await this.play();
-        return;
+    try {
+      if (songBar != null && !isSongInQueue(songBar)) {
+        addSongToQueue(songBar);
       }
-    } else if (skipOnError &&
-        audioPlayer.queueSongBars.length > 1 &&
-        songBar.isError) {
-      if (skipCount < audioPlayer.queueSongBars.length || skipCount <= 10) {
-        final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
-        if (next != null) {
-          await this.prepare(
-            songBar: next,
-            play: play,
-            skipOnError: skipOnError,
-            skipCount: skipCount + 1,
-          );
-          return;
+      if (queueSongBars.isEmpty) return;
+      songValueNotifier.value?.songPrepareTracker.value?.cancel();
+      audioPlayer.setProcessingState(AudioProcessingState.loading);
+      songBar = songBar ?? audioPlayer.queueSongBars.first;
+      await audioPlayer.prepare(songBar);
+      if (!songBar.isError &&
+          songBar.media != null &&
+          !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
+        await audioPlayer.queue(songBar.media!);
+        if (play && !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
+          await this.play();
         }
-      } else {
-        showToast(
-          songBar.context.l10n!.errorCouldNotFindAStream,
-          context: songBar.context,
-        );
+      } else if (skipOnError &&
+          audioPlayer.queueSongBars.length > 1 &&
+          songBar.isError) {
+        if (skipCount < audioPlayer.queueSongBars.length || skipCount <= 10) {
+          final next = nextSongBar(
+            songBar,
+            songBars: audioPlayer.queueSongBars,
+          );
+          if (next != null) {
+            await prepare(
+              songBar: next,
+              play: play,
+              skipOnError: skipOnError,
+              skipCount: skipCount + 1,
+            );
+            return;
+          }
+        } else {
+          showToast(
+            songBar.context.l10n!.errorCouldNotFindAStream,
+            context: songBar.context,
+          );
+        }
       }
-    }
-    if (prepareNextSong.value) {
-      final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
-      if (next != null) unawaited(this.prepare(songBar: next));
+      if (prepareNextSong.value) {
+        final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
+        if (next != null &&
+            !(songBar.songPrepareTracker.value?.isCancelled ?? true))
+          unawaited(audioPlayer.prepare(next, setMetadata: false));
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}',
+        e,
+        stackTrace,
+      );
+      throw Exception(e.toString());
     }
   }
 
   Future<void> close() async {
     cachedIsPlaying = false;
     songValueNotifier.value?.songPrepareTracker.value?.cancel();
+    if (prepareNextSong.value && songValueNotifier.value != null) {
+      final next = nextSongBar(
+        songValueNotifier.value!,
+        songBars: audioPlayer.queueSongBars,
+      );
+      next?.songPrepareTracker.value?.cancel();
+    }
     await audioPlayer.close();
     queue.add([]);
     playbackState.add(PlaybackState());
@@ -1115,7 +1137,7 @@ SongBar? nextSongBar(SongBar songBar, {List<SongBar>? songBars}) {
   final list = songBars != null ? songBars : audioHandler.queueSongBars;
   final length = list.length;
   final index = list.indexWhere((e) => e.equals(songBar));
-  if (index < 0) return null;
+  if (index < 0 || index + 1 >= list.length) return null;
   if (length == 1) return songBar;
   if (index == (length - 1) &&
       repeatNotifier.value == AudioServiceRepeatMode.all)
@@ -1127,7 +1149,7 @@ SongBar? previousSongBar(SongBar songBar, {List<SongBar>? songBars}) {
   final list = songBars != null ? songBars : audioHandler.queueSongBars;
   final length = list.length;
   final index = list.indexWhere((e) => e.equals(songBar));
-  if (index < 0) return null;
+  if (index < 0 || index - 1 < 0) return null;
   if (length == 1) return songBar;
   if (index == 0 && repeatNotifier.value == AudioServiceRepeatMode.all)
     return list[length - 1];
