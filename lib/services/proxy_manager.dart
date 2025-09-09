@@ -24,9 +24,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+//import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+//import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
@@ -58,16 +60,53 @@ class Proxy {
 }
 
 class ProxyManager {
-  ProxyManager() {
-    unawaited(_fetchProxies());
+  factory ProxyManager() => _instance;
+  ProxyManager._internal() {
+    /*
+    useProxies.addListener(() {
+      _mbClient =
+          useProxies.value
+              ? MusicBrainzApiClient(httpClient: _proxyClient)
+              : MusicBrainzApiClient();
+      _dcClient =
+          useProxies.value
+              ? DiscogsApiClient(httpClient: _proxyClient)
+              : DiscogsApiClient();
+    });
+    */
+    _fetchProxies().then((value) {
+      _proxyClient = _randomProxyClient();
+      _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
+      /*
+      _mbClient =
+          useProxies.value
+              ? MusicBrainzApiClient(httpClient: _proxyClient)
+              : MusicBrainzApiClient();
+      _dcClient =
+          useProxies.value
+              ? DiscogsApiClient(httpClient: _proxyClient)
+              : DiscogsApiClient();
+      */
+    });
   }
-
+  static final ProxyManager _instance = ProxyManager._internal();
   Future<void>? _fetchingList;
   bool _fetched = false;
   final Map<String, Set<Proxy>> _proxies = {};
   final Set<Proxy> _workingProxies = {};
   final _random = Random();
   DateTime _lastFetched = DateTime.now();
+  IOClient _proxyClient = IOClient();
+  final YoutubeExplode _localYTClient = YoutubeExplode();
+  YoutubeExplode _proxyYTClient = YoutubeExplode();
+
+  //MusicBrainzApiClient _mbClient = MusicBrainzApiClient();
+  //DiscogsApiClient _dcClient = DiscogsApiClient();
+
+  YoutubeExplode get localYoutubeClient => _localYTClient;
+  YoutubeExplode get proxyYoutubeClient => _proxyYTClient;
+  //MusicBrainzApiClient get musicbrainzClient => _mbClient;
+  //DiscogsApiClient get discogsClient => _dcClient;
 
   Future<void> _fetchProxies() async {
     try {
@@ -370,14 +409,7 @@ class ProxyManager {
     try {
       final timeout = streamRequestTimeout.value;
       if (kDebugMode) logger.log('Validating direct connection...', null, null);
-      final client =
-          HttpClient()
-            ..badCertificateCallback = (context, _context, ___) {
-              return false;
-            };
-      final ioClient = IOClient(client);
-      final ytExplode = YoutubeExplode(YoutubeHttpClient(ioClient));
-      final manifest = await ytExplode.videos.streams
+      final manifest = await _localYTClient.videos.streams
           .getManifest(songId)
           .timeout(Duration(seconds: timeout));
       if (kDebugMode)
@@ -386,7 +418,6 @@ class ProxyManager {
           null,
           null,
         );
-      ytExplode.close();
       return manifest;
     } catch (e) {
       logger.log('Direct connection failed', e, null);
@@ -466,7 +497,6 @@ class ProxyManager {
                 ? 0
                 : _random.nextInt(_workingProxies.length);
         proxy = _workingProxies.elementAt(idx);
-        _workingProxies.remove(proxy);
       } else {
         if (preferredCountry != null &&
             _proxies.containsKey(preferredCountry)) {
@@ -484,12 +514,10 @@ class ProxyManager {
         }
         if (countryProxies.length == 1) {
           proxy = countryProxies.first;
-          countryProxies.remove(proxy);
         } else {
           proxy = countryProxies.elementAt(
             _random.nextInt(countryProxies.length),
           );
-          countryProxies.remove(proxy);
         }
         if (kDebugMode)
           logger.log(
@@ -557,14 +585,13 @@ class ProxyManager {
     }
   }
 
-  IOClient? randomProxyClient() {
+  IOClient _randomProxyClient() {
     IOClient? ioClient;
     HttpClient? client;
     try {
-      if (_workingProxies.isEmpty) unawaited(_fetchProxies());
       client =
           HttpClient()
-            ..findProxy = (_) {
+            ..findProxy = (uri) {
               final proxy = _randomProxySync();
               return proxy != null
                   ? 'PROXY ${proxy.address}; DIRECT;'
@@ -583,7 +610,7 @@ class ProxyManager {
       );
       client?.close(force: true);
       ioClient?.close();
-      return null;
+      return IOClient();
     }
   }
 }

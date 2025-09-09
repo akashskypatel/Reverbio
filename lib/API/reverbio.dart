@@ -40,12 +40,10 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-final pxm = ProxyManager(); // ProxyManager for manifest
-final pxd = ProxyManager(); // ProxyManager for data
-final client = useProxies.value ? pxd.randomProxyClient() : null;
-YoutubeExplode yt = YoutubeExplode(YoutubeHttpClient(client)); // YouTube client for Data
-DiscogsApiClient dc = DiscogsApiClient(httpClient: client);
-MusicBrainzApiClient mb = MusicBrainzApiClient(httpClient: client);
+final px = ProxyManager();
+YoutubeExplode yt = useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
+DiscogsApiClient dc = DiscogsApiClient();// px.discogsClient;
+MusicBrainzApiClient mb = MusicBrainzApiClient();// px.musicbrainzClient;
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
@@ -203,6 +201,7 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
   int maxScore = 0,
   bool minimal = true,
 }) async {
+  final start = DateTime.now();
   entity = entity.trim().toLowerCase();
   query = query.collapsed.replaceAll(' ', '|');
   final entityName = <String, dynamic>{
@@ -309,6 +308,11 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
               )
               .take(limit)
               .toList();
+      logger.log(
+        'getMBSearchSuggestions $entity: ${DateTime.now().difference(start).inMilliseconds}',
+        null,
+        null,
+      );
       return <String, Map<String, dynamic>>{
         entity: {
           'count': result['count'],
@@ -329,8 +333,14 @@ Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
   String query, {
   int limit = 10,
 }) async {
+  final start = DateTime.now();
   try {
-    final results = await yt.search.getQuerySuggestions(query);
+    final results = await px.localYoutubeClient.search.getQuerySuggestions(query);
+    logger.log(
+      'getYTSearchSuggestions: ${DateTime.now().difference(start).inMilliseconds}',
+      null,
+      null,
+    );
     return {
       'youtube': {
         'count': results.length,
@@ -356,6 +366,7 @@ Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
   int offset = 0,
   List<SearchList> resultList = const [],
 }) async {
+  final start = DateTime.now();
   try {
     final index = resultList.isNotEmpty ? (offset ~/ 20) : 0;
     final results =
@@ -364,12 +375,17 @@ Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
                 .nextPage() //if offset is greater than list length * 20 get next page from last item
             : resultList.isNotEmpty
             ? resultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
-            : await yt.search.searchContent(
+            : await px.localYoutubeClient.search.searchContent(
               query,
               filter: TypeFilters.playlist,
             ); //if result list is empty then make a new search
     if ((offset == 0 || offset >= (20 * resultList.length)) && results != null)
       resultList.add(results);
+    logger.log(
+      'getYTPlaylistSuggestions: ${DateTime.now().difference(start).inMilliseconds}',
+      null,
+      null,
+    );
     return {
       'playlist': {
         'count': results?.length ?? 0,
@@ -410,6 +426,7 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
   String? entity,
   List<SearchList>? resultList,
 }) async {
+  final start = DateTime.now();
   final futures = <Future>[];
   if (entity != null && ['artist', 'song', 'album'].contains(entity)) {
     futures.add(
@@ -477,6 +494,11 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
   for (final message in fetchingList) {
     results.addAll(message);
   }
+  logger.log(
+    'getAllSearchSuggestions: ${DateTime.now().difference(start).inMilliseconds}',
+    null,
+    null,
+  );
   return results;
 }
 
