@@ -23,12 +23,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:open_settings_plus/core/open_settings_plus.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -54,7 +52,6 @@ import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/playlist_import.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -239,7 +236,7 @@ class _SettingsPageState extends State<SettingsPage> {
               tileIcon: FluentIcons.cellular_off_24_regular,
               trailing: Switch(
                 value: value,
-                onChanged: (value) async => _toggleOfflineMode(context, value),
+                onChanged: (value) async => toggleOfflineMode(context, value),
               ),
             );
           },
@@ -1368,51 +1365,6 @@ class _SettingsPageState extends State<SettingsPage> {
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  Future<void> _toggleOfflineMode(BuildContext context, bool value) async {
-    final shouldSave =
-        await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                contentPadding: commonBarContentPadding,
-                title: const Text('Offline Mode'),
-                content: const Text(
-                  'Offline Mode requires a restart. Are you sure you want to exit?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Exit'),
-                  ),
-                ],
-              ),
-        ) ??
-        false;
-    if (shouldSave) {
-      showToast(context.l10n!.restartAppMsg);
-      await addOrUpdateData('settings', 'offlineMode', value);
-      offlineMode.value = value;
-      Timer(const Duration(milliseconds: 500), () async => exitApp());
-    }
-  }
-
-  Future<void> exitApp() async {
-    try {
-      await audioHandler.close();
-      if (isMobilePlatform()) {
-        await SystemNavigator.pop();
-      } else {
-        exit(0);
-      }
-    } catch (e) {
-      exit(0);
-    }
-  }
-
   void _toggleSponsorBlock(BuildContext context, bool value) async {
     await addOrUpdateData('settings', 'sponsorBlockSupport', value);
     sponsorBlockSupport.value = value;
@@ -1446,19 +1398,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _toggleUseProxies(BuildContext context, bool value) async {
     await addOrUpdateData('settings', 'useProxies', value);
     useProxies.value = value;
-    yt.close();
-    dc.close();
-    mb.close();
-    final client = useProxies.value ? pxd.randomProxyClient() : null;
-    yt = YoutubeExplode(
-      YoutubeHttpClient(client),
-    );
-    dc = DiscogsApiClient(
-      httpClient: client,
-    );
-    mb = MusicBrainzApiClient(
-      httpClient: client,
-    );
+    yt = useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
     showToast(context.l10n!.settingChangedMsg);
   }
 
@@ -1552,3 +1492,48 @@ class _SettingsPageState extends State<SettingsPage> {
     showToast(response);
   }
 }
+
+Future<void> toggleOfflineMode(BuildContext context, bool value) async {
+    final shouldSave =
+        await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                contentPadding: commonBarContentPadding,
+                title: const Text('Offline Mode'),
+                content: const Text(
+                  'Offline Mode requires a restart. Are you sure you want to exit?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Exit'),
+                  ),
+                ],
+              ),
+        ) ??
+        false;
+    if (shouldSave) {
+      showToast(context.l10n!.restartAppMsg);
+      await addOrUpdateData('settings', 'offlineMode', value);
+      offlineMode.value = value;
+      Timer(const Duration(milliseconds: 500), () async => exitApp());
+    }
+  }
+
+  Future<void> exitApp() async {
+    try {
+      await audioHandler.close();
+      if (isMobilePlatform()) {
+        await SystemNavigator.pop();
+      } else {
+        exit(0);
+      }
+    } catch (e) {
+      exit(0);
+    }
+  }
