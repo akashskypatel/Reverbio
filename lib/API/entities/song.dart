@@ -558,7 +558,7 @@ Future<StreamManifest> getSongManifest(String songId) async {
     final manifest =
         useProxies.value
             ? await px.getSongManifest(songId) ??
-                await yt.videos.streams.getManifest(
+                await px.localYoutubeClient.videos.streams.getManifest(
                   songId,
                   //ytClients: userChosenClients,
                 )
@@ -757,7 +757,7 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   final context = NavigationManager().context;
   try {
     if (song == null) return '';
-    if (!isYouTubeSongValid(song)) await findYTSong(song);
+    await findYTSong(song);
     if (isYouTubeSongValid(song)) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
