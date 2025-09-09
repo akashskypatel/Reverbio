@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:reverbio/API/entities/album.dart';
@@ -88,8 +89,7 @@ class _SearchPageState extends State<SearchPage> {
             context,
             MaterialPageRoute(
               builder:
-                  (context) =>
-                      ArtistPage(page: '/artist', artistData: data),
+                  (context) => ArtistPage(page: '/artist', artistData: data),
               settings: RouteSettings(name: '/artist?${data['id']}'),
             ),
           );
@@ -103,8 +103,7 @@ class _SearchPageState extends State<SearchPage> {
             context,
             MaterialPageRoute(
               builder:
-                  (context) =>
-                      PlaylistPage(page: '/album', playlistData: data),
+                  (context) => PlaylistPage(page: '/album', playlistData: data),
               settings: RouteSettings(name: '/album?${data['id']}'),
             ),
           );
@@ -177,16 +176,21 @@ class _SearchPageState extends State<SearchPage> {
       appBar: AppBar(
         title: Text(context.l10n!.search),
         actions: [
-          SizedBox(
-            width: pageHeaderIconSize,
-            height: pageHeaderIconSize,
+          SizedBox.square(
+            dimension: pageHeaderIconSize + 16,
             child: ValueListenableBuilder(
               valueListenable: _fetching,
               builder:
                   (context, value, __) =>
-                      value ? const Spinner() : const SizedBox.shrink(),
+                      value
+                          ? const Padding(
+                            padding: EdgeInsetsGeometry.all(8),
+                            child: Spinner(),
+                          )
+                          : const SizedBox.shrink(),
             ),
           ),
+          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: SingleChildScrollView(
@@ -473,7 +477,13 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             searchHistory.remove(query);
                           });
-                        unawaited(addOrUpdateData('user', 'searchHistory', searchHistory));
+                        unawaited(
+                          addOrUpdateData(
+                            'user',
+                            'searchHistory',
+                            searchHistory,
+                          ),
+                        );
                       }
                     },
                     trailing:

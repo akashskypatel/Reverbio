@@ -130,9 +130,10 @@ class _ArtistPageState extends State<ArtistPage> {
       iconSize: pageHeaderIconSize,
       onPressed: () async {
         final data = await getArtistDetails(widget.artistData, refresh: true);
-        setState(() {
-          widget.artistData.addAll(data);
-        });
+        if (mounted)
+          setState(() {
+            widget.artistData.addAll(data);
+          });
       },
     );
   }
