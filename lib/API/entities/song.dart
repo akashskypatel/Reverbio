@@ -176,7 +176,45 @@ void getSimilarSong(String songYtId) async {
   }
 }
 
-Future<Map<String, dynamic>> _findYTSong(dynamic song) async {
+Future<Map<String, dynamic>> findYTSong(dynamic song, {String? newYtid}) async {
+  Map<String, dynamic> ytSong = {};
+  try {
+    if (newYtid != null && newYtid.isNotEmpty) {
+      final newId = (song['id'] as String).mergedReplacedId(
+        parseEntityId(newYtid),
+      );
+      song['ytid'] = newYtid;
+      song['id'] = newId;
+    }
+    final ytid = ((song['ytid'] ?? song['id']) as String).ytid;
+    if (ytid.isNotEmpty) {
+      ytSong = await _getYTSongDetails(song);
+    } else {
+      final ytSongs = await _findYTSong(song);
+      if (ytSongs.isNotEmpty) {
+        ytSong = Map<String, dynamic>.from(ytSongs.first);
+        song['ytSongs'] = ytSongs;
+      }
+    }
+    if (ytSong.isNotEmpty) {
+      ytSong['id'] = parseEntityId(ytSong);
+      ytSong['id'] = (ytSong['id'] as String).mergedAbsentId(song['id']);
+      if (song['title'] != null) ytSong.remove('title');
+      if (song['artist'] != null) ytSong.remove('artist');
+      song.addAll(ytSong);
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  addSongToCache(song as Map<String, dynamic>);
+  if (getSongInfoQueue.isEmpty &&
+      (_writeCacheFuture.completer?.future == null ||
+          _writeCacheFuture.isComplete))
+    unawaited(_writeToCache());
+  return song;
+}
+
+Future<List<dynamic>> _findYTSong(dynamic song) async {
   Map<String, dynamic> ytSong = <String, dynamic>{};
   try {
     final id = parseEntityId(song);
@@ -213,18 +251,12 @@ Future<Map<String, dynamic>> _findYTSong(dynamic song) async {
                       ));
             }).toList()
             ..sort((a, b) => b['views'].compareTo(a['views']));
-      if (result.isNotEmpty) {
-        ytSong = await _getYTSongDetails(result.first);
-        if (ytSong.isNotEmpty) {
-          song['ytid'] = ytSong['ytid'];
-          ytSong['id'] = parseEntityId(song);
-        }
-      }
+      return result;
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-  return ytSong;
+  return [];
 }
 
 Map<String, dynamic>? getCachedSong(dynamic song) {
@@ -289,25 +321,23 @@ Future<dynamic> _getSongByRecordingDetails(
       cached['id'] = parseEntityId(cached);
       recording = cached;
     } else {
-      recording.addAll(
-        Map<String, dynamic>.from(
-          await mb.recordings.get(
-            rcdId,
-            inc: [
-              'artists',
-              'releases',
-              'release-groups',
-              'isrcs',
-              'url-rels',
-              'artist-credits',
-              'genres',
-              'artist-rels',
-              'release-rels',
-              'release-group-rels',
-            ],
-          ),
-        ),
+      final rcdResult = await mb.recordings.get(
+        rcdId,
+        inc: [
+          'artists',
+          'releases',
+          'release-groups',
+          'isrcs',
+          'url-rels',
+          'artist-credits',
+          'genres',
+          'artist-rels',
+          'release-rels',
+          'release-group-rels',
+        ],
       );
+      if (rcdResult['error'] != null) throw rcdResult['error'];
+      recording.addAll(Map<String, dynamic>.from(rcdResult));
       recording['artist'] = combineArtists(recording) ?? 'Unknown';
       if (getImage)
         for (final release in (recording['releases'] ?? [])) {
@@ -527,12 +557,12 @@ Future<StreamManifest> getSongManifest(String songId) async {
   try {
     final manifest =
         useProxies.value
-            ? await pxm.getSongManifest(songId) ??
+            ? await px.getSongManifest(songId) ??
                 await yt.videos.streams.getManifest(
                   songId,
                   //ytClients: userChosenClients,
                 )
-            : await yt.videos.streams.getManifest(
+            : await px.localYoutubeClient.videos.streams.getManifest(
               songId,
               //ytClients: userChosenClients,
             );
@@ -727,17 +757,7 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   final context = NavigationManager().context;
   try {
     if (song == null) return '';
-    if (!isYouTubeSongValid(song)) {
-      final ytSong =
-          (song['id'] as String).ytid.isNotEmpty
-              ? await _getYTSongDetails(song)
-              : await _findYTSong(song);
-      if (ytSong.isNotEmpty) {
-        ytSong['id'] = parseEntityId(ytSong);
-        ytSong['id'] = (ytSong['id'] as String).mergedAbsentId(song['id']);
-        song.addAll(Map<String, dynamic>.from(ytSong));
-      }
-    }
+    if (!isYouTubeSongValid(song)) await findYTSong(song);
     if (isYouTubeSongValid(song)) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
@@ -814,7 +834,10 @@ Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
   try {
     if (song == null || song.isEmpty) return song;
     String songId = parseEntityId(song).ytid;
-    final cached = getCachedSong(song);
+    final cached = cachedSongsList.firstWhere(
+      (e) => checkEntityId(songId, e['id']),
+      orElse: () => <String, dynamic>{},
+    );
     if (isSongValid(cached) && isYouTubeSongValid(cached)) {
       return cached!;
     } else if (songId.isNotEmpty) {
@@ -859,20 +882,20 @@ Future<void> makeSongOffline(dynamic song) async {
     await getUserOfflineSongs();
     if (isSongAlreadyOffline(song)) return;
     final _dir = await getApplicationSupportDirectory();
-    final _audioDirPath =
-        '${_dir.path}${Platform.pathSeparator}tracks${Platform.pathSeparator}';
-    final _artworkDirPath =
-        '${_dir.path}${Platform.pathSeparator}artworks${Platform.pathSeparator}';
+    final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
+    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
     await Directory(_audioDirPath).create(recursive: true);
     await Directory(_artworkDirPath).create(recursive: true);
 
+    if (!isMusicbrainzSongValid(song))
+      song.addAll(Map<String, dynamic>.from(await queueSongInfoRequest(song)));
+    if (!isYouTubeSongValid(song)) await findYTSong(song);
     final id = song['id'] = parseEntityId(song);
-    if (!isMusicbrainzSongValid(song)) await queueSongInfoRequest(song);
-    if (!isYouTubeSongValid(song))
-      song.addAll(Map<String, dynamic>.from(await _findYTSong(song)));
     final _audioFile =
-        '$_audioDirPath$id.m4a'; // File('$_audioDirPath$id.m4a');
-    final _artworkFile = File('$_artworkDirPath$id.jpg');
+        '$_audioDirPath${Platform.pathSeparator}$id.m4a'; // File('$_audioDirPath$id.m4a');
+    final _artworkFile = File(
+      '$_artworkDirPath${Platform.pathSeparator}$id.jpg',
+    );
 
     try {
       final context = NavigationManager().context;
@@ -884,7 +907,8 @@ Future<void> makeSongOffline(dynamic song) async {
         taskId: id,
         url: songUrl,
         filename: '$id.m4a',
-        directory: _audioDirPath,
+        directory: 'tracks',
+        baseDirectory: BaseDirectory.applicationSupport,
         updates: Updates.statusAndProgress,
         displayName:
             '${song['mbTitle'] ?? song['title'] ?? song['ytTitle']} - ${song['mbArtist'] ?? song['artist'] ?? song['ytArtist']}',
