@@ -269,19 +269,7 @@ Future<void> initialization() async {
       ),
     );
     audioDevice.value = await audioHandler.getCurrentAudioDevice();
-    // Init clients
-    /*
-    if (clientsSetting.value.isNotEmpty) {
-      final chosenClients = <YoutubeApiClient>[];
-      for (final client in clientsSetting.value) {
-        final _client = clients[client];
-        if (_client != null) {
-          chosenClients.add(_client);
-        }
-      }
-      //userChosenClients = chosenClients;
-    }
-    */
+
     currentLikedPlaylistsLength.value = userLikedPlaylists.length;
     currentLikedSongsLength.value = userLikedSongsList.length;
     currentOfflineSongsLength.value = userOfflineSongs.length;
@@ -291,6 +279,8 @@ Future<void> initialization() async {
     activeQueueLength.value = audioHandler.queueSongBars.length;
 
     await PM.initialize();
+
+    await px.ensureInitialized();
 
     postUpdate();
 

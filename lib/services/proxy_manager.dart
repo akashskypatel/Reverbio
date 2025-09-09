@@ -62,31 +62,9 @@ class Proxy {
 class ProxyManager {
   factory ProxyManager() => _instance;
   ProxyManager._internal() {
-    /*
-    useProxies.addListener(() {
-      _mbClient =
-          useProxies.value
-              ? MusicBrainzApiClient(httpClient: _proxyClient)
-              : MusicBrainzApiClient();
-      _dcClient =
-          useProxies.value
-              ? DiscogsApiClient(httpClient: _proxyClient)
-              : DiscogsApiClient();
-    });
-    */
     _fetchProxies().then((value) {
       _proxyClient = _randomProxyClient();
       _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
-      /*
-      _mbClient =
-          useProxies.value
-              ? MusicBrainzApiClient(httpClient: _proxyClient)
-              : MusicBrainzApiClient();
-      _dcClient =
-          useProxies.value
-              ? DiscogsApiClient(httpClient: _proxyClient)
-              : DiscogsApiClient();
-      */
     });
   }
   static final ProxyManager _instance = ProxyManager._internal();
@@ -100,13 +78,17 @@ class ProxyManager {
   final YoutubeExplode _localYTClient = YoutubeExplode();
   YoutubeExplode _proxyYTClient = YoutubeExplode();
 
-  //MusicBrainzApiClient _mbClient = MusicBrainzApiClient();
-  //DiscogsApiClient _dcClient = DiscogsApiClient();
-
   YoutubeExplode get localYoutubeClient => _localYTClient;
   YoutubeExplode get proxyYoutubeClient => _proxyYTClient;
-  //MusicBrainzApiClient get musicbrainzClient => _mbClient;
-  //DiscogsApiClient get discogsClient => _dcClient;
+
+  Future<void> ensureInitialized() async {
+    if (_fetchingList != null)
+      await _fetchingList;
+    else if (_proxies.isEmpty ||
+        DateTime.now().difference(_lastFetched).inMinutes >= 60 ||
+        !_fetched)
+      await _fetchProxies();
+  }
 
   Future<void> _fetchProxies() async {
     try {
@@ -538,6 +520,7 @@ class ProxyManager {
   }
 
   Future<StreamManifest?> getSongManifest(String songId) async {
+    print('getSongManifest');
     try {
       StreamManifest? manifest = await _validateDirect(songId);
       if (manifest != null) return manifest;
