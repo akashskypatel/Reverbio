@@ -520,7 +520,6 @@ class ProxyManager {
   }
 
   Future<StreamManifest?> getSongManifest(String songId) async {
-    print('getSongManifest');
     try {
       StreamManifest? manifest = await _validateDirect(songId);
       if (manifest != null) return manifest;
