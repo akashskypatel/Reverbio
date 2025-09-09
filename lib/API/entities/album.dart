@@ -242,7 +242,6 @@ Future<Map<String, dynamic>> getAlbumCoverArt(
       final result = Map<String, dynamic>.from(
         await mb.coverArt.get(ids['mb']!, 'release-group'),
       );
-      if (result['error'] != null) throw result['error'];
       if (result['error'] == null) {
         album['images'] = result['images'];
         album['release'] = result['release'];
@@ -412,7 +411,7 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       if (album['id']?.isEmpty) throw Exception('ID is null or empty');
       if (album['id'] != null &&
           (album['image'] == null || album['image'].isEmpty))
-        unawaited(getAlbumCoverArt(album));
+        unawaited(getAlbumCoverArt(Map<String, dynamic>.from(album)));
       userLikedAlbumsList.addOrUpdate('id', album['id'], <String, dynamic>{
         'id': album['id'],
         'artist': album['artist'],
@@ -421,12 +420,12 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
         'genres': album['genres'] ?? album['musicbrainz']?['genres'] ?? [],
         'primary-type': album['primary-type'],
       });
-      currentLikedAlbumsLength.value++;
+      currentLikedAlbumsLength.value = userLikedAlbumsList.length;
       album['album'] = album['title'];
       await PM.triggerHook(album, 'onEntityLiked');
     } else {
       userLikedAlbumsList.removeWhere((value) => checkAlbum(album, value));
-      currentLikedAlbumsLength.value--;
+      currentLikedAlbumsLength.value = userLikedAlbumsList.length;
     }
     unawaited(addOrUpdateData('user', 'likedAlbums', userLikedAlbumsList));
     return add;

@@ -66,15 +66,18 @@ class _PlaylistPageState extends State<PlaylistPage> {
   late ThemeData _theme;
   final FutureTracker _infoRequestFuture = FutureTracker(null);
   final _isEditEnabled = ValueNotifier(false);
-  late final likeStatus = ValueNotifier<bool>(getLikeStatus());
-  late final autoOffline = ValueNotifier<bool>(
-    isPlaylistAlreadyOffline(widget.playlistData),
-  );
+  final likeStatus = ValueNotifier<bool>(false);
+  ValueNotifier<int> likeLength = ValueNotifier<int>(0);
+  final autoOffline = ValueNotifier<bool>(false);
 
   @override
   void initState() {
     super.initState();
-    unawaited(_initializePlaylist());
+    _infoRequestFuture.runFuture(_initializePlaylist());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      likeStatus.value = getLikeStatus();
+      autoOffline.value = isPlaylistAlreadyOffline(widget.playlistData);
+    });
   }
 
   @override
@@ -89,14 +92,14 @@ class _PlaylistPageState extends State<PlaylistPage> {
       'ep',
       'broadcast',
       'other',
-    ].contains(widget.playlistData['primary-type']?.toLowerCase()))
+    ].contains(widget.playlistData['primary-type']?.toLowerCase())) {
       return isAlbumAlreadyLiked(widget.playlistData);
-    else if (widget.playlistData['ytid'] != null)
+    } else if (widget.playlistData['ytid'] != null)
       return isPlaylistAlreadyLiked(widget.playlistData);
     return false;
   }
 
-  Future<void> _initializePlaylist() async {
+  Future _initializePlaylist() async {
     final id = parseEntityId(widget.playlistData);
     final ids = id.toIds;
     final ytid = (ids['yt'] ?? id.ytid).ytid;
@@ -104,26 +107,24 @@ class _PlaylistPageState extends State<PlaylistPage> {
     if (mbid.isNotEmpty &&
         (widget.playlistData?['list'] == null ||
             widget.playlistData?['list'].isEmpty)) {
-      await _infoRequestFuture.runFuture(
-        queueAlbumInfoRequest(widget.playlistData),
-      );
+      return queueAlbumInfoRequest(widget.playlistData);
     } else if (ytid.isNotEmpty) {
       widget.playlistData['ytid'] = ytid;
-      await _infoRequestFuture.runFuture(
-        getPlaylistInfoForWidget(
-          widget.playlistData,
-          isArtist: widget.isArtist,
-        ),
+      likeLength = currentLikedPlaylistsLength;
+      return getPlaylistInfoForWidget(
+        widget.playlistData,
+        isArtist: widget.isArtist,
       );
     } else {
-      await _infoRequestFuture.runFuture(Future.value(widget.playlistData));
+      return Future.value(widget.playlistData);
     }
   }
 
   Future<List<dynamic>> fetch() async {
     if (!_infoRequestFuture.isComplete)
       await _infoRequestFuture.completer!.future;
-    if (_infoRequestFuture.result != null) return _infoRequestFuture.result['list'] ?? [];
+    if (_infoRequestFuture.result != null)
+      return _infoRequestFuture.result['list'] ?? [];
     //TODO: restore pagination to large playlists
     return widget.playlistData['list'] ?? [];
   }
@@ -369,32 +370,61 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   Widget _buildLikeButton() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: likeStatus,
-      builder: (context, value, __) {
-        return IconButton(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          icon:
-              value
-                  ? const Icon(FluentIcons.heart_24_filled)
-                  : const Icon(FluentIcons.heart_24_regular),
-          iconSize: pageHeaderIconSize,
-          onPressed: () {
-            if ([
-              'album',
-              'single',
-              'ep',
-              'broadcast',
-              'other',
-            ].contains(widget.playlistData['primary-type']?.toLowerCase()))
-              updateAlbumLikeStatus(widget.playlistData, !likeStatus.value);
-            else if (widget.playlistData['ytid'] != null)
-              updatePlaylistLikeStatus(widget.playlistData, !likeStatus.value);
-            if (mounted)
-              setState(() {
-                likeStatus.value = !likeStatus.value;
-              });
+    if ([
+      'album',
+      'single',
+      'ep',
+      'broadcast',
+      'other',
+    ].contains(widget.playlistData['primary-type']?.toLowerCase())) {
+      likeLength = currentLikedAlbumsLength;
+    } else if (widget.playlistData['ytid'] != null)
+      likeLength = currentLikedPlaylistsLength;
+
+    return FutureBuilder(
+      future: _infoRequestFuture.completer!.future,
+      builder: (context, snapshot) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return ValueListenableBuilder(
+              valueListenable: likeLength,
+              builder: (_, __, ___) {
+                final value = likeStatus.value = getLikeStatus();
+                return IconButton(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  icon:
+                      value
+                          ? const Icon(FluentIcons.heart_24_filled)
+                          : const Icon(FluentIcons.heart_24_regular),
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () async {
+                    if ([
+                      'album',
+                      'single',
+                      'ep',
+                      'broadcast',
+                      'other',
+                    ].contains(
+                      widget.playlistData['primary-type']?.toLowerCase(),
+                    ))
+                      await updateAlbumLikeStatus(
+                        widget.playlistData,
+                        !likeStatus.value,
+                      );
+                    else if (widget.playlistData['ytid'] != null)
+                      await updatePlaylistLikeStatus(
+                        widget.playlistData,
+                        !likeStatus.value,
+                      );
+                    if (mounted)
+                      setState(() {
+                        likeStatus.value = getLikeStatus();
+                      });
+                  },
+                );
+              },
+            );
           },
         );
       },
