@@ -247,5 +247,10 @@
   "downloadCancelled": "ยกเลิกการดาวน์โหลดแล้ว",
   "downloadPaused": "หยุดดาวน์โหลดชั่วคราว",
   "extendedPlay": "Extended Play",
-  "broadcast": "ออกอากาศ"
+  "broadcast": "ออกอากาศ",
+  "getYouTube": "รับลิงก์ YouTube",
+  "youtubeLinks": "แสดงลิงก์ YouTube",
+  "noInternet": "ไม่มีการเชื่อมต่ออินเทอร์เน็ต",
+  "noInternetMessage": "คุณออฟไลน์ เปิดในโหมดออฟไลน์หรือลองเชื่อมต่อใหม่?",
+  "retry": "ลองอีกครั้ง"
 }

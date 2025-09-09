@@ -247,5 +247,10 @@
   "downloadCancelled": "دانلود لغو شد",
   "downloadPaused": "دانلود متوقف شد",
   "extendedPlay": "پخش گسترده",
-  "broadcast": "پخش"
+  "broadcast": "پخش",
+  "getYouTube": "دریافت لینک یوتیوب",
+  "youtubeLinks": "نمایش لینک‌های یوتیوب",
+  "noInternet": "عدم اتصال به اینترنت",
+  "noInternetMessage": "شما آفلاین هستید. در حالت آفلاین باز کنید یا سعی در اتصال مجدد کنید؟",
+  "retry": "تلاش مجدد"
 }

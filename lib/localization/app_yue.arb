@@ -247,5 +247,10 @@
   "downloadCancelled": "下載已取消",
   "downloadPaused": "下載已暫停",
   "extendedPlay": "加長播放",
-  "broadcast": "廣播"
+  "broadcast": "廣播",
+  "getYouTube": "獲取 YouTube 連結",
+  "youtubeLinks": "顯示 YouTube 連結",
+  "noInternet": "無網絡連接",
+  "noInternetMessage": "你已離線。離線開啟還是嘗試重新連接？",
+  "retry": "重試"
 }

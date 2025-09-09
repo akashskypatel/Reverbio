@@ -247,5 +247,10 @@
   "downloadCancelled": "ダウンロードがキャンセルされました",
   "downloadPaused": "ダウンロードが一時停止中",
   "extendedPlay": "エクステンデッド・プレイ",
-  "broadcast": "ブロードキャスト"
+  "broadcast": "ブロードキャスト",
+  "getYouTube": "YouTubeリンクを取得",
+  "youtubeLinks": "YouTubeリンクを表示",
+  "noInternet": "インターネット接続なし",
+  "noInternetMessage": "オフラインです。オフラインモードで開くか、再接続しますか？",
+  "retry": "再試行"
 }

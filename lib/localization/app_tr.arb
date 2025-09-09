@@ -247,5 +247,10 @@
   "downloadCancelled": "İndirme iptal edildi",
   "downloadPaused": "İndirme duraklatıldı",
   "extendedPlay": "Extended Play",
-  "broadcast": "Yayın"
+  "broadcast": "Yayın",
+  "getYouTube": "YouTube bağlantısı al",
+  "youtubeLinks": "YouTube bağlantılarını göster",
+  "noInternet": "İnternet Bağlantısı Yok",
+  "noInternetMessage": "Çevrimdışısınız. Çevrimdışı modda aç veya yeniden bağlanmayı dene?",
+  "retry": "Yeniden Dene"
 }

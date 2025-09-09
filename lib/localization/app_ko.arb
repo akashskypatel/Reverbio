@@ -247,5 +247,10 @@
   "downloadCancelled": "다운로드가 취소됨",
   "downloadPaused": "다운로드 일시 중지됨",
   "extendedPlay": "익스텐디드 플레이",
-  "broadcast": "브로드캐스트"
+  "broadcast": "브로드캐스트",
+  "getYouTube": "YouTube 링크 가져오기",
+  "youtubeLinks": "YouTube 링크 표시",
+  "noInternet": "인터넷 연결 없음",
+  "noInternetMessage": "오프라인 상태입니다. 오프라인 모드로 열거나 다시 연결하시겠습니까?",
+  "retry": "다시 시도"
 }

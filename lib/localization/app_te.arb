@@ -247,5 +247,10 @@
   "downloadCancelled": "డౌన్‌లోడ్ రద్దు చేయబడింది",
   "downloadPaused": "డౌన్‌లోడ్ విరామించబడింది",
   "extendedPlay": "విస్తరించిన ప్లే",
-  "broadcast": "ప్రసారం"
+  "broadcast": "ప్రసారం",
+  "getYouTube": "YouTube లింక్ పొందండి",
+  "youtubeLinks": "YouTube లింక్‌లను చూపించు",
+  "noInternet": "ఇంటర్నెట్ కనెక్షన్ లేదు",
+  "noInternetMessage": "మీరు 오프라인状态下にいます。 오프라인 모드로 열거나 다시 연결하시겠습니까?",
+  "retry": "మళ్లీ ప్రయత్నించండి"
 }

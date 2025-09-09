@@ -247,5 +247,10 @@
   "downloadCancelled": "Η λήψη ακυρώθηκε",
   "downloadPaused": "Η λήψη σε παύση",
   "extendedPlay": "Extended Play",
-  "broadcast": "Μετάδοση"
+  "broadcast": "Μετάδοση",
+  "getYouTube": "Λήψη συνδέσμου YouTube",
+  "youtubeLinks": "Εμφάνιση συνδέσμων YouTube",
+  "noInternet": "Δεν υπάρχει σύνδεση στο διαδίκτυο",
+  "noInternetMessage": "Είστε εκτός σύνδεσης. Ανοίξτε σε λειτουργία εκτός σύνδεσης ή προσπαθήστε να επανασυνδεθείτε;",
+  "retry": "Δοκιμάστε ξανά"
 }

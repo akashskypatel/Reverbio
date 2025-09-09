@@ -247,5 +247,10 @@
   "downloadCancelled": "डाउनलोड रद्द केले",
   "downloadPaused": "डाउनलोड विराम दिलेला आहे",
   "extendedPlay": "विस्तारित प्ले",
-  "broadcast": "प्रसारण"
+  "broadcast": "प्रसारण",
+  "getYouTube": "YouTube दुवा मिळवा",
+  "youtubeLinks": "YouTube दुवे दाखवा",
+  "noInternet": "इंटरनेट कनेक्शन नाही",
+  "noInternetMessage": "तुम ऑफलाइन आहात. ऑफलाइन मोडमध्ये उघडा किंवा पुन्हा कनेक्ट होण्याचा प्रयत्न करा?",
+  "retry": "पुन्हा प्रयत्न करा"
 }

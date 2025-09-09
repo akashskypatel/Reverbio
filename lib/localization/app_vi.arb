@@ -247,5 +247,10 @@
   "downloadCancelled": "Đã hủy tải xuống",
   "downloadPaused": "Đã tạm dừng tải xuống",
   "extendedPlay": "Extended Play",
-  "broadcast": "Phát sóng"
+  "broadcast": "Phát sóng",
+  "getYouTube": "Lấy liên kết YouTube",
+  "youtubeLinks": "Hiển thị liên kết YouTube",
+  "noInternet": "Không có kết nối Internet",
+  "noInternetMessage": "Bạn đang ngoại tuyến. Mở ở chế độ ngoại tuyến hoặc thử kết nối lại?",
+  "retry": "Thử lại"
 }

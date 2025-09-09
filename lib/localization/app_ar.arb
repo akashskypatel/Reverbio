@@ -247,5 +247,10 @@
   "downloadCancelled": "تم إلغاء التنزيل",
   "downloadPaused": "التنزيل متوقف مؤقتًا",
   "extendedPlay": "تشغيل موسع",
-  "broadcast": "بث"
+  "broadcast": "بث",
+  "getYouTube": "الحصول على رابط YouTube",
+  "youtubeLinks": "عرض روابط YouTube",
+  "noInternet": "لا يوجد اتصال بالإنترنت",
+  "noInternetMessage": "أنت غير متصل. افتح Reverbio في وضع عدم الاتصال أو حاول إعادة الاتصال؟",
+  "retry": "إعادة المحاولة"
 }

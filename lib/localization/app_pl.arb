@@ -247,5 +247,10 @@
   "downloadCancelled": "Pobieranie anulowane",
   "downloadPaused": "Pobieranie wstrzymane",
   "extendedPlay": "Extended Play",
-  "broadcast": "Transmisja"
+  "broadcast": "Transmisja",
+  "getYouTube": "Pobierz link YouTube",
+  "youtubeLinks": "Pokaż linki YouTube",
+  "noInternet": "Brak połączenia z internetem",
+  "noInternetMessage": "Jesteś offline. Otworzyć w trybie offline czy spróbować połączyć się ponownie?",
+  "retry": "Ponów"
 }

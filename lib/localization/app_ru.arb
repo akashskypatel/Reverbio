@@ -247,5 +247,10 @@
   "downloadCancelled": "Загрузка отменена",
   "downloadPaused": "Загрузка приостановлена",
   "extendedPlay": "Расширенное воспроизведение",
-  "broadcast": "Трансляция"
+  "broadcast": "Трансляция",
+  "getYouTube": "Получить ссылку YouTube",
+  "youtubeLinks": "Показать ссылки YouTube",
+  "noInternet": "Нет подключения к интернету",
+  "noInternetMessage": "Вы не в сети. Открыть в автономном режиме или попробовать переподключиться?",
+  "retry": "Повторить"
 }
