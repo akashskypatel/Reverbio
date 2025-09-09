@@ -252,5 +252,7 @@
   "youtubeLinks": "Mostrar links do YouTube",
   "noInternet": "Sem conexão com a Internet",
   "noInternetMessage": "Você está offline. Abrir no modo offline ou tentar reconectar?",
-  "retry": "Tentar novamente"
+  "retry": "Tentar novamente",
+  "exit": "Sair",
+  "offlineModeMessage": "Reinício necessário para entrar no Modo Offline. Sair do aplicativo agora?"
 }

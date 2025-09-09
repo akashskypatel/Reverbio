@@ -252,5 +252,7 @@
   "youtubeLinks": "Pokaż linki YouTube",
   "noInternet": "Brak połączenia z internetem",
   "noInternetMessage": "Jesteś offline. Otworzyć w trybie offline czy spróbować połączyć się ponownie?",
-  "retry": "Ponów"
+  "retry": "Ponów",
+  "exit": "Wyjdź",
+  "offlineModeMessage": "Wymagane ponowne uruchomienie, aby przejść w tryb offline. Wyjść z aplikacji teraz?"
 }

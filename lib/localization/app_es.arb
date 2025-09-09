@@ -252,5 +252,7 @@
   "youtubeLinks": "Mostrar enlaces de YouTube",
   "noInternet": "Sin conexión a Internet",
   "noInternetMessage": "Estás desconectado. ¿Abrir en modo sin conexión o intentar reconectar?",
-  "retry": "Reintentar"
+  "retry": "Reintentar",
+  "exit": "Salir",
+  "offlineModeMessage": "Reinicio requerido para entrar en el modo sin conexión. ¿Salir de la aplicación ahora?"
 }

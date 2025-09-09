@@ -252,5 +252,7 @@
   "youtubeLinks": "YouTubeリンクを表示",
   "noInternet": "インターネット接続なし",
   "noInternetMessage": "オフラインです。オフラインモードで開くか、再接続しますか？",
-  "retry": "再試行"
+  "retry": "再試行",
+  "exit": "終了",
+  "offlineModeMessage": "オフラインモードに入るには再起動が必要です。アプリを終了しますか？"
 }

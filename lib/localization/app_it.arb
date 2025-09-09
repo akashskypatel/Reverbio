@@ -252,5 +252,7 @@
   "youtubeLinks": "Mostra link YouTube",
   "noInternet": "Nessuna connessione Internet",
   "noInternetMessage": "Sei offline. Apri in modalità offline o prova a riconnetterti?",
-  "retry": "Riprova"
+  "retry": "Riprova",
+  "exit": "Esci",
+  "offlineModeMessage": "Riavvio richiesto per attivare la Modalità Offline. Uscire dall'app ora?"
 }

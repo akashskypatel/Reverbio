@@ -252,5 +252,7 @@
   "youtubeLinks": "显示 YouTube 链接",
   "noInternet": "无网络连接",
   "noInternetMessage": "你已离线。离线打开还是尝试重新连接？",
-  "retry": "重试"
+  "retry": "重试",
+  "exit": "退出",
+  "offlineModeMessage": "需要重新启动以进入离线模式。立即退出应用？"
 }

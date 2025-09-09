@@ -252,5 +252,7 @@
   "youtubeLinks": "Tampilkan tautan YouTube",
   "noInternet": "Tidak Ada Koneksi Internet",
   "noInternetMessage": "Anda sedang offline. Buka dalam mode offline atau coba sambung ulang?",
-  "retry": "Coba Lagi"
+  "retry": "Coba Lagi",
+  "exit": "Keluar",
+  "offlineModeMessage": "Perlu restart untuk masuk ke Mode Offline. Keluar dari aplikasi sekarang?"
 }
