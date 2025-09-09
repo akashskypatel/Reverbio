@@ -124,6 +124,7 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
         'url-rels',
       ],
     );
+    if (mbRes['error'] != null) throw mbRes['error'];
     final urls = List.from(mbRes['relations'] ?? []);
     final dcRes = await _parseDCRelations(List.from(urls));
     final ytRes = await _parseYTRelations(List.from(urls));
@@ -477,12 +478,14 @@ Future<dynamic> _getArtistDetailsMB(
                 (e) => e['id'] == result.first.item['id'],
               )['id'];
           final finalResult = await mb.artists.get(artistId, inc: inc);
+          if (finalResult['error'] != null) throw finalResult['error'];
           //TODO optimize
           return [finalResult];
         } else {
           final finalResult = [];
           for (final artist in result) {
             final artQry = await mb.artists.get(artist.item['id'], inc: inc);
+            if (artQry['error'] != null) continue;
             finalResult.add(artQry ?? {});
           }
           //TODO optimize

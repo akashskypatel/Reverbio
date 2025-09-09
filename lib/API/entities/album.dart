@@ -179,6 +179,7 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
         ids['mb']!,
         inc: ['artists', 'releases', 'annotation', 'tags', 'genres', 'ratings'],
       );
+      if (album['error'] != null) throw album['error'];
       album['artist'] = combineArtists(album) ?? album['artist'];
       album['album'] = album['title'];
       album['cachedAt'] = DateTime.now().toString();
@@ -241,6 +242,7 @@ Future<Map<String, dynamic>> getAlbumCoverArt(
       final result = Map<String, dynamic>.from(
         await mb.coverArt.get(ids['mb']!, 'release-group'),
       );
+      if (result['error'] != null) throw result['error'];
       if (result['error'] == null) {
         album['images'] = result['images'];
         album['release'] = result['release'];
