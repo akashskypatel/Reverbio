@@ -28,13 +28,16 @@ import 'package:crypto/crypto.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/screens/settings_page.dart';
 import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -881,6 +884,60 @@ bool withinPercent(double a, double b, double percentage) {
   return (a - b).abs() / maxVal <= percentage / 100;
 }
 
-Map<String, dynamic> copyMap(Map<String, dynamic> map) {
-  return jsonDecode(jsonEncode(map));
+Map<String, dynamic> copyMap(dynamic map) {
+  try {
+    return jsonDecode(jsonEncode(Map<String, dynamic>.from(map)));
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
+    throw FormatException('Error copying map. $e', stackTrace);
+  }
+}
+
+Future<void> checkInternetConnection() async {
+  final context = NavigationManager().context;
+  try {
+    Future<bool> testConnection() async {
+      try {
+        final client = HttpClient();
+        final request = await client.getUrl(
+          Uri.parse('https://www.google.com/generate_204'),
+        );
+        final response = await request.close().timeout(
+          const Duration(seconds: 5),
+        );
+        client.close();
+        return response.statusCode == 204 || response.statusCode == 200;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (!(await testConnection()) && !offlineMode.value)
+      await showDialog(
+        barrierDismissible: false,
+        requestFocus: true,
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(context.l10n!.noInternet.toUpperCase()),
+            content: Text(context.l10n!.noInternetMessage.toUpperCase()),
+            actions: [
+              TextButton(
+                child: Text(context.l10n!.retry.toUpperCase()),
+                onPressed: () {
+                  unawaited(checkInternetConnection());
+                  context.pop();
+                },
+              ),
+              TextButton(
+                child: Text(context.l10n!.offlineMode.toUpperCase()),
+                onPressed: () async {
+                  await toggleOfflineMode(context, true);
+                },
+              ),
+            ],
+          );
+        },
+      );
+  } catch (_) {}
 }

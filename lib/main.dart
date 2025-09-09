@@ -46,7 +46,8 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:reverbio/utilities/utils.dart';
+//import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
 
@@ -143,7 +144,9 @@ class _ReverbioState extends State<Reverbio> {
           if (systemColorStatus != null &&
               useSystemColor.value != systemColorStatus) {
             useSystemColor.value = systemColorStatus;
-            unawaited(addOrUpdateData('settings', 'useSystemColor', systemColorStatus));
+            unawaited(
+              addOrUpdateData('settings', 'useSystemColor', systemColorStatus),
+            );
           }
           primaryColorSetting = newAccentColor;
         }
@@ -164,6 +167,7 @@ class _ReverbioState extends State<Reverbio> {
           systemNavigationBarColor: Colors.transparent,
         ),
       );
+      checkInternetConnection();
     });
 
     try {
@@ -266,6 +270,7 @@ Future<void> initialization() async {
     );
     audioDevice.value = await audioHandler.getCurrentAudioDevice();
     // Init clients
+    /*
     if (clientsSetting.value.isNotEmpty) {
       final chosenClients = <YoutubeApiClient>[];
       for (final client in clientsSetting.value) {
@@ -276,7 +281,7 @@ Future<void> initialization() async {
       }
       //userChosenClients = chosenClients;
     }
-
+    */
     currentLikedPlaylistsLength.value = userLikedPlaylists.length;
     currentLikedSongsLength.value = userLikedSongsList.length;
     currentOfflineSongsLength.value = userOfflineSongs.length;
@@ -320,7 +325,11 @@ void handleIncomingLink(Uri? uri) async {
 
         if (playlist != null) {
           userCustomPlaylists.value = [...userCustomPlaylists.value, playlist];
-          await addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+          await addOrUpdateData(
+            'user',
+            'customPlaylists',
+            userCustomPlaylists.value,
+          );
           showToast(context.l10n!.addedSuccess);
         } else {
           showToast(context.l10n!.invalidPlaylistData);
