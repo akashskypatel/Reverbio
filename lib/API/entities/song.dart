@@ -135,7 +135,7 @@ Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
       userLikedSongsList.addOrUpdateWhere(checkSong, song);
       currentLikedSongsLength.value = userLikedSongsList.length;
       song['song'] = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
-      unawaited(PM.triggerHook(song, 'onEntityLiked'));
+      await PM.triggerHook(song, 'onEntityLiked');
     } else {
       userLikedSongsList.removeWhere((s) => checkSong(s, song));
       currentLikedSongsLength.value = userLikedSongsList.length;
@@ -640,7 +640,7 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   song['id'] = parseEntityId(song);
   song = Map<String, dynamic>.from(song);
   addSongToCache(song as Map<String, dynamic>);
-  unawaited(PM.triggerHook(song, 'onGetSongInfo'));
+  await PM.triggerHook(song, 'onGetSongInfo');
   getSongInfoQueue.removeWhere((e) => checkSong(e.data, song));
   if (getSongInfoQueue.isEmpty &&
       (_writeCacheFuture.completer?.future == null ||

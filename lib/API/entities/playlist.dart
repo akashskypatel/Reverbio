@@ -317,13 +317,12 @@ String addSongToCustomPlaylist(
     )) {
       return context.l10n!.songAlreadyInPlaylist;
     }
-    unawaited(PM.triggerHook(song, 'onPlaylistSongAdd'));
+    PM.triggerHook(song, 'onPlaylistSongAdd');
     indexToInsert != null
         ? playlistSongs.insert(indexToInsert, song)
         : playlistSongs.add(song);
-    unawaited(
-      addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value),
-    );
+
+    addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
     return context.l10n!.songAdded;
   } else {
     logger.log('Custom playlist not found: $playlistName', null, null);
@@ -395,7 +394,7 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
       playlist['primary-type'] = playlist['primary-type'] ?? 'playlist';
       userLikedPlaylists.addOrUpdate('id', playlistId, playlist);
       currentLikedPlaylistsLength.value = userLikedPlaylists.length;
-      unawaited(PM.triggerHook(playlist, 'onEntityLiked'));
+      await PM.triggerHook(playlist, 'onEntityLiked');
     } else {
       userLikedPlaylists.removeWhere((value) => checkPlaylist(playlist, value));
       currentLikedPlaylistsLength.value--;

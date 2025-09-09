@@ -141,7 +141,7 @@ Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
   album = Map<String, dynamic>.from(albumData);
   album['id'] = parseEntityId(album);
   addAlbumToCache(album);
-  unawaited(PM.triggerHook(album, 'onGetAlbumInfo'));
+  await PM.triggerHook(album, 'onGetAlbumInfo');
   getAlbumInfoQueue.removeWhere((e) => checkAlbum(e.data, album));
   if (getAlbumInfoQueue.isEmpty &&
       (_writeCacheFuture.completer?.future == null ||
@@ -423,7 +423,7 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       });
       currentLikedAlbumsLength.value++;
       album['album'] = album['title'];
-      unawaited(PM.triggerHook(album, 'onEntityLiked'));
+      await PM.triggerHook(album, 'onEntityLiked');
     } else {
       userLikedAlbumsList.removeWhere((value) => checkAlbum(album, value));
       currentLikedAlbumsLength.value--;
