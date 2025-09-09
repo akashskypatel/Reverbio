@@ -66,11 +66,11 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
         'genres': artist['genres'] ?? artist['musicbrainz']?['genres'] ?? [],
         'primary-type': 'artist',
       });
-      currentLikedArtistsLength.value++;
+      currentLikedArtistsLength.value = userLikedArtistsList.length;
       await PM.triggerHook(artist, 'onEntityLiked');
     } else {
       userLikedArtistsList.removeWhere((value) => checkArtist(artist, value));
-      currentLikedArtistsLength.value--;
+      currentLikedArtistsLength.value = userLikedArtistsList.length;
     }
     unawaited(addOrUpdateData('user', 'likedArtists', userLikedArtistsList));
     return add;

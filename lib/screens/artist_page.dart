@@ -61,14 +61,15 @@ class _ArtistPageState extends State<ArtistPage> {
   dynamic albums;
   dynamic others;
   dynamic singles;
-  late final likeStatus = ValueNotifier(
-    isArtistAlreadyLiked(widget.artistData),
-  );
+  final likeStatus = ValueNotifier(false);
 
   @override
   void initState() {
     super.initState();
     _setupData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      likeStatus.value = isArtistAlreadyLiked(widget.artistData);
+    });
   }
 
   @override
@@ -149,7 +150,7 @@ class _ArtistPageState extends State<ArtistPage> {
                 () => isArtistAlreadyLiked(widget.artistData),
               ),
               builder: (context, snapshot) {
-                bool value = false;
+                bool value = likeStatus.value = isArtistAlreadyLiked(widget.artistData);
                 if (!snapshot.hasError &&
                     snapshot.hasData &&
                     snapshot.data != null &&
@@ -168,7 +169,7 @@ class _ArtistPageState extends State<ArtistPage> {
                       widget.artistData,
                       !likeStatus.value,
                     );
-                    if (mounted) setState(() {});
+                    if (mounted) setState(() { });
                   },
                 );
               },
