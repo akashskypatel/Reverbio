@@ -554,7 +554,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
           return GestureDetector(
             onTap: () async {
-              await addOrUpdateData('settings', 'accentColor', color.toARGB32());
+              await addOrUpdateData(
+                'settings',
+                'accentColor',
+                color.toARGB32(),
+              );
               await Reverbio.updateAppState(
                 context,
                 newAccentColor: color,
@@ -1220,16 +1224,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       return TextButton(
                         onPressed:
                             value
-                                ? () {
+                                ? () async {
+                                  await PM.addPluginData(pluginData);
+                                  await addOrUpdateData(
+                                    'settings',
+                                    'pluginsData',
+                                    PM.pluginsData,
+                                  );
                                   if (isValid) {
-                                    setState(() async {
-                                      await PM.addPluginData(pluginData);
-                                      await addOrUpdateData(
-                                        'settings',
-                                        'pluginsData',
-                                        PM.pluginsData,
-                                      );
-                                    });
+                                    setState(() {});
                                     GoRouter.of(context).pop();
                                     showToast(context.l10n!.pluginAdded);
                                   }
@@ -1494,46 +1497,44 @@ class _SettingsPageState extends State<SettingsPage> {
 }
 
 Future<void> toggleOfflineMode(BuildContext context, bool value) async {
-    final shouldSave =
-        await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                contentPadding: commonBarContentPadding,
-                title: const Text('Offline Mode'),
-                content: const Text(
-                  'Offline Mode requires a restart. Are you sure you want to exit?',
+  final shouldSave =
+      await showDialog<bool>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              contentPadding: commonBarContentPadding,
+              title: Text(context.l10n!.offlineMode),
+              content: Text(context.l10n!.offlineModeMessage),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(context.l10n!.cancel.toUpperCase()),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Exit'),
-                  ),
-                ],
-              ),
-        ) ??
-        false;
-    if (shouldSave) {
-      showToast(context.l10n!.restartAppMsg);
-      await addOrUpdateData('settings', 'offlineMode', value);
-      offlineMode.value = value;
-      Timer(const Duration(milliseconds: 500), () async => exitApp());
-    }
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(context.l10n!.exit.toUpperCase()),
+                ),
+              ],
+            ),
+      ) ??
+      false;
+  if (shouldSave) {
+    showToast(context.l10n!.restartAppMsg);
+    await addOrUpdateData('settings', 'offlineMode', value);
+    offlineMode.value = value;
+    Timer(const Duration(milliseconds: 500), () async => exitApp());
   }
+}
 
-  Future<void> exitApp() async {
-    try {
-      await audioHandler.close();
-      if (isMobilePlatform()) {
-        await SystemNavigator.pop();
-      } else {
-        exit(0);
-      }
-    } catch (e) {
+Future<void> exitApp() async {
+  try {
+    await audioHandler.close();
+    if (isMobilePlatform()) {
+      await SystemNavigator.pop();
+    } else {
       exit(0);
     }
+  } catch (e) {
+    exit(0);
   }
+}
