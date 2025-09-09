@@ -919,8 +919,8 @@ Future<void> checkInternetConnection() async {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text(context.l10n!.noInternet.toUpperCase()),
-            content: Text(context.l10n!.noInternetMessage.toUpperCase()),
+            title: Text(context.l10n!.noInternet),
+            content: Text(context.l10n!.noInternetMessage),
             actions: [
               TextButton(
                 child: Text(context.l10n!.retry.toUpperCase()),
