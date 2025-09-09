@@ -71,6 +71,9 @@ class _SectionHeaderState extends State<SectionHeader>
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
+    final expandedConstraint = BoxConstraints(
+      maxWidth: MediaQuery.of(context).size.width * .55,
+    );
     return Row(
       children: [
         Flexible(
@@ -96,14 +99,26 @@ class _SectionHeaderState extends State<SectionHeader>
             ),
           ),
         if (widget.actionsExpanded && widget.actions != null)
-          Row(children: widget.actions!),
+          ConstrainedBox(
+            constraints: expandedConstraint,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: widget.actions!),
+            ),
+          ),
         if (!widget.actionsExpanded && widget.actions != null)
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             child:
                 _expanded && widget.actions != null
-                    ? Row(children: widget.actions!)
+                    ? ConstrainedBox(
+                      constraints: expandedConstraint,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(children: widget.actions!),
+                      ),
+                    )
                     : const SizedBox.shrink(),
           ),
         if (widget.expandedActions != null &&
