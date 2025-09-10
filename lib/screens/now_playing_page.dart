@@ -713,6 +713,7 @@ class NowPlayingArtwork extends StatelessWidget {
         paddingValue: 0,
         loadingWidget: const Spinner(),
         inputData: audioHandler.songValueNotifier.value?.song,
+        onPressed: _lyricsController.flipcard,
       ),
       backWidget: Container(
         width: imageSize,
