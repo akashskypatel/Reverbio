@@ -192,7 +192,7 @@ Future<Map<String, dynamic>> findYTSong(dynamic song, {String? newYtid}) async {
     } else {
       final ytSongs = await _findYTSong(song);
       if (ytSongs.isNotEmpty) {
-        ytSong = Map<String, dynamic>.from(ytSongs.first);
+        ytSong = await _getYTSongDetails(ytSongs.first);
         song['ytSongs'] = ytSongs;
       }
     }
@@ -558,18 +558,12 @@ Future<StreamManifest> getSongManifest(String songId) async {
     final manifest =
         useProxies.value
             ? await px.getSongManifest(songId) ??
-                await px.localYoutubeClient.videos.streams.getManifest(
-                  songId,
-                  //ytClients: userChosenClients,
-                )
-            : await px.localYoutubeClient.videos.streams.getManifest(
-              songId,
-              //ytClients: userChosenClients,
-            );
+                await px.localYoutubeClient.videos.streams.getManifest(songId)
+            : await px.localYoutubeClient.videos.streams.getManifest(songId);
     return manifest;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    rethrow; // Rethrow the exception to allow the caller to handle it
+    throw Exception('Error getting YouTube stream manifest.');
   }
 }
 
@@ -757,7 +751,7 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   final context = NavigationManager().context;
   try {
     if (song == null) return '';
-    await findYTSong(song);
+    if (!isYouTubeSongValid(song)) await findYTSong(song);
     if (isYouTubeSongValid(song)) {
       unawaited(updateRecentlyPlayed(song));
       song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
@@ -839,6 +833,7 @@ Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
       orElse: () => <String, dynamic>{},
     );
     if (isSongValid(cached) && isYouTubeSongValid(cached)) {
+      cached['youtube'] = true;
       return cached!;
     } else if (songId.isNotEmpty) {
       songId = songId.ytid;
