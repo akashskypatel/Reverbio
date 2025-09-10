@@ -62,10 +62,7 @@ class Proxy {
 class ProxyManager {
   factory ProxyManager() => _instance;
   ProxyManager._internal() {
-    _fetchProxies().then((value) {
-      _proxyClient = _randomProxyClient();
-      _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
-    });
+    ensureInitialized();
   }
   static final ProxyManager _instance = ProxyManager._internal();
   Future<void>? _fetchingList;
@@ -83,11 +80,18 @@ class ProxyManager {
 
   Future<void> ensureInitialized() async {
     if (_fetchingList != null)
-      await _fetchingList;
+      await _fetchingList!.then((_) {
+        _proxyClient = _randomProxyClient();
+        _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
+      });
     else if (_proxies.isEmpty ||
         DateTime.now().difference(_lastFetched).inMinutes >= 60 ||
         !_fetched)
-      await _fetchProxies();
+      await _fetchProxies().then((_) {
+        _proxyClient = _randomProxyClient();
+        _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
+      });
+    ;
   }
 
   Future<void> _fetchProxies() async {
@@ -527,7 +531,12 @@ class ProxyManager {
         await _fetchProxies();
       manifest = await _cycleProxies(songId);
       return manifest;
-    } catch (_) {
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       return null;
     }
   }
