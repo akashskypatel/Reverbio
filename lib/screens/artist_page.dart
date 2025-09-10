@@ -61,14 +61,15 @@ class _ArtistPageState extends State<ArtistPage> {
   dynamic albums;
   dynamic others;
   dynamic singles;
-  late final likeStatus = ValueNotifier(
-    isArtistAlreadyLiked(widget.artistData),
-  );
+  final likeStatus = ValueNotifier(false);
 
   @override
   void initState() {
     super.initState();
     _setupData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      likeStatus.value = isArtistAlreadyLiked(widget.artistData);
+    });
   }
 
   @override
@@ -82,7 +83,7 @@ class _ArtistPageState extends State<ArtistPage> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(FluentIcons.arrow_left_24_filled),
           onPressed: () => GoRouter.of(context).pop(context),
           iconSize: pageHeaderIconSize,
         ),
@@ -130,9 +131,10 @@ class _ArtistPageState extends State<ArtistPage> {
       iconSize: pageHeaderIconSize,
       onPressed: () async {
         final data = await getArtistDetails(widget.artistData, refresh: true);
-        setState(() {
-          widget.artistData.addAll(data);
-        });
+        if (mounted)
+          setState(() {
+            widget.artistData.addAll(data);
+          });
       },
     );
   }
@@ -148,7 +150,7 @@ class _ArtistPageState extends State<ArtistPage> {
                 () => isArtistAlreadyLiked(widget.artistData),
               ),
               builder: (context, snapshot) {
-                bool value = false;
+                bool value = likeStatus.value = isArtistAlreadyLiked(widget.artistData);
                 if (!snapshot.hasError &&
                     snapshot.hasData &&
                     snapshot.data != null &&
@@ -167,7 +169,7 @@ class _ArtistPageState extends State<ArtistPage> {
                       widget.artistData,
                       !likeStatus.value,
                     );
-                    if (mounted) setState(() {});
+                    if (mounted) setState(() { });
                   },
                 );
               },

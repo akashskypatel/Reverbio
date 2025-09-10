@@ -445,8 +445,8 @@ class _UserSongsPageState extends State<UserSongsPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(context.l10n!.checkBackLater,),
-                    const SizedBox(height: 10,),
+                    Text(context.l10n!.checkBackLater),
+                    const SizedBox(height: 10),
                     const Spinner(),
                   ],
                 ),
@@ -532,41 +532,29 @@ class _UserSongsPageState extends State<UserSongsPage> {
           ValueListenableBuilder(
             valueListenable: audioHandler.songValueNotifier,
             builder: (context, value, _) {
+              final song = value?.song;
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (audioHandler
-                          .audioPlayer
-                          .songValueNotifier
-                          .value
-                          ?.song['title'] !=
-                      null)
+                  if (value != null)
                     Text(
-                      audioHandler
-                          .audioPlayer
-                          .songValueNotifier
-                          .value
-                          ?.song['title'],
+                      song?['mbTitle'] ??
+                          song?['title'] ??
+                          song?['ytTitle'] ??
+                          'unknown',
                       style: TextStyle(
                         color: _theme.colorScheme.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  if (audioHandler
-                          .audioPlayer
-                          .songValueNotifier
-                          .value
-                          ?.song['artist'] !=
-                      null)
+                  if (value != null)
                     Text(
-                      audioHandler
-                              .audioPlayer
-                              .songValueNotifier
-                              .value
-                              ?.song['artist'] ??
-                          '',
+                      song?['mbArtist'] ??
+                          song?['artist'] ??
+                          song?['ytArtist'] ??
+                          'unknown',
                       style: TextStyle(
                         color: _theme.colorScheme.secondary,
                         fontSize: 14,

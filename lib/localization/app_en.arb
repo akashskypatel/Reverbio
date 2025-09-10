@@ -247,5 +247,12 @@
   "downloadCancelled": "Download cancelled",
   "downloadPaused": "Download paused",
   "extendedPlay": "Extended Play",
-  "broadcast": "Broadcast"
+  "broadcast": "Broadcast",
+  "getYouTube": "Get YouTube link",
+  "youtubeLinks": "Show YouTube links",
+  "noInternet": "No Internet Connection",
+  "noInternetMessage": "You're offline. Open in offline mode or try to reconnect?",
+  "retry": "Retry",
+  "exit": "Exit",
+  "offlineModeMessage": "Restart required to enter Offline Mode. Exit the app now?"
 }

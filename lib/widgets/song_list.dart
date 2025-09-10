@@ -318,7 +318,7 @@ class _SongListState extends State<SongList> {
         if (audioHandler.queueSongBars.isNotEmpty &&
             audioHandler.songValueNotifier.value == null &&
             widget.songBars.isNotEmpty) {
-          await audioHandler.prepare(skipOnError: true);
+          await audioHandler.prepare(songBar: widget.songBars.first, skipOnError: true);
         }
       },
     );
@@ -338,7 +338,7 @@ class _SongListState extends State<SongList> {
             '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
           );
         }
-        await audioHandler.prepare(play: true, skipOnError: true);
+        await audioHandler.prepare(songBar: widget.songBars.first, play: true, skipOnError: true);
       },
       icon: Icon(
         FluentIcons.play_circle_24_filled,

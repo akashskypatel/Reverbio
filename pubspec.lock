@@ -221,10 +221,10 @@ packages:
     dependency: "direct main"
     description:
       name: discogs_api_client
-      sha256: "30118c4cba27c7e4735cb232e847e41850e27c110a6a5c8d568a1ace058aa3f9"
+      sha256: b381d3798649f4c6fee27061b7388f4c948037daa1ddc8fb185d0d1028cfccd7
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.2.1"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -261,10 +261,10 @@ packages:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: ef7d2a085c1b1d69d17b6842d0734aad90156de08df6bd3c12496d0bd6ddf8e2
+      sha256: e7e16c9d15c36330b94ca0e2ad8cb61f93cd5282d0158c09805aed13b5452f22
       url: "https://pub.dev"
     source: hosted
-    version: "10.3.1"
+    version: "10.3.2"
   fixnum:
     dependency: transitive
     description:
@@ -393,10 +393,10 @@ packages:
     dependency: "direct main"
     description:
       name: go_router
-      sha256: "8b1f37dfaf6e958c6b872322db06f946509433bec3de753c3491a42ae9ec2b48"
+      sha256: eb059dfe59f08546e9787f895bd01652076f996bcbf485a8609ef990419ad227
       url: "https://pub.dev"
     source: hosted
-    version: "16.1.0"
+    version: "16.2.1"
   gtk:
     dependency: transitive
     description:
@@ -601,10 +601,10 @@ packages:
     dependency: "direct main"
     description:
       name: musicbrainz_api_client
-      sha256: "88576cc1eae0c9e89a829e931e41b6e050ede9486d33d33e6b922629369ac873"
+      sha256: "0a401c6aa771da1bcd82b28226bf171d6a79132aab8f7a2e23584b4cfcf9b2f7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.2.1"
   octo_image:
     dependency: transitive
     description:

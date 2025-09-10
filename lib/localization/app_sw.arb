@@ -247,5 +247,12 @@
   "downloadCancelled": "Upakuli umeghairiwa",
   "downloadPaused": "Upakuli umesitishwa",
   "extendedPlay": "Uchezaji Ulioongezwa",
-  "broadcast": "Utangazaji"
+  "broadcast": "Utangazaji",
+  "getYouTube": "Pata kiungo cha YouTube",
+  "youtubeLinks": "Onyoa viungo vya YouTube",
+  "noInternet": "Hakuna Muunganisho wa Mtandao",
+  "noInternetMessage": "Uko nje ya mtandao. Fungua katika hali ya nje ya mtandao au ujaribu kuunganisha tena?",
+  "retry": "Jaribu Tenai",
+  "exit": "Toka",
+  "offlineModeMessage": "Inahitaji kuanzisha upya kuingiza Hali ya Nje ya Mtandao. Toka kwenye programu sasa?"
 }

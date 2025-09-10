@@ -200,7 +200,7 @@ Future<String> addYTUserPlaylist(String input, BuildContext context) async {
     await PM.triggerHook(returnYTPlaylistLayout(_playlist), 'onPlaylistAdd');
     userPlaylists.value = [...userPlaylists.value, playlistId];
     unawaited(addOrUpdateData('user', 'playlists', userPlaylists.value));
-    return '${context.l10n!.addedSuccess}!';
+    return '${context.l10n!.playlist} ${context.l10n!.addedSuccess}!';
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return '${context.l10n!.error}: $e';
@@ -279,13 +279,13 @@ String createCustomPlaylist(
     unawaited(
       addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value),
     );
-    return '${context.l10n!.addedSuccess}!';
+    return '${context.l10n!.playlist} ${context.l10n!.addedSuccess}!';
   }
   userCustomPlaylists.value = [...userCustomPlaylists.value, customPlaylist];
   unawaited(
     addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value),
   );
-  return '${context.l10n!.addedSuccess}!';
+  return '${context.l10n!.playlist} ${context.l10n!.addedSuccess}!';
 }
 
 String addSongsToPlaylist(
@@ -317,13 +317,12 @@ String addSongToCustomPlaylist(
     )) {
       return context.l10n!.songAlreadyInPlaylist;
     }
-    unawaited(PM.triggerHook(song, 'onPlaylistSongAdd'));
+    PM.triggerHook(song, 'onPlaylistSongAdd');
     indexToInsert != null
         ? playlistSongs.insert(indexToInsert, song)
         : playlistSongs.add(song);
-    unawaited(
-      addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value),
-    );
+
+    addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
     return context.l10n!.songAdded;
   } else {
     logger.log('Custom playlist not found: $playlistName', null, null);
@@ -395,7 +394,7 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
       playlist['primary-type'] = playlist['primary-type'] ?? 'playlist';
       userLikedPlaylists.addOrUpdate('id', playlistId, playlist);
       currentLikedPlaylistsLength.value = userLikedPlaylists.length;
-      unawaited(PM.triggerHook(playlist, 'onEntityLiked'));
+      await PM.triggerHook(playlist, 'onEntityLiked');
     } else {
       userLikedPlaylists.removeWhere((value) => checkPlaylist(playlist, value));
       currentLikedPlaylistsLength.value--;
@@ -595,45 +594,46 @@ Future<Map?> getPlaylistInfo(Map playlist) async {
   return data;
 }
 
-Future<Map> getPlaylistInfoForWidget(
+Future<Map<String, dynamic>> getPlaylistInfoForWidget(
   dynamic playlistData, {
   bool isArtist = false,
 }) async {
-  final ids = parseEntityId(playlistData);
-  final id =
-      playlistData is String
-          ? Uri.parse('?$ids').queryParameters['yt']
-          : playlistData['ytid'] as String? ?? playlistData['id'] as String?;
-  if (id == null || id.isEmpty) return {};
-  if (isArtist) {
-    return {'title': id, 'list': await getSongsList(id)};
-  }
-  if (playlistData is String) playlistData = {'id': 'yt=$id', 'ytid': id};
+  final id = parseEntityId(playlistData);
+  final ids = id.toIds;
+  final ytid = (ids['yt'] ?? id).ytid;
+  final mbid = (ids['mb'] ?? id).mbid;
+  if (id.isEmpty) return {};
+  if (mbid.isNotEmpty) return await queueAlbumInfoRequest(playlistData);
+  if (playlistData is String) playlistData = {'id': id, 'ytid': ytid};
   Map<String, dynamic> playlist;
 
   // Check in local playlists.
   playlist = Map<String, dynamic>.from(
-    dbPlaylists.firstWhere((p) => p['ytid'] == id, orElse: () => {}),
+    dbPlaylists.firstWhere((p) => checkEntityId(p['id'], id), orElse: () => {}),
   );
 
   // Check in user playlists if not found.
   if (playlist.isEmpty) {
     final userPl = await getUserYTPlaylists();
-    playlist = userPl.firstWhere((p) => p['ytid'] == id, orElse: () => {});
+    playlist = Map<String, dynamic>.from(
+      userPl.firstWhere((p) => checkEntityId(p['id'], id), orElse: () => {}),
+    );
   }
 
   // Check in cached online playlists if still not found.
   if (playlist.isEmpty) {
-    playlist = onlinePlaylists.firstWhere(
-      (p) => p['ytid'] == id,
-      orElse: () => {},
+    playlist = Map<String, dynamic>.from(
+      onlinePlaylists.firstWhere(
+        (p) => checkEntityId(p['id'], id),
+        orElse: () => {},
+      ),
     );
   }
 
   // If still not found, attempt to fetch playlist info.
-  if (playlist.isEmpty) {
+  if (playlist.isEmpty && ytid.isNotEmpty) {
     try {
-      final ytPlaylist = await yt.playlists.get(id);
+      final ytPlaylist = await yt.playlists.get(ytid);
       playlist = <String, dynamic>{
         'id': 'yt=${ytPlaylist.id}',
         'ytid': ytPlaylist.id.toString(),

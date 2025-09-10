@@ -247,5 +247,12 @@
   "downloadCancelled": "Download abgebrochen",
   "downloadPaused": "Download pausiert",
   "extendedPlay": "Extended Play",
-  "broadcast": "Sendung"
+  "broadcast": "Sendung",
+  "getYouTube": "YouTube-Link abrufen",
+  "youtubeLinks": "YouTube-Links anzeigen",
+  "noInternet": "Keine Internetverbindung",
+  "noInternetMessage": "Sie sind offline. Im Offline-Modus öffnen oder erneut verbinden?",
+  "retry": "Wiederholen",
+  "exit": "Beenden",
+  "offlineModeMessage": "Neustart erforderlich, um den Offline-Modus zu aktivieren. App jetzt beenden?"
 }

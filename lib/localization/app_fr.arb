@@ -247,5 +247,12 @@
   "downloadCancelled": "Téléchargement annulé",
   "downloadPaused": "Téléchargement en pause",
   "extendedPlay": "Lecture étendue",
-  "broadcast": "Diffusion"
+  "broadcast": "Diffusion",
+  "getYouTube": "Obtenir le lien YouTube",
+  "youtubeLinks": "Afficher les liens YouTube",
+  "noInternet": "Pas de connexion Internet",
+  "noInternetMessage": "Vous êtes hors ligne. Ouvrir en mode hors ligne ou essayer de vous reconnecter ?",
+  "retry": "Réessayer",
+  "exit": "Quitter",
+  "offlineModeMessage": "Redémarrage requis pour activer le mode hors ligne. Quitter l'application maintenant ?"
 }

@@ -24,9 +24,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+//import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+//import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
@@ -58,21 +60,45 @@ class Proxy {
 }
 
 class ProxyManager {
-  ProxyManager() {
-    unawaited(_fetchProxies());
+  factory ProxyManager() => _instance;
+  ProxyManager._internal() {
+    ensureInitialized();
   }
-
+  static final ProxyManager _instance = ProxyManager._internal();
   Future<void>? _fetchingList;
   bool _fetched = false;
   final Map<String, Set<Proxy>> _proxies = {};
   final Set<Proxy> _workingProxies = {};
   final _random = Random();
   DateTime _lastFetched = DateTime.now();
+  IOClient _proxyClient = IOClient();
+  final YoutubeExplode _localYTClient = YoutubeExplode();
+  YoutubeExplode _proxyYTClient = YoutubeExplode();
+
+  YoutubeExplode get localYoutubeClient => _localYTClient;
+  YoutubeExplode get proxyYoutubeClient => _proxyYTClient;
+
+  Future<void> ensureInitialized() async {
+    if (_fetchingList != null)
+      await _fetchingList!.then((_) {
+        _proxyClient = _randomProxyClient();
+        _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
+      });
+    else if (_proxies.isEmpty ||
+        DateTime.now().difference(_lastFetched).inMinutes >= 60 ||
+        !_fetched)
+      await _fetchProxies().then((_) {
+        _proxyClient = _randomProxyClient();
+        _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
+      });
+    ;
+  }
 
   Future<void> _fetchProxies() async {
     try {
       if (kDebugMode) logger.log('Fetching proxies...', null, null);
-      if (_fetchingList == null) {
+      if (_fetchingList == null ||
+          DateTime.now().difference(_lastFetched).inMinutes >= 60) {
         final futures =
             <Future>[]
               //..add(_fetchSpysMe())
@@ -81,14 +107,14 @@ class ProxyManager {
               ..add(_fetchOpenProxyList())
               ..add(_fetchJetkaiProxyList());
         _fetchingList = Future.wait(futures);
-        unawaited(
-          _fetchingList?.whenComplete(() {
-            _fetched = true;
-            if (kDebugMode) logger.log('Done fetching Proxies.', null, null);
-            _lastFetched = DateTime.now();
-            _fetchingList = null;
-          }),
-        );
+        await _fetchingList?.whenComplete(() {
+          _fetched = true;
+          if (kDebugMode) logger.log('Done fetching Proxies.', null, null);
+          _lastFetched = DateTime.now();
+          _fetchingList = null;
+        });
+      } else {
+        await _fetchingList;
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -369,7 +395,7 @@ class ProxyManager {
     try {
       final timeout = streamRequestTimeout.value;
       if (kDebugMode) logger.log('Validating direct connection...', null, null);
-      final manifest = await yt.videos.streams
+      final manifest = await _localYTClient.videos.streams
           .getManifest(songId)
           .timeout(Duration(seconds: timeout));
       if (kDebugMode)
@@ -389,31 +415,24 @@ class ProxyManager {
     Proxy proxy,
     String songId,
     int timeout,
+    YoutubeExplode ytExplode,
   ) async {
     if (kDebugMode) logger.log('Validating proxy...', null, null);
-    IOClient? ioClient;
-    HttpClient? client;
     try {
-      client =
-          HttpClient()
-            ..connectionTimeout = Duration(seconds: timeout)
-            ..findProxy = (_) {
-              return 'PROXY ${proxy.address}; DIRECT';
-            }
-            ..badCertificateCallback = (context, _context, ___) {
-              return false;
-            };
-      ioClient = IOClient(client);
-      final pxyt = YoutubeExplode(YoutubeHttpClient(ioClient));
-      final manifest = await pxyt.videos.streams
+      final manifest = await ytExplode.videos.streams
           .getManifest(songId)
           .timeout(Duration(seconds: timeout));
       _workingProxies.add(proxy);
+      if (kDebugMode)
+        logger.log(
+          'Manifest success by proxy: ${proxy.source} - ${proxy.address}',
+          null,
+          null,
+        );
+      ytExplode.close();
       return manifest;
     } catch (e) {
       logger.log('Proxy ${proxy.source} - ${proxy.address} failed', e, null);
-      client?.close(force: true);
-      ioClient?.close();
       return null;
     }
   }
@@ -464,7 +483,6 @@ class ProxyManager {
                 ? 0
                 : _random.nextInt(_workingProxies.length);
         proxy = _workingProxies.elementAt(idx);
-        _workingProxies.remove(proxy);
       } else {
         if (preferredCountry != null &&
             _proxies.containsKey(preferredCountry)) {
@@ -482,12 +500,10 @@ class ProxyManager {
         }
         if (countryProxies.length == 1) {
           proxy = countryProxies.first;
-          countryProxies.remove(proxy);
         } else {
           proxy = countryProxies.elementAt(
             _random.nextInt(countryProxies.length),
           );
-          countryProxies.remove(proxy);
         }
         if (kDebugMode)
           logger.log(
@@ -515,30 +531,58 @@ class ProxyManager {
         await _fetchProxies();
       manifest = await _cycleProxies(songId);
       return manifest;
-    } catch (_) {
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       return null;
     }
   }
 
   Future<StreamManifest?> _cycleProxies(String songId) async {
-    StreamManifest? manifest;
-    do {
-      final timeout = streamRequestTimeout.value;
-      final proxy = await _randomProxy();
-      if (proxy == null) break;
-      manifest = await _validateProxy(proxy, songId, timeout);
-    } while (manifest == null);
-    return manifest;
+    try {
+      StreamManifest? manifest;
+      Proxy? proxy;
+      final client =
+          HttpClient()
+            ..badCertificateCallback = (context, _context, ___) {
+              return false;
+            };
+      final ioClient = IOClient(client);
+      final ytExplode = YoutubeExplode(YoutubeHttpClient(ioClient));
+      do {
+        final timeout = streamRequestTimeout.value;
+        proxy = await _randomProxy();
+        if (proxy == null) break;
+        client
+          ..connectionTimeout = Duration(seconds: timeout)
+          ..findProxy = (_) {
+            return proxy != null
+                ? 'PROXY ${proxy.address}; DIRECT;'
+                : 'DIRECT;';
+          };
+        manifest = await _validateProxy(proxy, songId, timeout, ytExplode);
+      } while (manifest == null);
+      return manifest;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      return null;
+    }
   }
 
-  IOClient randomProxyClient() {
+  IOClient _randomProxyClient() {
     IOClient? ioClient;
     HttpClient? client;
     try {
-      if (_workingProxies.isEmpty) unawaited(_fetchProxies());
       client =
           HttpClient()
-            ..findProxy = (_) {
+            ..findProxy = (uri) {
               final proxy = _randomProxySync();
               return proxy != null
                   ? 'PROXY ${proxy.address}; DIRECT;'

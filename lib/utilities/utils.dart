@@ -28,13 +28,16 @@ import 'package:crypto/crypto.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/screens/settings_page.dart';
 import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -179,13 +182,13 @@ class FutureTracker<T> {
   dynamic result;
   Completer<T>? completer;
   bool isLoading = false;
+  bool isCancelled = false;
   bool get isComplete => completer?.isCompleted ?? false;
 
   Future<T> runFuture(Future<T> future) async {
     if (!isLoading && !isComplete) {
       isLoading = true;
       completer = Completer<T>();
-
       await future
           .then((result) {
             if (!completer!.isCompleted) {
@@ -195,6 +198,11 @@ class FutureTracker<T> {
             isLoading = false;
           })
           .catchError((error) {
+            logger.log(
+              'Error occurred in FutureTracker runFuture',
+              error,
+              null,
+            );
             if (!completer!.isCompleted) {
               completer!.completeError(error);
             }
@@ -208,9 +216,11 @@ class FutureTracker<T> {
   void cancel() {
     if (!isComplete && !isLoading) {
       completer?.completeError(CancelledException());
+      completer?.future.timeout(Duration.zero);
+      completer?.future.ignore();
     }
-    completer = null;
     isLoading = false;
+    isCancelled = true;
   }
 }
 
@@ -725,6 +735,7 @@ List<String>? parseImage(dynamic obj) {
 
 Future<Uri?> getValidImage(dynamic obj) async {
   try {
+    if (obj == null) return null;
     if (obj['validImage'] != null) {
       if (isFilePath(obj['validImage']))
         return Uri.file(obj['validImage']);
@@ -873,6 +884,60 @@ bool withinPercent(double a, double b, double percentage) {
   return (a - b).abs() / maxVal <= percentage / 100;
 }
 
-Map<String, dynamic> copyMap(Map<String, dynamic> map) {
-  return jsonDecode(jsonEncode(map));
+Map<String, dynamic> copyMap(dynamic map) {
+  try {
+    return jsonDecode(jsonEncode(Map<String, dynamic>.from(map)));
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
+    throw FormatException('Error copying map. $e', stackTrace);
+  }
+}
+
+Future<void> checkInternetConnection() async {
+  final context = NavigationManager().context;
+  try {
+    Future<bool> testConnection() async {
+      try {
+        final client = HttpClient();
+        final request = await client.getUrl(
+          Uri.parse('https://www.google.com/generate_204'),
+        );
+        final response = await request.close().timeout(
+          const Duration(seconds: 5),
+        );
+        client.close();
+        return response.statusCode == 204 || response.statusCode == 200;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (!(await testConnection()) && !offlineMode.value)
+      await showDialog(
+        barrierDismissible: false,
+        requestFocus: true,
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(context.l10n!.noInternet),
+            content: Text(context.l10n!.noInternetMessage),
+            actions: [
+              TextButton(
+                child: Text(context.l10n!.retry.toUpperCase()),
+                onPressed: () {
+                  unawaited(checkInternetConnection());
+                  context.pop();
+                },
+              ),
+              TextButton(
+                child: Text(context.l10n!.offlineMode.toUpperCase()),
+                onPressed: () async {
+                  await toggleOfflineMode(context, true);
+                },
+              ),
+            ],
+          );
+        },
+      );
+  } catch (_) {}
 }

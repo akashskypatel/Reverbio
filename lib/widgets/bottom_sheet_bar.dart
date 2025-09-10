@@ -26,12 +26,14 @@ class BottomSheetBar extends StatelessWidget {
   const BottomSheetBar(
     this.title,
     this.backgroundColor, {
+    this.subtitle,
     this.onTap,
     this.borderRadius = BorderRadius.zero,
     this.actions,
     super.key,
   });
   final String title;
+  final String? subtitle;
   final VoidCallback? onTap;
   final Color backgroundColor;
   final BorderRadius borderRadius;
@@ -51,6 +53,15 @@ class BottomSheetBar extends StatelessWidget {
           child: ListTile(
             minTileHeight: 45,
             title: Text(title),
+            subtitle:
+                subtitle != null
+                    ? Text(
+                      subtitle!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    )
+                    : null,
             trailing:
                 actions != null
                     ? Row(mainAxisSize: MainAxisSize.min, children: actions!)

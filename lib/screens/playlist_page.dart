@@ -21,6 +21,8 @@
 
 //import 'dart:math';
 
+import 'dart:async';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,17 +31,18 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_list.dart';
-import 'package:reverbio/widgets/spinner.dart';
 
 class PlaylistPage extends StatefulWidget {
   const PlaylistPage({
@@ -60,19 +63,21 @@ class PlaylistPage extends StatefulWidget {
 
 class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
-  dynamic _playlist;
   late ThemeData _theme;
-  var _currentLastLoadedId = 0;
+  final FutureTracker _infoRequestFuture = FutureTracker(null);
   final _isEditEnabled = ValueNotifier(false);
-  late final likeStatus = ValueNotifier<bool>(getLikeStatus());
-  late final autoOffline = ValueNotifier<bool>(
-    isPlaylistAlreadyOffline(widget.playlistData),
-  );
+  final likeStatus = ValueNotifier<bool>(false);
+  ValueNotifier<int> likeLength = ValueNotifier<int>(0);
+  final autoOffline = ValueNotifier<bool>(false);
 
   @override
   void initState() {
     super.initState();
-    _initializePlaylist();
+    _infoRequestFuture.runFuture(_initializePlaylist());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      likeStatus.value = getLikeStatus();
+      autoOffline.value = isPlaylistAlreadyOffline(widget.playlistData);
+    });
   }
 
   @override
@@ -87,77 +92,41 @@ class _PlaylistPageState extends State<PlaylistPage> {
       'ep',
       'broadcast',
       'other',
-    ].contains(widget.playlistData['primary-type']?.toLowerCase()))
+    ].contains(widget.playlistData['primary-type']?.toLowerCase())) {
       return isAlbumAlreadyLiked(widget.playlistData);
-    else if (widget.playlistData['ytid'] != null)
+    } else if (widget.playlistData['ytid'] != null)
       return isPlaylistAlreadyLiked(widget.playlistData);
     return false;
   }
 
-  Future<void> _initializePlaylist() async {
-    parseEntityId(widget.playlistData);
-    if (widget.playlistData?['mbid'] != null &&
-        widget.playlistData?['primary-type'] != null &&
+  Future _initializePlaylist() async {
+    final id = parseEntityId(widget.playlistData);
+    final ids = id.toIds;
+    final ytid = (ids['yt'] ?? id.ytid).ytid;
+    final mbid = (ids['mb'] ?? id.mbid).mbid;
+    if (mbid.isNotEmpty &&
         (widget.playlistData?['list'] == null ||
             widget.playlistData?['list'].isEmpty)) {
-      await queueAlbumInfoRequest(widget.playlistData);
+      return queueAlbumInfoRequest(widget.playlistData);
+    } else if (ytid.isNotEmpty) {
+      widget.playlistData['ytid'] = ytid;
+      likeLength = currentLikedPlaylistsLength;
+      return getPlaylistInfoForWidget(
+        widget.playlistData,
+        isArtist: widget.isArtist,
+      );
+    } else {
+      return Future.value(widget.playlistData);
     }
-    if (widget.playlistData['id'] != null &&
-        widget.playlistData['id']?.contains('yt=')) {
-      final uri = Uri.parse('?${widget.playlistData['id']}');
-      widget.playlistData['ytid'] = uri.queryParameters['yt'];
-    }
-
-    _playlist =
-        widget.playlistData['list'] != null &&
-                widget.playlistData['list'].length > 0
-            ? widget.playlistData
-            : (widget.playlistData['source'] == 'user-created'
-                ? userCustomPlaylists.value.firstWhere(
-                  (playlist) =>
-                      playlist['title'] == widget.playlistData['title'],
-                  orElse: () => null,
-                )
-                : (widget.playlistData['ytid'] != null
-                    ? await getPlaylistInfoForWidget(
-                      widget.playlistData,
-                      isArtist: widget.isArtist,
-                    )
-                    : (widget.playlistData?['mbid'] != null
-                        ? await queueAlbumInfoRequest(widget.playlistData)
-                        : null)));
-
-    if (_playlist != null) {
-      _loadMore();
-    }
-  }
-
-  void _loadMore() {
-    fetch().then((List<dynamic> fetchedList) {
-      if (mounted) {
-        setState(() {
-          if (fetchedList.isNotEmpty) {
-            for (final item in fetchedList) {
-              _songsList.add(Map<String, dynamic>.from(item));
-            }
-          }
-        });
-      }
-    });
   }
 
   Future<List<dynamic>> fetch() async {
-    final list = <dynamic>[];
-    if (_playlist['list'] == null) return list;
-    final _count = _playlist['list'].length as int;
+    if (!_infoRequestFuture.isComplete)
+      await _infoRequestFuture.completer!.future;
+    if (_infoRequestFuture.result != null)
+      return _infoRequestFuture.result['list'] ?? [];
     //TODO: restore pagination to large playlists
-    for (var i = 0; i < _count; i++) {
-      list.add(_playlist['list'][_currentLastLoadedId]);
-      _currentLastLoadedId++;
-    }
-
-    //_currentPage++;
-    return list;
+    return widget.playlistData['list'] ?? [];
   }
 
   @override
@@ -168,13 +137,13 @@ class _PlaylistPageState extends State<PlaylistPage> {
     }
     return Scaffold(
       appBar: _buildNavigationBar(),
-      body:
+      body: _buildList() /*
           _playlist != null
               ? _buildList()
               : SizedBox(
                 height: MediaQuery.sizeOf(context).height - 100,
                 child: const Spinner(),
-              ),
+              ),*/,
     );
   }
 
@@ -192,7 +161,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
           builder:
               (context, value, child) => SongList(
                 page: 'playlist',
-                inputData: _songsList,
+                //inputData: _songsList,
+                future: fetch(),
                 isEditable: value,
               ),
         ),
@@ -209,16 +179,17 @@ class _PlaylistPageState extends State<PlaylistPage> {
       ),
       actions: [
         _buildAutoCacheOfflineButton(),
-        if (_playlist?['source'] != 'user-created') _buildLikeButton(),
-        if (_playlist != null) ...[
+        if (widget.playlistData?['source'] != 'user-created')
+          _buildLikeButton(),
+        if (widget.playlistData != null) ...[
           _buildSyncButton(),
-          if (_playlist['source'] == 'user-created')
+          if (widget.playlistData['source'] == 'user-created')
             IconButton(
               icon: const Icon(FluentIcons.share_24_regular),
               iconSize: pageHeaderIconSize,
               onPressed: () async {
                 final encodedPlaylist = PlaylistSharingService.encodePlaylist(
-                  _playlist,
+                  widget.playlistData,
                 );
                 final url = 'Reverbio://playlist/custom/$encodedPlaylist';
                 await Clipboard.setData(ClipboardData(text: url));
@@ -244,13 +215,13 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 'broadcast',
                 'other',
               ].contains(widget.page) &&
-              _playlist['mbid'] != null)
+              widget.playlistData['mbid'] != null)
             IconButton(
               iconSize: pageHeaderIconSize,
               onPressed: () {
-                if (_playlist['mbid'] != null) {
+                if (widget.playlistData['mbid'] != null) {
                   final uri = Uri.parse(
-                    'https://musicbrainz.org/release-group/${_playlist['mbid']}',
+                    'https://musicbrainz.org/release-group/${widget.playlistData['mbid']}',
                   );
                   launchURL(uri);
                 }
@@ -260,13 +231,13 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 color: _theme.colorScheme.primary,
               ),
             ),
-          if (widget.page == 'playlist' && _playlist['ytid'] != null)
+          if (widget.page == 'playlist' && widget.playlistData['ytid'] != null)
             IconButton(
               iconSize: pageHeaderIconSize,
               onPressed: () {
-                if (_playlist['ytid'] != null) {
+                if (widget.playlistData['ytid'] != null) {
                   final uri = Uri.parse(
-                    'https://www.youtube.com/playlist?list=${_playlist['ytid']}',
+                    'https://www.youtube.com/playlist?list=${widget.playlistData['ytid']}',
                   );
                   launchURL(uri);
                 }
@@ -276,7 +247,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 color: _theme.colorScheme.primary,
               ),
             ),
-          if (_playlist != null && _playlist['source'] == 'user-created')
+          if (widget.playlistData != null &&
+              widget.playlistData['source'] == 'user-created')
             _buildEditButton(),
           StatefulBuilder(
             builder: (context, setState) {
@@ -306,10 +278,10 @@ class _PlaylistPageState extends State<PlaylistPage> {
   dynamic _getPlaylistData() {
     final data =
         ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page) ||
-                (_playlist['isAlbum'] ?? false)
+                (widget.playlistData['isAlbum'] ?? false)
             ? {
-              ...(_playlist as Map),
-              'album': _playlist['title'],
+              ...(widget.playlistData as Map),
+              'album': widget.playlistData['title'],
               'title': null,
             }
             : _songsList;
@@ -320,25 +292,31 @@ class _PlaylistPageState extends State<PlaylistPage> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isLandscape = screenWidth > MediaQuery.sizeOf(context).height;
     return BaseCard(
-      inputData: _playlist,
+      inputData: widget.playlistData,
       size: isLandscape ? 300 : screenWidth / 2.5,
       icon: widget.cardIcon,
-      showLike: _playlist?['source'] != 'user-created',
+      showLike: widget.playlistData?['source'] != 'user-created',
     );
   }
 
   Widget _buildPlaylistHeader() {
-    final _songsLength =
-        _playlist['list'] == null ? 0 : _playlist['list'].length;
-
-    return PlaylistHeader(
-      _buildPlaylistImage(),
-      ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page)
-          ? _playlist['artist'] != null
-              ? '${_playlist['artist']} - ${_playlist['title']}'
-              : _playlist['title']
-          : _playlist['title'],
-      _songsLength,
+    return FutureBuilder(
+      future: _infoRequestFuture.completer!.future,
+      builder: (context, snapshot) {
+        final _songsLength =
+            widget.playlistData['list'] == null
+                ? 0
+                : widget.playlistData['list'].length;
+        return PlaylistHeader(
+          _buildPlaylistImage(),
+          ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page)
+              ? widget.playlistData['artist'] != null
+                  ? '${widget.playlistData['artist']} - ${widget.playlistData['title']}'
+                  : widget.playlistData['title']
+              : widget.playlistData['title'],
+          _songsLength,
+        );
+      },
     );
   }
 
@@ -392,32 +370,61 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   Widget _buildLikeButton() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: likeStatus,
-      builder: (context, value, __) {
-        return IconButton(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          icon:
-              value
-                  ? const Icon(FluentIcons.heart_24_filled)
-                  : const Icon(FluentIcons.heart_24_regular),
-          iconSize: pageHeaderIconSize,
-          onPressed: () {
-            if ([
-              'album',
-              'single',
-              'ep',
-              'broadcast',
-              'other',
-            ].contains(widget.playlistData['primary-type']?.toLowerCase()))
-              updateAlbumLikeStatus(widget.playlistData, !likeStatus.value);
-            else if (widget.playlistData['ytid'] != null)
-              updatePlaylistLikeStatus(_playlist, !likeStatus.value);
-            if (mounted)
-              setState(() {
-                likeStatus.value = !likeStatus.value;
-              });
+    if ([
+      'album',
+      'single',
+      'ep',
+      'broadcast',
+      'other',
+    ].contains(widget.playlistData['primary-type']?.toLowerCase())) {
+      likeLength = currentLikedAlbumsLength;
+    } else if (widget.playlistData['ytid'] != null)
+      likeLength = currentLikedPlaylistsLength;
+
+    return FutureBuilder(
+      future: _infoRequestFuture.completer!.future,
+      builder: (context, snapshot) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return ValueListenableBuilder(
+              valueListenable: likeLength,
+              builder: (_, __, ___) {
+                final value = likeStatus.value = getLikeStatus();
+                return IconButton(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  icon:
+                      value
+                          ? const Icon(FluentIcons.heart_24_filled)
+                          : const Icon(FluentIcons.heart_24_regular),
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () async {
+                    if ([
+                      'album',
+                      'single',
+                      'ep',
+                      'broadcast',
+                      'other',
+                    ].contains(
+                      widget.playlistData['primary-type']?.toLowerCase(),
+                    ))
+                      await updateAlbumLikeStatus(
+                        widget.playlistData,
+                        !likeStatus.value,
+                      );
+                    else if (widget.playlistData['ytid'] != null)
+                      await updatePlaylistLikeStatus(
+                        widget.playlistData,
+                        !likeStatus.value,
+                      );
+                    if (mounted)
+                      setState(() {
+                        likeStatus.value = getLikeStatus();
+                      });
+                  },
+                );
+              },
+            );
           },
         );
       },
@@ -444,8 +451,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
           () => showDialog(
             context: context,
             builder: (context) {
-              var customPlaylistName = _playlist['title'];
-              var imageUrl = _playlist['image'];
+              var customPlaylistName = widget.playlistData['title'];
+              var imageUrl = widget.playlistData['image'];
 
               return AlertDialog(
                 content: SingleChildScrollView(
@@ -505,17 +512,15 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   void _handleSyncPlaylist() async {
-    if (_playlist['ytid'] != null) {
-      _playlist = await updatePlaylistList(context, _playlist['ytid']);
+    if (widget.playlistData['ytid'] != null) {
+      widget.playlistData.addAll(
+        await updatePlaylistList(context, widget.playlistData['ytid']),
+      );
       _songsList.clear();
-      if (mounted)
-        setState(() {
-          _currentLastLoadedId = 0;
-          _loadMore();
-        });
-    } else if (_playlist['source'] == 'user-created') {
+      if (mounted) setState(fetch);
+    } else if (widget.playlistData['source'] == 'user-created') {
       setState(() {
-        _songsList = _playlist['list'] ?? [];
+        _songsList = widget.playlistData['list'] ?? [];
       });
     } else {
       final updatedPlaylist = await getPlaylistInfoForWidget(
@@ -538,7 +543,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       () {
         addSongToCustomPlaylist(
           context,
-          _playlist['title'],
+          widget.playlistData['title'],
           songToRemove,
           indexToInsert: indexOfRemovedSong,
         );
@@ -570,7 +575,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       onChanged: (item) {
         if (mounted)
           setState(() {
-            final playlist = _playlist['list'] ?? [];
+            final playlist = widget.playlistData['list'] ?? [];
 
             void sortBy(String key) {
               playlist.sort((a, b) {
@@ -586,12 +591,11 @@ class _PlaylistPageState extends State<PlaylistPage> {
               sortBy('artist');
             }
 
-            _playlist['list'] = playlist;
+            widget.playlistData['list'] = playlist;
 
             // Reset pagination and reload
             _songsList.clear();
-            _currentLastLoadedId = 0;
-            _loadMore();
+            fetch();
           });
       },
     );

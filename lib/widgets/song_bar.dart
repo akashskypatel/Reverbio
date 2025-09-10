@@ -35,6 +35,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
@@ -42,6 +43,8 @@ import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/bottom_sheet_bar.dart';
+import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
@@ -65,9 +68,10 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
   final ValueNotifier<MediaItem?> _mediaItemNotifier = ValueNotifier(null);
   final ValueNotifier<Media?> _mediaNotifier = ValueNotifier(null);
-  final ValueNotifier<Future<dynamic>?> _songMetadataFuture = ValueNotifier(
-    null,
-  );
+  final ValueNotifier<Future<dynamic>?> _songMetadataFutureNotifier =
+      ValueNotifier(null);
+  final ValueNotifier<Map<String, dynamic>?> songMetadataNotifier =
+      ValueNotifier(null);
   final ValueNotifier<int> _statusNotifier = ValueNotifier(0);
   late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
     this.borderRadius,
@@ -80,17 +84,28 @@ class SongBar extends StatefulWidget {
   Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
   MediaItem get mediaItem => _mediaItemNotifier.value ?? mapToMediaItem(song);
   Media? get media => _mediaNotifier.value;
-  late final FutureTracker _songFutureTracker = FutureTracker(null);
+  final ValueNotifier<FutureTracker<void>?> songPrepareTracker = ValueNotifier(
+    null,
+  );
 
   @override
   _SongBarState createState() => _SongBarState();
 
   Future<void> _prepareSong() async {
     try {
+      songMetadataNotifier.value = copyMap(song);
       _isLoadingNotifier.value = true;
       _statusNotifier.value = 1;
-      await getMetadataFuture();
-      if (!isPrepared) await getSongUrl(song);
+      _songMetadataFutureNotifier.value = getMetadataFuture(isPrepare: true);
+      unawaited(
+        _songMetadataFutureNotifier.value?.then((value) {
+          song.addAll(value);
+          songMetadataNotifier.value = copyMap(value);
+          _isLoadingNotifier.value = false;
+          _statusNotifier.value = 0;
+        }),
+      );
+      await getSongUrl(song);
       if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
         song['songUrl'] = null;
         song['isError'] = true;
@@ -119,19 +134,36 @@ class SongBar extends StatefulWidget {
     if (isError) {
       showToast(context.l10n!.errorCouldNotFindAStream);
     }
+    songMetadataNotifier.value = copyMap(song);
   }
 
-  Future getMetadataFuture() async {
+  Future<void> getYtSong(String? newYtid) async {
+    if (!isSongValid(song)) return;
+    _isLoadingNotifier.value = true;
+    _statusNotifier.value = 1;
+    await findYTSong(song, newYtid: newYtid);
+    final ytid = ((song['ytid'] ?? song['id']) as String).ytid;
+    if (ytid.isNotEmpty) {
+      _songMetadataFutureNotifier.value = Future.value(song);
+      _isLoadingNotifier.value = false;
+      _statusNotifier.value = 0;
+    } else {
+      _isLoadingNotifier.value = false;
+      _isErrorNotifier.value = true;
+      _statusNotifier.value = 3;
+    }
+    if (isError) {
+      showToast(context.l10n!.errorCouldNotFindAStream);
+    }
+  }
+
+  Future getMetadataFuture({bool isPrepare = false}) {
     try {
       parseEntityId(song);
-      if (_songMetadataFuture.value == null ||
-          !isSongValid(song) ||
-          !isMusicbrainzSongValid(song)) {
-        _songMetadataFuture.value =
-            queueSongInfoRequest(song) ?? _songMetadataFuture.value;
-        return _songMetadataFuture.value!;
+      if (!isSongValid(song) || (!isMusicbrainzSongValid(song) && isPrepare)) {
+        return queueSongInfoRequest(song);
       } else {
-        return _songMetadataFuture.value!;
+        return Future.value(song);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -139,12 +171,13 @@ class SongBar extends StatefulWidget {
         e,
         stackTrace,
       );
-      throw Exception('Could not load song bar metadata.');
+      return Future.value(song);
     }
   }
 
-  Future<void> prepareSong() async {
-    await _songFutureTracker.runFuture(_prepareSong());
+  Future prepareSong() async {
+    songPrepareTracker.value = FutureTracker(null);
+    return songPrepareTracker.value!.runFuture(_prepareSong());
   }
 
   void setBorder({BorderRadius borderRadius = BorderRadius.zero}) {
@@ -184,132 +217,174 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    if (mounted) unawaited(widget.getMetadataFuture());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.songMetadataNotifier.value = copyMap(widget.song);
+        widget._songMetadataFutureNotifier.value = widget.getMetadataFuture();
+      }
+    });
+    //widget._songMetadataFutureNotifier.addListener(_songMetadataListener);
   }
 
   @override
   void dispose() {
-    widget._songMetadataFuture.value?.ignore();
+    widget._songMetadataFutureNotifier.value?.ignore();
+    //widget._songMetadataFutureNotifier.removeListener(_songMetadataListener);
     super.dispose();
+  }
+
+  void _songMetadataListener() {
+    if (mounted)
+      setState(() {
+        widget._isLoadingNotifier.value = true;
+        widget._statusNotifier.value = 1;
+      });
   }
 
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
     final primaryColor = _theme.colorScheme.primary;
-    return FutureBuilder(
-      future: widget.getMetadataFuture(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.waiting &&
-            !snapshot.hasError &&
-            snapshot.hasData &&
-            snapshot.data != null)
-          widget.song.addAll(snapshot.data);
-        return Stack(
-          children: [
-            Padding(
-              padding: commonBarPadding,
-              //TODO: add left/right sliding action to add song to queue or to offline
-              child: GestureDetector(
-                onDoubleTapDown: likeItem,
-                onSecondaryTapDown: (details) {
-                  _showContextMenu(context, details);
-                },
-                onTap: () async {
-                  await audioHandler.prepare(
-                    songBar: widget,
-                    play: true,
-                    skipOnError: true,
-                    force: true,
-                  );
-                },
-                child: Card(
-                  color: widget.backgroundColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: widget._borderRadiusNotifier.value,
-                  ),
-                  margin: const EdgeInsets.only(bottom: 3),
-                  child: Padding(
-                    padding: commonBarContentPadding,
-                    child: Row(
-                      children: [
-                        _buildAlbumArt(primaryColor),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    widget.song['title'] ??
-                                        widget.song['ytTitle'] ??
-                                        'unknown',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: commonBarTitleStyle.copyWith(
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                  if (isSongAlreadyOffline(widget.song))
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsGeometry.symmetric(
-                                            horizontal: 8,
+    return ValueListenableBuilder(
+      valueListenable: widget._songMetadataFutureNotifier,
+      builder: (context, value, child) {
+        return FutureBuilder(
+          future: value,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.waiting &&
+                !snapshot.hasError &&
+                snapshot.hasData &&
+                snapshot.data != null) {
+              widget.song.addAll(snapshot.requireData);
+            }
+            return Stack(
+              children: [
+                Padding(
+                  padding: commonBarPadding,
+                  //TODO: add left/right sliding action to add song to queue or to offline
+                  child: GestureDetector(
+                    onDoubleTapDown: likeItem,
+                    onSecondaryTapDown: (details) {
+                      _showContextMenu(context, details);
+                    },
+                    onTap: () async {
+                      await audioHandler.prepare(
+                        songBar: widget,
+                        play: true,
+                        skipOnError: true,
+                      );
+                    },
+                    child: Card(
+                      color: widget.backgroundColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: widget._borderRadiusNotifier.value,
+                      ),
+                      margin: const EdgeInsets.only(bottom: 3),
+                      child: Padding(
+                        padding: commonBarContentPadding,
+                        child: Row(
+                          children: [
+                            _buildAlbumArt(primaryColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Expanded(
+                                        child: MarqueeWidget(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                widget.song['mbTitle'] ??
+                                                    widget.song['title'] ??
+                                                    widget.song['ytTitle'] ??
+                                                    'unknown',
+                                                overflow: TextOverflow.ellipsis,
+                                                style: commonBarTitleStyle
+                                                    .copyWith(
+                                                      color: primaryColor,
+                                                    ),
+                                              ),
+                                              if (isSongAlreadyOffline(
+                                                widget.song,
+                                              ))
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsetsGeometry.symmetric(
+                                                        horizontal: 8,
+                                                      ),
+                                                  child: Icon(
+                                                    FluentIcons
+                                                        .arrow_download_24_filled,
+                                                    size: 14,
+                                                    color:
+                                                        _theme
+                                                            .colorScheme
+                                                            .primary,
+                                                  ),
+                                                ),
+                                            ],
                                           ),
-                                      child: Icon(
-                                        FluentIcons.arrow_download_24_filled,
-                                        size: 14,
-                                        color: _theme.colorScheme.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  MarqueeWidget(
+                                    child: Text(
+                                      combineArtists(widget.song) ??
+                                          widget.song['mbArtist'] ??
+                                          widget.song['artist'] ??
+                                          widget.song['ytArtist'] ??
+                                          'unknown',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w400,
+                                        fontSize: 13,
+                                        color: _theme.colorScheme.secondary,
                                       ),
                                     ),
+                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 3),
-                              Text(
-                                combineArtists(widget.song) ??
-                                    widget.song['artist'] ??
-                                    widget.song['originalArtist'] ??
-                                    'unknown',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 13,
-                                  color: _theme.colorScheme.secondary,
-                                ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
                               ),
-                            ],
-                          ),
+                              child: ValueListenableBuilder(
+                                valueListenable: widget._statusNotifier,
+                                builder: (context, value, child) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting)
+                                    return _buildLoadingSpinner(context);
+                                  switch (value) {
+                                    case 0:
+                                      return const SizedBox.shrink();
+                                    case 1:
+                                      return _buildLoadingSpinner(context);
+                                    case 3:
+                                      return _buildErrorIconWidget(context);
+                                    default:
+                                      return const SizedBox.shrink();
+                                  }
+                                },
+                              ),
+                            ),
+                            _buildActionButtons(context, primaryColor),
+                          ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ValueListenableBuilder(
-                            valueListenable: widget._statusNotifier,
-                            builder: (context, value, child) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting)
-                                return _buildLoadingSpinner(context);
-                              switch (value) {
-                                case 0:
-                                  return const SizedBox.shrink();
-                                case 1:
-                                  return _buildLoadingSpinner(context);
-                                case 3:
-                                  return _buildErrorIconWidget(context);
-                                default:
-                                  return const SizedBox.shrink();
-                              }
-                            },
-                          ),
-                        ),
-                        _buildActionButtons(context, primaryColor),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
@@ -379,9 +454,11 @@ class _SongBarState extends State<SongBar> {
       //TODO: fix positioning to account for navigation rail on large screen
       final RenderBox tappedBox = context.findRenderObject() as RenderBox;
       final RelativeRect position = RelativeRect.fromLTRB(
-        details.globalPosition.dx,
+        details.globalPosition.dx - (isLargeScreen() ? navigationRailWidth : 0),
         details.globalPosition.dy,
-        tappedBox.size.width - details.globalPosition.dx,
+        tappedBox.size.width -
+            details.globalPosition.dx -
+            (isLargeScreen() ? navigationRailWidth : 0),
         tappedBox.size.height - details.globalPosition.dy,
       );
 
@@ -390,6 +467,7 @@ class _SongBarState extends State<SongBar> {
         position: position,
         color: _theme.colorScheme.surface,
         items: _buildPopupMenuItems(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       );
       if (value != null) {
         _popupMenuItemAction(value);
@@ -498,6 +576,20 @@ class _SongBarState extends State<SongBar> {
             },
           ),
         ),
+        if (widget.song['ytid'] == null || widget.song['ytid'].isEmpty)
+          PopupMenuItem<String>(
+            value: 'get_youtube',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.link_24_regular,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.getYouTube),
+              ],
+            ),
+          ),
         if (widget.song['ytid'] != null && widget.song['ytid'].isNotEmpty)
           PopupMenuItem<String>(
             value: 'youtube',
@@ -509,6 +601,20 @@ class _SongBarState extends State<SongBar> {
                 ),
                 const SizedBox(width: 8),
                 Text(context.l10n!.openInYouTube),
+              ],
+            ),
+          ),
+        if (widget.song['ytSongs'] != null && widget.song['ytSongs'].isNotEmpty)
+          PopupMenuItem<String>(
+            value: 'youtube_links',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.apps_list_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.youtubeLinks),
               ],
             ),
           ),
@@ -575,6 +681,12 @@ class _SongBarState extends State<SongBar> {
         }
         songOfflineStatus.value = !songOfflineStatus.value;
         break;
+      case 'get_youtube':
+        if (widget.song['ytid'] == null || widget.song['ytid'].isEmpty)
+          widget.getYtSong(null);
+      case 'youtube_links':
+        if (widget.song['ytSongs'] != null && widget.song['ytSongs'].isNotEmpty)
+          showYoutubeLinksBottomSheet(context, widget.getYtSong, widget.song);
       case 'youtube':
         if (widget.song['ytid'] != null && widget.song['ytid'].isNotEmpty) {
           final uri = Uri.parse(
@@ -582,6 +694,7 @@ class _SongBarState extends State<SongBar> {
           );
           launchURL(uri);
         }
+        break;
       case 'musicbrainz':
         if (widget.song['rid'] != null && widget.song['rid'].isNotEmpty) {
           final uri = Uri.parse(
@@ -589,6 +702,7 @@ class _SongBarState extends State<SongBar> {
           );
           launchURL(uri);
         }
+        break;
     }
   }
 
@@ -601,6 +715,65 @@ class _SongBarState extends State<SongBar> {
       itemBuilder: _buildPopupMenuItems,
     );
   }
+}
+
+void showYoutubeLinksBottomSheet(
+  BuildContext context,
+  Function(String?) updateYtLink,
+  dynamic song,
+) {
+  final linkList = (song['ytSongs'] ?? []) as List;
+  final _theme = Theme.of(context);
+  final activatedColor = _theme.colorScheme.secondaryContainer;
+  final inactivatedColor = _theme.colorScheme.surfaceContainerHigh;
+  showCustomBottomSheet(
+    context,
+    StatefulBuilder(
+      builder: (context, setState) {
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const BouncingScrollPhysics(),
+          padding: commonListViewBottomPadding,
+          itemCount: linkList.length,
+          itemBuilder: (context, index) {
+            final borderRadius = getItemBorderRadius(index, linkList.length);
+            if (index < linkList.length) {
+              final link = linkList[index];
+              final linkYtid = ((link['ytid'] ?? link['id']) as String).ytid;
+              final songYtid = ((song['ytid'] ?? song['id']) as String).ytid;
+              final selected = songYtid.contains(linkYtid);
+              final openInYoutube = IconButton(
+                onPressed: () {
+                  final uri = Uri.parse(
+                    'https://www.youtube.com/watch?v=$linkYtid',
+                  );
+                  launchURL(uri);
+                },
+                icon: const Icon(FluentIcons.link_24_regular),
+              );
+              return BottomSheetBar(
+                link['ytTitle'],
+                selected ? activatedColor : inactivatedColor,
+                subtitle: link['ytArtist'],
+                borderRadius: borderRadius,
+                actions: [openInYoutube],
+                onTap: () async {
+                  await updateYtLink(linkYtid);
+                  if (context.mounted) setState(() {});
+                },
+              );
+            } else {
+              return BottomSheetBar(
+                'Un-match',
+                inactivatedColor,
+                borderRadius: borderRadius,
+              );
+            }
+          },
+        );
+      },
+    ),
+  );
 }
 
 void showAddToPlaylistDialog(BuildContext context, dynamic song) {

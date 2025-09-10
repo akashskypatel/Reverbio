@@ -40,24 +40,10 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-final pxm = ProxyManager(); // ProxyManager for manifest
-final pxd = ProxyManager(); // ProxyManager for data
-final client = useProxies.value ? pxd.randomProxyClient() : null;
-// YouTube client for Data
-YoutubeExplode yt = YoutubeExplode(YoutubeHttpClient(client));
-// YouTube client for Manifest
-YoutubeExplode ytm = YoutubeExplode(
-  YoutubeHttpClient(useProxies.value ? pxm.randomProxyClient() : null),
-);
-DiscogsApiClient dc = DiscogsApiClient(httpClient: client);
-MusicBrainzApiClient mb = MusicBrainzApiClient(httpClient: client);
-/*
-List<YoutubeApiClient> userChosenClients = [
-  YoutubeApiClient.tv,
-  YoutubeApiClient.androidVr,
-  YoutubeApiClient.safari,
-];
-*/
+final px = ProxyManager();
+YoutubeExplode yt = useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
+DiscogsApiClient dc = DiscogsApiClient();// px.discogsClient;
+MusicBrainzApiClient mb = MusicBrainzApiClient();// px.musicbrainzClient;
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
@@ -342,7 +328,7 @@ Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
   int limit = 10,
 }) async {
   try {
-    final results = await yt.search.getQuerySuggestions(query);
+    final results = await px.localYoutubeClient.search.getQuerySuggestions(query);
     return {
       'youtube': {
         'count': results.length,
@@ -376,7 +362,7 @@ Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
                 .nextPage() //if offset is greater than list length * 20 get next page from last item
             : resultList.isNotEmpty
             ? resultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
-            : await yt.search.searchContent(
+            : await px.localYoutubeClient.search.searchContent(
               query,
               filter: TypeFilters.playlist,
             ); //if result list is empty then make a new search

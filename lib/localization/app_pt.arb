@@ -247,5 +247,12 @@
   "downloadCancelled": "Download cancelado",
   "downloadPaused": "Download em pausa",
   "extendedPlay": "Extended Play",
-  "broadcast": "Transmissão"
+  "broadcast": "Transmissão",
+  "getYouTube": "Obter link do YouTube",
+  "youtubeLinks": "Mostrar links do YouTube",
+  "noInternet": "Sem conexão à Internet",
+  "noInternetMessage": "Está offline. Abrir em modo offline ou tentar reconectar?",
+  "retry": "Tentar novamente",
+  "exit": "Sair",
+  "offlineModeMessage": "Reinício necessário para entrar no Modo Offline. Sair da aplicação agora?"
 }
