@@ -223,7 +223,7 @@ extension MapAddIfNotExistExtension on Map {
 
 extension MapToIdExtension on Map<String, String> {
   /// Return url encoded composite Id from a map of ids
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String get toId {
     final ids = <String, String>{};
@@ -240,7 +240,7 @@ extension MapToIdExtension on Map<String, String> {
   }
 
   /// Replace ids in this map with all ids in given map [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergeReplaceIds(Map<String, String> replaceWith) {
     if (this.isEmpty) return Map<String, String>.from(replaceWith);
@@ -252,26 +252,30 @@ extension MapToIdExtension on Map<String, String> {
     }
     return this;
   }
+
   /// Return url encoded composite id after replacing ids in this map with all ids in given map [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedReplacedId(Map<String, String> replaceWith) {
     return this.mergeReplaceIds(replaceWith).toId;
   }
+
   /// Return url encoded composite id after replacing ids in this map with all ids in given url encoded id string [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedReplacedIdFrom(String replaceWith) {
     return this.mergedReplacedId(replaceWith.toIds);
   }
+
   /// Return ids as Map after replacing ids in this map with all ids in given url encoded id string [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergedReplacedIdsFrom(String replaceWith) {
     return this.mergedReplacedId(replaceWith.toIds).toIds;
   }
+
   /// Add any ids that exist in [addFrom] but do not exist in this map
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergeAbsentIds(Map<String, String> addFrom) {
     if (this.isEmpty) return Map<String, String>.from(addFrom);
@@ -284,20 +288,23 @@ extension MapToIdExtension on Map<String, String> {
     }
     return this;
   }
+
   /// Return url encoded composite id after adding any ids that exist in given map [addFrom] but do not exist in this map
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedAbsentId(Map<String, String> addFrom) {
     return this.mergeAbsentIds(addFrom).toId;
   }
+
   /// Return url encoded composite id after adding any ids that exist in given url encoded id string [addFrom] but do not exist in this map
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedAbsentIdFrom(String addFrom) {
     return this.mergedAbsentId(addFrom.toIds);
   }
+
   /// Return ids as Map after adding any ids that exist in given url encoded id string [addFrom] but do not exist in this map
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergedAbsentIdsFrom(String addFrom) {
     return this.mergedAbsentId(addFrom.toIds).toIds;
@@ -314,7 +321,7 @@ extension StringToIdsExtension on String {
   }
 
   /// Extract Musicbrainz id from a string
-  /// 
+  ///
   /// Valid format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
   String get mbid {
     if (this.isEmpty) return '';
@@ -326,7 +333,7 @@ extension StringToIdsExtension on String {
   }
 
   /// Extract ISRC from a string
-  /// 
+  ///
   /// Valid formats: XX-000-00-00000 (with or without -)
   String get isrc {
     if (this.isEmpty) return '';
@@ -338,7 +345,7 @@ extension StringToIdsExtension on String {
   }
 
   /// Extract Discogs id from a string
-  /// 
+  ///
   /// Valid format is an integer
   String get dcid {
     if (this.isEmpty) return '';
@@ -347,7 +354,7 @@ extension StringToIdsExtension on String {
   }
 
   /// Extract user-created playlist id from a string
-  /// 
+  ///
   /// Valid format starts with "UC-"
   String get ucid {
     if (this.isEmpty) return '';
@@ -355,7 +362,7 @@ extension StringToIdsExtension on String {
   }
 
   /// Extract YouTube id from a string
-  /// 
+  ///
   /// Valid format is anything that doesn't match mbid, isrc, dcid, and ucid
   String get ytid {
     if (this.isEmpty) return '';
@@ -375,8 +382,9 @@ extension StringToIdsExtension on String {
     }
     return '';
   }
+
   /// Return url encoded composite id after replacing ids in this map with all ids in given url encoded id string [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedReplacedId(String replaceWith) {
     if (this.isEmpty) return replaceWith;
@@ -384,30 +392,34 @@ extension StringToIdsExtension on String {
     final otherIds = replaceWith.toIds;
     return ids.mergedReplacedId(otherIds);
   }
+
   /// Return ids as Map after replacing ids in this map with all ids in given url encoded id string [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergedReplacedIds(String replaceWith) {
     final ids = this.toIds;
     final otherIds = replaceWith.toIds;
     return ids.mergeReplaceIds(otherIds);
   }
+
   /// Return url encoded composite id after replacing ids in this map with all ids in given Map of ids [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedReplacedIdFrom(Map<String, String> replaceWith) {
     final ids = this.toIds;
     return ids.mergedReplacedId(replaceWith);
   }
+
   /// Return ids as Map after replacing ids in this map with all ids in given Map of ids [replaceWith]
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergedReplacedIdsFrom(Map<String, String> replaceWith) {
     final ids = this.toIds;
     return ids.mergeReplaceIds(replaceWith);
   }
+
   /// Return url encoded composite id after adding any ids that exist in given url encoded id string [addFrom] but do not exist in this id
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedAbsentId(String addFrom) {
     if (this.isEmpty) return addFrom;
@@ -415,23 +427,26 @@ extension StringToIdsExtension on String {
     final otherIds = addFrom.toIds;
     return ids.mergedAbsentId(otherIds);
   }
+
   /// Return ids as Map after adding any ids that exist in given url encoded id string [addFrom] but do not exist in this id
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergedAbsentIds(String addFrom) {
     final ids = this.toIds;
     final otherIds = addFrom.toIds;
     return ids.mergeAbsentIds(otherIds);
   }
+
   /// Return url encoded composite id after adding any ids that exist in given ids as Map [addFrom] but do not exist in this id
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   String mergedAbsentIdFrom(Map<String, String> addFrom) {
     final ids = this.toIds;
     return ids.mergedAbsentId(addFrom);
   }
+
   /// Return ids as Map after adding any ids that exist in given ids as Map [addFrom] but do not exist in this id
-  /// 
+  ///
   /// Valid id keys: ['mb', 'dc', 'uc', 'is', 'yt']
   Map<String, String> mergedAbsentIdsFrom(Map<String, String> addFrom) {
     final ids = this.toIds;
