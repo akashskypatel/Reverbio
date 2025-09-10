@@ -568,6 +568,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           );
           if (next != null &&
               !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
+            await Future.delayed(const Duration(seconds: 3));
             await prepare(
               songBar: next,
               play: play,
