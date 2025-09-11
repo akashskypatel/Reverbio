@@ -21,7 +21,7 @@ dependencies:
   csv: ^6.0.0
   discogs_api_client: ^0.2.1
   dynamic_color: ^1.8.1
-  file_picker: ^10.3.2
+  file_picker: ^10.3.3
   fluentui_system_icons: ^1.1.273
   flutter:
     sdk: flutter
