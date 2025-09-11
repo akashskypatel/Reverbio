@@ -30,6 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -169,59 +170,6 @@ Map getAudioDeviceCategory(String category, {BuildContext? context}) {
   };
 
   return categoryOrder[category];
-}
-
-class CancelledException implements Exception {
-  @override
-  String toString() => 'Operation was cancelled';
-}
-
-class FutureTracker<T> {
-  FutureTracker(this.data);
-  T? data;
-  dynamic result;
-  Completer<T>? completer;
-  bool isLoading = false;
-  bool isCancelled = false;
-  bool get isComplete => completer?.isCompleted ?? false;
-
-  Future<T> runFuture(Future<T> future) async {
-    if (!isLoading && !isComplete) {
-      isLoading = true;
-      completer = Completer<T>();
-      await future
-          .then((result) {
-            if (!completer!.isCompleted) {
-              completer!.complete(result);
-              this.result = result;
-            }
-            isLoading = false;
-          })
-          .catchError((error) {
-            logger.log(
-              'Error occurred in FutureTracker runFuture',
-              error,
-              null,
-            );
-            if (!completer!.isCompleted) {
-              completer!.completeError(error);
-            }
-            isLoading = false;
-          });
-    }
-
-    return completer!.future;
-  }
-
-  void cancel() {
-    if (!isComplete && !isLoading) {
-      completer?.completeError(CancelledException());
-      completer?.future.timeout(Duration.zero);
-      completer?.future.ignore();
-    }
-    isLoading = false;
-    isCancelled = true;
-  }
 }
 
 String getFormattedDateTimeNow() {
@@ -940,4 +888,53 @@ Future<void> checkInternetConnection() async {
         },
       );
   } catch (_) {}
+}
+
+String getFileExtension(String filePath) {
+  return RegExp(r'(\.[^\.]+$)').firstMatch(filePath)?.group(1) ?? '';
+}
+
+String getExtensionFromMime(String? mimeType) {
+  if (mimeType == null) return 'bin';
+
+  final extensions = {
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/bmp': 'bmp',
+    'image/x-icon': 'ico',
+    'audio/weba': 'webm',
+    'audio/webm': 'webm',
+  };
+
+  final extension =
+      extensionFromMime(mimeType) ??
+      extensions[mimeType.toLowerCase()] ??
+      'bin';
+
+  return '.$extension';
+}
+
+String? getMimeTypeFromFile(String filePath) {
+  try {
+    final file = File(filePath);
+    final raf = file.openSync();
+    
+    try {
+      const bytesToRead = 128;
+      final buffer = List<int>.filled(bytesToRead, 0);
+      final bytesRead = raf.readIntoSync(buffer, 0, bytesToRead);
+      
+      final headerBytes = bytesRead < bytesToRead 
+          ? buffer.sublist(0, bytesRead) 
+          : buffer;
+      
+      return lookupMimeType(file.path, headerBytes: headerBytes);
+    } finally {
+      raf.closeSync();
+    }
+  } catch (e) {
+    return null;
+  }
 }
