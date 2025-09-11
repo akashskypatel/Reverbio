@@ -33,6 +33,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/future_tracker.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 final List userLikedAlbumsList =
@@ -162,6 +163,12 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
       }
       if (cached['list'] == null || cached['list'].isEmpty) {
         cached['list'] = await getTrackList(cached);
+        final albumArtist = combineArtists(cached);
+        cached['list'] = cached['list'].map((e) {
+          e['album'] = cached['title'];
+          e['albumArtist'] = albumArtist;
+          return e;
+        });
       }
       if (album is Map && cached is Map) {
         for (final key in album.keys) {
@@ -302,8 +309,11 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
             cached[key] = song[key];
         }
       }
+      final albumArtist = combineArtists(cached);
       for (dynamic recording in cached['list']) {
         recording = copyMap(await getSongInfo(recording));
+        recording['album'] = cached['title'];
+        recording['albumArtist'] = albumArtist;
         if (isYouTubeSongValid(recording) &&
             checkTitleAndArtist(cached, recording)) {
           cached['ytid'] = (recording['ytid'] as String).ytid;
@@ -315,6 +325,7 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
     } else {
       final recordings =
           (await mb.recordings.search('rgid:$rgid'))?['recordings'] ?? [];
+      final albumArtist = combineArtists(song);
       for (final recording in recordings) {
         recording['artist'] = combineArtists(recording);
         if (isYouTubeSongValid(recording)) recording['ytid'] = song['ytid'];
@@ -324,6 +335,8 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
           song.addAll(<String, dynamic>{
             'rgid': (song['id'] as String).mbid,
             'rid': (recording['id'] as String).mbid,
+            'album': song['mbTitle'] ?? song['title'] ?? song['ytTitle'],
+            'albumArtist': albumArtist,
             'mbidType': 'release-group',
             'list': [recording],
           });
@@ -341,19 +354,6 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
   parseEntityId(song);
   song = Map<String, dynamic>.from(song);
   return song;
-}
-
-Future<dynamic> getSinglesTrackList(List<dynamic> singlesReleases) async {
-  try {
-    final tracks = [];
-    for (final releaseGroup in singlesReleases) {
-      tracks.add(await _getSinglesDetails(releaseGroup));
-    }
-    return tracks.toList();
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return [];
-  }
 }
 
 Future<List?> getTrackList(dynamic album) async {
@@ -387,6 +387,8 @@ Future<List?> getTrackList(dynamic album) async {
           recording = cached;
         }
         recording.addAll({
+          'album': album['title'],
+          'albumArtist': combineArtists(album),
           'image': album['image'] ?? album['images'],
           'lowResImage': album['image'] ?? album['images'],
           'highResImage': album['image'] ?? album['images'],
