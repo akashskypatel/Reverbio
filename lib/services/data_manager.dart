@@ -33,10 +33,6 @@ Future<void> addOrUpdateData(String category, String key, dynamic value) async {
   try {
     final _box = await _openBox(category);
     await _box.put(key, value);
-    if (category == 'cache') {
-      await _box.put('${key}_date', DateTime.now());
-    }
-    await _box.compact();
   } catch (e, stackTrace) {
     logger.log(
       'Error in ${stackTrace.getCurrentMethodName()} writing $category, $key:',
@@ -69,7 +65,7 @@ void deleteData(String category, String key) async {
   await _box.delete(key);
 }
 
-void clearCache() async {
+Future<void> clearCache() async {
   final _cacheBox = await _openBox('cache');
   await _cacheBox.clear();
 }

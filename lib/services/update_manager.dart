@@ -25,7 +25,6 @@ import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/version.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -209,10 +208,7 @@ void postUpdate() async {
   final hasPostUpdateRun = postUpdateRun[appVersion] ?? false;
   if (!hasPostUpdateRun) {
     //Make changes from here
-    for (final e in userCustomPlaylists.value) {
-      e['id'] = generatePlaylistId(e['title']);
-    }
-    await addOrUpdateData('user', 'customPlaylists', userCustomPlaylists.value);
+    await clearCache();
     //to here
   }
   postUpdateRun[appVersion] = true;
