@@ -54,3 +54,5 @@ l10nupdate.json
 .out
 /.vscode/settings.json
 /.vscode/launch.json
+/android/build/reports/problems/problems-report.html
+/android/app/build
