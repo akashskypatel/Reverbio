@@ -83,10 +83,7 @@ Future<void> _writeToCache() async {
       addOrUpdateData(
         'cache',
         'cachedAlbums',
-        cachedAlbumsList.map((e) {
-          e = copyMap(e);
-          return e;
-        }).toList(),
+        cachedAlbumsList,
       ),
     );
   } catch (e, stackTrace) {
