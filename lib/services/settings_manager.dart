@@ -57,20 +57,12 @@ final skipNonMusic = ValueNotifier<bool>(
   Hive.box('settings').get('skipNonMusic', defaultValue: true),
 );
 
-final defaultRecommendations = ValueNotifier<bool>(
-  Hive.box('settings').get('defaultRecommendations', defaultValue: false),
-);
-
 final audioQualitySetting = ValueNotifier<String>(
   Hive.box('settings').get('audioQuality', defaultValue: 'high'),
 );
 
 final enablePlugins = ValueNotifier<bool>(
   Hive.box('settings').get('pluginsSupport', defaultValue: false),
-);
-
-final clientsSetting = ValueNotifier<List>(
-  Hive.box('settings').get('clients', defaultValue: []),
 );
 
 Locale languageSetting = getLocaleFromLanguageCode(
@@ -120,4 +112,8 @@ final streamRequestTimeout = ValueNotifier<int>(
 
 final audioDevice = ValueNotifier<dynamic>(
   Hive.box('settings').get('audioDevice', defaultValue: null),
+);
+
+final offlineDirectory = ValueNotifier<String?>(
+  Hive.box('settings').get('offlineDirectory', defaultValue: null),
 );

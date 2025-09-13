@@ -20,13 +20,13 @@
  */
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -748,8 +748,8 @@ Future<bool> uploadCsvPlaylist(BuildContext context) async {
   int fileCount = 0;
   int count = 0;
   try {
-    final _dir = await getApplicationSupportDirectory();
-    final _importsDirPath = '${_dir.path}/imports';
+    final _dir = Directory(offlineDirectory.value!);
+    final _importsDirPath = '${_dir.path}${Platform.pathSeparator}imports';
     final files =
         (await FilePicker.platform.pickFiles(
           allowMultiple: true,

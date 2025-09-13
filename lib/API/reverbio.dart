@@ -29,7 +29,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -650,8 +649,8 @@ Future<File> copyFileToDir(
 }
 
 Future<String?> pickImageFile({int maxAttempts = 100}) async {
-  final _dir = await getApplicationSupportDirectory();
-  final _artworkDirPath = '${_dir.path}/artworks';
+  final _dir = Directory(offlineDirectory.value!);
+  final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
   await Directory(_artworkDirPath).create(recursive: true);
 
   final file =
