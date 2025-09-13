@@ -1380,12 +1380,6 @@ class _SettingsPageState extends State<SettingsPage> {
     showToast(context.l10n!.settingChangedMsg);
   }
 
-  void _toggleDefaultRecommendations(BuildContext context, bool value) async {
-    await addOrUpdateData('settings', 'defaultRecommendations', value);
-    defaultRecommendations.value = value;
-    showToast(context.l10n!.settingChangedMsg);
-  }
-
   void _togglePluginsSupport(BuildContext context, bool value) async {
     await addOrUpdateData('settings', 'pluginsSupport', value);
     enablePlugins.value = value;
