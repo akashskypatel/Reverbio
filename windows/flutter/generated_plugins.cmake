@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
+  audiotags
   dynamic_color
   flutter_js
   media_kit_libs_windows_audio
