@@ -5,7 +5,7 @@ repository: https://github.com/akashskypatel/Reverbio
 issue_tracker: https://github.com/akashskypatel/Reverbio/issues
 
 publish_to: 'none'
-version: 1.5.0 # run update.sh after changing the version
+version: 1.5.1 # run update.sh after changing the version
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -15,13 +15,13 @@ dependencies:
   app_links: ^6.4.1
   audio_service: ^0.18.18
   audio_session: ^0.2.2
-  background_downloader: ^9.2.3
+  background_downloader: ^9.2.4
   cached_network_image: ^3.4.1
   crypto: ^3.0.6
   csv: ^6.0.0
   discogs_api_client: ^0.2.1
   dynamic_color: ^1.8.1
-  file_picker: ^10.3.2
+  file_picker: ^10.3.3
   fluentui_system_icons: ^1.1.273
   flutter:
     sdk: flutter

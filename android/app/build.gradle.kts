@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "com.akashskypatel.reverbio"
-        minSdk = 23 // flutter.minSdkVersion
+        minSdk = flutter.minSdkVersion // flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
