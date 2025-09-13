@@ -5,7 +5,7 @@ repository: https://github.com/akashskypatel/Reverbio
 issue_tracker: https://github.com/akashskypatel/Reverbio/issues
 
 publish_to: 'none'
-version: 1.5.1 # run update.sh after changing the version
+version: 1.6.0 # run update.sh after changing the version
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -15,6 +15,7 @@ dependencies:
   app_links: ^6.4.1
   audio_service: ^0.18.18
   audio_session: ^0.2.2
+  audiotags: ^1.4.5
   background_downloader: ^9.2.4
   cached_network_image: ^3.4.1
   crypto: ^3.0.6
@@ -39,6 +40,7 @@ dependencies:
   intl: 0.20.2
   media_kit: ^1.2.0
   media_kit_libs_audio: ^1.0.6
+  mime: ^2.0.0
   musicbrainz_api_client: ^0.2.1
   open_settings_plus: ^0.4.0
   path: ^1.9.1
