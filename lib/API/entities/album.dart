@@ -33,6 +33,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 final List userLikedAlbumsList =
@@ -51,9 +52,9 @@ final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(
   userLikedAlbumsList.length,
 );
 
-final Set<FutureTracker> getAlbumInfoQueue = {};
+final Set<NotifiableFuture> getAlbumInfoQueue = {};
 
-final FutureTracker _writeCacheFuture = FutureTracker(null);
+final NotifiableFuture _writeCacheFuture = NotifiableFuture();
 
 dynamic _getCachedAlbum(dynamic album) {
   try {
@@ -82,10 +83,7 @@ Future<void> _writeToCache() async {
       addOrUpdateData(
         'cache',
         'cachedAlbums',
-        cachedAlbumsList.map((e) {
-          e = copyMap(e);
-          return e;
-        }).toList(),
+        cachedAlbumsList.map(minimizeAlbumData).toList(),
       ),
     );
   } catch (e, stackTrace) {
@@ -93,11 +91,33 @@ Future<void> _writeToCache() async {
   }
 }
 
+Map<String, dynamic> minimizeAlbumData(dynamic album) {
+  return {
+    'id': parseEntityId(album),
+    'primary-type': album['primary-type'] ?? 'album',
+    'genres': album['genres'] ?? album['musicbrainz']?['genres'] ?? [],
+    'title': album['title'],
+    'artist': album['artist'],
+    'first-release-date': album['first-release-date'],
+    'list':
+        ((album['list'] ?? []) as List).where((e) => e != null).map((e) {
+          if (e is String) return e;
+          return e['id'];
+        }).toList(),
+    'cachedAt': DateTime.now().toString(),
+    'image':
+        album['validImage'] ??
+        album['highResImage'] ??
+        album['lowResImage'] ??
+        album['image'],
+  };
+}
+
 Future queueAlbumInfoRequest(dynamic album) {
   try {
     final existing = getAlbumInfoQueue.where((e) => checkAlbum(e.data, album));
     if (existing.isEmpty) {
-      final futureTracker = FutureTracker(album);
+      final futureTracker = NotifiableFuture(album);
       getAlbumInfoQueue.add(futureTracker);
       return futureTracker.runFuture(getAlbumInfo(album));
     }
@@ -247,6 +267,7 @@ Future<Map<String, dynamic>> getAlbumCoverArt(
         album['release'] = result['release'];
       }
     }
+    album['image'] = (await getValidImage(album)).toString();
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -387,9 +408,11 @@ Future<List?> getTrackList(dynamic album) async {
           recording = cached;
         }
         recording.addAll({
-          'image': album['image'] ?? album['images'],
-          'lowResImage': album['image'] ?? album['images'],
-          'highResImage': album['image'] ?? album['images'],
+          'image': album['validImage'] ?? album['image'] ?? album['images'],
+          'lowResImage':
+              album['validImage'] ?? album['image'] ?? album['images'],
+          'highResImage':
+              album['validImage'] ?? album['image'] ?? album['images'],
         });
         recording = Map<String, dynamic>.from(recording);
         album['list'].add(recording);
@@ -412,14 +435,11 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       if (album['id'] != null &&
           (album['image'] == null || album['image'].isEmpty))
         unawaited(getAlbumCoverArt(Map<String, dynamic>.from(album)));
-      userLikedAlbumsList.addOrUpdate('id', album['id'], <String, dynamic>{
-        'id': album['id'],
-        'artist': album['artist'],
-        'title': album['title'],
-        'image': album['image'],
-        'genres': album['genres'] ?? album['musicbrainz']?['genres'] ?? [],
-        'primary-type': album['primary-type'],
-      });
+      userLikedAlbumsList.addOrUpdate(
+        'id',
+        album['id'],
+        minimizeAlbumData(album),
+      );
       currentLikedAlbumsLength.value = userLikedAlbumsList.length;
       album['album'] = album['title'];
       await PM.triggerHook(album, 'onEntityLiked');
