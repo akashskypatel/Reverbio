@@ -73,8 +73,10 @@ final clientsSetting = ValueNotifier<List>(
   Hive.box('settings').get('clients', defaultValue: []),
 );
 
-Locale languageSetting = getLocaleFromLanguageCode(
-  Hive.box('settings').get('language', defaultValue: 'English') as String,
+ValueNotifier<Locale> languageSetting = ValueNotifier(
+  getLocaleFromLanguageCode(
+    Hive.box('settings').get('language', defaultValue: 'English') as String,
+  ),
 );
 
 final themeModeSetting =
