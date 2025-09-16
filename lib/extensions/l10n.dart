@@ -21,7 +21,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:reverbio/localization/app_localizations.dart';
+import 'package:reverbio/services/settings_manager.dart';
 
 extension ContextX on BuildContext {
   AppLocalizations? get l10n => AppLocalizations.of(this);
+}
+
+// Global localization service
+class L10n {
+  static AppLocalizations? _instance;
+
+  static void initialize() {
+    languageSetting.addListener(() {
+      _instance = lookupAppLocalizations(languageSetting.value);
+    });
+    _instance = lookupAppLocalizations(languageSetting.value);
+  }
+
+  static AppLocalizations get current {
+    return _instance!;
+  }
 }
