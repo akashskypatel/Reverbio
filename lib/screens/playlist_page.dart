@@ -37,7 +37,7 @@ import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/future_tracker.dart';
+import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
@@ -64,7 +64,7 @@ class PlaylistPage extends StatefulWidget {
 class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   late ThemeData _theme;
-  final FutureTracker _infoRequestFuture = FutureTracker(null);
+  final NotifiableFuture _infoRequestFuture = NotifiableFuture();
   final _isEditEnabled = ValueNotifier(false);
   final likeStatus = ValueNotifier<bool>(false);
   ValueNotifier<int> likeLength = ValueNotifier<int>(0);

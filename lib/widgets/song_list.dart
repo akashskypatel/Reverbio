@@ -24,6 +24,7 @@ import 'dart:math';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -31,6 +32,7 @@ import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
@@ -318,7 +320,10 @@ class _SongListState extends State<SongList> {
         if (audioHandler.queueSongBars.isNotEmpty &&
             audioHandler.songValueNotifier.value == null &&
             widget.songBars.isNotEmpty) {
-          await audioHandler.prepare(songBar: widget.songBars.first, skipOnError: true);
+          await audioHandler.prepare(
+            songBar: widget.songBars.first,
+            skipOnError: true,
+          );
         }
       },
     );
@@ -338,7 +343,11 @@ class _SongListState extends State<SongList> {
             '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
           );
         }
-        await audioHandler.prepare(songBar: widget.songBars.first, play: true, skipOnError: true);
+        await audioHandler.prepare(
+          songBar: widget.songBars.first,
+          play: true,
+          skipOnError: true,
+        );
       },
       icon: Icon(
         FluentIcons.play_circle_24_filled,
@@ -373,6 +382,28 @@ class _SongListState extends State<SongList> {
     );
   }
 
+  NotifiableFuture initializeSongBar(dynamic song) {
+    try {
+      parseEntityId(song);
+      if (!isSongValid(song)) {
+        return queueSongInfoRequest(song);
+      } else {
+        final futureTracker = NotifiableFuture(song)
+          ..runFuture(Future.value(song));
+        return futureTracker;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      final futureTracker = NotifiableFuture(song)
+        ..runFuture(Future.value(song));
+      return futureTracker;
+    }
+  }
+
   void _buildSongBars(BuildContext context) {
     widget.songBars.clear();
     for (var i = 0; i < _songsList.length; i++) {
@@ -380,7 +411,7 @@ class _SongListState extends State<SongList> {
       _songsList[i] = Map<String, dynamic>.from(_songsList[i]);
       widget.songBars.add(
         SongBar(
-          _songsList[i],
+          initializeSongBar(_songsList[i]),
           context,
           borderRadius: borderRadius,
           showMusicDuration: true,

@@ -25,6 +25,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:hive/hive.dart';
+import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -59,13 +60,11 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
       if (artist['id'] != null &&
           (artist['musicbrainz'] == null || artist['musicbrainz'].isEmpty))
         unawaited(getArtistDetails(artist));
-      userLikedArtistsList.addOrUpdate('id', artist['id'], {
-        'id': artist['id'],
-        'name': artist['artist'],
-        'image': artist['image'],
-        'genres': artist['genres'] ?? artist['musicbrainz']?['genres'] ?? [],
-        'primary-type': 'artist',
-      });
+      userLikedArtistsList.addOrUpdate(
+        'id',
+        artist['id'],
+        minimizeArtistData(artist),
+      );
       currentLikedArtistsLength.value = userLikedArtistsList.length;
       await PM.triggerHook(artist, 'onEntityLiked');
     } else {
@@ -78,6 +77,28 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return !add;
   }
+}
+
+Map<String, dynamic> minimizeArtistData(dynamic artist) {
+  return {
+    'id': parseEntityId(artist),
+    'primary-type': artist['primary-type'] ?? 'artist',
+    'name': artist['name'],
+    'artist': artist['artist'],
+    'genres': artist['genres'] ?? artist['musicbrainz']?['genres'] ?? [],
+    'musicbrainz': {
+      'release-groups':
+          ((artist['musicbrainz']?['release-groups'] ?? []) as List)
+              .map(minimizeAlbumData)
+              .toList(),
+    },
+    'cachedAt': DateTime.now().toString(),
+    'image':
+        artist['validImage'] ??
+        artist['highResImage'] ??
+        artist['lowResImage'] ??
+        artist['image'],
+  };
 }
 
 bool isArtistAlreadyLiked(artistToCheck) =>
@@ -113,21 +134,27 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
         'release-groups',
         'works',
         'aliases',
-        'annotation',
-        'tags',
         'genres',
-        'ratings',
-        'recording-rels',
-        'release-rels',
         'release-group-rels',
-        'work-rels',
         'url-rels',
       ],
     );
     if (mbRes['error'] != null) throw mbRes['error'];
     final urls = List.from(mbRes['relations'] ?? []);
-    final dcRes = await _parseDCRelations(List.from(urls));
-    final ytRes = await _parseYTRelations(List.from(urls));
+    final dcRes = <String, dynamic>{};
+    final ytRes = <String, dynamic>{};
+    final futures =
+        <Future>[]
+          ..add(_parseDCRelations(urls))
+          ..add(_parseYTRelations(urls));
+    await Future.wait(futures).then((value) {
+      for (dynamic res in value) {
+        res = copyMap(res);
+        if (res['source'] == 'discogs')
+          dcRes.addAll(res);
+        if (res['source'] == 'youtube') ytRes.addAll(res);
+      }
+    });
     final result = await _combineResults(
       mbRes: mbRes,
       dcRes: dcRes,
@@ -155,6 +182,7 @@ Future<dynamic> _parseDCRelations(List relations) async {
       }
     }
   } catch (_) {}
+  data['source'] = 'discogs';
   return data;
 }
 
@@ -181,7 +209,7 @@ Future<dynamic> _parseYTRelations(List relations) async {
                 'subscribersCount': channel.subscribersCount,
                 'title': channel.title,
               };
-              return data;
+              break;
             }
           }
         } else if (chrx?.group(1) != null) {
@@ -194,11 +222,12 @@ Future<dynamic> _parseYTRelations(List relations) async {
             'subscribersCount': channel.subscribersCount,
             'title': channel.title,
           };
-          return data;
+          break;
         }
       }
     }
   } catch (_) {}
+  data['source'] = 'youtube';
   return data;
 }
 
@@ -315,13 +344,24 @@ Future<List<dynamic>> _callApis(
       offset: offset,
       paginated: paginated,
     );
+    mbRes['source'] = 'musicbrainz';
     final results = [];
     if (mbRes != null) {
       for (final artist in mbRes) {
         if (artist['type'] != 'Other') {
           final relations = List.from(artist['relations'] ?? []);
-          final dcRes = await _parseDCRelations(relations);
-          final ytRes = await _parseYTRelations(relations);
+          final dcRes = <String, dynamic>{};
+          final ytRes = <String, dynamic>{};
+          final futures =
+              <Future>[]
+                ..add(_parseDCRelations(relations))
+                ..add(_parseYTRelations(relations));
+          await Future.wait(futures).then((value) {
+            for (final res in value) {
+              if (res['source'] == 'discogs') dcRes.addAll(res);
+              if (res['source'] == 'youtube') ytRes.addAll(res);
+            }
+          });
           final combined = await _combineResults(
             mbRes: artist,
             dcRes: dcRes,
@@ -375,6 +415,7 @@ Future<Map<String, dynamic>> _combineResults({
       'primary-type': 'artist',
       'cachedAt': DateTime.now().toString(),
     };
+    res['image'] = (await getValidImage(res)).toString();
     await addArtistToCache(res);
     return res;
   } catch (e, stackTrace) {
@@ -411,7 +452,11 @@ dynamic _searchCachedArtists(String query) {
 
 Future<void> addArtistToCache(Map artist) async {
   cachedArtistsList.addOrUpdateWhere(checkArtist, artist);
-  await addOrUpdateData('cache', 'cachedArtists', cachedArtistsList);
+  await addOrUpdateData(
+    'cache',
+    'cachedArtists',
+    cachedArtistsList.map(minimizeArtistData).toList(),
+  );
 }
 
 Future<dynamic> _getArtistDetailsMB(
@@ -422,14 +467,12 @@ Future<dynamic> _getArtistDetailsMB(
   bool paginated = false,
 }) async {
   try {
-    final stopwatch = Stopwatch()..start();
     final res = await mb.artists.search(
       query,
       limit: limit,
       offset: offset,
       paginated: paginated,
     );
-    stopwatch.stop();
     if (res.isEmpty || res['artists'] == null || res['artists'].isEmpty)
       return null;
     final _results =
@@ -460,17 +503,15 @@ Future<dynamic> _getArtistDetailsMB(
           exact ? sorted.where((e) => e.score.isNearlyZero()) : sorted;
 
       final inc = [
+        'recordings',
+        'releases',
         'release-groups',
+        'works',
         'aliases',
-        'tags',
         'genres',
-        'ratings',
         'release-group-rels',
         'url-rels',
       ];
-      stopwatch
-        ..reset()
-        ..start();
       if (result.isNotEmpty)
         if (exact) {
           final artistId =

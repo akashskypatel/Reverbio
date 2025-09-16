@@ -37,11 +37,11 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
-import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
+import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:rxdart/rxdart.dart';
@@ -310,7 +310,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _setupEventSubscriptions();
     if (isMobilePlatform()) unawaited(getSession());
     _updatePlaybackState();
-    FileDownloader().start();
   }
   final AudioPlayerService audioPlayer = AudioPlayerService();
   audio_session.AudioSession? _session;
@@ -596,25 +595,33 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         e,
         stackTrace,
       );
-      throw Exception(e.toString());
     }
   }
 
   Future<void> close() async {
-    cachedIsPlaying = false;
-    songValueNotifier.value?.songPrepareTracker.value?.cancel();
-    if (prepareNextSong.value && songValueNotifier.value != null) {
-      final next = nextSongBar(
-        songValueNotifier.value!,
-        songBars: audioPlayer.queueSongBars,
-      );
-      next?.songPrepareTracker.value?.cancel();
+    try {
+      cachedIsPlaying = false;
+      songValueNotifier.value?.songPrepareTracker.value?.cancel();
+      if (prepareNextSong.value && songValueNotifier.value != null) {
+        final next = nextSongBar(
+          songValueNotifier.value!,
+          songBars: audioPlayer.queueSongBars,
+        );
+        next?.songPrepareTracker.value?.cancel();
+      }
+      await audioPlayer.close();
+      queue.add([]);
+      playbackState.add(PlaybackState());
+      mediaItem.add(null);
+      await sessionActive(active: false);
+    } catch (e, stackTrace) {
+      if (!(e is CancelledException))
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()}',
+          e,
+          stackTrace,
+        );
     }
-    await audioPlayer.close();
-    queue.add([]);
-    playbackState.add(PlaybackState());
-    mediaItem.add(null);
-    await sessionActive(active: false);
   }
 
   Future<void> setVolume(double volume) => audioPlayer.setVolume(volume);
@@ -892,51 +899,62 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   void _handleFileDownloadState(TaskUpdate update) {
-    final context = NavigationManager().context;
-    switch (update) {
-      case TaskStatusUpdate():
-        // process the TaskStatusUpdate, e.g.
-        switch (update.status) {
-          case TaskStatus.enqueued:
-            showToast(
-              '${context.l10n!.downloadingInBackground}: "${update.task.displayName}"',
-              id: update.task.taskId,
-              data: ValueNotifier<int>(0),
-            );
-            break;
-          case TaskStatus.complete:
-            userOfflineSongs.addOrUpdateWhere(
-              checkEntityId,
-              update.task.taskId,
-            );
-            unawaited(
-              addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs),
-            );
-            showToast(
-              '${context.l10n!.downloaded}: "${update.task.displayName}"',
-              id: update.task.taskId,
-            );
-          case TaskStatus.canceled:
-            showToast(
-              '${context.l10n!.downloadCancelled}: "${update.task.displayName}"',
-              id: update.task.taskId,
-            );
-            break;
-          case TaskStatus.paused:
-            showToast(
-              '${context.l10n!.downloadPaused}: "${update.task.displayName}"',
-              id: update.task.taskId,
-            );
-            break;
-          default:
-            break;
-        }
-      case TaskProgressUpdate():
-        final progress = notificationLog[update.task.taskId]?['data'];
-        if (progress is ValueNotifier<int>) {
-          progress.value = (update.progress * 100).toInt();
-        }
-        break;
+    try {
+      switch (update) {
+        case TaskStatusUpdate():
+          // process the TaskStatusUpdate, e.g.
+          switch (update.status) {
+            case TaskStatus.enqueued:
+              showToast(
+                '${L10n.current.downloadingInBackground}: "${update.task.displayName}"',
+                id: update.task.taskId,
+                data: ValueNotifier<int>(0),
+              );
+              break;
+            case TaskStatus.complete:
+              userOfflineSongs.addOrUpdateWhere(
+                checkEntityId,
+                update.task.taskId,
+              );
+              unawaited(
+                addOrUpdateData(
+                  'userNoBackup',
+                  'offlineSongs',
+                  userOfflineSongs,
+                ),
+              );
+              showToast(
+                '${L10n.current.downloaded}: "${update.task.displayName}"',
+                id: update.task.taskId,
+              );
+            case TaskStatus.canceled:
+              showToast(
+                '${L10n.current.downloadCancelled}: "${update.task.displayName}"',
+                id: update.task.taskId,
+              );
+              break;
+            case TaskStatus.paused:
+              showToast(
+                '${L10n.current.downloadPaused}: "${update.task.displayName}"',
+                id: update.task.taskId,
+              );
+              break;
+            default:
+              break;
+          }
+        case TaskProgressUpdate():
+          final progress = notificationLog[update.task.taskId]?['data'];
+          if (progress is ValueNotifier<int>) {
+            progress.value = (update.progress * 100).toInt();
+          }
+          break;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} change',
+        e,
+        stackTrace,
+      );
     }
   }
 

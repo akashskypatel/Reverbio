@@ -493,8 +493,9 @@ dynamic tryDecode(data) {
   }
 }
 
-DateTime tryParseDate(String date) {
+DateTime tryParseDate(String? date) {
   try {
+    if (date == null) return DateTime.now();
     if (DateTime.tryParse(date) != null) return DateTime.parse(date);
     if (int.tryParse(date) != null) return DateTime(int.parse(date));
     return DateTime.now();
@@ -832,13 +833,62 @@ bool withinPercent(double a, double b, double percentage) {
   return (a - b).abs() / maxVal <= percentage / 100;
 }
 
-Map<String, dynamic> copyMap(dynamic map) {
+Map<String, dynamic> copyMap(Map<dynamic, dynamic>? original) {
+  final Map<String, dynamic> copy = {};
   try {
-    return jsonDecode(jsonEncode(Map<String, dynamic>.from(map)));
+    if (original == null) return copy;
+    for (final key in original.keys) {
+      final String stringKey = key.toString();
+      final value = original[key];
+
+      if (value == null) {
+        copy[stringKey] = null;
+      } else if (value is Map<dynamic, dynamic>) {
+        copy[stringKey] = copyMap(value);
+      } else if (value is List) {
+        copy[stringKey] = _deepCopyList(value);
+      } else if (value is DateTime) {
+        copy[stringKey] = DateTime.fromMillisecondsSinceEpoch(
+          value.millisecondsSinceEpoch,
+        );
+      } else if (value is Set) {
+        copy[stringKey] = Set.from(value.map(_deepCopyValue));
+      } else if (value is num || value is bool || value is String) {
+        copy[stringKey] = value; // Primitive types are immutable
+      } else {
+        // For custom objects, use toString() or handle as needed
+        copy[stringKey] = value.toString();
+      }
+    }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
     throw FormatException('Error copying map. $e', stackTrace);
   }
+  return copy;
+}
+
+dynamic _deepCopyList(List<dynamic> original) {
+  return original.map((item) {
+    if (item == null) return null;
+    if (item is Map<dynamic, dynamic>) return copyMap(item);
+    if (item is List) return _deepCopyList(item);
+    if (item is DateTime)
+      return DateTime.fromMillisecondsSinceEpoch(item.millisecondsSinceEpoch);
+    if (item is Set) return Set.from(item.map(_deepCopyValue));
+    if (item is num || item is bool || item is String) return item;
+    return item.toString(); // Fallback for custom objects
+  }).toList();
+}
+
+dynamic _deepCopyValue(dynamic value) {
+  if (value == null) return null;
+  if (value is Map<dynamic, dynamic>) return copyMap(value);
+  if (value is List) return _deepCopyList(value);
+  if (value is DateTime)
+    return DateTime.fromMillisecondsSinceEpoch(value.millisecondsSinceEpoch);
+  if (value is Set) return Set.from(value.map(_deepCopyValue));
+  if (value is num || value is bool || value is String) return value;
+  return value.toString(); // Fallback for custom objects
 }
 
 Future<void> checkInternetConnection() async {

@@ -23,6 +23,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -167,7 +168,8 @@ class _ReverbioState extends State<Reverbio> {
           systemNavigationBarColor: Colors.transparent,
         ),
       );
-      checkInternetConnection();
+      checkInternetConnection();      
+      FileDownloader().start();
     });
 
     try {
@@ -256,6 +258,8 @@ Future<void> initialization() async {
 
     // Init router
     NavigationManager.instance;
+    
+    L10n.initialize();
 
     audioHandler = await AudioService.init(
       builder: ReverbioAudioHandler.new,

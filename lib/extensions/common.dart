@@ -640,21 +640,32 @@ extension SmartStringReplacement on String {
 }
 
 extension MapMinimize on Map<String, dynamic> {
-  Map<String, dynamic> keepAll(List<String> keysToKeep) {
+  Map<String, dynamic> keepKeys(List<String> keysToKeep) {
     if (keysToKeep.isEmpty) return this;
     if (keysToKeep.isNotEmpty) {
-      for (final key in this.keys) {
-        if (!keysToKeep.contains(key)) this.remove(key);
+      if (keysToKeep.length > this.keys.length) {
+        this.removeWhere((key, _) => !keysToKeep.contains(key));
+      } else {
+        final newMap = <String, dynamic>{};
+        for (final key in keysToKeep) {
+          newMap[key] = this[key];
+        }
+        this.clear();
+        this.addAll(newMap);
       }
     }
     return this;
   }
 
-  Map<String, dynamic> removeAll(List<String> keysToRemove) {
+  Map<String, dynamic> removeKeys(List<String> keysToRemove) {
     if (keysToRemove.isEmpty) return this;
     if (keysToRemove.isNotEmpty) {
-      for (final key in this.keys) {
-        if (keysToRemove.contains(key)) this.remove(key);
+      if (keysToRemove.length < this.keys.length) {
+        for (final key in keysToRemove) {
+          this.remove(key);
+        }
+      } else {
+        this.removeWhere((key, _) => keysToRemove.contains(key));
       }
     }
     return this;

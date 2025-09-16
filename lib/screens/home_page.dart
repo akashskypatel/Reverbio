@@ -136,7 +136,7 @@ class _HomePageState extends State<HomePage> {
                 builder:
                     (context, child) => HorizontalCardScroller(
                       title: context.l10n!.suggestedArtists,
-                      future: Future.value(_dbArtists.getCurrentPage()),
+                      future: _dbArtists.getCurrentPageAsync(),
                       icon: FluentIcons.mic_sparkle_24_filled,
                       headerActions: _buildPrevNextButtons(
                         (!_dbArtists.isLoading && _dbArtists.hasPreviousPage)
