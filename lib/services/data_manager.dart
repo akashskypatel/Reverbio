@@ -32,6 +32,9 @@ import 'package:reverbio/main.dart';
 Future<void> addOrUpdateData(String category, String key, dynamic value) async {
   try {
     final _box = await _openBox(category);
+    if (category == 'cache') {
+      await _box.put('${key}_date', DateTime.now());
+    }
     await _box.put(key, value);
   } catch (e, stackTrace) {
     logger.log(
