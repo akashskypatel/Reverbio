@@ -65,8 +65,10 @@ final enablePlugins = ValueNotifier<bool>(
   Hive.box('settings').get('pluginsSupport', defaultValue: false),
 );
 
-Locale languageSetting = getLocaleFromLanguageCode(
-  Hive.box('settings').get('language', defaultValue: 'English') as String,
+ValueNotifier<Locale> languageSetting = ValueNotifier(
+  getLocaleFromLanguageCode(
+    Hive.box('settings').get('language', defaultValue: 'English') as String,
+  ),
 );
 
 final themeModeSetting =

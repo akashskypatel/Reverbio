@@ -138,7 +138,7 @@ class _ReverbioState extends State<Reverbio> {
           brightness = getBrightnessFromThemeMode(newThemeMode);
         }
         if (newLocale != null) {
-          languageSetting = newLocale;
+          languageSetting.value = newLocale;
         }
         if (newAccentColor != null) {
           if (systemColorStatus != null &&
@@ -219,7 +219,7 @@ class _ReverbioState extends State<Reverbio> {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: appSupportedLocales,
-          locale: languageSetting,
+          locale: languageSetting.value,
           routerConfig: NavigationManager.router,
         );
       },
