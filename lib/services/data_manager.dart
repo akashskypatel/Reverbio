@@ -25,9 +25,55 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+
+const List<Map<String, dynamic>> _categories = [
+    {'box': 'user', 'category': 'likedAlbums', 'default': []},
+    {'box': 'user', 'category': 'likedArtists', 'default': []},
+    {'box': 'user', 'category': 'likedSongs', 'default': []},
+    {'box': 'user', 'category': 'likedPlaylists', 'default': []},
+    {'box': 'user', 'category': 'playlists', 'default': []},
+    {'box': 'user', 'category': 'customPlaylists', 'default': []},
+    {'box': 'user', 'category': 'offlinePlaylists', 'default': []},
+    {'box': 'cache', 'category': 'cachedAlbums', 'default': []},
+    {'box': 'cache', 'category': 'cachedArtists', 'default': []},
+    {'box': 'cache', 'category': 'cachedSongs', 'default': []},
+    {'box': 'userNoBackup', 'category': 'offlineSongs', 'default': []},
+    {'box': 'userNoBackup', 'category': 'recentlyPlayedSongs', 'default': []},
+    {'box': 'userNoBackup', 'category': 'searchHistory', 'default': []},
+    {'box': 'settings', 'category': 'pluginData', 'default': []},
+    {
+      'box': 'settings',
+      'category': 'playNextSongAutomatically',
+      'default': true,
+    },
+    {'box': 'settings', 'category': 'useSystemColor', 'default': true},
+    {'box': 'settings', 'category': 'usePureBlackColor', 'default': false},
+    {'box': 'settings', 'category': 'offlineMode', 'default': false},
+    {'box': 'settings', 'category': 'predictiveBack', 'default': false},
+    {'box': 'settings', 'category': 'sponsorBlockSupport', 'default': true},
+    {'box': 'settings', 'category': 'skipNonMusic', 'default': true},
+    {'box': 'settings', 'category': 'audioQuality', 'default': 'high'},
+    {'box': 'settings', 'category': 'pluginsSupport', 'default': false},
+    {'box': 'settings', 'category': 'language', 'default': 'English'},
+    {'box': 'settings', 'category': 'themeMode', 'default': 'dark'},
+    {'box': 'settings', 'category': 'accentColor', 'default': 0xff91cef4},
+    {'box': 'settings', 'category': 'volume', 'default': 100},
+    {'box': 'settings', 'category': 'prepareNextSong', 'default': true},
+    {'box': 'settings', 'category': 'useProxies', 'default': true},
+    {'box': 'settings', 'category': 'autoCacheOffline', 'default': false},
+    {'box': 'settings', 'category': 'postUpdateRun', 'default': {}},
+    {'box': 'settings', 'category': 'streamRequestTimeout', 'default': 30},
+    {'box': 'settings', 'category': 'audioDevice', 'default': null},
+    {
+      'box': 'settings',
+      'category': 'offlineDirectory',
+      'default': getApplicationSupportDirectory,
+    },
+  ];
 
 Future<void> addOrUpdateData(String category, String key, dynamic value) async {
   try {
@@ -56,7 +102,6 @@ Future getData(
     final cacheIsValid = await isCacheValid(_box, key, cachingDuration);
     if (!cacheIsValid) {
       deleteData(category, key);
-      deleteData(category, '${key}_date');
       return null;
     }
   }

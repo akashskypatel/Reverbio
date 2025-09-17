@@ -28,8 +28,8 @@ import 'package:flutter/widgets.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -41,6 +41,7 @@ import 'package:reverbio/services/lyrics_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
@@ -891,11 +892,30 @@ bool isSongAlreadyOffline(songToCheck) => userOfflineSongs.any((song) {
   return false;
 });
 
+Future<void> tagAllOfflineFiles() async {
+  final offlineSongs = await getUserOfflineSongs();
+  final ValueNotifier<int> progress = ValueNotifier(0);
+  showToast(
+    'Tagging offline songs with metadata...',
+    id: 'tagOffline',
+    data: progress,
+  );
+  final fileTagger = FileTagger(offlineDirectory: offlineDirectory.value!);
+  for (int i = 0; i < offlineSongs.length; i++) {
+    final song = await queueSongInfoRequest(copyMap(offlineSongs[i]));
+    //await tagOfflineFile(song);
+    await fileTagger.tagOfflineFile(song, parseEntityId(song));
+    final num = (i + 1) / offlineSongs.length;
+    progress.value = (num * 100).toInt();
+  }
+  showToast('Finished tagging offline songs with metadata.', id: 'tagOffline');
+}
+
 Future<void> makeSongOffline(dynamic song) async {
   try {
     await getUserOfflineSongs();
     if (isSongAlreadyOffline(song)) return;
-    final _dir = await getApplicationSupportDirectory();
+    final _dir = Directory(offlineDirectory.value!);
     final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
     final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
     await Directory(_audioDirPath).create(recursive: true);
@@ -908,10 +928,8 @@ Future<void> makeSongOffline(dynamic song) async {
     if (!isYouTubeSongValid(song)) await findYTSong(song);
     final id = song['id'] = parseEntityId(song);
     final _audioFile =
-        '$_audioDirPath${Platform.pathSeparator}$id.m4a'; // File('$_audioDirPath$id.m4a');
-    final _artworkFile = File(
-      '$_artworkDirPath${Platform.pathSeparator}$id.jpg',
-    );
+        '$_audioDirPath${Platform.pathSeparator}$id'; // File('$_audioDirPath$id.m4a');
+    final _artworkFile = File('$_artworkDirPath${Platform.pathSeparator}$id');
 
     try {
       final context = NavigationManager().context;
@@ -922,7 +940,7 @@ Future<void> makeSongOffline(dynamic song) async {
       final task = DownloadTask(
         taskId: id,
         url: songUrl,
-        filename: '$id.m4a',
+        filename: id,
         directory: 'tracks',
         baseDirectory: BaseDirectory.applicationSupport,
         updates: Updates.statusAndProgress,
@@ -995,7 +1013,7 @@ String getUserOfflineSong(dynamic song) {
 }
 
 Future<bool> checkOfflineFiles() async {
-  final _dir = await getApplicationSupportDirectory();
+  final _dir = Directory(offlineDirectory.value!);
   final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
   final fileList =
       Directory(
@@ -1017,24 +1035,23 @@ Future<bool> checkOfflineFiles() async {
 }
 
 Future<void> getExistingOfflineSongs() async {
-  final _dir = await getApplicationSupportDirectory();
+  final _dir = Directory(offlineDirectory.value!);
   final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
   await Directory(_audioDirPath).create(recursive: true);
   try {
     final fileList = Directory(_audioDirPath).listSync();
-    if (Directory(_audioDirPath).existsSync())
-      for (final file in fileList) {
-        if (file is File && isAudio(file.path)) {
-          final filename = basenameWithoutExtension(file.path);
-          final ids = Uri.parse('?$filename').queryParameters;
-          if ((ids['mb'] != null && ids['mb']!.isNotEmpty) ||
-              (ids['yt'] != null && ids['yt']!.isNotEmpty) ||
-              (ids['is'] != null && ids['is']!.isNotEmpty)) {
-            userOfflineSongs.addOrUpdateWhere(checkEntityId, filename);
-            currentOfflineSongsLength.value = userOfflineSongs.length;
-          }
+    for (final file in fileList) {
+      if (file is File && isAudio(file.path)) {
+        final filename = basenameWithoutExtension(file.path);
+        final ids = Uri.parse('?$filename').queryParameters;
+        if ((ids['mb'] != null && ids['mb']!.isNotEmpty) ||
+            (ids['yt'] != null && ids['yt']!.isNotEmpty) ||
+            (ids['is'] != null && ids['is']!.isNotEmpty)) {
+          userOfflineSongs.addOrUpdateWhere(checkEntityId, filename);
+          currentOfflineSongsLength.value = userOfflineSongs.length;
         }
       }
+    }
     currentOfflineSongsLength.value = userOfflineSongs.length;
     await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   } catch (e, stackTrace) {
@@ -1044,7 +1061,7 @@ Future<void> getExistingOfflineSongs() async {
 
 Future<void> _matchFileToSongInfo(File file) async {
   try {
-    final _dir = await getApplicationSupportDirectory();
+    final _dir = Directory(offlineDirectory.value!);
     final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
     await Directory(_artworkDirPath).create(recursive: true);
     final filename = basenameWithoutExtension(file.path);
@@ -1063,7 +1080,7 @@ Future<void> _matchFileToSongInfo(File file) async {
 
 Future<String?> getOfflinePath(dynamic song) async {
   try {
-    final _dir = await getApplicationSupportDirectory();
+    final _dir = Directory(offlineDirectory.value!);
     final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
     final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
     await Directory(_audioDirPath).create(recursive: true);
@@ -1085,7 +1102,7 @@ Future<String?> getOfflinePath(dynamic song) async {
 Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
   final files = <File>[];
   try {
-    final ids = Uri.parse('?${entity['id']}').queryParameters;
+    final ids = parseEntityId(entity).toIds;
     await for (final file in Directory(directory).list()) {
       for (final songId in ids.values) {
         if (file is File &&
@@ -1119,7 +1136,7 @@ Future<void> _deleteRelatedFiles(String directory, dynamic entity) async {
 
 Future<void> removeSongFromOffline(dynamic song) async {
   final context = NavigationManager().context;
-  final _dir = await getApplicationSupportDirectory();
+  final _dir = Directory(offlineDirectory.value!);
   final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
   final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
   await Directory(_audioDirPath).create(recursive: true);
@@ -1137,16 +1154,44 @@ Future<void> removeSongFromOffline(dynamic song) async {
   showToast(context.l10n!.songRemovedFromOffline);
 }
 
+String _ensureCorrectExtension(String filePath, String extension) {
+  final path = filePath;
+
+  // Remove any existing extension
+  final withoutExtension = path.replaceAll(RegExp(r'\.[^\.]+$'), '');
+
+  // Add the correct extension
+  return '$withoutExtension$extension';
+}
+
 Future<File?> _downloadAndSaveArtworkFile(Uri uri, String filePath) async {
   try {
     if (uri.isScheme('file') && doesFileExist(uri.toFilePath())) {
       final file = File(uri.toFilePath());
-      await File(filePath).writeAsBytes(file.readAsBytesSync());
-      return file;
+      // For local files, detect MIME type from content
+      final mimeType = getMimeTypeFromFile(uri.toFilePath());
+      final extension = getExtensionFromMime(mimeType);
+      final newFilePath = _ensureCorrectExtension(filePath, extension);
+      await File(newFilePath).writeAsBytes(file.readAsBytesSync());
+      return File(newFilePath);
     } else {
       final response = await http.get(uri);
       if (response.statusCode < 300) {
-        final file = File(filePath);
+        // Get MIME type from headers or detect from content
+        String? mimeType = response.headers['content-type']?.split(';').first;
+
+        // If no MIME type in headers, detect from content
+        if (mimeType == null ||
+            mimeType.isEmpty ||
+            mimeType == 'application/octet-stream') {
+          mimeType = lookupMimeType('', headerBytes: response.bodyBytes);
+        }
+
+        // Get file extension from MIME type
+        final extension = getExtensionFromMime(mimeType);
+        final newFilePath = _ensureCorrectExtension(filePath, extension);
+
+        final file = File(newFilePath);
         await file.writeAsBytes(response.bodyBytes);
         return file;
       } else {

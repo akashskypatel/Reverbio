@@ -31,6 +31,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -40,6 +41,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/localization/app_localizations.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/logger_service.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/router_service.dart';
@@ -51,6 +53,7 @@ import 'package:reverbio/utilities/utils.dart';
 //import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
+HiveService hiveService = HiveService();
 
 final logger = Logger();
 final appLinks = AppLinks();
@@ -161,15 +164,17 @@ class _ReverbioState extends State<Reverbio> {
     getUserGeolocation();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           systemNavigationBarColor: Colors.transparent,
         ),
       );
-      checkInternetConnection();      
+      await checkInternetConnection();      
       FileDownloader().start();
+      await px.ensureInitialized();
+      //await tagAllOfflineFiles();
     });
 
     try {
@@ -248,6 +253,8 @@ void main() async {
 
 Future<void> initialization() async {
   try {
+    await HiveService.ensureInitialize();
+    /*
     await Hive.initFlutter('reverbio');
 
     final boxNames = ['settings', 'user', 'userNoBackup', 'cache'];
@@ -255,7 +262,7 @@ Future<void> initialization() async {
     for (final boxName in boxNames) {
       await Hive.openBox(boxName);
     }
-
+    */
     // Init router
     NavigationManager.instance;
     
@@ -281,14 +288,13 @@ Future<void> initialization() async {
     currentLikedAlbumsLength.value = userLikedAlbumsList.length;
     currentLikedArtistsLength.value = userLikedArtistsList.length;
     activeQueueLength.value = audioHandler.queueSongBars.length;
+    offlineDirectory.value ??= (await getApplicationSupportDirectory()).path;
 
     await PM.initialize();
 
-    await px.ensureInitialized();
+    //postUpdate();
 
-    postUpdate();
-
-    await getExistingOfflineSongs();
+    //await getExistingOfflineSongs();
 
     try {
       // Listen to incoming links while app is running

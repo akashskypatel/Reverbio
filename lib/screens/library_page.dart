@@ -503,10 +503,10 @@ class _LibraryPageState extends State<LibraryPage> {
                           ),
                           IconButton(
                             onPressed: () async {
-                              final path = await pickImageFile();
+                              final path = await pickImageFile(); //TODO: save image data to playlist directly
                               imageUrl = path;
                               if (imageUrl != null)
-                                imagePathController.text = imageUrl!;
+                                imagePathController.text = imageUrl!; 
                             },
                             icon: const Icon(FluentIcons.folder_open_24_filled),
                             color: theme.colorScheme.primary,

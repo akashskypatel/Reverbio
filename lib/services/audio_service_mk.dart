@@ -39,6 +39,7 @@ import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
@@ -206,6 +207,7 @@ class AudioPlayerService {
 
   Future<void> play() async {
     _updateProcessingState(AudioProcessingState.ready);
+    //TODO: add current song playing highlight/icon in queue
     await _player.play();
     return;
   }
@@ -927,7 +929,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
                 '${L10n.current.downloaded}: "${update.task.displayName}"',
                 id: update.task.taskId,
               );
-            case TaskStatus.canceled:
+              unawaited(
+              FileTagger(
+                offlineDirectory: offlineDirectory.value!,
+              ).tagOfflineFile(update.task.taskId, update.task.taskId),
+            );
+            break;
+          case TaskStatus.canceled:
               showToast(
                 '${L10n.current.downloadCancelled}: "${update.task.displayName}"',
                 id: update.task.taskId,
