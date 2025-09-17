@@ -21,13 +21,14 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/utils.dart';
 
 class HiveService {
   factory HiveService() => _instance;
@@ -35,12 +36,12 @@ class HiveService {
   // Singleton instance
   static final HiveService _instance = HiveService._internal();
 
-  // Isolate communication
-  static late Isolate _isolate;
-
   // Box caching
-  static final Map<String, Box> _openBoxes = {};
   static final Map<String, Completer<Box>> _openingBoxes = {};
+
+  static bool isInitialized = false;
+
+  static Duration cachingDuration = const Duration(days: 30);
 
   // Box names and categories
   static const _boxNames = ['settings', 'user', 'userNoBackup', 'cache'];
@@ -50,27 +51,106 @@ class HiveService {
     for (final box in _boxNames) {
       await _openBox(box);
     }
+    isInitialized = true;
   }
 
-  static dynamic getCategoryValue(String boxName, String category) async {
-    final _box = await _openBox(boxName);
-    final value = _box.get(category);
-    if (value is List) {
-      if (value is List<String>) return List<String>.from(value);
-      if (value is List<Map>)
-        try {
-          return value.map(Map<String, dynamic>.from).toList();
-        } catch (_) {
-          return value.map(Map<dynamic, dynamic>.from).toList();
+  static Future<dynamic> getData<T>(
+    String boxName,
+    String category,
+    dynamic defaultValue,
+  ) async {
+    try {
+      final _box = await _openBox(boxName);
+      final value = _box.get(category, defaultValue: defaultValue);
+      if (T == List<String>) {
+        return getList<String>(
+          value,
+          defaultValue: defaultValue as List<String>,
+        );
+      } else if (T == Map<String, dynamic>) {
+        return getMap(
+          value,
+          defaultValue: defaultValue as Map<String, dynamic>,
+        );
+      } else if (T == List<Map<String, dynamic>>) {
+        return getList<Map<String, dynamic>>(
+          value,
+          defaultValue: defaultValue as List<Map<String, dynamic>>,
+        );
+      }
+      if (boxName == 'cache') {
+        final cacheIsValid = _isCacheValid(
+          _box,
+          category,
+          cachingDuration,
+        );
+        if (!cacheIsValid) {
+          // Schedule deletion but don't wait for it
+          unawaited(deleteData(boxName, category));
+          unawaited(deleteData(boxName, '${category}_date'));
+          return null;
         }
+      }
+      return value as T;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      return defaultValue;
     }
-    return value;
+  }
+
+  static List<T> getList<T>(dynamic value, {List<T> defaultValue = const []}) {
+    try {
+      if (value == null) return defaultValue;
+      if (value is List) {
+        if ((T == Map<String, dynamic>) && value.every((e) => e is Map)) {
+          return value.whereType<Map>().map(getMap).toList() as List<T>;
+        } else if (value.every((e) => e is T)) {
+          return value.cast<T>();
+        } else {
+          return value.map((e) => e as T).toList();
+        }
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+    return defaultValue;
+  }
+
+  static Map<String, dynamic> getMap(
+    dynamic value, {
+    dynamic defaultValue = const {},
+  }) {
+    try {
+      if (value == null) return defaultValue;
+      if (value is Map) {
+        if (value.keys.every((k) => k is String)) {
+          return value.cast<String, dynamic>();
+        } else {
+          return copyMap(value);
+        }
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+    return defaultValue;
   }
 
   static Future<Box> _openBox(String boxName) async {
     // Return cached open box
-    if (_openBoxes.containsKey(boxName) && _openBoxes[boxName]!.isOpen) {
-      return _openBoxes[boxName]!;
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box(boxName);
     }
 
     // Wait if box is currently being opened
@@ -84,7 +164,6 @@ class HiveService {
 
     try {
       final box = await Hive.openBox(boxName);
-      _openBoxes[boxName] = box;
       completer.complete(box);
       _openingBoxes.remove(boxName);
       return box;
@@ -99,7 +178,6 @@ class HiveService {
     await compactAllBoxes();
     await closeAllBoxes();
     await Hive.close();
-    _isolate.kill();
   }
 
   static Future<void> addOrUpdateData(
@@ -107,87 +185,56 @@ class HiveService {
     String category,
     dynamic value,
   ) async {
-    final box = _openBoxes[boxName] ?? await _openBox(boxName);
+    final box = await _openBox(boxName);
     await box.put(category, value);
     if (category == 'cache') {
-      await box.put('${category}_date', DateTime.now());
+      await box.put('${category}_date', DateTime.now().toString());
     }
   }
 
   static Future<void> deleteData(String boxName, String key) async {
-    final box = _openBoxes[boxName] ?? await _openBox(boxName);
+    final box = await _openBox(boxName);
     await box.delete(key);
   }
 
   static Future<void> clearBox(String boxName) async {
-    final box = _openBoxes[boxName] ?? await _openBox(boxName);
+    final box = await _openBox(boxName);
     await box.clear();
   }
 
   static Future<void> compactBox(String boxName) async {
-    final box = _openBoxes[boxName] ?? await _openBox(boxName);
+    final box = await _openBox(boxName);
     await box.compact();
   }
 
   static Future<void> compactAllBoxes() async {
-    for (final box in _openBoxes.values) {
-      if (box.isOpen) {
-        await box.compact();
+    for (final box in _boxNames) {
+      if (Hive.isBoxOpen(box)) {
+        await Hive.box(box).compact();
       }
     }
   }
 
   static Future<void> closeAllBoxes() async {
-    for (final box in _openBoxes.values) {
-      if (box.isOpen) {
-        await box.close();
+    for (final box in _boxNames) {
+      if (Hive.isBoxOpen(box)) {
+        await Hive.box(box).close();
       }
     }
-    _openBoxes.clear();
     _openingBoxes.clear();
   }
 
-  static Future<dynamic> getData(
-    String boxName,
-    String key, {
-    dynamic defaultValue,
-    Duration cachingDuration = const Duration(days: 30),
-  }) async {
-    try {
-      final box = await _openBox(boxName);
-
-      if (boxName == 'cache') {
-        final cacheIsValid = await _isCacheValid(box, key, cachingDuration);
-        if (!cacheIsValid) {
-          // Schedule deletion but don't wait for it
-          unawaited(deleteData(boxName, key));
-          unawaited(deleteData(boxName, '${key}_date'));
-          return null;
-        }
-      }
-
-      return box.get(key, defaultValue: defaultValue);
-    } catch (e, stackTrace) {
-      logger.log('Error reading data from $boxName/$key:', e, stackTrace);
-      return defaultValue;
-    }
-  }
-
-  static Future<bool> _isCacheValid(
+  static bool _isCacheValid(
     Box box,
     String key,
     Duration cachingDuration,
-  ) async {
-    final date = box.get('${key}_date');
+  ) {
+    final date = DateTime.tryParse(box.get('${key}_date'));
     if (date == null) {
       return false;
     }
     final age = DateTime.now().difference(date);
     return age < cachingDuration;
-  }
-
-  static Future<void> clearCache() async {
-    await _openBoxes['cache']?.clear();
   }
 
   static Future<String> backupData(BuildContext context) async {
@@ -256,8 +303,6 @@ class HiveService {
 
           await backup.copy(boxFile.path);
 
-          // Reopen the box
-          _openBoxes.remove(boxName);
           await _openBox(boxName);
         }
       }
@@ -266,12 +311,5 @@ class HiveService {
       logger.log('Restore error:', e, stackTrace);
       return '${context.l10n!.restoreError}: $e';
     }
-  }
-
-  static Map<String, int> getBoxStats(String category) {
-    final box = _openBoxes[category];
-    if (box == null || !box.isOpen) return {};
-
-    return {'keys': box.length, 'isOpen': box.isOpen ? 1 : 0};
   }
 }
