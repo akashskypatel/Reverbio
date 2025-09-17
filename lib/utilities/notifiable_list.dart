@@ -19,35 +19,86 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:reverbio/services/hive_service.dart';
 
 class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
-  NotifiableList._internal(this._boxName, this._category);
-  factory NotifiableList._() => NotifiableList.from([]);
-  factory NotifiableList.from(Iterable<T> items) =>
-      NotifiableList._()..addAll(items);
-  factory NotifiableList.fromHive(String boxName, String category) =>
-      NotifiableList._internal(boxName, category).._fromHive(boxName, category);
+  NotifiableList._internal(
+    this._boxName,
+    this._category, {
+    bool Function(T, T)? test,
+    List<T>? initialItems,
+  }) {
+    if (initialItems != null) {
+      _items.addAll(initialItems);
+    }
+    _initializeFromHive(test);
+  }
+  factory NotifiableList.from(List<T> items) =>
+      NotifiableList._internal(null, null, initialItems: items);
 
-  Future<void> _fromHive(String boxName, String category) async {
-    final items = await HiveService.getData(boxName, category);
-    _items.addAll(items);
-    addListener(_addOrUpdateListener);
+  factory NotifiableList.fromHive(String boxName, String category) {
+    return NotifiableList._internal(boxName, category);
+  }
+
+  Future<void> _initializeFromHive([bool Function(T, T)? test]) async {
+    if (_boxName == null || _category == null) {
+      _isInitialized = true;
+      return;
+    }
+    _initializationCompleter = Completer<void>();
+    try {
+      final value = await HiveService.getData<List<T>>(_boxName, _category, []);
+      if (test != null)
+        for (final item in value) addOrUpdate(item, test);
+      else
+        addAll(value);
+      addListener(_addOrUpdateListener);
+      _isInitialized = true;
+      _initializationCompleter!.complete();
+    } catch (e) {
+      _isInitialized = true;
+      _initializationCompleter!.completeError(e);
+    }
+    notifyListeners();
   }
 
   final List<T> _items = [];
   final String? _boxName, _category;
+  bool _isInitialized = false;
+  Completer<void>? _initializationCompleter;
+  Timer? _debounceTimer;
+  static const Duration _debounceDuration = Duration(milliseconds: 1000);
+
+  Future<void> ensureInitialized() async {
+    if (_isInitialized) return;
+    if (_initializationCompleter != null) {
+      return _initializationCompleter!.future;
+    }
+    await _initializeFromHive();
+  }
 
   void _addOrUpdateListener() {
-    HiveService.addOrUpdateData(_boxName!, _category!, _items);
+    if (_boxName == null || _category == null) return;
+
+    // Cancel previous timer if it exists
+    _debounceTimer?.cancel();
+
+    // Start new debounce timer
+    _debounceTimer = Timer(_debounceDuration, () {
+      HiveService.addOrUpdateData(_boxName, _category, _items);
+    });
   }
 
   @override
   void dispose() {
-    removeListener(_addOrUpdateListener);
+    if (_boxName != null && _category != null) {
+      removeListener(_addOrUpdateListener);
+    }
+    _debounceTimer?.cancel(); // Cancel timer on dispose
     super.dispose();
   }
 
@@ -136,7 +187,7 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     notifyListeners();
   }
 
-    @override
+  @override
   bool removeWhere(bool Function(T) test) {
     final removed = _items.any(test);
     _items.removeWhere(test);
@@ -146,8 +197,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     return removed;
   }
 
-  void addOrUpdate(T item, bool Function(T) predicate) {
-    final index = _items.indexWhere(predicate);
+  void addOrUpdate(T item, bool Function(T, T) predicate) {
+    final index = _items.indexWhere((e) => predicate(e, item));
     if (index != -1) {
       _items[index] = item;
     } else {
@@ -168,6 +219,20 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     notifyListeners();
   }
 
+  int indexOfMatching(T item, bool Function(T, T) predicate) {
+    return _items.indexWhere((e) => predicate(e, item));
+  }
+
+  bool updateMatching(T item, bool Function(T, T) predicate) {
+    final index = _items.indexWhere((e) => predicate(e, item));
+    if (index != -1) {
+      _items[index] = item;
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
   bool updateWhere(T item, bool Function(T) predicate) {
     final index = _items.indexWhere(predicate);
     if (index != -1) {
@@ -178,12 +243,24 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     return false;
   }
 
-  T? find(bool Function(T) predicate) {
+  T? findMatching(T item, bool Function(T, T) predicate) {
+    try {
+      return _items.firstWhere((e) => predicate(e, item));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  T? findWhere(bool Function(T) predicate) {
     try {
       return _items.firstWhere(predicate);
     } catch (e) {
       return null;
     }
+  }
+
+  bool containsMatching(T item, bool Function(T, T) predicate) {
+    return _items.any((e) => predicate(e, item));
   }
 
   bool containsWhere(bool Function(T) predicate) {
