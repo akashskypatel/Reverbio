@@ -62,36 +62,16 @@ class HiveService {
     try {
       final _box = await _openBox(boxName);
       final value = _box.get(category, defaultValue: defaultValue);
-      if (T == List<String>) {
-        return getList<String>(
-          value,
-          defaultValue: defaultValue as List<String>,
-        );
-      } else if (T == Map<String, dynamic>) {
-        return getMap(
-          value,
-          defaultValue: defaultValue as Map<String, dynamic>,
-        );
-      } else if (T == List<Map<String, dynamic>>) {
-        return getList<Map<String, dynamic>>(
-          value,
-          defaultValue: defaultValue as List<Map<String, dynamic>>,
-        );
-      }
+      final returnValue = getDataByType<T>(value, defaultValue: defaultValue);
       if (boxName == 'cache') {
-        final cacheIsValid = _isCacheValid(
-          _box,
-          category,
-          cachingDuration,
-        );
+        final cacheIsValid = _isCacheValid(_box, category, cachingDuration);
         if (!cacheIsValid) {
           // Schedule deletion but don't wait for it
           unawaited(deleteData(boxName, category));
           unawaited(deleteData(boxName, '${category}_date'));
-          return null;
         }
       }
-      return value as T;
+      return returnValue;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -100,6 +80,26 @@ class HiveService {
       );
       return defaultValue;
     }
+  }
+
+  static T getDataByType<T>(dynamic value, {dynamic defaultValue}) {
+    if (T == List<String>) {
+      value = getList<String>(
+        value,
+        defaultValue: defaultValue as List<String>,
+      );
+    } else if (T == Map<String, dynamic>) {
+      value = getMap(
+        value,
+        defaultValue: defaultValue as Map<String, dynamic>,
+      );
+    } else if (T == List<Map<String, dynamic>>) {
+      value = getList<Map<String, dynamic>>(
+        value,
+        defaultValue: defaultValue as List<Map<String, dynamic>>,
+      );
+    }
+    return value as T;
   }
 
   static List<T> getList<T>(dynamic value, {List<T> defaultValue = const []}) {
@@ -167,7 +167,12 @@ class HiveService {
       completer.complete(box);
       _openingBoxes.remove(boxName);
       return box;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       completer.completeError(e);
       _openingBoxes.remove(boxName);
       rethrow;
@@ -185,10 +190,18 @@ class HiveService {
     String category,
     dynamic value,
   ) async {
-    final box = await _openBox(boxName);
-    await box.put(category, value);
-    if (category == 'cache') {
-      await box.put('${category}_date', DateTime.now().toString());
+    try {
+      final box = await _openBox(boxName);
+      await box.put(category, getDataByType(value));
+      if (category == 'cache') {
+        await box.put('${category}_date', DateTime.now());
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
     }
   }
 
@@ -224,12 +237,8 @@ class HiveService {
     _openingBoxes.clear();
   }
 
-  static bool _isCacheValid(
-    Box box,
-    String key,
-    Duration cachingDuration,
-  ) {
-    final date = DateTime.tryParse(box.get('${key}_date'));
+  static bool _isCacheValid(Box box, String key, Duration cachingDuration) {
+    final date = box.get('${key}_date');
     if (date == null) {
       return false;
     }
@@ -265,7 +274,11 @@ class HiveService {
       }
       return '${context.l10n!.backedupSuccess}!';
     } catch (e, stackTrace) {
-      logger.log('Backup error:', e, stackTrace);
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       return '${context.l10n!.backupError}: $e';
     }
   }
@@ -308,7 +321,11 @@ class HiveService {
       }
       return '${context.l10n!.restoredSuccess}!';
     } catch (e, stackTrace) {
-      logger.log('Restore error:', e, stackTrace);
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
       return '${context.l10n!.restoreError}: $e';
     }
   }
