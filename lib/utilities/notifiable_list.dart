@@ -23,25 +23,63 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
+import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/main.dart';
 import 'package:reverbio/services/hive_service.dart';
 
 class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
+  NotifiableList() : _boxName = null, _category = null, _isInitialized = true;
   NotifiableList._internal(
     this._boxName,
     this._category, {
     bool Function(T, T)? test,
-    List<T>? initialItems,
-  }) {
+    Iterable<T>? initialItems,
+    T Function(T)? minimizeFunction,
+  }) : _minimize = minimizeFunction {
     if (initialItems != null) {
       _items.addAll(initialItems);
     }
     _initializeFromHive(test);
   }
-  factory NotifiableList.from(List<T> items) =>
+  NotifiableList._internalAsync(Future<Iterable<T>> itemsFuture)
+    : _boxName = null,
+      _category = null {
+    _initializeFromAsync(itemsFuture);
+  }
+  factory NotifiableList.from(Iterable<T> items) =>
       NotifiableList._internal(null, null, initialItems: items);
+  factory NotifiableList.fromAsync(Future<Iterable<T>> itemsFuture) =>
+      NotifiableList._internalAsync(itemsFuture);
 
-  factory NotifiableList.fromHive(String boxName, String category) {
-    return NotifiableList._internal(boxName, category);
+  factory NotifiableList.fromHive(
+    String boxName,
+    String category, {
+    T Function(T)? minimizeFunction,
+  }) {
+    return NotifiableList._internal(
+      boxName,
+      category,
+      minimizeFunction: minimizeFunction,
+    );
+  }
+  Future<void> _initializeFromAsync(Future<Iterable<T>> itemsFuture) async {
+    _initializationCompleter = Completer<void>();
+    try {
+      final value = await itemsFuture;
+      addAll(value);
+      _isInitialized = true;
+      _initializationCompleter!.complete();
+    } catch (e, stackTrace) {
+      _isInitialized = true;
+      _initializationCompleter!.completeError(e);
+      _hasError = true;
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
+    notifyListeners();
   }
 
   Future<void> _initializeFromHive([bool Function(T, T)? test]) async {
@@ -51,17 +89,30 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     }
     _initializationCompleter = Completer<void>();
     try {
-      final value = await HiveService.getData<List<T>>(_boxName, _category, []);
+      final value =
+          await HiveService.getData<List<T>>(
+                _boxName,
+                _category,
+                List<T>.empty(growable: true),
+              )
+              as List<T>;
       if (test != null)
-        for (final item in value) addOrUpdate(item, test);
+        for (final item in value)
+          addOrUpdate(_minimize == null ? item : _minimize!(item), test);
       else
-        addAll(value);
-      addListener(_addOrUpdateListener);
+        addAll(value.map((e) => _minimize == null ? e : _minimize!(e)));
+      addListener(writeToCache);
       _isInitialized = true;
       _initializationCompleter!.complete();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _isInitialized = true;
       _initializationCompleter!.completeError(e);
+      _hasError = true;
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
     }
     notifyListeners();
   }
@@ -69,9 +120,14 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
   final List<T> _items = [];
   final String? _boxName, _category;
   bool _isInitialized = false;
+  bool _hasError = false;
   Completer<void>? _initializationCompleter;
   Timer? _debounceTimer;
   static const Duration _debounceDuration = Duration(milliseconds: 1000);
+  T Function(T)? _minimize;
+  bool get isLoading => !_isInitialized;
+  bool get hasError => _hasError;
+  bool get hasData => _items.isNotEmpty;
 
   Future<void> ensureInitialized() async {
     if (_isInitialized) return;
@@ -81,7 +137,7 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     await _initializeFromHive();
   }
 
-  void _addOrUpdateListener() {
+  void writeToCache() {
     if (_boxName == null || _category == null) return;
 
     // Cancel previous timer if it exists
@@ -89,14 +145,21 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
 
     // Start new debounce timer
     _debounceTimer = Timer(_debounceDuration, () {
-      HiveService.addOrUpdateData(_boxName, _category, _items);
+      if (_minimize != null)
+        HiveService.addOrUpdateData(
+          _boxName,
+          _category,
+          _items.map(_minimize!).toList(),
+        );
+      else
+        HiveService.addOrUpdateData(_boxName, _category, _items);
     });
   }
 
   @override
   void dispose() {
     if (_boxName != null && _category != null) {
-      removeListener(_addOrUpdateListener);
+      removeListener(writeToCache);
     }
     _debounceTimer?.cancel(); // Cancel timer on dispose
     super.dispose();
