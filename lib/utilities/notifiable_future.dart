@@ -106,7 +106,7 @@ class NotifiableFuture<T> with ChangeNotifier {
   Future<T?>? get completerFuture => completer?.future;
   T? get result => _result;
   T? get resultOrData => _result ?? _initialData;
-  
+
   void copyValuesFrom(NotifiableFuture<T> other) {
     _error = other._error;
     _isCancelled = other._isCancelled;
@@ -190,11 +190,14 @@ class NotifiableFuture<T> with ChangeNotifier {
       _error = error;
       _stackTrace = stackTrace;
       _isLoading = false;
-
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        _error,
+        stackTrace,
+      );
       if (_completer != null && !_completer!.isCompleted) {
         _completer!.completeError(error, stackTrace);
       }
-
       notifyListeners();
       rethrow;
     }
