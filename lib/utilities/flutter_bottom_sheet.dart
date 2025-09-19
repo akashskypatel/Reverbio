@@ -33,6 +33,7 @@ void showCustomBottomSheet(
     context: context,
     builder: (context) {
       return PopScope(
+        canPop: canCloseOnTapOutside?.value ?? true,
         child: Material(
           elevation: 4,
           borderRadius: BorderRadius.circular(10),

@@ -24,9 +24,11 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/paginated_list.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -105,9 +107,9 @@ class _HomePageState extends State<HomePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: commonBarPadding,
-              child: ValueListenableBuilder<int>(
-                valueListenable: currentLikedPlaylistsLength,
-                builder: (context, value, __) {
+              child: ListenableBuilder(
+                listenable: userLikedPlaylists,
+                builder: (context, __) {
                   return ListenableBuilder(
                     listenable: _dbPlaylists,
                     builder:
@@ -153,16 +155,30 @@ class _HomePageState extends State<HomePage> {
           ListenableBuilder(
             listenable: _dbSongs,
             builder:
-                (context, child) => SongList(
-                  page: 'recommended',
-                  title: context.l10n!.recommendedForYou,
+                (context, child) => FutureBuilder(
                   future: _dbSongs.getCurrentPageAsync(),
-                  expandedActions: _buildPrevNextButtons(
-                    (!_dbSongs.isLoading && _dbSongs.hasPreviousPage)
-                        ? _dbSongs.getPreviousPage
-                        : null,
-                    (_dbSongs.hasNextPage) ? _dbSongs.getNextPage : null,
-                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      return const SliverToBoxAdapter(child: Spinner());
+                    if (!snapshot.hasData ||
+                        snapshot.data == null ||
+                        snapshot.data!.isEmpty)
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    final _list = NotifiableList.from(
+                      snapshot.data!.map((e) => initializeSongBar(e, context)),
+                    );
+                    return SongList(
+                      page: 'recommended',
+                      title: context.l10n!.recommendedForYou,
+                      songBars: _list,
+                      expandedActions: _buildPrevNextButtons(
+                        (!_dbSongs.isLoading && _dbSongs.hasPreviousPage)
+                            ? _dbSongs.getPreviousPage
+                            : null,
+                        (_dbSongs.hasNextPage) ? _dbSongs.getNextPage : null,
+                      ),
+                    );
+                  },
                 ),
           ),
         ],

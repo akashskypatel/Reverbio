@@ -160,9 +160,9 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
             builder: (context) {
               switch (dataType) {
                 case 'artist':
-                  return ArtistPage(page: 'artist', artistData: data);
+                  return ArtistPage(page: 'artist', artistData:  Map<String, dynamic>.from(data));
                 default:
-                  return PlaylistPage(page: dataType ?? '', playlistData: data);
+                  return PlaylistPage(page: dataType ?? '', playlistData: Map<String, dynamic>.from(data));
               }
             },
           ),

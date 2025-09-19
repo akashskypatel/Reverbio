@@ -22,13 +22,13 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:reverbio/API/entities/album.dart';
-import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/genre_list.dart';
@@ -56,13 +56,11 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
   final dataMap = {
     'albums': {
-      'list': userLikedAlbumsList,
-      'notifier': currentLikedAlbumsLength,
+      'notifier': userLikedAlbumsList,
       'widgetContext': 'AlbumsPageHeader',
     },
     'artists': {
-      'list': userLikedArtistsList,
-      'notifier': currentLikedArtistsLength,
+      'notifier': userLikedArtistsList,
       'widgetContext': 'ArtistsPageHeader',
     },
   };
@@ -123,11 +121,11 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   }
 
   Widget _buildBody(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: dataMap[widget.page]?['notifier'] as ValueNotifier<int>,
-      builder: (context, value, child) {
+    return ListenableBuilder(
+      listenable: dataMap[widget.page]?['notifier'] as NotifiableList,
+      builder: (context, child) {
         inputData.clear();
-        for (final data in (dataMap[widget.page]?['list'] as List)) {
+        for (final data in (dataMap[widget.page]?['notifier'] as List)) {
           data['filterShow'] = true;
           inputData.add(data);
           _parseGenres(data);
@@ -193,7 +191,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
                   (context) =>
                       widget.page == 'artists'
                           ? ArtistPage(page: '/artist', artistData: data)
-                          : PlaylistPage(page: '/album', playlistData: data),
+                          : PlaylistPage(page: '/album', playlistData: Map<String, dynamic>.from(data)),
               settings: RouteSettings(name: '/artist?${data['id']}'),
             ),
           ),
@@ -276,7 +274,6 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
 
   Widget _buildSearchBar(BuildContext context) {
     return CustomSearchBar(
-      //loadingProgressNotifier: _fetchingSongs,
       controller: _searchBar,
       focusNode: _inputNode,
       labelText: '${context.l10n!.search}...',

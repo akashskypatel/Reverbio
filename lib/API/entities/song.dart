@@ -26,11 +26,11 @@ import 'dart:io';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
-import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -46,45 +46,18 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-List globalSongs = [];
-final List userLikedSongsList =
-    (Hive.box('user').get('likedSongs', defaultValue: []) as List).map((e) {
-      e = Map<String, dynamic>.from(e);
-      return e;
-    }).toList();
-final List<String> userOfflineSongs = Hive.box(
-  'userNoBackup',
-).get('offlineSongs', defaultValue: <String>[]);
-
-final List cachedSongsList =
-    (Hive.box('cache').get('cachedSongs', defaultValue: []) as List).map((e) {
-      e = Map<String, dynamic>.from(e);
-      return e;
-    }).toList();
-
-final ValueNotifier<int> currentLikedSongsLength = ValueNotifier<int>(
-  userLikedSongsList.length,
-);
-final ValueNotifier<int> currentOfflineSongsLength = ValueNotifier<int>(
-  userOfflineSongs.length,
-);
-final ValueNotifier<int> currentRecentlyPlayedLength = ValueNotifier<int>(
-  userRecentlyPlayed.length,
-);
-final ValueNotifier<int> activeQueueLength = ValueNotifier<int>(
-  audioHandler.queueSongBars.length,
-);
-
+final List globalSongs = [];
 int activeSongId = 0;
 
 final lyrics = ValueNotifier<String?>(null);
 String? lastFetchedLyrics;
 
-final Set<NotifiableFuture> getSongInfoQueue = {};
+final Set<NotifiableFuture<Map<String, dynamic>>> getSongInfoQueue = {};
 
-final NotifiableFuture _writeCacheFuture = NotifiableFuture();
+const Duration _cacheDuration = Duration(hours: 3);
 
 Future<List> getSongsList(String searchQuery) async {
   try {
@@ -101,13 +74,14 @@ Future<List<dynamic>> getRecommendedSongs() async {
   try {
     if (globalSongs.isEmpty) {
       const playlistId = 'yt=PLgzTt0k8mXzEk586ze4BjvDXR7c-TUSnx';
-      globalSongs =
-          (await getSongsFromPlaylist(playlistId)).map((e) {
-            parseEntityId(e);
-            return Map<String, dynamic>.from(e);
-          }).toList();
-      if (userCustomPlaylists.value.isNotEmpty) {
-        for (final userPlaylist in userCustomPlaylists.value) {
+      globalSongs.addAll(
+        (await getSongsFromPlaylist(playlistId)).map((e) {
+          parseEntityId(e);
+          return Map<String, dynamic>.from(e);
+        }),
+      );
+      if (userCustomPlaylists.isNotEmpty) {
+        for (final userPlaylist in userCustomPlaylists) {
           final _list =
               ((userPlaylist['list'] ?? []) as List).map((e) {
                 e = Map<String, dynamic>.from(e);
@@ -134,15 +108,12 @@ Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
     song['id'] = parseEntityId(song);
     if (song['id']?.isEmpty) throw Exception('ID is null or empty');
     if (add && song != null) {
-      userLikedSongsList.addOrUpdateWhere(checkSong, song);
-      currentLikedSongsLength.value = userLikedSongsList.length;
+      userLikedSongsList.addOrUpdate(song, checkSong);
       song['song'] = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
       await PM.triggerHook(song, 'onEntityLiked');
     } else {
       userLikedSongsList.removeWhere((s) => checkSong(s, song));
-      currentLikedSongsLength.value = userLikedSongsList.length;
     }
-    unawaited(addOrUpdateData('user', 'likedSongs', userLikedSongsList));
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -155,15 +126,11 @@ void moveLikedSong(int oldIndex, int newIndex) {
   userLikedSongsList
     ..removeAt(oldIndex)
     ..insert(newIndex, _song);
-  currentLikedSongsLength.value = userLikedSongsList.length;
-  unawaited(addOrUpdateData('user', 'likedSongs', userLikedSongsList));
 }
 
 bool isSongAlreadyLiked(songToCheck) =>
     songToCheck is Map &&
-    userLikedSongsList.any(
-      (song) => song is Map && checkSong(song, songToCheck),
-    );
+    userLikedSongsList.any((song) => checkSong(song, songToCheck));
 
 void getSimilarSong(String songYtId) async {
   try {
@@ -209,10 +176,7 @@ Future<Map<String, dynamic>> findYTSong(dynamic song, {String? newYtid}) async {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
   addSongToCache(song as Map<String, dynamic>);
-  if (getSongInfoQueue.isEmpty &&
-      (_writeCacheFuture.completer?.future == null ||
-          _writeCacheFuture.isComplete))
-    unawaited(_writeToCache());
+  if (getSongInfoQueue.isEmpty) cachedSongsList.writeToCache();
   return song;
 }
 
@@ -278,21 +242,7 @@ Map<String, dynamic>? getCachedSong(dynamic song) {
 
 void addSongToCache(Map<String, dynamic> song) {
   if (isSongValid(song)) {
-    cachedSongsList.addOrUpdateWhere(checkSong, song);
-  }
-}
-
-Future<void> _writeToCache() async {
-  try {
-    await _writeCacheFuture.runFuture(
-      addOrUpdateData(
-        'cache',
-        'cachedSongs',
-        cachedSongsList.map(minimizeSongData).toList(),
-      ),
-    );
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    cachedSongsList.addOrUpdate(song, checkSong);
   }
 }
 
@@ -585,8 +535,6 @@ Future<StreamManifest> getSongManifest(String songId) async {
   }
 }
 
-const Duration _cacheDuration = Duration(hours: 3);
-
 Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   song['isError'] = false;
   song?.remove('error');
@@ -596,7 +544,7 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   }
   if (offlinePath == null || offlinePath.isEmpty)
     await PM.getSongUrl(song, getSongYoutubeUrl);
-  
+
   if (((song['autoCacheOffline'] ?? false) || autoCacheOffline.value) &&
       (song['songUrl'] != null && offlinePath == null) &&
       !skipDownload &&
@@ -605,11 +553,14 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   return song;
 }
 
-NotifiableFuture queueSongInfoRequest(dynamic song) {
+NotifiableFuture<Map<String, dynamic>> queueSongInfoRequest(dynamic song) {
   try {
     final existing = getSongInfoQueue.where((e) => checkSong(e.data, song));
     if (existing.isEmpty) {
-      final futureTracker = NotifiableFuture.withFuture(song, getSongInfo(song));
+      final futureTracker = NotifiableFuture<Map<String, dynamic>>.withFuture(
+        song,
+        getSongInfo(song),
+      );
       getSongInfoQueue.add(futureTracker);
       return futureTracker;
     } else {
@@ -621,8 +572,40 @@ NotifiableFuture queueSongInfoRequest(dynamic song) {
   }
 }
 
+SongBar initializeSongBar(
+  Map<String, dynamic> song,
+  BuildContext context, {
+  BorderRadius? borderRadius,
+}) {
+  return SongBar(
+    song,
+    context,
+    borderRadius: borderRadius ?? BorderRadius.zero,
+    showMusicDuration: true,
+  );
+}
+
+NotifiableFuture<Map<String, dynamic>> initializeSongBarFuture(dynamic song) {
+  try {
+    parseEntityId(song);
+    if (!isSongValid(song)) {
+      return queueSongInfoRequest(song);
+    } else {
+      final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
+        ..runFuture(Future.value(song));
+      return futureTracker;
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
+      ..runFuture(Future.value(song));
+    return futureTracker;
+  }
+}
+
 Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   late final String offlineId;
+  await cachedSongsList.ensureInitialized();
   try {
     if (song == null) return song;
     if (song is String) {
@@ -656,10 +639,8 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   addSongToCache(song as Map<String, dynamic>);
   await PM.triggerHook(song, 'onGetSongInfo');
   getSongInfoQueue.removeWhere((e) => checkSong(e.data, song));
-  if (getSongInfoQueue.isEmpty &&
-      (_writeCacheFuture.completer?.future == null ||
-          _writeCacheFuture.isComplete)) {
-    unawaited(_writeToCache());
+  if (getSongInfoQueue.isEmpty) {
+    cachedSongsList.writeToCache();
   }
   return song;
 }
@@ -854,7 +835,7 @@ Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
     );
     if (isSongValid(cached) && isYouTubeSongValid(cached)) {
       cached['youtube'] = true;
-      return cached!;
+      return cached;
     } else if (songId.isNotEmpty) {
       songId = songId.ytid;
       final video = await yt.videos.get(songId);
@@ -922,7 +903,7 @@ Future<void> makeSongOffline(dynamic song) async {
     await Directory(_artworkDirPath).create(recursive: true);
 
     if (!isMusicbrainzSongValid(song)) {
-      final songInfo = await queueSongInfoRequest(song).completerFuture;
+      final songInfo = (await queueSongInfoRequest(song).completerFuture) ?? {};
       song.addAll(Map<String, dynamic>.from(songInfo));
     }
     if (!isYouTubeSongValid(song)) await findYTSong(song);
@@ -987,7 +968,6 @@ Future<void> makeSongOffline(dynamic song) async {
     }
 
     song['offlineAudioPath'] = _audioFile;
-    currentOfflineSongsLength.value = userOfflineSongs.length;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;
@@ -995,7 +975,10 @@ Future<void> makeSongOffline(dynamic song) async {
 }
 
 Future<List<dynamic>> getUserOfflineSongs() async {
-  if (!(await checkOfflineFiles())) await getExistingOfflineSongs();
+  if (!(await checkOfflineFiles())) {
+    userOfflineSongs.clear();
+    await getExistingOfflineSongs();
+  }
   return userOfflineSongs.map((e) {
     final cached = getCachedSong(e);
     if (isSongValid(cached)) return cached;
@@ -1043,17 +1026,11 @@ Future<void> getExistingOfflineSongs() async {
     for (final file in fileList) {
       if (file is File && isAudio(file.path)) {
         final filename = basenameWithoutExtension(file.path);
-        final ids = Uri.parse('?$filename').queryParameters;
-        if ((ids['mb'] != null && ids['mb']!.isNotEmpty) ||
-            (ids['yt'] != null && ids['yt']!.isNotEmpty) ||
-            (ids['is'] != null && ids['is']!.isNotEmpty)) {
-          userOfflineSongs.addOrUpdateWhere(checkEntityId, filename);
-          currentOfflineSongsLength.value = userOfflineSongs.length;
-        }
+        final ids = filename.toIds;
+        if (ids.isNotEmpty)
+          userOfflineSongs.addOrUpdate(filename, checkEntityId);
       }
     }
-    currentOfflineSongsLength.value = userOfflineSongs.length;
-    await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -1068,11 +1045,10 @@ Future<void> _matchFileToSongInfo(File file) async {
     final song = await queueSongInfoRequest(filename).completerFuture;
     final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
     if (imageFiles.isNotEmpty) {
-      song['offlineArtworkPath'] = imageFiles.first.path;
+      song?['offlineArtworkPath'] = imageFiles.first.path;
     }
-    song['offlineAudioPath'] = file.path;
-    userOfflineSongs.addOrUpdateWhere(checkEntityId, song['id']);
-    await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
+    song?['offlineAudioPath'] = file.path;
+    userOfflineSongs.addOrUpdate(song?['id'], checkEntityId);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -1149,8 +1125,6 @@ Future<void> removeSongFromOffline(dynamic song) async {
   song?.remove('songUrl');
   song['isOffline'] = false;
   userOfflineSongs.removeWhere((s) => checkEntityId(song['id'], s));
-  currentOfflineSongsLength.value = userOfflineSongs.length;
-  await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   showToast(context.l10n!.songRemovedFromOffline);
 }
 
@@ -1218,13 +1192,9 @@ Future<void> updateRecentlyPlayed(dynamic song) async {
     if (userRecentlyPlayed.length >= recentlyPlayedSongsLimit) {
       userRecentlyPlayed.removeLast();
     }
-
-    userRecentlyPlayed.removeWhere((s) => checkSong(s, song));
-    currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
-
-    userRecentlyPlayed.insert(0, song);
-    currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
-    await addOrUpdateData('user', 'recentlyPlayedSongs', userRecentlyPlayed);
+    userRecentlyPlayed
+      ..removeWhere((s) => checkSong(s, song))
+      ..insert(0, song);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;

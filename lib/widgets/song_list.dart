@@ -18,13 +18,10 @@
  *     For more information about Reverbio, including how to contribute,
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
-import 'dart:async';
-import 'dart:math';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/song.dart';
-import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -32,7 +29,7 @@ import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/notifiable_future.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
@@ -44,8 +41,7 @@ class SongList extends StatefulWidget {
     required this.page,
     this.title = '',
     this.icon = FluentIcons.music_note_1_24_regular,
-    this.future,
-    this.inputData,
+    required this.songBars,
     this.expandedActions,
     this.isEditable = false,
   });
@@ -53,10 +49,7 @@ class SongList extends StatefulWidget {
   final IconData icon;
   final String title;
   final String page;
-  final Future<dynamic>? future;
-  final List<dynamic>? inputData;
-  late final List<SongBar> songBars =
-      page == 'queue' ? audioHandler.queueSongBars : <SongBar>[];
+  final NotifiableList<SongBar> songBars;
   final bool isEditable;
   final List<Widget>? expandedActions;
   @override
@@ -65,14 +58,8 @@ class SongList extends StatefulWidget {
 
 class _SongListState extends State<SongList> {
   late ThemeData _theme;
-  List<dynamic> _songsList = [];
   bool isProcessing = true;
   bool loopSongs = false;
-  dynamic _playlist;
-  var _currentPage = 0;
-  var _currentLastLoadedId = 0;
-  final int _itemsPerPage = 35;
-  late final ValueNotifier<int> _songBarsLength;
   final Map<String, bool> _sortState = {
     'title': false,
     'artist': false,
@@ -82,12 +69,10 @@ class _SongListState extends State<SongList> {
   @override
   void initState() {
     super.initState();
-    _songBarsLength = ValueNotifier(widget.songBars.length);
   }
 
   @override
   void dispose() {
-    widget.future?.ignore();
     widget.songBars.clear();
     super.dispose();
   }
@@ -95,7 +80,6 @@ class _SongListState extends State<SongList> {
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
-    _songsList = widget.inputData ?? activeQueue['list'] ?? _songsList;
     return SliverMainAxisGroup(
       slivers: [
         SliverToBoxAdapter(
@@ -123,39 +107,16 @@ class _SongListState extends State<SongList> {
             ),
           ),
         ),
-        if (widget.future != null)
-          FutureBuilder(
-            future: widget.future,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) _songsList = snapshot.data;
-              return snapshot.hasError
-                  ? _buildErrorWidget()
-                  : (snapshot.hasData
-                      ? _buildSongList(context)
-                      : _buildLoadingWidget());
-            },
-          )
-        else if (widget.inputData != null)
-          _buildSongList(context)
-        else
-          ValueListenableBuilder(
-            valueListenable: activeQueueLength,
-            builder: (context, value, __) {
-              if (value != 0) {
-                return _buildSongList(context);
-              } else
-                return _buildErrorWidget();
-            },
-          ),
+        _buildSongList(context),
       ],
     );
   }
 
   dynamic _getSongListData() {
     final data =
-        _songsList.map((e) {
-          e['album'] = e['album'];
-          e['song'] = e['title'];
+        widget.songBars.map((e) {
+          e.song['album'] = e.song['album'];
+          e.song['song'] = e.song['title'];
           return e;
         }).toList();
     return data;
@@ -170,7 +131,7 @@ class _SongListState extends State<SongList> {
       icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
       iconSize: listHeaderIconSize,
       onPressed: () {
-        _songsList.shuffledWith(widget.songBars);
+        widget.songBars.shuffledWith(widget.songBars);
         if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
         if (mounted) setState(() {});
       },
@@ -224,11 +185,6 @@ class _SongListState extends State<SongList> {
   void _sortMenuItemAction(String value) {
     void sortBy(String key) {
       final reverse = _sortState[key] ?? false;
-      _songsList.sort((a, b) {
-        final valueA = a[key].toString().toLowerCase();
-        final valueB = b[key].toString().toLowerCase();
-        return reverse ? valueB.compareTo(valueA) : valueA.compareTo(valueB);
-      });
       widget.songBars.sort((a, b) {
         final valueA = a.song[key].toString().toLowerCase();
         final valueB = b.song[key].toString().toLowerCase();
@@ -243,16 +199,9 @@ class _SongListState extends State<SongList> {
 
     void sortByDownloaded() {
       final reverse = _sortState['downloaded'] ?? false;
-      _songsList.sort((a, b) {
-        final valueA = isSongAlreadyOffline(a);
-        final valueB = isSongAlreadyOffline(b);
-        if (valueA && !valueB) return reverse ? 1 : -1;
-        if (!valueA && valueB) return reverse ? -1 : 1;
-        return 0;
-      });
       widget.songBars.sort((a, b) {
-        final valueA = isSongAlreadyOffline(a);
-        final valueB = isSongAlreadyOffline(b);
+        final valueA = isSongAlreadyOffline(a.song);
+        final valueB = isSongAlreadyOffline(b.song);
         if (valueA && !valueB) return reverse ? 1 : -1;
         if (!valueA && valueB) return reverse ? -1 : 1;
         return 0;
@@ -291,19 +240,6 @@ class _SongListState extends State<SongList> {
     );
   }
 
-  Future<List<dynamic>> fetch() async {
-    final list = <dynamic>[];
-    final _count = _playlist['list'].length as int;
-    final n = min(_itemsPerPage, _count - _currentPage * _itemsPerPage);
-    for (var i = 0; i < n; i++) {
-      list.add(_playlist['list'][_currentLastLoadedId]);
-      _currentLastLoadedId++;
-    }
-
-    _currentPage++;
-    return list;
-  }
-
   Widget _buildAddToQueueActionButton() {
     return IconButton(
       tooltip: context.l10n!.addSongsToQueue,
@@ -334,10 +270,10 @@ class _SongListState extends State<SongList> {
       tooltip: context.l10n!.play,
       onPressed: () async {
         if (widget.page != 'queue') {
-          await PM.triggerHook(_songsList, 'onPlaylistPlay');
+          await PM.triggerHook(widget.songBars, 'onPlaylistPlay');
           setQueueToPlaylist({
             'title': widget.title,
-            'list': _songsList,
+            'list': widget.songBars,
           }, widget.songBars);
           showToast(
             '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
@@ -367,8 +303,8 @@ class _SongListState extends State<SongList> {
 
   Widget _buildErrorWidget() {
     final errorText =
-        widget.future == null
-            ? (widget.inputData == null
+        !widget.songBars.hasError
+            ? (widget.songBars.isEmpty
                 ? context.l10n!.noSongsInQueue
                 : context.l10n!.error)
             : context.l10n!.error;
@@ -380,45 +316,6 @@ class _SongListState extends State<SongList> {
         ),
       ),
     );
-  }
-
-  NotifiableFuture initializeSongBar(dynamic song) {
-    try {
-      parseEntityId(song);
-      if (!isSongValid(song)) {
-        return queueSongInfoRequest(song);
-      } else {
-        final futureTracker = NotifiableFuture(song)
-          ..runFuture(Future.value(song));
-        return futureTracker;
-      }
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-      final futureTracker = NotifiableFuture(song)
-        ..runFuture(Future.value(song));
-      return futureTracker;
-    }
-  }
-
-  void _buildSongBars(BuildContext context) {
-    widget.songBars.clear();
-    for (var i = 0; i < _songsList.length; i++) {
-      final borderRadius = getItemBorderRadius(i, _songsList.length);
-      _songsList[i] = Map<String, dynamic>.from(_songsList[i]);
-      widget.songBars.add(
-        SongBar(
-          initializeSongBar(_songsList[i]),
-          context,
-          borderRadius: borderRadius,
-          showMusicDuration: true,
-        ),
-      );
-    }
-    _songBarsLength.value = widget.songBars.length;
   }
 
   void moveSongBar(int oldIndex, int newIndex) {
@@ -437,36 +334,31 @@ class _SongListState extends State<SongList> {
     if (oldIndex == newIndex) return;
 
     final songBar = widget.songBars.removeAt(oldIndex);
-    final song = _songsList.removeAt(oldIndex);
 
     widget.songBars.insert(newIndex, songBar);
     songBar.setBorder(
       borderRadius: getItemBorderRadius(newIndex, widget.songBars.length),
     );
-    _songsList.insert(newIndex, song);
 
     setState(() {});
   }
 
   Widget _buildSongList(BuildContext context) {
-    _buildSongBars(context);
-    return ValueListenableBuilder(
-      valueListenable:
-          widget.page == 'queue' ? activeQueueLength : _songBarsLength,
-      builder: (context, value, _) {
+    return ListenableBuilder(
+      listenable: widget.songBars,
+      builder: (context, _) {
         return SliverReorderableList(
           itemCount: widget.songBars.length,
           itemBuilder: (context, index) {
-            final song = widget.songBars[index].song;
+            final borderRadius = getItemBorderRadius(
+              index,
+              widget.songBars.length,
+            );
             final songBar =
-                widget.songBars[index]..setBorder(
-                  borderRadius: getItemBorderRadius(
-                    index,
-                    widget.songBars.length,
-                  ),
-                );
+                widget.songBars[index]..setBorder(borderRadius: borderRadius);
             final key = Key(
-              song['id'] ?? '${song['artist']} - ${song['title']}',
+              songBar.song['id'] ??
+                  '${songBar.song['artist']} - ${songBar.song['title']}',
             );
             return ReorderableDragStartListener(
               key: key,
@@ -482,7 +374,6 @@ class _SongListState extends State<SongList> {
                   newIndex -= 1;
                 }
                 widget.songBars.rearrange(oldIndex, newIndex);
-                _songsList.rearrange(oldIndex, newIndex);
                 if (widget.page == 'queue')
                   updateMediaItemQueue(widget.songBars);
               });

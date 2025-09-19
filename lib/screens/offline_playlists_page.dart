@@ -21,6 +21,7 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -74,10 +75,10 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
 
   Widget _buildPlaylistListView() {
     _buildPlaylistBars();
-    return ValueListenableBuilder(
-      valueListenable: currentOfflinePlaylistsLength,
+    return ListenableBuilder(
+      listenable: userOfflinePlaylists,
       builder:
-          (context, value, child) => ListView.builder(
+          (context, child) => ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: userPlaylistBars.length,

@@ -22,6 +22,50 @@
 import 'package:flutter/material.dart';
 import 'package:reverbio/localization/app_localizations.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/utils.dart';
+
+const appLanguages = <String, String>{
+  'English': 'en',
+  'العربية': 'ar',
+  'বাংলা': 'bn',
+  '简体中文': 'zh',
+  '繁體中文': 'zh-Hant',
+  '繁體中文 (臺灣)': 'zh-TW',
+  '廣東話': 'yue',
+  'Français': 'fr',
+  'Deutsch': 'de',
+  'Ελληνικά': 'el',
+  'हिन्दी': 'hi',
+  'Bahasa Indonesia': 'id',
+  'Italiano': 'it',
+  '日本語': 'ja',
+  '한국어': 'ko',
+  'Polski': 'pl',
+  'Português': 'pt',
+  'Português (Brasil)': 'pt-br',
+  'Русский': 'ru',
+  'Español': 'es',
+  'فارسی': 'fa',
+  'ગુજરાતી': 'gu',
+  'मराठी': 'mr',
+  'Kiswahili': 'sw',
+  'தமிழ்': 'ta',
+  'తెలుగు': 'te',
+  'ไทย': 'th',
+  'Türkçe': 'tr',
+  'Українська': 'uk',
+  'Tiếng Việt': 'vi',
+};
+
+final List<Locale> appSupportedLocales =
+    appLanguages.values.map((languageCode) {
+      final parts = languageCode.split('-');
+      if (parts.length > 1) {
+        return Locale.fromSubtags(languageCode: parts[0], scriptCode: parts[1]);
+      }
+      return Locale(languageCode);
+    }).toList();
+
 extension ContextX on BuildContext {
   AppLocalizations? get l10n => AppLocalizations.of(this);
 }
@@ -32,9 +76,9 @@ class L10n {
 
   static void initialize() {
     languageSetting.addListener(() {
-      _instance = lookupAppLocalizations(languageSetting.value);
+      _instance = lookupAppLocalizations(parseLocale(languageSetting.value));
     });
-    _instance = lookupAppLocalizations(languageSetting.value);
+    _instance = lookupAppLocalizations(parseLocale(languageSetting.value));
   }
 
   static AppLocalizations get current {

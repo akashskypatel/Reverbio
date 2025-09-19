@@ -29,7 +29,7 @@ import 'package:reverbio/API/version.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
@@ -205,12 +205,16 @@ Future<String> getDownloadUrl(Map<String, dynamic> map) async {
 }
 
 void postUpdate() async {
-  final hasPostUpdateRun = postUpdateRun[appVersion] ?? false;
+  final hasPostUpdateRun = postUpdateRun.value[appVersion] ?? false;
   if (!hasPostUpdateRun) {
     //Make changes from here
-    await clearCache();
+    //await clearCache();
     //to here
   }
-  postUpdateRun[appVersion] = true;
-  await addOrUpdateData('settings', 'postUpdateRun', postUpdateRun);
+  postUpdateRun.value[appVersion] = true;
+  await HiveService.addOrUpdateData(
+    'settings',
+    'postUpdateRun',
+    postUpdateRun.value,
+  );
 }

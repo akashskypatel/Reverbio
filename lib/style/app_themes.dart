@@ -25,7 +25,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/style/dynamic_color_temp_fix.dart';
 
-ThemeMode themeMode = getThemeMode(themeModeSetting);
+ThemeMode themeMode = getThemeMode(themeModeSetting.value);
 Brightness brightness = getBrightnessFromThemeMode(themeMode);
 
 PageTransitionsBuilder transitionsBuilder =
@@ -79,7 +79,7 @@ ColorScheme getAppColorScheme(
     return selectedScheme;
   } else {
     return ColorScheme.fromSeed(
-      seedColor: primaryColorSetting,
+      seedColor: Color(primaryColorSetting.value),
       brightness: brightness,
     ).harmonized();
   }

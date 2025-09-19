@@ -29,7 +29,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -38,22 +40,25 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class PlaylistPage extends StatefulWidget {
   const PlaylistPage({
     super.key,
-    this.playlistData,
+    required this.playlistData,
     this.cardIcon = FluentIcons.music_note_1_24_regular,
     this.isArtist = false,
     required this.page,
   });
   final String page;
-  final dynamic playlistData;
+  final Map<String, dynamic> playlistData;
   final IconData cardIcon;
   final bool isArtist;
 
@@ -64,10 +69,11 @@ class PlaylistPage extends StatefulWidget {
 class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   late ThemeData _theme;
-  final NotifiableFuture _infoRequestFuture = NotifiableFuture();
+  late final NotifiableFuture<Map<String, dynamic>> _infoRequestFuture =
+      NotifiableFuture(widget.playlistData);
   final _isEditEnabled = ValueNotifier(false);
   final likeStatus = ValueNotifier<bool>(false);
-  ValueNotifier<int> likeLength = ValueNotifier<int>(0);
+  NotifiableList? likeLength;
   final autoOffline = ValueNotifier<bool>(false);
 
   @override
@@ -99,34 +105,46 @@ class _PlaylistPageState extends State<PlaylistPage> {
     return false;
   }
 
-  Future _initializePlaylist() async {
+  Future<Map<String, dynamic>> _initializePlaylist() async {
     final id = parseEntityId(widget.playlistData);
     final ids = id.toIds;
     final ytid = (ids['yt'] ?? id.ytid).ytid;
     final mbid = (ids['mb'] ?? id.mbid).mbid;
     if (mbid.isNotEmpty &&
-        (widget.playlistData?['list'] == null ||
-            widget.playlistData?['list'].isEmpty)) {
-      return queueAlbumInfoRequest(widget.playlistData);
+        (widget.playlistData['list'] == null ||
+            widget.playlistData['list'].isEmpty)) {
+      await queueAlbumInfoRequest(widget.playlistData).completerFuture?.then((
+        value,
+      ) {
+        if (value != null) widget.playlistData.addAll(value);
+      });
+      return widget.playlistData;
     } else if (ytid.isNotEmpty) {
       widget.playlistData['ytid'] = ytid;
-      likeLength = currentLikedPlaylistsLength;
-      return getPlaylistInfoForWidget(
+      likeLength = userLikedPlaylists;
+      await getPlaylistInfoForWidget(
         widget.playlistData,
         isArtist: widget.isArtist,
-      );
+      ).then((value) {
+        widget.playlistData.addAll(value);
+      });
+      return widget.playlistData;
     } else {
       return Future.value(widget.playlistData);
     }
   }
 
-  Future<List<dynamic>> fetch() async {
+  Future<NotifiableList<SongBar>> fetch() async {
     if (!_infoRequestFuture.isComplete)
       await _infoRequestFuture.completer!.future;
-    if (_infoRequestFuture.result != null)
-      return _infoRequestFuture.result['list'] ?? [];
+    if (_infoRequestFuture.hasData) {}
     //TODO: restore pagination to large playlists
-    return widget.playlistData['list'] ?? [];
+    final _list = NotifiableList.from(
+      ((widget.playlistData['list'] as List?) ?? []).map((e) {
+        return initializeSongBar(Map<String, dynamic>.from(e), context);
+      }),
+    );
+    return _list;
   }
 
   @override
@@ -137,13 +155,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     }
     return Scaffold(
       appBar: _buildNavigationBar(),
-      body: _buildList() /*
-          _playlist != null
-              ? _buildList()
-              : SizedBox(
-                height: MediaQuery.sizeOf(context).height - 100,
-                child: const Spinner(),
-              ),*/,
+      body: _buildList(),
     );
   }
 
@@ -156,15 +168,26 @@ class _PlaylistPageState extends State<PlaylistPage> {
             child: _buildPlaylistHeader(),
           ),
         ),
-        ValueListenableBuilder(
-          valueListenable: _isEditEnabled,
-          builder:
-              (context, value, child) => SongList(
-                page: 'playlist',
-                //inputData: _songsList,
-                future: fetch(),
-                isEditable: value,
-              ),
+        FutureBuilder(
+          future: fetch(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting)
+              return const SliverToBoxAdapter(child: Spinner());
+            if (!snapshot.hasData ||
+                snapshot.data == null ||
+                snapshot.data!.isEmpty)
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            return ValueListenableBuilder(
+              valueListenable: _isEditEnabled,
+              builder:
+                  (context, value, child) => SongList(
+                    page: 'playlist',
+                    songBars: snapshot.data!,
+                    //future: fetch(),
+                    isEditable: value,
+                  ),
+            );
+          },
         ),
       ],
     );
@@ -179,9 +202,9 @@ class _PlaylistPageState extends State<PlaylistPage> {
       ),
       actions: [
         _buildAutoCacheOfflineButton(),
-        if (widget.playlistData?['source'] != 'user-created')
+        if (widget.playlistData['source'] != 'user-created')
           _buildLikeButton(),
-        if (widget.playlistData != null) ...[
+        if (widget.playlistData.isNotEmpty) ...[
           _buildSyncButton(),
           if (widget.playlistData['source'] == 'user-created')
             IconButton(
@@ -247,7 +270,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 color: _theme.colorScheme.primary,
               ),
             ),
-          if (widget.playlistData != null &&
+          if (widget.playlistData.isNotEmpty &&
               widget.playlistData['source'] == 'user-created')
             _buildEditButton(),
           StatefulBuilder(
@@ -295,7 +318,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       inputData: widget.playlistData,
       size: isLandscape ? 300 : screenWidth / 2.5,
       icon: widget.cardIcon,
-      showLike: widget.playlistData?['source'] != 'user-created',
+      showLike: widget.playlistData['source'] != 'user-created',
     );
   }
 
@@ -377,18 +400,19 @@ class _PlaylistPageState extends State<PlaylistPage> {
       'broadcast',
       'other',
     ].contains(widget.playlistData['primary-type']?.toLowerCase())) {
-      likeLength = currentLikedAlbumsLength;
+      likeLength = userLikedAlbumsList;
     } else if (widget.playlistData['ytid'] != null)
-      likeLength = currentLikedPlaylistsLength;
+      likeLength = userLikedPlaylists;
 
     return FutureBuilder(
       future: _infoRequestFuture.completer!.future,
       builder: (context, snapshot) {
+        if (likeLength == null) return const SizedBox.shrink();
         return StatefulBuilder(
           builder: (context, setState) {
-            return ValueListenableBuilder(
-              valueListenable: likeLength,
-              builder: (_, __, ___) {
+            return ListenableBuilder(
+              listenable: likeLength!,
+              builder: (_, __) {
                 final value = likeStatus.value = getLikeStatus();
                 return IconButton(
                   splashColor: Colors.transparent,

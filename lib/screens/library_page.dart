@@ -24,9 +24,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
-import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/router_service.dart';
@@ -56,22 +55,12 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   void dispose() {
-    currentLikedPlaylistsLength.removeListener(_listener);
-    currentLikedSongsLength.removeListener(_listener);
-    currentOfflineSongsLength.removeListener(_listener);
-    currentRecentlyPlayedLength.removeListener(_listener);
-    currentLikedAlbumsLength.removeListener(_listener);
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-    currentLikedPlaylistsLength.addListener(_listener);
-    currentLikedSongsLength.addListener(_listener);
-    currentOfflineSongsLength.addListener(_listener);
-    currentRecentlyPlayedLength.addListener(_listener);
-    currentLikedAlbumsLength.addListener(_listener);
   }
 
   void _listener() {
@@ -190,22 +179,22 @@ class _LibraryPageState extends State<LibraryPage> {
                   ),
                 ],
               ),
-              ValueListenableBuilder<List>(
-                valueListenable: userCustomPlaylists,
-                builder: (context, playlists, _) {
-                  if (playlists.isEmpty) {
+              ListenableBuilder(
+                listenable: userCustomPlaylists,
+                builder: (context, _) {
+                  if (userCustomPlaylists.isEmpty) {
                     return const SizedBox();
                   }
                   return _buildPlaylistListView(
                     context,
-                    playlists,
+                    userCustomPlaylists,
                     'user-created',
                   );
                 },
               ),
-              ValueListenableBuilder<List>(
-                valueListenable: userPlaylists,
-                builder: (context, playlists, _) {
+              ListenableBuilder(
+                listenable: userPlaylists,
+                builder: (context, _) {
                   return Column(
                     children: [
                       SectionHeader(
@@ -221,7 +210,7 @@ class _LibraryPageState extends State<LibraryPage> {
                           ),
                         ],
                       ),
-                      if (userPlaylists.value.isNotEmpty)
+                      if (userPlaylists.isNotEmpty)
                         FutureBuilder(
                           future: getUserYTPlaylists(),
                           builder: (context, snapshot) {
@@ -248,9 +237,9 @@ class _LibraryPageState extends State<LibraryPage> {
                   );
                 },
               ),
-              ValueListenableBuilder(
-                valueListenable: currentLikedPlaylistsLength,
-                builder: (context, value, __) {
+              ListenableBuilder(
+                listenable: userLikedPlaylists,
+                builder: (context, __) {
                   return Column(
                     children: [
                       SectionHeader(title: context.l10n!.likedPlaylists),
@@ -312,7 +301,6 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _buildSearchBar() {
     return CustomSearchBar(
-      //loadingProgressNotifier: _fetchingSongs,
       searchDelayMs: 0,
       controller: _searchBar,
       focusNode: _inputNode,
@@ -332,7 +320,10 @@ class _LibraryPageState extends State<LibraryPage> {
       userPlaylistBars.add(
         PlaylistBar(
           key: ValueKey(
-            playlist['id'] ?? playlist['ytid'] ?? playlist['title'] ?? 'unknown',
+            playlist['id'] ??
+                playlist['ytid'] ??
+                playlist['title'] ??
+                'unknown',
           ),
           playlist['title'] ?? 'unknown',
           playlistId: playlist['ytid'],
@@ -503,10 +494,11 @@ class _LibraryPageState extends State<LibraryPage> {
                           ),
                           IconButton(
                             onPressed: () async {
-                              final path = await pickImageFile(); //TODO: save image data to playlist directly
+                              final path =
+                                  await pickImageFile(); //TODO: save image data to playlist directly
                               imageUrl = path;
                               if (imageUrl != null)
-                                imagePathController.text = imageUrl!; 
+                                imagePathController.text = imageUrl!;
                             },
                             icon: const Icon(FluentIcons.folder_open_24_filled),
                             color: theme.colorScheme.primary,

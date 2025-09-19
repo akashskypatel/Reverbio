@@ -31,16 +31,12 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:reverbio/API/entities/album.dart';
-import 'package:reverbio/API/entities/artist.dart';
-import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/localization/app_localizations.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
-import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/logger_service.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
@@ -50,7 +46,6 @@ import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
-//import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
 HiveService hiveService = HiveService();
@@ -63,48 +58,6 @@ bool isFdroidBuild = false;
 bool isUpdateChecked = false;
 final nowPlayingOpen = ValueNotifier(false);
 Map<String, dynamic> userGeolocation = {};
-
-const appLanguages = <String, String>{
-  'English': 'en',
-  'العربية': 'ar',
-  'বাংলা': 'bn',
-  '简体中文': 'zh',
-  '繁體中文': 'zh-Hant',
-  '繁體中文 (臺灣)': 'zh-TW',
-  '廣東話': 'yue',
-  'Français': 'fr',
-  'Deutsch': 'de',
-  'Ελληνικά': 'el',
-  'हिन्दी': 'hi',
-  'Bahasa Indonesia': 'id',
-  'Italiano': 'it',
-  '日本語': 'ja',
-  '한국어': 'ko',
-  'Polski': 'pl',
-  'Português': 'pt',
-  'Português (Brasil)': 'pt-br',
-  'Русский': 'ru',
-  'Español': 'es',
-  'فارسی': 'fa',
-  'ગુજરાતી': 'gu',
-  'मराठी': 'mr',
-  'Kiswahili': 'sw',
-  'தமிழ்': 'ta',
-  'తెలుగు': 'te',
-  'ไทย': 'th',
-  'Türkçe': 'tr',
-  'Українська': 'uk',
-  'Tiếng Việt': 'vi',
-};
-
-final List<Locale> appSupportedLocales =
-    appLanguages.values.map((languageCode) {
-      final parts = languageCode.split('-');
-      if (parts.length > 1) {
-        return Locale.fromSubtags(languageCode: parts[0], scriptCode: parts[1]);
-      }
-      return Locale(languageCode);
-    }).toList();
 
 class Reverbio extends StatefulWidget {
   const Reverbio({super.key});
@@ -142,17 +95,19 @@ class _ReverbioState extends State<Reverbio> {
           brightness = getBrightnessFromThemeMode(newThemeMode);
         }
         if (newLocale != null) {
-          languageSetting.value = newLocale;
+          languageSetting.value = newLocale.toLanguageTag();
         }
         if (newAccentColor != null) {
           if (systemColorStatus != null &&
               useSystemColor.value != systemColorStatus) {
             useSystemColor.value = systemColorStatus;
+            /*
             unawaited(
               addOrUpdateData('settings', 'useSystemColor', systemColorStatus),
             );
+            */
           }
-          primaryColorSetting = newAccentColor;
+          primaryColorSetting.value = newAccentColor.toARGB32();
         }
         theme = Theme.of(context);
       });
@@ -171,8 +126,8 @@ class _ReverbioState extends State<Reverbio> {
           systemNavigationBarColor: Colors.transparent,
         ),
       );
-      await checkInternetConnection();      
-      FileDownloader().start();
+      await checkInternetConnection();
+      await FileDownloader().start();
       await px.ensureInitialized();
       //await tagAllOfflineFiles();
     });
@@ -226,7 +181,7 @@ class _ReverbioState extends State<Reverbio> {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: appSupportedLocales,
-          locale: languageSetting.value,
+          locale: parseLocale(languageSetting.value),
           routerConfig: NavigationManager.router,
         );
       },
@@ -254,18 +209,10 @@ void main() async {
 Future<void> initialization() async {
   try {
     await HiveService.ensureInitialize();
-    /*
-    await Hive.initFlutter('reverbio');
 
-    final boxNames = ['settings', 'user', 'userNoBackup', 'cache'];
-
-    for (final boxName in boxNames) {
-      await Hive.openBox(boxName);
-    }
-    */
     // Init router
     NavigationManager.instance;
-    
+
     L10n.initialize();
 
     audioHandler = await AudioService.init(
@@ -281,20 +228,15 @@ Future<void> initialization() async {
     );
     audioDevice.value = await audioHandler.getCurrentAudioDevice();
 
-    currentLikedPlaylistsLength.value = userLikedPlaylists.length;
-    currentLikedSongsLength.value = userLikedSongsList.length;
-    currentOfflineSongsLength.value = userOfflineSongs.length;
-    currentRecentlyPlayedLength.value = userRecentlyPlayed.length;
-    currentLikedAlbumsLength.value = userLikedAlbumsList.length;
-    currentLikedArtistsLength.value = userLikedArtistsList.length;
-    activeQueueLength.value = audioHandler.queueSongBars.length;
-    offlineDirectory.value ??= (await getApplicationSupportDirectory()).path;
-
     await PM.initialize();
+
+    await initializeData();
+
+    await initializeSettings();
 
     //postUpdate();
 
-    //await getExistingOfflineSongs();
+    await getExistingOfflineSongs();
 
     try {
       // Listen to incoming links while app is running
@@ -324,12 +266,8 @@ void handleIncomingLink(Uri? uri) async {
         );
 
         if (playlist != null) {
-          userCustomPlaylists.value = [...userCustomPlaylists.value, playlist];
-          await addOrUpdateData(
-            'user',
-            'customPlaylists',
-            userCustomPlaylists.value,
-          );
+          userCustomPlaylists.add(Map<String, dynamic>.from(playlist));
+          //await addOrUpdateData('user','customPlaylists',userCustomPlaylists,);
           showToast(context.l10n!.addedSuccess);
         } else {
           showToast(context.l10n!.invalidPlaylistData);

@@ -30,19 +30,20 @@ import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
-import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:rxdart/rxdart.dart';
@@ -64,14 +65,14 @@ class AudioPlayerService {
 
   late final Player _player = Player();
   bool _isShuffleEnabled = false;
-  double _volume = settings.volume.toDouble();
+  double _volume = settings.volume.value.toDouble();
 
   late final _volumeNotifier = ValueNotifier(_volume);
   final _processingStateNotifier = ValueNotifier<AudioProcessingState>(
     AudioProcessingState.idle,
   );
 
-  final List<SongBar> _queueSongBars = [];
+  final NotifiableList<SongBar> _queueSongBars = NotifiableList();
 
   final _indexController = StreamController<int>.broadcast();
   final _processingStateController =
@@ -95,7 +96,7 @@ class AudioPlayerService {
   ValueNotifier<double> get volumeNotifier => _volumeNotifier;
   ValueNotifier<SongBar?> get songValueNotifier => _songValueNotifier;
 
-  List<SongBar> get queueSongBars => _queueSongBars;
+  NotifiableList<SongBar> get queueSongBars => _queueSongBars;
   AudioProcessingState get processingState => _processingStateNotifier.value;
   PlayerState get state => _player.state;
   Player get player => _player;
@@ -282,7 +283,6 @@ class AudioPlayerService {
   Future<void> setVolume(double volume) async {
     _volume = volume;
     _volumeNotifier.value = volume;
-    await addOrUpdateData('settings', 'volume', volume.toInt());
     return _player.setVolume(volume);
   }
 
@@ -318,7 +318,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Timer? _sleepTimer;
   bool sleepTimerExpired = false;
   late bool wasPlayingBeforeCall = false;
-  List<SongBar> get queueSongBars => audioPlayer.queueSongBars;
+  NotifiableList<SongBar> get queueSongBars => audioPlayer.queueSongBars;
   late final StreamSubscription<bool?> _playbackEventSubscription;
   late final StreamSubscription<AudioProcessingState?> _stateChangeSubscription;
   late final StreamSubscription<Duration?> _durationSubscription;
@@ -327,12 +327,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   late final StreamSubscription<PositionData> _positionDataSubscription;
   late final StreamSubscription<MediaItem?> _mediaItemSubscription;
   late final StreamSubscription<TaskUpdate?> _downloadStatusSubscription;
-  /* late final StreamController<TaskUpdate?> _downloadProgressController =
-      StreamController.broadcast(); */
   late final StreamSubscription<audio_session.AudioInterruptionEvent>
   _sessionEventStream;
-  //late final StreamSubscription<audio_session.AudioDevicesChangedEvent>
-  //_sessionDeviceEventStream;
   final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
     PositionData(Duration.zero, Duration.zero, Duration.zero),
   );
@@ -365,7 +361,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _mediaItemSubscription.cancel();
     await _sessionEventStream.cancel();
     await _downloadStatusSubscription.cancel();
-    //await _sessionDeviceEventStream.cancel();
     await audioPlayer.dispose();
   }
 
@@ -378,9 +373,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       _sessionEventStream = _session!.interruptionEventStream.listen(
         _handleSessionEventChange,
       );
-      //_sessionDeviceEventStream = _session!.devicesChangedEventStream.listen(
-      //  _handleDeviceEventChange,
-      //);
     }
     return _session!;
   }
@@ -674,7 +666,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           'getCurrentAudioDevice',
         );
         audioDevice.value = device;
-        await addOrUpdateData('settings', 'audioDevice', audioDevice.value);
         return device;
       }
     } catch (e, stackTrace) {
@@ -690,11 +681,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<List<dynamic>> getConnectedAudioDevices() async {
     try {
       if (Platform.isAndroid) {
-        //final devices = audioPlayer.state.audioDevices;
         final devices =
             (await platform.invokeMethod<List>('getAudioOutputDevices')) ??
             <dynamic>[];
-        //final devices = audioPlayer.audioDevices;
 
         return devices;
       }
@@ -711,39 +700,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   Future<void> _handleDeviceEventChange(
     audio_session.AudioDevicesChangedEvent event,
-  ) async {
-    /*
-    final audioDevice = AudioDevice.auto();
-    
-    try {
-      final currentDevice = audioPlayer.state.audioDevice;
-      if (event.devicesAdded.isNotEmpty) {
-        final outputs =
-            event.devicesAdded.where((e) => e.isOutput).toList()
-              ..sort((a, b) => b.id.compareTo(a.id));
-        if (outputs.isNotEmpty && currentDevice.name != outputs.first.name) {
-          audioDevice = AudioDevice(outputs.first.name, outputs.first.name);
-        }
-      } else if (event.devicesRemoved.isNotEmpty) {
-        final outputs =
-            (await (await getSession()).getDevices())
-                .where((e) => e.isOutput)
-                .toList()
-              ..sort((a, b) => b.id.compareTo(a.id));
-        if (outputs.isNotEmpty && currentDevice.name != outputs.first.name)
-          audioDevice = AudioDevice(outputs.first.name, outputs.first.name);
-      }
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()} change',
-        e,
-        stackTrace,
-      );
-    }
-    
-    await audioPlayer.setAudioDevice(audioDevice: audioDevice);
-    */
-  }
+  ) async {}
 
   void _handleSessionEventChange(audio_session.AudioInterruptionEvent event) {
     if (event.begin) {
@@ -914,28 +871,18 @@ class ReverbioAudioHandler extends BaseAudioHandler {
               );
               break;
             case TaskStatus.complete:
-              userOfflineSongs.addOrUpdateWhere(
-                checkEntityId,
-                update.task.taskId,
-              );
-              unawaited(
-                addOrUpdateData(
-                  'userNoBackup',
-                  'offlineSongs',
-                  userOfflineSongs,
-                ),
-              );
+              userOfflineSongs.addOrUpdate(update.task.taskId, checkEntityId);
               showToast(
                 '${L10n.current.downloaded}: "${update.task.displayName}"',
                 id: update.task.taskId,
               );
               unawaited(
-              FileTagger(
-                offlineDirectory: offlineDirectory.value!,
-              ).tagOfflineFile(update.task.taskId, update.task.taskId),
-            );
-            break;
-          case TaskStatus.canceled:
+                FileTagger(
+                  offlineDirectory: offlineDirectory.value!,
+                ).tagOfflineFile(update.task.taskId, update.task.taskId),
+              );
+              break;
+            case TaskStatus.canceled:
               showToast(
                 '${L10n.current.downloadCancelled}: "${update.task.displayName}"',
                 id: update.task.taskId,
@@ -1090,21 +1037,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   void changeSponsorBlockStatus() async {
     settings.sponsorBlockSupport.value = !settings.sponsorBlockSupport.value;
-    await addOrUpdateData(
-      'settings',
-      'sponsorBlockSupport',
-      settings.sponsorBlockSupport.value,
-    );
   }
 
   void changeAutoPlayNextStatus() async {
     settings.playNextSongAutomatically.value =
         !settings.playNextSongAutomatically.value;
-    await addOrUpdateData(
-      'settings',
-      'playNextSongAutomatically',
-      settings.playNextSongAutomatically.value,
-    );
   }
 
   int _generateRandomIndex(int length) {
@@ -1133,7 +1070,6 @@ void addSongToQueue(SongBar songBar) {
   if (!isSongInQueue(songBar)) {
     activeQueue['list'].add(songBar.song);
     audioHandler.queueSongBars.add(songBar);
-    activeQueueLength.value = audioHandler.queueSongBars.length;
     audioHandler.queue.add(audioHandler.queue.value + [songBar.mediaItem]);
   }
 }
@@ -1144,7 +1080,6 @@ bool removeSongFromQueue(SongBar songBar) {
     return e.equals(songBar);
   });
   updateMediaItemQueue(audioHandler.queueSongBars);
-  activeQueueLength.value = audioHandler.queueSongBars.length;
   return val;
 }
 
@@ -1202,5 +1137,4 @@ void clearSongQueue() {
   activeQueue['source'] = '';
   activeQueue['list'].clear();
   audioHandler.queueSongBars.clear();
-  activeQueueLength.value = 0;
 }

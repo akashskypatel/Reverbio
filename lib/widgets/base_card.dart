@@ -28,6 +28,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -139,7 +140,7 @@ class _BaseCardState extends State<BaseCard> {
         case 'ep':
         case 'broadcast':
         case 'other':
-          return queueAlbumInfoRequest(widget.inputData);
+          return queueAlbumInfoRequest(widget.inputData).completerFuture;
         default:
       }
   }
@@ -343,9 +344,9 @@ class _BaseCardState extends State<BaseCard> {
   Widget _buildLiked() {
     return StatefulBuilder(
       builder: (context, setState) {
-        return ValueListenableBuilder(
-          valueListenable: _getLikeNotifier(),
-          builder: (context, value, child) {
+        return ListenableBuilder(
+          listenable: _getLikeNotifier(),
+          builder: (context, child) {
             return FutureBuilder(
               future: Future.microtask(_getLikeStatus),
               builder: (context, snapshot) {
@@ -398,18 +399,18 @@ class _BaseCardState extends State<BaseCard> {
     );
   }
 
-  ValueNotifier<int> _getLikeNotifier() {
+  Listenable _getLikeNotifier() {
     switch (dataType) {
       case 'playlist':
-        return currentLikedPlaylistsLength;
+        return userLikedPlaylists;
       case 'album':
       case 'single':
       case 'ep':
       case 'broadcast':
       case 'other':
-        return currentLikedAlbumsLength;
+        return userLikedAlbumsList;
       case 'artist':
-        return currentLikedArtistsLength;
+        return userLikedArtistsList;
       default:
         return ValueNotifier(0);
     }

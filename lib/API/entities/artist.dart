@@ -22,34 +22,17 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
-import 'package:hive/hive.dart';
 import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 List globalArtists = [];
-final List userLikedArtistsList =
-    (Hive.box('user').get('likedArtists', defaultValue: []) as List).map((e) {
-      e = Map<String, dynamic>.from(e);
-      return e;
-    }).toList();
-
-final List cachedArtistsList =
-    (Hive.box('cache').get('cachedArtists', defaultValue: []) as List).map((e) {
-      e = Map<String, dynamic>.from(e);
-      return e;
-    }).toList();
-
-final ValueNotifier<int> currentLikedArtistsLength = ValueNotifier<int>(
-  userLikedArtistsList.length,
-);
 
 /// Returns current liked status if successful.
 Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
@@ -61,17 +44,13 @@ Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
           (artist['musicbrainz'] == null || artist['musicbrainz'].isEmpty))
         unawaited(getArtistDetails(artist));
       userLikedArtistsList.addOrUpdate(
-        'id',
-        artist['id'],
         minimizeArtistData(artist),
+        checkEntityId,
       );
-      currentLikedArtistsLength.value = userLikedArtistsList.length;
       await PM.triggerHook(artist, 'onEntityLiked');
     } else {
       userLikedArtistsList.removeWhere((value) => checkArtist(artist, value));
-      currentLikedArtistsLength.value = userLikedArtistsList.length;
     }
-    unawaited(addOrUpdateData('user', 'likedArtists', userLikedArtistsList));
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -103,9 +82,7 @@ Map<String, dynamic> minimizeArtistData(dynamic artist) {
 
 bool isArtistAlreadyLiked(artistToCheck) =>
     artistToCheck is Map &&
-    userLikedArtistsList.any(
-      (artist) => artist is Map && checkArtist(artist, artistToCheck),
-    );
+    userLikedArtistsList.any((artist) => checkArtist(artist, artistToCheck));
 
 Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
   try {
@@ -150,8 +127,7 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
     await Future.wait(futures).then((value) {
       for (dynamic res in value) {
         res = copyMap(res);
-        if (res['source'] == 'discogs')
-          dcRes.addAll(res);
+        if (res['source'] == 'discogs') dcRes.addAll(res);
         if (res['source'] == 'youtube') ytRes.addAll(res);
       }
     });
@@ -450,13 +426,8 @@ dynamic _searchCachedArtists(String query) {
   }
 }
 
-Future<void> addArtistToCache(Map artist) async {
-  cachedArtistsList.addOrUpdateWhere(checkArtist, artist);
-  await addOrUpdateData(
-    'cache',
-    'cachedArtists',
-    cachedArtistsList.map(minimizeArtistData).toList(),
-  );
+Future<void> addArtistToCache(Map<String, dynamic> artist) async {
+  cachedArtistsList.addOrUpdate(artist, checkArtist);
 }
 
 Future<dynamic> _getArtistDetailsMB(

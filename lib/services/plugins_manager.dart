@@ -30,9 +30,7 @@ import 'package:flutter_js/extensions/fetch.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
-import 'package:reverbio/API/entities/album.dart';
-import 'package:reverbio/API/entities/artist.dart';
-import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -974,7 +972,10 @@ class PluginsManager {
     }
   }
 
-  static Future<void> setUserSettings(String pluginName, dynamic settings) async {
+  static Future<void> setUserSettings(
+    String pluginName,
+    dynamic settings,
+  ) async {
     try {
       _pluginsData
           .firstWhere(
@@ -982,7 +983,7 @@ class PluginsManager {
             orElse: () => {},
           )['userSettings']
           .addAll(settings);
-     await addOrUpdateData('settings', 'pluginsData', _pluginsData);
+      await addOrUpdateData('settings', 'pluginsData', _pluginsData);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1114,7 +1115,11 @@ class PluginsManager {
     }
   }
 
-  static Future<void> cacheData(String pluginName, dynamic entity, {String? key}) async {
+  static Future<void> cacheData(
+    String pluginName,
+    dynamic entity, {
+    String? key,
+  }) async {
     final entityCacheMap = {
       'song': {'key': 'cachedSongs', 'cache': cachedSongsList},
       'album': {'key': 'cachedAlbums', 'cache': cachedAlbumsList},

@@ -25,17 +25,17 @@ import 'dart:math' as math;
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/playlist_page.dart';
-import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
@@ -51,8 +51,6 @@ class SearchPage extends StatefulWidget {
   @override
   _SearchPageState createState() => _SearchPageState();
 }
-
-List searchHistory = Hive.box('user').get('searchHistory', defaultValue: []);
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchBar = TextEditingController();
@@ -103,7 +101,7 @@ class _SearchPageState extends State<SearchPage> {
             context,
             MaterialPageRoute(
               builder:
-                  (context) => PlaylistPage(page: '/album', playlistData: data),
+                  (context) => PlaylistPage(page: '/album', playlistData: Map<String, dynamic>.from(data)),
               settings: RouteSettings(name: '/album?${data['id']}'),
             ),
           );
@@ -137,7 +135,6 @@ class _SearchPageState extends State<SearchPage> {
         setState(() {
           searchHistory.insert(0, _searchBar.text);
         });
-      unawaited(addOrUpdateData('user', 'searchHistory', searchHistory));
     }
   }
 
@@ -330,7 +327,7 @@ class _SearchPageState extends State<SearchPage> {
           SongList(
             title: entityName[header.toLowerCase()]!['localization']!,
             page: 'search',
-            inputData: suggestionList['data'],
+            songBars: NotifiableList.from(suggestionList['data']),
             expandedActions: _buildPrevNextButtons(header, suggestionList),
           )
         else
@@ -477,13 +474,6 @@ class _SearchPageState extends State<SearchPage> {
                           setState(() {
                             searchHistory.remove(query);
                           });
-                        unawaited(
-                          addOrUpdateData(
-                            'user',
-                            'searchHistory',
-                            searchHistory,
-                          ),
-                        );
                       }
                     },
                     trailing:

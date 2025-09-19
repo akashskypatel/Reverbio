@@ -22,39 +22,18 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
 
-final List userLikedAlbumsList =
-    (Hive.box('user').get('likedAlbums', defaultValue: []) as List).map((e) {
-      e = Map<String, dynamic>.from(e);
-      return e;
-    }).toList();
-
-final List cachedAlbumsList =
-    (Hive.box('cache').get('cachedAlbums', defaultValue: []) as List).map((e) {
-      e = Map<String, dynamic>.from(e);
-      return e;
-    }).toList();
-
-final ValueNotifier<int> currentLikedAlbumsLength = ValueNotifier<int>(
-  userLikedAlbumsList.length,
-);
-
-final Set<NotifiableFuture> getAlbumInfoQueue = {};
-
-final NotifiableFuture _writeCacheFuture = NotifiableFuture();
+final Set<NotifiableFuture<Map<String, dynamic>>> getAlbumInfoQueue = {};
 
 dynamic _getCachedAlbum(dynamic album) {
   try {
@@ -73,21 +52,7 @@ dynamic _getCachedAlbum(dynamic album) {
 
 void addAlbumToCache(Map<String, dynamic> album) {
   if (isAlbumValid(album)) {
-    cachedAlbumsList.addOrUpdateWhere(checkAlbum, album);
-  }
-}
-
-Future<void> _writeToCache() async {
-  try {
-    await _writeCacheFuture.runFuture(
-      addOrUpdateData(
-        'cache',
-        'cachedAlbums',
-        cachedAlbumsList.map(minimizeAlbumData).toList(),
-      ),
-    );
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    cachedAlbumsList.addOrUpdate(album, checkAlbum);
   }
 }
 
@@ -100,7 +65,7 @@ Map<String, dynamic> minimizeAlbumData(dynamic album) {
     'artist': album['artist'],
     'first-release-date': album['first-release-date'],
     'list':
-        ((album['list'] ?? []) as List).where((e) => e != null).map((e) {
+        ((album['list'] ?? []) as Iterable).where((e) => e != null).map((e) {
           if (e is String) return e;
           return e['id'];
         }).toList(),
@@ -113,20 +78,22 @@ Map<String, dynamic> minimizeAlbumData(dynamic album) {
   };
 }
 
-Future queueAlbumInfoRequest(dynamic album) {
+NotifiableFuture<Map<String, dynamic>> queueAlbumInfoRequest(dynamic album) {
   try {
     final existing = getAlbumInfoQueue.where((e) => checkAlbum(e.data, album));
     if (existing.isEmpty) {
-      final futureTracker = NotifiableFuture(album);
+      final futureTracker = NotifiableFuture<Map<String, dynamic>>.withFuture(
+        album,
+        getAlbumInfo(album),
+      );
       getAlbumInfoQueue.add(futureTracker);
-      return futureTracker.runFuture(getAlbumInfo(album));
+      return futureTracker;
+    } else {
+      return existing.first;
     }
-    return getAlbumInfoQueue.isNotEmpty
-        ? existing.first.completer!.future
-        : Future.value(album);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return Future.value(album);
+    return NotifiableFuture.fromValue(album);
   }
 }
 
@@ -163,10 +130,8 @@ Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
   addAlbumToCache(album);
   await PM.triggerHook(album, 'onGetAlbumInfo');
   getAlbumInfoQueue.removeWhere((e) => checkAlbum(e.data, album));
-  if (getAlbumInfoQueue.isEmpty &&
-      (_writeCacheFuture.completer?.future == null ||
-          _writeCacheFuture.isComplete)) {
-    unawaited(_writeToCache());
+  if (getAlbumInfoQueue.isEmpty) {
+    cachedAlbumsList.writeToCache();
   }
   return album;
 }
@@ -351,7 +316,6 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
         if (isYouTubeSongValid(recording)) recording['ytid'] = song['ytid'];
         if (checkTitleAndArtist(song, recording) ||
             (!isSongTitleValid(song) && !isSongArtistValid(song))) {
-          //final result = copyMap(await getSongInfo(recording['id']));
           song.addAll(<String, dynamic>{
             'rgid': (song['id'] as String).mbid,
             'rid': (recording['id'] as String).mbid,
@@ -436,19 +400,12 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
       if (album['id'] != null &&
           (album['image'] == null || album['image'].isEmpty))
         unawaited(getAlbumCoverArt(Map<String, dynamic>.from(album)));
-      userLikedAlbumsList.addOrUpdate(
-        'id',
-        album['id'],
-        minimizeAlbumData(album),
-      );
-      currentLikedAlbumsLength.value = userLikedAlbumsList.length;
+      userLikedAlbumsList.addOrUpdate(minimizeAlbumData(album), checkAlbum);
       album['album'] = album['title'];
       await PM.triggerHook(album, 'onEntityLiked');
     } else {
       userLikedAlbumsList.removeWhere((value) => checkAlbum(album, value));
-      currentLikedAlbumsLength.value = userLikedAlbumsList.length;
     }
-    unawaited(addOrUpdateData('user', 'likedAlbums', userLikedAlbumsList));
     return add;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -496,9 +453,7 @@ bool isAlbumArtistValid(dynamic album) {
 
 bool isAlbumAlreadyLiked(albumToCheck) =>
     albumToCheck is Map &&
-    userLikedAlbumsList.any(
-      (album) => album is Map && checkAlbum(album, albumToCheck),
-    );
+    userLikedAlbumsList.any((album) => checkAlbum(album, albumToCheck));
 
 int? getAlbumHashCode(dynamic album) {
   if (!(album is Map)) return null;

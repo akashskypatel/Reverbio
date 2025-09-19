@@ -40,9 +40,10 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final px = ProxyManager();
-YoutubeExplode yt = useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
-DiscogsApiClient dc = DiscogsApiClient();// px.discogsClient;
-MusicBrainzApiClient mb = MusicBrainzApiClient();// px.musicbrainzClient;
+YoutubeExplode yt =
+    useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
+DiscogsApiClient dc = DiscogsApiClient(); // px.discogsClient;
+MusicBrainzApiClient mb = MusicBrainzApiClient(); // px.musicbrainzClient;
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
@@ -327,7 +328,9 @@ Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
   int limit = 10,
 }) async {
   try {
-    final results = await px.localYoutubeClient.search.getQuerySuggestions(query);
+    final results = await px.localYoutubeClient.search.getQuerySuggestions(
+      query,
+    );
     return {
       'youtube': {
         'count': results.length,
@@ -572,7 +575,18 @@ Future<Map<String, dynamic>> getIPGeolocation() async {
   }
 }
 
-bool checkEntityId(String id, String otherId) {
+bool checkEntityId(dynamic entity, dynamic other) {
+  String id = '';
+  String otherId = '';
+  if (entity is String)
+    id = entity;
+  else if (entity is Map)
+    id = parseEntityId(entity);
+  if (other is String)
+    otherId = other;
+  else if (other is Map)
+    otherId = parseEntityId(other);
+  if (entity == other) return true;
   if (id.isEmpty || otherId.isEmpty) return false;
   id = parseEntityId(id);
   otherId = parseEntityId(otherId);
@@ -668,7 +682,7 @@ Future<String?> pickImageFile({int maxAttempts = 100}) async {
 Future<void> cacheEntity(dynamic entity) async {
   if (entity['primary-type'] == null) return;
   if (['song', 'recording'].contains(entity['primary-type']))
-    return addSongToCache(entity);
+    return addSongToCache(Map<String, dynamic>.from(entity));
   if ([
     'album',
     'single',
@@ -676,6 +690,7 @@ Future<void> cacheEntity(dynamic entity) async {
     'broadcast',
     'other',
   ].contains(entity['primary-type']))
-    return addAlbumToCache(entity);
-  if (entity['primary-type'] == 'artist') return addArtistToCache(entity);
+    return addAlbumToCache(Map<String, dynamic>.from(entity));
+  if (entity['primary-type'] == 'artist')
+    return addArtistToCache(Map<String, dynamic>.from(entity));
 }

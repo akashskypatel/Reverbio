@@ -566,12 +566,15 @@ bool isAudio(String path) {
     '.mp2',
     '.mp3',
     '.m4a',
+    '.mp4',
     '.oga',
     '.ogg',
     '.oma',
     '.tta',
     '.wav',
     '.wsaud',
+    '.webm',
+    '.weba',
   ];
   return audioExtensions.contains(extension(path));
 }
@@ -970,16 +973,15 @@ String? getMimeTypeFromFile(String filePath) {
   try {
     final file = File(filePath);
     final raf = file.openSync();
-    
+
     try {
       const bytesToRead = 128;
       final buffer = List<int>.filled(bytesToRead, 0);
       final bytesRead = raf.readIntoSync(buffer, 0, bytesToRead);
-      
-      final headerBytes = bytesRead < bytesToRead 
-          ? buffer.sublist(0, bytesRead) 
-          : buffer;
-      
+
+      final headerBytes =
+          bytesRead < bytesToRead ? buffer.sublist(0, bytesRead) : buffer;
+
       return lookupMimeType(file.path, headerBytes: headerBytes);
     } finally {
       raf.closeSync();
@@ -987,4 +989,12 @@ String? getMimeTypeFromFile(String filePath) {
   } catch (e) {
     return null;
   }
+}
+
+Locale parseLocale(String languageCode) {
+  final parts = languageCode.split('-');
+  if (parts.length > 1) {
+    return Locale.fromSubtags(languageCode: parts[0], scriptCode: parts[1]);
+  }
+  return Locale(languageCode);
 }

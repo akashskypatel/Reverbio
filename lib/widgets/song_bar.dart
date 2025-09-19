@@ -27,6 +27,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -51,16 +52,19 @@ import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
   SongBar(
-    this.songFuture,
+    this.songData,
     this.context, {
     this.backgroundColor,
     this.showMusicDuration = false,
     this.onRemove,
     this.borderRadius = BorderRadius.zero,
     super.key,
-  });
+  }) : songFuture = initializeSongBarFuture(songData),
+       songMetadataNotifier = ValueNotifier(copyMap(songData)),
+       _borderRadiusNotifier = ValueNotifier(borderRadius);
   final BuildContext context;
-  final NotifiableFuture songFuture;
+  final Map<String, dynamic> songData;
+  final NotifiableFuture<Map<String, dynamic>> songFuture;
   final Color? backgroundColor;
   final VoidCallback? onRemove;
   final bool showMusicDuration;
@@ -70,15 +74,11 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
   final ValueNotifier<MediaItem?> _mediaItemNotifier = ValueNotifier(null);
   final ValueNotifier<Media?> _mediaNotifier = ValueNotifier(null);
-  final ValueNotifier<Map<String, dynamic>?> songMetadataNotifier =
-      ValueNotifier(null);
+  final ValueNotifier<Map<String, dynamic>> songMetadataNotifier;
   final ValueNotifier<int> _statusNotifier = ValueNotifier(0);
-  late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
-    this.borderRadius,
-  );
+  final ValueNotifier<BorderRadius> _borderRadiusNotifier;
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
-  Map<String, dynamic> get song =>
-      songMetadataNotifier.value ?? songFuture.resultOrData ?? {};
+  Map<String, dynamic> get song => songMetadataNotifier.value;
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
   bool get isPrepared => _isPreparedNotifier.value;
@@ -94,7 +94,7 @@ class SongBar extends StatefulWidget {
   Future<void> _prepareSong() async {
     try {
       final _song = copyMap(songMetadataNotifier.value)
-        ..addAll(songFuture.resultOrData);
+        ..addAll(songFuture.resultOrData ?? {});
       songMetadataNotifier.value = _song;
       _isLoadingNotifier.value = true;
       _statusNotifier.value = 1;
@@ -133,7 +133,7 @@ class SongBar extends StatefulWidget {
       showToast(L10n.current.errorCouldNotFindAStream);
     }
     final _song = copyMap(songMetadataNotifier.value)
-      ..addAll(songFuture.resultOrData);
+      ..addAll(songFuture.resultOrData ?? {});
     songMetadataNotifier.value = _song;
   }
 
@@ -144,7 +144,7 @@ class SongBar extends StatefulWidget {
     final ytSong = await findYTSong(song, newYtid: newYtid);
     final ytid = ((song['ytid'] ?? song['id']) as String).ytid;
     if (ytid.isNotEmpty && isYouTubeSongValid(ytSong)) {
-      final _song = copyMap(ytSong)..addAll(songFuture.resultOrData);
+      final _song = copyMap(ytSong)..addAll(songFuture.resultOrData ?? {});
       songMetadataNotifier.value = _song;
       _isLoadingNotifier.value = false;
       _statusNotifier.value = 0;
@@ -160,7 +160,9 @@ class SongBar extends StatefulWidget {
     }
   }
 
-  NotifiableFuture getMetadataFuture({bool isPrepare = false}) {
+  NotifiableFuture<Map<String, dynamic>> getMetadataFuture({
+    bool isPrepare = false,
+  }) {
     try {
       parseEntityId(song);
       if (!isSongValid(song) || (!isMusicbrainzSongValid(song) && isPrepare)) {
@@ -220,14 +222,13 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    widget.songMetadataNotifier.value = copyMap(widget.songFuture.resultOrData);
     widget.songFuture.addListener(_listener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {
           if (widget.songFuture.isComplete) {
             final _song = copyMap(widget.songMetadataNotifier.value)
-              ..addAll(widget.songFuture.resultOrData);
+              ..addAll(widget.songFuture.resultOrData ?? {});
             widget.songMetadataNotifier.value = _song;
             widget._isLoadingNotifier.value = false;
             widget._statusNotifier.value = 0;
@@ -246,7 +247,7 @@ class _SongBarState extends State<SongBar> {
   void _listener() {
     if (widget.songFuture.isComplete && widget.songFuture.hasResult) {
       final _song = copyMap(widget.songMetadataNotifier.value)
-        ..addAll(widget.songFuture.resultOrData);
+        ..addAll(widget.songFuture.resultOrData ?? {});
       widget.songMetadataNotifier.value = _song;
     } else
       widget.songFuture.completerFuture?.then((value) {
@@ -254,7 +255,7 @@ class _SongBarState extends State<SongBar> {
           setState(() {
             if (widget.songFuture.isComplete && widget.songFuture.hasResult) {
               final _song = copyMap(widget.songMetadataNotifier.value)
-                ..addAll(widget.songFuture.resultOrData);
+                ..addAll(widget.songFuture.resultOrData ?? {});
               widget.songMetadataNotifier.value = _song;
             }
             widget._isLoadingNotifier.value = false;
@@ -288,15 +289,14 @@ class _SongBarState extends State<SongBar> {
     return ValueListenableBuilder(
       valueListenable: widget.songMetadataNotifier,
       builder: (context, song, child) {
-        song =
-            widget.songMetadataNotifier.value ?? widget.songFuture.resultOrData;
+        song = widget.songMetadataNotifier.value;
         final isLoading = widget.songFuture.isLoading;
-        final title = song?['mbTitle'] ?? song?['title'] ?? song?['ytTitle'];
+        final title = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
         final artist =
             combineArtists(song) ??
-            song?['mbArtist'] ??
-            song?['artist'] ??
-            song?['ytArtist'];
+            song['mbArtist'] ??
+            song['artist'] ??
+            song['ytArtist'];
         return Stack(
           children: [
             Padding(
@@ -343,7 +343,7 @@ class _SongBarState extends State<SongBar> {
                                                 (isLoading
                                                     ? 'Loading...'
                                                     : kDebugMode
-                                                    ? 'unknown ${song?['id']}'
+                                                    ? 'unknown ${song['id']}'
                                                     : 'unknown'),
                                             overflow: TextOverflow.ellipsis,
                                             style: commonBarTitleStyle.copyWith(
@@ -829,12 +829,12 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
             maxHeight: MediaQuery.sizeOf(context).height * 0.6,
           ),
           child:
-              userCustomPlaylists.value.isNotEmpty
+              userCustomPlaylists.isNotEmpty
                   ? ListView.builder(
                     shrinkWrap: true,
-                    itemCount: userCustomPlaylists.value.length,
+                    itemCount: userCustomPlaylists.length,
                     itemBuilder: (context, index) {
-                      final playlist = userCustomPlaylists.value[index];
+                      final playlist = userCustomPlaylists[index];
                       return Card(
                         color: Theme.of(context).colorScheme.secondaryContainer,
                         elevation: 0,

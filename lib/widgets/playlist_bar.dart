@@ -102,13 +102,13 @@ class PlaylistBar extends StatelessWidget {
                             (context) => PlaylistPage(
                               page: 'playlist',
                               playlistData:
-                                  playlistData ??
-                                  {
+                                  Map<String, dynamic>.from(playlistData ??
+                                  <String, dynamic>{
                                     'title': playlistTitle,
                                     'ytid': playlistId,
                                     'image': playlistArtwork,
                                     'primary-type': 'playlist',
-                                  },
+                                  }),
                             ),
                       ),
                     );

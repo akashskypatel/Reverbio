@@ -25,15 +25,20 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/notifiable_future.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/artist_header.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/genre_list.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -58,15 +63,18 @@ class _ArtistPageState extends State<ArtistPage> {
   late final isLargeScreen = MediaQuery.of(context).size.width > 480;
   late final screenWidth = MediaQuery.sizeOf(context).width;
   late ThemeData _theme;
-  dynamic albums;
-  dynamic others;
-  dynamic singles;
+  List albums = [];
+  List others = [];
+  List singles = [];
   final likeStatus = ValueNotifier(false);
+  late final NotifiableFuture<dynamic> dataFuture = NotifiableFuture(
+    copyMap(widget.artistData),
+  );
 
   @override
   void initState() {
     super.initState();
-    _setupData();
+    dataFuture.runFuture(_setupArtistData());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       likeStatus.value = isArtistAlreadyLiked(widget.artistData);
     });
@@ -142,15 +150,16 @@ class _ArtistPageState extends State<ArtistPage> {
   Widget _buildLikeButton() {
     return StatefulBuilder(
       builder: (context, setState) {
-        return ValueListenableBuilder(
-          valueListenable: currentLikedArtistsLength,
-          builder: (context, value, child) {
+        return ListenableBuilder(
+          listenable: userLikedArtistsList,
+          builder: (context, child) {
             return FutureBuilder(
               future: Future.microtask(
                 () => isArtistAlreadyLiked(widget.artistData),
               ),
               builder: (context, snapshot) {
-                bool value = likeStatus.value = isArtistAlreadyLiked(widget.artistData);
+                bool value =
+                    likeStatus.value = isArtistAlreadyLiked(widget.artistData);
                 if (!snapshot.hasError &&
                     snapshot.hasData &&
                     snapshot.data != null &&
@@ -169,7 +178,7 @@ class _ArtistPageState extends State<ArtistPage> {
                       widget.artistData,
                       !likeStatus.value,
                     );
-                    if (mounted) setState(() { });
+                    if (mounted) setState(() {});
                   },
                 );
               },
@@ -183,7 +192,7 @@ class _ArtistPageState extends State<ArtistPage> {
   Widget _buildBody() {
     if (widget.artistData?['musicbrainz'] == null)
       return FutureBuilder(
-        future: _setupData(),
+        future: _setupArtistData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Padding(padding: EdgeInsets.all(35), child: Spinner());
@@ -265,109 +274,196 @@ class _ArtistPageState extends State<ArtistPage> {
     );
   }
 
-  Future<dynamic> _setupData() async {
-    if (widget.artistData?['musicbrainz'] == null)
-      widget.artistData.addAll(
-        Map<String, dynamic>.from(
-          await getArtistDetails(widget.artistData?['id']),
-        ),
+  NotifiableFuture _getAlbums(dynamic artistData) {
+    return NotifiableFuture.withFuture(
+      albums,
+      Future.microtask(() async {
+        if (!dataFuture.isComplete) await dataFuture.completerFuture;
+        albums =
+            artistData?['musicbrainz']?['release-groups'] == null
+                ? []
+                : List.from(artistData?['musicbrainz']['release-groups'])
+                    .where(
+                      (value) =>
+                          value['primary-type'].toString().toLowerCase() ==
+                          'album',
+                    )
+                    .map((ele) {
+                      ele['source'] = 'musicbrainz';
+                      ele['artist'] = artistData?['artist'];
+                      ele['artistId'] = artistData?['id'];
+                      ele['isAlbum'] = true;
+                      ele['ytid'] = null;
+                      return ele;
+                    })
+                    .map((e) {
+                      e = Map<String, dynamic>.from(e);
+                      return e;
+                    })
+                    .toList();
+        return getAlbumsCoverArt(albums);
+      }),
+    );
+  }
+
+  NotifiableFuture _getOthers(dynamic artistData) {
+    return NotifiableFuture.withFuture(
+      others,
+      Future.microtask(() async {
+        if (!dataFuture.isComplete) await dataFuture.completerFuture;
+        others =
+            artistData?['musicbrainz']?['release-groups'] == null
+                ? []
+                : List.from(artistData?['musicbrainz']?['release-groups'])
+                    .where(
+                      (value) =>
+                          value['primary-type'].toString().toLowerCase() !=
+                              'album' &&
+                          value['primary-type'].toString().toLowerCase() !=
+                              'single',
+                    )
+                    .map((ele) {
+                      ele['source'] = 'musicbrainz';
+                      ele['primary-type'] = ele['primary-type'] ?? 'unknown';
+                      ele['artist'] = artistData?['artist'];
+                      ele['artistId'] = artistData?['id'];
+                      ele['isAlbum'] = false;
+                      ele['ytid'] = null;
+                      return ele;
+                    })
+                    .map((e) {
+                      e = Map<String, dynamic>.from(e);
+                      return e;
+                    })
+                    .toList();
+        return getAlbumsCoverArt(others);
+      }),
+    );
+  }
+
+  NotifiableList<SongBar> _getSingles() {
+    return NotifiableList.fromAsync(
+      Future.microtask(() async {
+        if (!dataFuture.isComplete) await dataFuture.completerFuture;
+        singles =
+            (widget.artistData?['musicbrainz']?['release-groups'] == null
+                    ? []
+                    : List.from(
+                          widget.artistData?['musicbrainz']?['release-groups'],
+                        )
+                        .where(
+                          (value) =>
+                              value['primary-type'].toString().toLowerCase() ==
+                              'single',
+                        )
+                        .map((ele) {
+                          ele['source'] = 'musicbrainz';
+                          ele['artist'] = widget.artistData?['artist'];
+                          ele['artistId'] = widget.artistData?['id'];
+                          ele['isAlbum'] = false;
+                          ele['isSong'] = true;
+                          ele['ytid'] = null;
+                          ele['image'] =
+                              pickRandomItem(
+                                widget.artistData?['discogs']?['images'] ?? [],
+                              )?['uri150'];
+                          return ele;
+                        }))
+                .map((e) {
+                  e = Map<String, dynamic>.from(e);
+                  return e;
+                })
+                .toList();
+        return singles.map((e) => initializeSongBar(e, context));
+      }),
+    );
+  }
+
+  Future<dynamic> _setupArtistData() async {
+    final _initData = copyMap(widget.artistData);
+    final artistData = <String, dynamic>{};
+    if (widget.artistData?['musicbrainz'] == null) {
+      artistData.addAll(
+        await Future.microtask(() async {
+          return copyMap(
+            Map<String, dynamic>.from(await getArtistDetails(_initData)),
+          );
+        }),
       );
-
-    albums =
-        widget.artistData?['musicbrainz']?['release-groups'] == null
-            ? []
-            : List.from(widget.artistData?['musicbrainz']['release-groups'])
-                .where(
-                  (value) =>
-                      value['primary-type'].toString().toLowerCase() == 'album',
-                )
-                .map((ele) {
-                  ele['source'] = 'musicbrainz';
-                  ele['artist'] = widget.artistData?['artist'];
-                  ele['artistId'] = widget.artistData?['id'];
-                  ele['isAlbum'] = true;
-                  ele['ytid'] = null;
-                  return ele;
-                })
-                .toList();
-
-    others =
-        widget.artistData?['musicbrainz']?['release-groups'] == null
-            ? []
-            : List.from(widget.artistData?['musicbrainz']?['release-groups'])
-                .where(
-                  (value) =>
-                      value['primary-type'].toString().toLowerCase() !=
-                          'album' &&
-                      value['primary-type'].toString().toLowerCase() !=
-                          'single',
-                )
-                .map((ele) {
-                  ele['source'] = 'musicbrainz';
-                  ele['primary-type'] = ele['primary-type'] ?? 'unknown';
-                  ele['artist'] = widget.artistData?['artist'];
-                  ele['artistId'] = widget.artistData?['id'];
-                  ele['isAlbum'] = false;
-                  ele['ytid'] = null;
-                  return ele;
-                })
-                .toList();
-    singles =
-        widget.artistData?['musicbrainz']?['release-groups'] == null
-            ? []
-            : List.from(widget.artistData?['musicbrainz']?['release-groups'])
-                .where(
-                  (value) =>
-                      value['primary-type'].toString().toLowerCase() ==
-                      'single',
-                )
-                .map((ele) {
-                  ele['source'] = 'musicbrainz';
-                  ele['artist'] = widget.artistData?['artist'];
-                  ele['artistId'] = widget.artistData?['id'];
-                  ele['isAlbum'] = false;
-                  ele['isSong'] = true;
-                  ele['ytid'] = null;
-                  ele['image'] =
-                      pickRandomItem(
-                        widget.artistData?['discogs']?['images'] ?? [],
-                      )?['uri150'];
-                  return ele;
-                })
-                .toList();
-
+    }
+    _initData.addAll(artistData);
+    widget.artistData.clear();
+    widget.artistData.addAll(_initData);
     return widget.artistData;
   }
 
   Widget _buildContentList() {
+    final _singles = _getSingles();
+    final _albums = _getAlbums(widget.artistData);
+    final _others = _getOthers(widget.artistData);
     return SliverMainAxisGroup(
       slivers: [
         //Albums
-        if (albums.isNotEmpty)
-          SliverToBoxAdapter(
-            child: HorizontalCardScroller(
-              future: getAlbumsCoverArt(albums),
-              icon: FluentIcons.cd_16_filled,
-              title: context.l10n!.albums,
-            ),
-          ),
+        ListenableBuilder(
+          listenable: _albums,
+          builder: (context, child) {
+            return SliverToBoxAdapter(
+              child: _albums.build(
+                loading: () => const Spinner(),
+                error:
+                    (e, stackTrace) => Tooltip(
+                      message: e.toString(),
+                      child: const Icon(FluentIcons.error_circle_24_filled),
+                    ),
+                data:
+                    (data) =>
+                        albums.isEmpty
+                            ? const SizedBox.shrink()
+                            : HorizontalCardScroller(
+                              future: _albums.completerFuture,
+                              icon: FluentIcons.cd_16_filled,
+                              title: context.l10n!.albums,
+                            ),
+              ),
+            );
+          },
+        ),
         //Others
-        if (others.isNotEmpty)
-          SliverToBoxAdapter(
-            child: HorizontalCardScroller(
-              future: getAlbumsCoverArt(others),
-              icon: FluentIcons.cd_16_filled,
-              title: context.l10n!.others,
-            ),
-          ),
+        ListenableBuilder(
+          listenable: _others,
+          builder: (context, child) {
+            return SliverToBoxAdapter(
+              child: _others.build(
+                loading: () => const Spinner(),
+                error:
+                    (e, stackTrace) => Tooltip(
+                      message: e.toString(),
+                      child: const Icon(FluentIcons.error_circle_24_filled),
+                    ),
+                data:
+                    (data) =>
+                        others.isEmpty
+                            ? const SizedBox.shrink()
+                            : HorizontalCardScroller(
+                              future: _others.completerFuture,
+                              icon: FluentIcons.cd_16_filled,
+                              title: context.l10n!.others,
+                            ),
+              ),
+            );
+          },
+        ),
         //Singles
-        if (singles.isNotEmpty)
-          SongList(
-            page: 'singles',
-            title: context.l10n!.singles,
-            inputData: singles,
-            //future: getSinglesTrackList(singles),
-          ),
+        ListenableBuilder(
+          listenable: _singles,
+          builder: (context, child) {
+            return SongList(
+              page: 'singles',
+              title: context.l10n!.singles,
+              songBars: _singles,
+            );
+          },
+        ),
       ],
     );
   }

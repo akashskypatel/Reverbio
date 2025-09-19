@@ -277,9 +277,9 @@ class _MiniPlayerState extends State<MiniPlayer> {
   }
 
   Widget _buildNextButton(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: activeQueueLength,
-      builder: (context, value, __) {
+    return ListenableBuilder(
+      listenable: audioHandler.queueSongBars,
+      builder: (context, __) {
         if (audioHandler.hasNext)
           return IconButton(
             onPressed: () async {
@@ -298,9 +298,9 @@ class _MiniPlayerState extends State<MiniPlayer> {
   }
 
   Widget _buildPreviousButton(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: activeQueueLength,
-      builder: (context, value, __) {
+    return ListenableBuilder(
+      listenable: audioHandler.queueSongBars,
+      builder: (context, __) {
         if (audioHandler.hasPrevious)
           return IconButton(
             onPressed: () async {
@@ -355,7 +355,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
         return ValueListenableBuilder(
           valueListenable: songMetadataNotifier,
           builder: (context, song, child) {
-            if (song == null) return const SizedBox.shrink();
+            if (song.isEmpty) return const SizedBox.shrink();
             final artistData =
                 (song['artist-credit'] ?? [song['artist'] ?? 'unknown'])
                     as List;

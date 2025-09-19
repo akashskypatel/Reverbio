@@ -26,6 +26,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -35,11 +36,13 @@ import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -55,7 +58,6 @@ class UserSongsPage extends StatefulWidget {
 class _UserSongsPageState extends State<UserSongsPage> {
   late ThemeData _theme;
   final _isEditEnabled = ValueNotifier(false);
-  late final ValueNotifier<int> _lengthNotifier;
   late final String _title;
   late final IconData _icon;
   @override
@@ -63,14 +65,11 @@ class _UserSongsPageState extends State<UserSongsPage> {
     super.initState();
     _title = getTitle(widget.page);
     _icon = getIcon(widget.page);
-    _lengthNotifier = getLength(widget.page);
-    //_lengthNotifier.addListener(_listener);
   }
 
   @override
   void dispose() {
     super.dispose();
-    //_lengthNotifier.removeListener(_listener);
   }
 
   @override
@@ -78,7 +77,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
     _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_title), //offlineMode.value ? Text(title) : null,
+        title: Text(_title),
         actions: [
           if (_title == context.l10n!.queue)
             Row(children: [_buildQueueActionsList()]),
@@ -109,9 +108,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
   }
 
   Widget _buildQueueActionsList() {
-    return ValueListenableBuilder(
-      valueListenable: activeQueueLength,
-      builder: (context, value, __) {
+    return ListenableBuilder(
+      listenable: audioHandler.queueSongBars,
+      builder: (context, __) {
+        final value = audioHandler.queueSongBars.length;
         return Row(
           children: [
             ValueListenableBuilder<AudioServiceRepeatMode>(
@@ -425,22 +425,27 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Widget _buildCustomScrollView(
     String title,
     IconData icon,
-    Future<List<dynamic>> songsListFuture,
+    NotifiableList<SongBar> notifiableSongsList,
   ) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: buildPlaylistHeader(title, icon, _lengthNotifier),
-          ),
-        ),
-        FutureBuilder(
-          future: songsListFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting)
-              return SliverToBoxAdapter(
+    return ListenableBuilder(
+      listenable: notifiableSongsList,
+      builder: (context, child) {
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: buildPlaylistHeader(
+                  title,
+                  icon,
+                  notifiableSongsList.length,
+                ),
+              ),
+            ),
+
+            if (notifiableSongsList.isLoading)
+              SliverToBoxAdapter(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
@@ -450,28 +455,27 @@ class _UserSongsPageState extends State<UserSongsPage> {
                     const Spinner(),
                   ],
                 ),
-              );
-            if (snapshot.hasError)
-              return SliverToBoxAdapter(
+              ),
+            if (notifiableSongsList.hasError)
+              SliverToBoxAdapter(
                 child: Icon(
                   FluentIcons.error_circle_24_filled,
                   color: _theme.colorScheme.primary,
                 ),
-              );
-            final _songList = snapshot.data ?? [];
-            return ValueListenableBuilder(
+              ),
+            ValueListenableBuilder(
               valueListenable: _isEditEnabled,
               builder:
                   (context, value, child) => SongList(
                     page: widget.page,
                     title: getTitle(widget.page),
                     isEditable: value,
-                    inputData: _songList,
+                    songBars: notifiableSongsList,
                   ),
-            );
-          },
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -496,35 +500,36 @@ class _UserSongsPageState extends State<UserSongsPage> {
         FluentIcons.heart_24_regular;
   }
 
-  Future<List> getSongsList(String page) {
-    return {
-          'liked': Future.value(userLikedSongsList),
-          'offline': getUserOfflineSongs(),
-          'recents': Future.value(userRecentlyPlayed),
-          'queue': Future.value(activeQueue['list'] as List),
-        }[page] ??
-        Future.value(activeQueue['list'] as List);
+  Future<Iterable<SongBar>> _getOfflineSongs() async {
+    return Future.microtask(() async {
+      final songs = await getUserOfflineSongs();
+      return songs.map((e) => initializeSongBar(e, context));
+    });
   }
 
-  ValueNotifier<int> getLength(String page) {
-    return {
-          'liked': currentLikedSongsLength,
-          'offline': currentOfflineSongsLength,
-          'recents': currentRecentlyPlayedLength,
-          'queue': activeQueueLength,
-        }[page] ??
-        currentLikedSongsLength;
+  NotifiableList<SongBar> getSongsList(String page) {
+    switch (page) {
+      case 'liked':
+        return NotifiableList.from(
+          userLikedSongsList.map((e) => initializeSongBar(e, context)),
+        );
+      case 'offline':
+        return NotifiableList.fromAsync(_getOfflineSongs());
+      case 'recents':
+        return NotifiableList.from(
+          userRecentlyPlayed.map((e) => initializeSongBar(e, context)),
+        );
+      case 'queue':
+      default:
+        return audioHandler.queueSongBars;
+    }
   }
 
-  Widget buildPlaylistHeader(
-    String title,
-    IconData icon,
-    ValueNotifier<int> length,
-  ) {
+  Widget buildPlaylistHeader(String title, IconData icon, int length) {
     return PlaylistHeader(
       _buildPlaylistImage(title, icon, length),
       title,
-      length.value,
+      length,
       customWidget: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
@@ -585,22 +590,12 @@ class _UserSongsPageState extends State<UserSongsPage> {
     if (mounted) setState(() {});
   }
 
-  Widget _buildPlaylistImage(
-    String title,
-    IconData icon,
-    ValueNotifier<int> length,
-  ) {
+  Widget _buildPlaylistImage(String title, IconData icon, int length) {
     final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
-    length.addListener(_listener);
-    return ValueListenableBuilder(
-      valueListenable: length,
-      builder: (context, value, child) {
-        return BaseCard(
-          inputData: {'title': '$title\n${length.value} Songs'},
-          size: size,
-          icon: icon,
-        );
-      },
+    return BaseCard(
+      inputData: {'title': '$title\n$length Songs'},
+      size: size,
+      icon: icon,
     );
   }
 }
