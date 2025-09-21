@@ -103,7 +103,7 @@ void showPlaylistImporter(BuildContext context) => showDialog(
                                     ),
                                     const SizedBox(height: 20),
                                     CustomBar(
-                                      tileName: 'Import Playlist CSV',
+                                      tileName: context.l10n!.importPlaylistCsv,
                                       tileIcon:
                                           FluentIcons.folder_open_24_filled,
                                       borderRadius: commonBarRadius,

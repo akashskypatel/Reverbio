@@ -856,7 +856,8 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
       builder: (context, value, child) {
         final song = audioHandler.songValueNotifier.value!.song;
         final artistData =
-            (song['artist-credit'] ?? [song['artist'] ?? 'unknown']) as List;
+            (song['artist-credit'] ?? [song['artist'] ?? context.l10n!.unknown])
+                as List;
         int index = 1;
         final artistLabels = artistData.fold(<Widget>[], (v, e) {
           v.add(_buildArtistLabel(e is String ? e : e['artist']));
@@ -887,7 +888,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
                         song['mbTitle'] ??
                         song['title'] ??
                         song['ytTitle'] ??
-                        'unknown',
+                        context.l10n!.unknown,
                     fontColor: Theme.of(context).colorScheme.primary,
                     fontSize: screenHeight * 0.028,
                     fontWeight: FontWeight.w600,
@@ -946,7 +947,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
             artistData['name'] ??
             artistData['artist'] ??
             artistData['title'] ??
-            'unknown',
+            context.l10n!.unknown,
         fontColor: Theme.of(context).colorScheme.secondary,
         fontSize: screenHeight * 0.025,
         fontWeight: FontWeight.w500,

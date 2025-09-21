@@ -94,7 +94,7 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
     final playlist = userOfflinePlaylists[index];
     final bar = PlaylistBar(
       key: ValueKey(playlist['id']),
-      playlist['title'] ?? 'unknown',
+      playlist['title'] ?? context.l10n!.unknown,
       playlistId: playlist['id'],
       playlistArtwork: playlist['image'],
       playlistData: playlist,
@@ -113,7 +113,7 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
       userPlaylistBars.add(
         PlaylistBar(
           key: ValueKey(playlist['id']),
-          playlist['title'] ?? 'unknown',
+          playlist['title'] ?? context.l10n!.unknown,
           playlistId: playlist['id'],
           playlistArtwork: playlist['image'],
           playlistData: playlist,

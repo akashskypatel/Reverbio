@@ -357,7 +357,8 @@ class _MiniPlayerState extends State<MiniPlayer> {
           builder: (context, song, child) {
             if (song.isEmpty) return const SizedBox.shrink();
             final artistData =
-                (song['artist-credit'] ?? [song['artist'] ?? 'unknown'])
+                (song['artist-credit'] ??
+                        [song['artist'] ?? context.l10n!.unknown])
                     as List;
             int index = 1;
             final artistLabels = artistData.fold(<Widget>[], (v, e) {
@@ -391,7 +392,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                           song['mbTitle'] ??
                               song['title'] ??
                               song['ytTitle'] ??
-                              'unknown',
+                              context.l10n!.unknown,
                           style: TextStyle(
                             color: titleColor,
                             fontSize: 16,
@@ -440,7 +441,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
             : artistData['name'] ??
                 artistData['artist'] ??
                 artistData['title'] ??
-                'unknown',
+                context.l10n!.unknown,
         style: TextStyle(
           color: _theme.colorScheme.secondary,
           fontSize: 14,
@@ -571,7 +572,6 @@ class PositionSlider extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      //width: MediaQuery.of(context).size.width * 0.25,
                       child: Slider(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         value: _duelCommandment.toDouble(),

@@ -344,7 +344,7 @@ class _SongBarState extends State<SongBar> {
                                                     ? 'Loading...'
                                                     : kDebugMode
                                                     ? 'unknown ${song['id']}'
-                                                    : 'unknown'),
+                                                    : context.l10n!.unknown),
                                             overflow: TextOverflow.ellipsis,
                                             style: commonBarTitleStyle.copyWith(
                                               color: primaryColor,
@@ -374,7 +374,9 @@ class _SongBarState extends State<SongBar> {
                               MarqueeWidget(
                                 child: Text(
                                   artist ??
-                                      (isLoading ? 'Loading...' : 'unknown'),
+                                      (isLoading
+                                          ? 'Loading...'
+                                          : context.l10n!.unknown),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w400,
@@ -804,7 +806,7 @@ void showYoutubeLinksBottomSheet(
               );
             } else {
               return BottomSheetBar(
-                'Un-match',
+                context.l10n!.unMatch,
                 inactivatedColor,
                 borderRadius: borderRadius,
               );
@@ -839,7 +841,9 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
                         color: Theme.of(context).colorScheme.secondaryContainer,
                         elevation: 0,
                         child: ListTile(
-                          title: Text(playlist['title'] ?? 'unknown'),
+                          title: Text(
+                            playlist['title'] ?? context.l10n!.unknown,
+                          ),
                           onTap: () {
                             showToast(
                               addSongToCustomPlaylist(

@@ -228,10 +228,12 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TextField(
                         onChanged: filterPlaylists,
-                        decoration: const InputDecoration(
-                          hintText: 'Search playlists...',
-                          prefixIcon: Icon(FluentIcons.search_24_filled),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                        decoration: InputDecoration(
+                          hintText: context.l10n!.searchPlaylists,
+                          prefixIcon: const Icon(FluentIcons.search_24_filled),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                          ),
                           isDense: true,
                         ),
                       ),
@@ -243,7 +245,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         valueListenable: listLengthNotifier,
                         builder: (context, value, __) {
                           return filteredPlaylists.isEmpty
-                              ? const Center(child: Text('No playlists found'))
+                              ? Center(child: Text(context.l10n!.noPlaylists))
                               : ListView.builder(
                                 itemCount: filteredPlaylists.length,
                                 itemBuilder: (context, index) {
@@ -547,7 +549,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       song?['mbTitle'] ??
                           song?['title'] ??
                           song?['ytTitle'] ??
-                          'unknown',
+                          context.l10n!.unknown,
                       style: TextStyle(
                         color: _theme.colorScheme.primary,
                         fontSize: 16,
@@ -559,7 +561,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       song?['mbArtist'] ??
                           song?['artist'] ??
                           song?['ytArtist'] ??
-                          'unknown',
+                          context.l10n!.unknown,
                       style: TextStyle(
                         color: _theme.colorScheme.secondary,
                         fontSize: 14,
@@ -593,7 +595,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Widget _buildPlaylistImage(String title, IconData icon, int length) {
     final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
     return BaseCard(
-      inputData: {'title': '$title\n$length Songs'},
+      inputData: {'title': '$title\n$length ${context.l10n!.songs}'},
       size: size,
       icon: icon,
     );

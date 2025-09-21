@@ -562,7 +562,7 @@ class _BaseCardState extends State<BaseCard> {
     String title = '';
     if (widget.inputData?['first-release-date'] != null)
       title =
-          '(${tryParseDate(widget.inputData?['first-release-date']).year}${tryParseDate(widget.inputData?['first-release-date']).isAfter(DateTime.now()) ? ' upcoming)' : ')'}';
+          '(${tryParseDate(widget.inputData?['first-release-date']).year}${tryParseDate(widget.inputData?['first-release-date']).isAfter(DateTime.now()) ? ' ${context.l10n!.upcoming})' : ')'}';
     else
       title = '';
     return title;
