@@ -191,7 +191,10 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
                   (context) =>
                       widget.page == 'artists'
                           ? ArtistPage(page: '/artist', artistData: data)
-                          : PlaylistPage(page: '/album', playlistData: Map<String, dynamic>.from(data)),
+                          : PlaylistPage(
+                            page: '/album',
+                            playlistData: Map<String, dynamic>.from(data),
+                          ),
               settings: RouteSettings(name: '/artist?${data['id']}'),
             ),
           ),

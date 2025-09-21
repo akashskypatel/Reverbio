@@ -89,10 +89,7 @@ class HiveService {
         defaultValue: defaultValue as List<String>,
       );
     } else if (T == Map<String, dynamic>) {
-      value = getMap(
-        value,
-        defaultValue: defaultValue as Map<String, dynamic>,
-      );
+      value = getMap(value, defaultValue: defaultValue as Map<String, dynamic>);
     } else if (T == List<Map<String, dynamic>>) {
       value = getList<Map<String, dynamic>>(
         value,
