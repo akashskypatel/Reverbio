@@ -16,7 +16,7 @@ dependencies:
   audio_service: ^0.18.18
   audio_session: ^0.2.2
   audiotags: ^1.4.5
-  background_downloader: ^9.2.5
+  background_downloader: ^9.2.6
   cached_network_image: ^3.4.1
   crypto: ^3.0.6
   csv: ^6.0.0
@@ -32,7 +32,7 @@ dependencies:
     sdk: flutter
   fuzzy: ^0.5.1
   fuzzywuzzy: ^1.2.0
-  go_router: ^16.2.1
+  go_router: ^16.2.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   html: ^0.15.6
@@ -45,6 +45,7 @@ dependencies:
   open_settings_plus: ^0.4.0
   path: ^1.9.1
   path_provider: ^2.1.5
+  permission_handler: ^12.0.1
   rxdart: ^0.28.0
   url_launcher: ^6.3.2
   youtube_explode_dart: ^2.5.2
