@@ -79,17 +79,17 @@ class _AboutPageState extends State<AboutPage> {
                     ),
                   ),
                 ),
-                title: const Text(
-                  'Akash Patel',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                title: Text(
+                  context.l10n!.aboutTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Software & Game Developer'),
+                subtitle: Text(context.l10n!.aboutSubtitle),
                 trailing: Wrap(
                   children: <Widget>[
                     IconButton(
                       icon: const Icon(FluentIcons.code_24_filled),
                       iconSize: pageHeaderIconSize,
-                      tooltip: 'Github',
+                      tooltip: context.l10n!.github,
                       onPressed: () {
                         launchURL(
                           Uri.parse('https://github.com/akashskypatel'),
@@ -99,7 +99,7 @@ class _AboutPageState extends State<AboutPage> {
                     IconButton(
                       icon: const Icon(FluentIcons.globe_24_filled),
                       iconSize: pageHeaderIconSize,
-                      tooltip: 'Website',
+                      tooltip: context.l10n!.website,
                       onPressed: () {
                         launchURL(Uri.parse('https://fryingpan.games/'));
                       },
