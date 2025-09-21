@@ -42,6 +42,7 @@ import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -101,7 +102,10 @@ class _SearchPageState extends State<SearchPage> {
             context,
             MaterialPageRoute(
               builder:
-                  (context) => PlaylistPage(page: '/album', playlistData: Map<String, dynamic>.from(data)),
+                  (context) => PlaylistPage(
+                    page: '/album',
+                    playlistData: Map<String, dynamic>.from(data),
+                  ),
               settings: RouteSettings(name: '/album?${data['id']}'),
             ),
           );
@@ -327,7 +331,11 @@ class _SearchPageState extends State<SearchPage> {
           SongList(
             title: entityName[header.toLowerCase()]!['localization']!,
             page: 'search',
-            songBars: NotifiableList.from(suggestionList['data']),
+            songBars: NotifiableList<SongBar>.from(
+              (suggestionList['data'] as List).map(
+                (e) => initializeSongBar(e, context),
+              ),
+            ),
             expandedActions: _buildPrevNextButtons(header, suggestionList),
           )
         else

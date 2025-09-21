@@ -28,16 +28,14 @@ import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
-import 'package:reverbio/utilities/notifiable_list.dart';
-import 'package:reverbio/utilities/paginated_list.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
-import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
+import 'package:reverbio/utilities/paginated_list.dart';
 import 'package:reverbio/widgets/announcement_box.dart';
-import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
+import 'package:reverbio/widgets/notification_log.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -253,80 +251,10 @@ class _HomePageState extends State<HomePage> {
             onPressed:
                 notificationLog.isNotEmpty
                     ? () async {
-                      await _showNotificationLog(context);
+                      await showNotificationLog(context);
                     }
                     : null,
           ),
-    );
-  }
-
-  Future<void> _showNotificationLog(BuildContext context) async {
-    final inactivatedColor = _theme.colorScheme.surfaceContainerHigh;
-    showCustomBottomSheet(
-      context,
-      StatefulBuilder(
-        builder: (context, setState) {
-          final _logList =
-              notificationLog.entries.map((entry) {
-                  return {'index': entry.value['index'], 'id': entry.key};
-                }).toList()
-                ..sort((a, b) => a['index'].compareTo(b['index']));
-          final _logKeys = _logList.map((e) => e['id']).toList();
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const BouncingScrollPhysics(),
-            padding: commonListViewBottomPadding,
-            itemCount: _logKeys.length,
-            itemBuilder: (context, index) {
-              final notification = notificationLog[_logKeys[index]];
-              final borderRadius = getItemBorderRadius(index, _logKeys.length);
-              final progress = notificationLog[notification['id']]?['data'];
-              final message = notification['message'];
-              final dateTime = notification['dateTime'];
-              if (progress is ValueNotifier<int>) {
-                return ValueListenableBuilder(
-                  valueListenable: progress,
-                  builder: (context, value, child) {
-                    final action = Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox.square(
-                          dimension: 35,
-                          child: Spinner(value: value / 100),
-                        ),
-                        Text('$value%'),
-                      ],
-                    );
-                    return BottomSheetBar(
-                      '$message · ${dateTime != null ? formatRelativeTime(dateTime) : ''}',
-                      inactivatedColor,
-                      borderRadius: borderRadius,
-                      actions: [action],
-                    );
-                  },
-                );
-              } else {
-                final action = IconButton(
-                  icon: const Icon(FluentIcons.dismiss_24_filled),
-                  onPressed: () {
-                    notificationLog.remove(_logKeys[index]);
-                    if (context.mounted)
-                      setState(() {
-                        notificationLogLength.value = notificationLog.length;
-                      });
-                  },
-                );
-                return BottomSheetBar(
-                  '$message · ${dateTime != null ? formatRelativeTime(dateTime) : ''}',
-                  inactivatedColor,
-                  borderRadius: borderRadius,
-                  actions: [action],
-                );
-              }
-            },
-          );
-        },
-      ),
     );
   }
 }

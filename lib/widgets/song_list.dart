@@ -80,35 +80,62 @@ class _SongListState extends State<SongList> {
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: commonSingleChildScrollViewPadding,
-            child: ValueListenableBuilder(
-              valueListenable: PM.pluginsDataNotifier,
-              builder: (context, value, __) {
-                return SectionHeader(
-                  expandedActions: widget.expandedActions,
-                  title: widget.title,
-                  actions: [
-                    _buildSortSongActionButton(),
-                    _buildShuffleSongActionButton(),
-                    _buildPlayActionButton(),
-                    if (widget.page != 'queue') _buildAddToQueueActionButton(),
-                    ...PM.getWidgetsByType(
-                      _getSongListData,
-                      'SongListHeader',
-                      context,
-                    ),
-                  ],
-                );
-              },
+    return ListenableBuilder(
+      listenable: widget.songBars,
+      builder: (context, child) {
+        return SliverMainAxisGroup(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: commonSingleChildScrollViewPadding,
+                child: ListenableBuilder(
+                  listenable: PM.pluginsData,
+                  builder: (context, __) {
+                    return SectionHeader(
+                      expandedActions: widget.expandedActions,
+                      title: widget.title,
+                      actions: [
+                        if (widget.songBars.hasData) ...[
+                          _buildSortSongActionButton(),
+                          _buildShuffleSongActionButton(),
+                          _buildPlayActionButton(),
+                          if (widget.page != 'queue')
+                            _buildAddToQueueActionButton(),
+                          ...PM.getWidgetsByType(
+                            _getSongListData,
+                            'SongListHeader',
+                            context,
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
-        ),
-        _buildSongList(context),
-      ],
+            if (widget.songBars.hasData) _buildSongList(context),
+            if (!widget.songBars.hasData)
+              SliverToBoxAdapter(
+                child: Align(
+                  child: Padding(
+                    padding: const EdgeInsetsGeometry.all(10),
+                    child: Text(
+                      context.l10n!.noData,
+                      style: TextStyle(color: _theme.colorScheme.primary),
+                    ),
+                  ),
+                ),
+              ),
+            if (widget.songBars.hasError)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsetsGeometry.all(10),
+                  child: Spinner(),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

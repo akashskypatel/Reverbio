@@ -23,6 +23,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -255,29 +256,35 @@ class NotifiableFuture<T> with ChangeNotifier {
 
   // Helper method for easy widget building
   Widget build({
-    required Widget Function()? loading,
     required Widget Function(T? data) data,
-    required Widget Function(dynamic error, StackTrace? stackTrace) error,
+    Widget Function()? loading,
+    Widget Function(dynamic error, StackTrace? stackTrace)? error,
     Widget Function()? idle,
     Widget Function()? cancelled,
   }) {
-    switch (state) {
-      case FutureTrackerState.loading:
-        return loading?.call() ?? const Spinner();
-      case FutureTrackerState.success:
-        return data(_result);
-      case FutureTrackerState.error:
-        logger.log(
-          'Error in ${stackTrace?.getCurrentMethodName()}:',
-          _error,
-          stackTrace,
-        );
-        return error(_error, _stackTrace);
-      case FutureTrackerState.cancelled:
-        return cancelled?.call() ?? const Text('Operation cancelled');
-      case FutureTrackerState.idle:
-        return idle?.call() ?? const SizedBox.shrink();
-    }
+    return ListenableBuilder(
+      listenable: this,
+      builder: (context, child) {
+        switch (state) {
+          case FutureTrackerState.loading:
+            return loading?.call() ?? const Spinner();
+          case FutureTrackerState.success:
+            return data(_result);
+          case FutureTrackerState.error:
+            logger.log(
+              'Error in ${stackTrace?.getCurrentMethodName()}:',
+              _error,
+              stackTrace,
+            );
+            return error?.call(_error, _stackTrace) ??
+                Text(L10n.current.runtimeError);
+          case FutureTrackerState.cancelled:
+            return cancelled?.call() ?? const Text('Operation cancelled');
+          case FutureTrackerState.idle:
+            return idle?.call() ?? const SizedBox.shrink();
+        }
+      },
+    );
   }
 
   @override

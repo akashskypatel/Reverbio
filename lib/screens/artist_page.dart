@@ -401,22 +401,23 @@ class _ArtistPageState extends State<ArtistPage> {
     final _singles = _getSingles();
     final _albums = _getAlbums(widget.artistData);
     final _others = _getOthers(widget.artistData);
-    return SliverMainAxisGroup(
-      slivers: [
-        //Albums
-        ListenableBuilder(
-          listenable: _albums,
-          builder: (context, child) {
-            return SliverToBoxAdapter(
-              child: _albums.build(
-                loading: () => const Spinner(),
-                error:
-                    (e, stackTrace) => Tooltip(
-                      message: e.toString(),
-                      child: const Icon(FluentIcons.error_circle_24_filled),
-                    ),
-                data:
-                    (data) =>
+    return dataFuture.build(
+      loading:
+          () => const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsetsGeometry.all(10),
+              child: Spinner(),
+            ),
+          ),
+      data:
+          (data) => SliverMainAxisGroup(
+            slivers: [
+              //Albums
+              ListenableBuilder(
+                listenable: _albums,
+                builder: (context, child) {
+                  return SliverToBoxAdapter(
+                    child:
                         albums.isEmpty
                             ? const SizedBox.shrink()
                             : HorizontalCardScroller(
@@ -424,24 +425,15 @@ class _ArtistPageState extends State<ArtistPage> {
                               icon: FluentIcons.cd_16_filled,
                               title: context.l10n!.albums,
                             ),
+                  );
+                },
               ),
-            );
-          },
-        ),
-        //Others
-        ListenableBuilder(
-          listenable: _others,
-          builder: (context, child) {
-            return SliverToBoxAdapter(
-              child: _others.build(
-                loading: () => const Spinner(),
-                error:
-                    (e, stackTrace) => Tooltip(
-                      message: e.toString(),
-                      child: const Icon(FluentIcons.error_circle_24_filled),
-                    ),
-                data:
-                    (data) =>
+              //Others
+              ListenableBuilder(
+                listenable: _others,
+                builder: (context, child) {
+                  return SliverToBoxAdapter(
+                    child:
                         others.isEmpty
                             ? const SizedBox.shrink()
                             : HorizontalCardScroller(
@@ -449,22 +441,24 @@ class _ArtistPageState extends State<ArtistPage> {
                               icon: FluentIcons.cd_16_filled,
                               title: context.l10n!.others,
                             ),
+                  );
+                },
               ),
-            );
-          },
-        ),
-        //Singles
-        ListenableBuilder(
-          listenable: _singles,
-          builder: (context, child) {
-            return SongList(
-              page: 'singles',
-              title: context.l10n!.singles,
-              songBars: _singles,
-            );
-          },
-        ),
-      ],
+              //Singles
+              ListenableBuilder(
+                listenable: _singles,
+                builder: (context, child) {
+                  return _singles.isEmpty
+                      ? const SliverToBoxAdapter(child: SizedBox.shrink())
+                      : SongList(
+                        page: 'singles',
+                        title: context.l10n!.singles,
+                        songBars: _singles,
+                      );
+                },
+              ),
+            ],
+          ),
     );
   }
 }

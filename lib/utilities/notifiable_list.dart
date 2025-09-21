@@ -22,10 +22,14 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/hive_service.dart';
+import 'package:reverbio/utilities/notifiable_future.dart'
+    show FutureTrackerState;
+import 'package:reverbio/widgets/spinner.dart';
 
 class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
   NotifiableList() : _boxName = null, _category = null, _isInitialized = true;
@@ -105,6 +109,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       _isInitialized = true;
       _initializationCompleter!.complete();
     } catch (e, stackTrace) {
+      _error = e;
+      _stackTrace = stackTrace;
       _isInitialized = true;
       _initializationCompleter!.completeError(e);
       _hasError = true;
@@ -121,6 +127,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
   final String? _boxName, _category;
   bool _isInitialized = false;
   bool _hasError = false;
+  dynamic _error;
+  StackTrace? _stackTrace;
   Completer<void>? _initializationCompleter;
   Timer? _debounceTimer;
   static const Duration _debounceDuration = Duration(milliseconds: 1000);
@@ -332,5 +340,38 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
 
   List<T> whereToList(bool Function(T) predicate) {
     return _items.where(predicate).toList();
+  }
+
+  FutureTrackerState get state {
+    if (isLoading) return FutureTrackerState.loading;
+    if (hasError) return FutureTrackerState.error;
+    if (hasData) return FutureTrackerState.success;
+    return FutureTrackerState.idle;
+  }
+
+  // Helper method for easy widget building
+  Widget build({
+    required Widget Function(List<T>? data) data,
+    Widget Function()? loading,
+    Widget Function(dynamic error, StackTrace? stackTrace)? error,
+    Widget Function()? idle,
+  }) {
+    switch (state) {
+      case FutureTrackerState.loading:
+        return loading?.call() ?? const Spinner();
+      case FutureTrackerState.success:
+        return data(_items);
+      case FutureTrackerState.error:
+        logger.log(
+          'Error in ${_stackTrace?.getCurrentMethodName()}:',
+          _error,
+          _stackTrace,
+        );
+        return error?.call(_error, _stackTrace) ??
+            Text(L10n.current.runtimeError);
+      case FutureTrackerState.idle:
+      default:
+        return idle?.call() ?? const SizedBox.shrink();
+    }
   }
 }
