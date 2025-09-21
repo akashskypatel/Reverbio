@@ -91,7 +91,6 @@ class ProxyManager {
         _proxyClient = _randomProxyClient();
         _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
       });
-    ;
   }
 
   Future<void> _fetchProxies() async {

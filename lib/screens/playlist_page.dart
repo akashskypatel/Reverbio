@@ -153,10 +153,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     for (final song in _songsList) {
       song['autoCacheOffline'] = widget.playlistData['autoCacheOffline'];
     }
-    return Scaffold(
-      appBar: _buildNavigationBar(),
-      body: _buildList(),
-    );
+    return Scaffold(appBar: _buildNavigationBar(), body: _buildList());
   }
 
   Widget _buildList() {
@@ -183,7 +180,6 @@ class _PlaylistPageState extends State<PlaylistPage> {
                   (context, value, child) => SongList(
                     page: 'playlist',
                     songBars: snapshot.data!,
-                    //future: fetch(),
                     isEditable: value,
                   ),
             );
@@ -202,8 +198,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
       ),
       actions: [
         _buildAutoCacheOfflineButton(),
-        if (widget.playlistData['source'] != 'user-created')
-          _buildLikeButton(),
+        if (widget.playlistData['source'] != 'user-created') _buildLikeButton(),
         if (widget.playlistData.isNotEmpty) ...[
           _buildSyncButton(),
           if (widget.playlistData['source'] == 'user-created')
