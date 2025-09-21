@@ -272,5 +272,7 @@
   "newDir": "오프라인 디렉토리 변경:",
   "onUninstallOfflineDir": "참고: 앱을 삭제해도 오프라인 파일은 기기에 남아 있습니다. 파일 관리자에서 수동으로 삭제할 수 있습니다.",
   "additionalMusicDir": "추가 음악 디렉토리",
-  "addAdditionalMusicDir": "기기에 있는 음악이 포함된 추가 디렉토리 추가"
+  "addAdditionalMusicDir": "기기에 있는 음악이 포함된 추가 디렉토리 추가",
+  "removeDir": "이 디렉토리를 제거하시겠습니까:",
+  "removeDirMessage": "제거하면 이 디렉토리의 음악이 Reverbio에 표시되지 않습니다"
 }

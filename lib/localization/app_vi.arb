@@ -272,5 +272,7 @@
   "newDir": "Thay đổi thư mục ngoại tuyến thành:",
   "onUninstallOfflineDir": "Lưu ý: Các tệp ngoại tuyến của bạn sẽ vẫn trên thiết bị nếu bạn gỡ cài đặt ứng dụng. Bạn có thể xóa chúng thủ công từ trình quản lý tệp.",
   "additionalMusicDir": "Thư mục nhạc bổ sung",
-  "addAdditionalMusicDir": "Thêm thư mục bổ sung chứa nhạc trên thiết bị của bạn"
+  "addAdditionalMusicDir": "Thêm thư mục bổ sung chứa nhạc trên thiết bị của bạn",
+  "removeDir": "Bạn có chắc chắn muốn xóa thư mục:",
+  "removeDirMessage": "Nhạc từ thư mục này sẽ không được hiển thị trong Reverbio nếu bị xóa"
 }

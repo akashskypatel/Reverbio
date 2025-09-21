@@ -272,5 +272,7 @@
   "newDir": "更改離線目錄至:",
   "onUninstallOfflineDir": "注意：如果你解除安裝應用程式，離線檔案仍會保留在裝置上。你可以從檔案管理員手動刪除它們。",
   "additionalMusicDir": "額外音樂目錄",
-  "addAdditionalMusicDir": "添加裝置上包含音樂的額外目錄"
+  "addAdditionalMusicDir": "添加裝置上包含音樂的額外目錄",
+  "removeDir": "你確定要移除目錄嗎：",
+  "removeDirMessage": "如果移除，此目錄中的音樂將不會在 Reverbio 中顯示"
 }

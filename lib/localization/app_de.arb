@@ -272,5 +272,7 @@
   "newDir": "Offline-Verzeichnis ändern zu:",
   "onUninstallOfflineDir": "Hinweis: Ihre Offline-Dateien verbleiben auf Ihrem Gerät, wenn Sie die App deinstallieren. Sie können sie manuell in Ihrem Dateimanager löschen.",
   "additionalMusicDir": "Zusätzliche Musikverzeichnisse",
-  "addAdditionalMusicDir": "Zusätzliche Verzeichnisse mit Musik auf Ihrem Gerät hinzufügen"
+  "addAdditionalMusicDir": "Zusätzliche Verzeichnisse mit Musik auf Ihrem Gerät hinzufügen",
+  "removeDir": "Sind Sie sicher, dass Sie das Verzeichnis entfernen möchten:",
+  "removeDirMessage": "Musik aus diesem Verzeichnis wird in Reverbio nicht mehr angezeigt, wenn es entfernt wird"
 }

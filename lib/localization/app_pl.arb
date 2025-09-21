@@ -272,5 +272,7 @@
   "newDir": "Zmień katalog offline na:",
   "onUninstallOfflineDir": "Uwaga: Twoje pliki offline pozostaną na urządzeniu po odinstalowaniu aplikacji. Możesz je usunąć ręcznie za pomocą menedżera plików.",
   "additionalMusicDir": "Dodatkowe katalogi muzyki",
-  "addAdditionalMusicDir": "Dodaj dodatkowe katalogi zawierające muzykę na twoim urządzeniu"
+  "addAdditionalMusicDir": "Dodaj dodatkowe katalogi zawierające muzykę na twoim urządzeniu",
+  "removeDir": "Czy na pewno chcesz usunąć katalog:",
+  "removeDirMessage": "Muzyka z tego katalogu nie będzie wyświetlana w Reverbio po usunięciu"
 }

@@ -272,5 +272,7 @@
   "newDir": "Changer le répertoire hors ligne pour :",
   "onUninstallOfflineDir": "Note : Vos fichiers hors ligne resteront sur votre appareil si vous désinstallez l'application. Vous pouvez les supprimer manuellement depuis votre gestionnaire de fichiers.",
   "additionalMusicDir": "Répertoires de musique supplémentaires",
-  "addAdditionalMusicDir": "Ajouter des répertoires supplémentaires contenant de la musique sur votre appareil"
+  "addAdditionalMusicDir": "Ajouter des répertoires supplémentaires contenant de la musique sur votre appareil",
+  "removeDir": "Êtes-vous sûr de vouloir supprimer le répertoire :",
+  "removeDirMessage": "La musique de ce répertoire ne sera pas affichée dans Reverbio si elle est supprimée"
 }

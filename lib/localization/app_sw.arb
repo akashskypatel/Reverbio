@@ -272,5 +272,7 @@
   "newDir": "Badilisha saraka ya nje ya mtandao hadi:",
   "onUninstallOfflineDir": "Kumbuka: Faili zako za nje ya mtandao zitaendelea kwenye kifaa chako ukiondoa programu. Unaweza kufuta mwenyewe kwenye msimamizi faili yako.",
   "additionalMusicDir": "Majalizo ya muziki ya ziada",
-  "addAdditionalMusicDir": "Ongeza majalizo ya ziada yenye muziki kwenye kifaa chako"
+  "addAdditionalMusicDir": "Ongeza majalizo ya ziada yenye muziki kwenye kifaa chako",
+  "removeDir": "Je, una uhakika unataka kuondoa saraka:",
+  "removeDirMessage": "Muziki kutoka kwenye saraka hii haitaonyeshwa kwenye Reverbio ikiwa imeondolewa"
 }

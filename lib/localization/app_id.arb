@@ -272,5 +272,7 @@
   "newDir": "Ubah direktori offline ke:",
   "onUninstallOfflineDir": "Catatan: File offline Anda akan tetap ada di perangkat Anda jika Anda mencopot pemasangan aplikasi. Anda dapat menghapusnya secara manual dari pengelola file Anda.",
   "additionalMusicDir": "Direktori musik tambahan",
-  "addAdditionalMusicDir": "Tambahkan direktori tambahan yang berisi musik di perangkat Anda"
+  "addAdditionalMusicDir": "Tambahkan direktori tambahan yang berisi musik di perangkat Anda",
+  "removeDir": "Apakah Anda yakin ingin menghapus direktori:",
+  "removeDirMessage": "Musik dari direktori ini tidak akan ditampilkan di Reverbio jika dihapus"
 }

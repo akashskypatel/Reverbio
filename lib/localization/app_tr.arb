@@ -272,5 +272,7 @@
   "newDir": "Çevrimdışı dizinini şuraya değiştir:",
   "onUninstallOfflineDir": "Not: Uygulamayı kaldırırsanız, çevrimdışı dosyalarınız cihazınızda kalacaktır. Dosya yöneticinizden manuel olarak silebilirsiniz.",
   "additionalMusicDir": "Ek müzik dizinleri",
-  "addAdditionalMusicDir": "Cihazınızdaki müzik içeren ek dizinler ekleyin"
+  "addAdditionalMusicDir": "Cihazınızdaki müzik içeren ek dizinler ekleyin",
+  "removeDir": "Dizini kaldırmak istediğinizden emin misiniz:",
+  "removeDirMessage": "Kaldırılırsa, bu dizindeki müzik Reverbio'da gösterilmeyecek"
 }

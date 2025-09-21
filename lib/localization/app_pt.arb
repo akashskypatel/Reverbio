@@ -272,5 +272,7 @@
   "newDir": "Alterar diretório offline para:",
   "onUninstallOfflineDir": "Nota: Os seus ficheiros offline permanecerão no seu dispositivo se desinstalar a aplicação. Pode eliminá-los manualmente no seu gestor de ficheiros.",
   "additionalMusicDir": "Diretórios de música adicionais",
-  "addAdditionalMusicDir": "Adicionar diretórios adicionais que contenham música no seu dispositivo"
+  "addAdditionalMusicDir": "Adicionar diretórios adicionais que contenham música no seu dispositivo",
+  "removeDir": "Tem a certeza de que pretende remover o diretório:",
+  "removeDirMessage": "A música deste diretório não será mostrada no Reverbio se for removida"
 }
