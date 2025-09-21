@@ -35,12 +35,13 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/widget_factory.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -49,12 +50,13 @@ typedef WF = WidgetFactory;
 
 class PluginsManager {
   PluginsManager._();
-  static final _pluginsData =
-      Hive.box('settings').get('pluginsData', defaultValue: []) as List;
-  static final pluginsDataNotifier = ValueNotifier(_pluginsData.length);
+  static final NotifiableList<Map> _pluginsData = NotifiableList<Map>.fromHive(
+    'settings',
+    'pluginsData',
+  );
   static List testMethods = ['pluginName', 'pluginVersion', 'asyncTest'];
-  static List get pluginsData => _pluginsData;
-  static final List<Map> _plugins = [];
+  static NotifiableList get pluginsData => _pluginsData;
+  static final NotifiableList<Map> _plugins = NotifiableList();
   static final Map _futures = {};
   static final Map _activeJob = {};
   static final Map _completed = {};
@@ -83,6 +85,7 @@ class PluginsManager {
   }
 
   static Future<void> initialize() async {
+    await _pluginsData.ensureInitialized();
     await reloadPlugins();
   }
 
@@ -123,7 +126,6 @@ class PluginsManager {
           if (!result.isError) {
             flutterJs.dispose();
             await addPlugin(pluginData);
-            await addOrUpdateData('settings', 'pluginsData', _pluginsData);
             return true;
           }
         }
@@ -473,7 +475,6 @@ class PluginsManager {
           removePlugin(data['name']);
           _pluginsData.add(data);
           _plugins.add(data);
-          pluginsDataNotifier.value = _pluginsData.length;
           _isProcessingNotifiers[data['name']] = ValueNotifier(false);
           _backgroundJobNotifiers[data['name']] = ValueNotifier(null);
           _futures[data['name']] = [];
@@ -525,7 +526,6 @@ class PluginsManager {
       _clearBackgroundJobData(pluginName);
       _pluginsData.removeWhere((value) => value['name'] == pluginName);
       _plugins.removeWhere((value) => value['name'] == pluginName);
-      pluginsDataNotifier.value = _pluginsData.length;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -972,18 +972,15 @@ class PluginsManager {
     }
   }
 
-  static Future<void> setUserSettings(
-    String pluginName,
-    dynamic settings,
-  ) async {
+  static void setUserSettings(String pluginName, dynamic settings) async {
     try {
-      _pluginsData
-          .firstWhere(
-            (value) => value['name'] == pluginName,
-            orElse: () => {},
-          )['userSettings']
-          .addAll(settings);
-      await addOrUpdateData('settings', 'pluginsData', _pluginsData);
+      final _plugin = _pluginsData.firstWhere(
+        (value) => value['name'] == pluginName,
+        orElse: () => {},
+      );
+      if (_plugin['userSettings'] == null) _plugin['userSettings'] = {};
+      if (_plugin.isNotEmpty) _plugin['userSettings'].addAll(settings);
+      _pluginsData.updateWhere(_plugin, (e) => e['name'] == pluginName);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1011,7 +1008,7 @@ class PluginsManager {
     }
   }
 
-  static Future<void> saveSettings(String pluginName) async {
+  static void saveSettings(String pluginName) async {
     try {
       final (result, _) = _executeMethod(
         pluginName: pluginName,
@@ -1023,7 +1020,7 @@ class PluginsManager {
       );
       final userSettings = getUserSettings(pluginName);
       if (userSettings != null) (userSettings as Map).addAll(settings);
-      await addOrUpdateData('settings', 'pluginsData', _pluginsData);
+      setUserSettings(pluginName, userSettings);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1033,7 +1030,7 @@ class PluginsManager {
     }
   }
 
-  static Future<void> restSettings(String pluginName) async {
+  static void restSettings(String pluginName) {
     try {
       final defaultSettings = getDefaultSettings(pluginName);
       final userSettings = getUserSettings(pluginName);
@@ -1041,7 +1038,7 @@ class PluginsManager {
         userSettings.clear();
         userSettings.addAll(defaultSettings);
       }
-      await addOrUpdateData('settings', 'pluginsData', _pluginsData);
+      setUserSettings(pluginName, userSettings);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1156,7 +1153,7 @@ class PluginsManager {
           cache.add(entity);
         else
           cache.insert(index, entity);
-        await addOrUpdateData('cache', cacheKey, cache);
+        await HiveService.addOrUpdateData('cache', cacheKey, cache);
       }
     } catch (e, stackTrace) {
       logger.log(

@@ -36,7 +36,7 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
@@ -799,11 +799,7 @@ Future<String?> getYouTubeAudioUrl(String songId) async {
     final qualitySetting = audioQualitySetting.value;
     final cacheKey = 'song_${songId}_${qualitySetting}_url';
 
-    final cachedUrl = await getData(
-      'cache',
-      cacheKey,
-      cachingDuration: _cacheDuration,
-    );
+    final cachedUrl = await HiveService.getData('cache', cacheKey, null);
 
     if (cachedUrl != null) {
       final uri = Uri.parse(cachedUrl);
@@ -816,7 +812,7 @@ Future<String?> getYouTubeAudioUrl(String songId) async {
     final manifest = await getSongManifest(songId);
     final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
     final audioUrl = audioQuality.url.toString();
-    unawaited(addOrUpdateData('cache', cacheKey, audioUrl));
+    unawaited(HiveService.addOrUpdateData('cache', cacheKey, audioUrl));
     return audioUrl;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -883,7 +879,8 @@ Future<void> tagAllOfflineFiles() async {
   );
   final fileTagger = FileTagger(offlineDirectory: offlineDirectory.value!);
   for (int i = 0; i < offlineSongs.length; i++) {
-    final song = await queueSongInfoRequest(copyMap(offlineSongs[i]));
+    final song =
+        await queueSongInfoRequest(copyMap(offlineSongs[i])).completerFuture;
     //await tagOfflineFile(song);
     await fileTagger.tagOfflineFile(song, parseEntityId(song));
     final num = (i + 1) / offlineSongs.length;
