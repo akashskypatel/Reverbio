@@ -254,5 +254,6 @@
   "noInternetMessage": "Sie sind offline. Im Offline-Modus öffnen oder erneut verbinden?",
   "retry": "Wiederholen",
   "exit": "Beenden",
-  "offlineModeMessage": "Neustart erforderlich, um den Offline-Modus zu aktivieren. App jetzt beenden?"
+  "offlineModeMessage": "Neustart erforderlich, um den Offline-Modus zu aktivieren. App jetzt beenden?",
+  "proxyWarning": "Für optimale Leistung verwenden Sie Proxys mit WLAN. Mobilfunknetze können Probleme mit Proxy-Verbindungen und YouTube-Streaming verursachen. Mit Proxy-Einstellungen fortfahren?"
 }

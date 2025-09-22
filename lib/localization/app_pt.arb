@@ -254,5 +254,6 @@
   "noInternetMessage": "Está offline. Abrir em modo offline ou tentar reconectar?",
   "retry": "Tentar novamente",
   "exit": "Sair",
-  "offlineModeMessage": "Reinício necessário para entrar no Modo Offline. Sair da aplicação agora?"
+  "offlineModeMessage": "Reinício necessário para entrar no Modo Offline. Sair da aplicação agora?",
+  "proxyWarning": "Para um desempenho ideal, use proxies com Wi-Fi. As redes móveis podem ter problemas com conexões proxy e transmissão do YouTube. Continuar com as definições de proxy?"
 }

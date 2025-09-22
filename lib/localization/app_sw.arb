@@ -254,5 +254,6 @@
   "noInternetMessage": "Uko nje ya mtandao. Fungua katika hali ya nje ya mtandao au ujaribu kuunganisha tena?",
   "retry": "Jaribu Tenai",
   "exit": "Toka",
-  "offlineModeMessage": "Inahitaji kuanzisha upya kuingiza Hali ya Nje ya Mtandao. Toka kwenye programu sasa?"
+  "offlineModeMessage": "Inahitaji kuanzisha upya kuingiza Hali ya Nje ya Mtandao. Toka kwenye programu sasa?",
+  "proxyWarning": "Kwa utendaji bora, tumia makadirio na Wi-Fi. Mitandao ya rununu inaweza kukumbwa na matatizo na miunganisho ya makadirio na utiririshaji wa YouTube. Endelea na mipangilio ya makadirio?"
 }

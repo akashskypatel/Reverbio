@@ -254,5 +254,6 @@
   "noInternetMessage": "你已离线。离线打开还是尝试重新连接？",
   "retry": "重试",
   "exit": "退出",
-  "offlineModeMessage": "需要重新启动以进入离线模式。立即退出应用？"
+  "offlineModeMessage": "需要重新启动以进入离线模式。立即退出应用？",
+  "proxyWarning": "为达到最佳性能，请使用 Wi-Fi 代理。移动网络可能会出现代理连接和 YouTube 流媒体问题。继续设置代理？"
 }

@@ -254,5 +254,6 @@
   "noInternetMessage": "Çevrimdışısınız. Çevrimdışı modda aç veya yeniden bağlanmayı dene?",
   "retry": "Yeniden Dene",
   "exit": "Çıkış",
-  "offlineModeMessage": "Çevrimdışı Moda girmek için yeniden başlatma gerekli. Uygulamadan şimdi çıkılsın mı?"
+  "offlineModeMessage": "Çevrimdışı Moda girmek için yeniden başlatma gerekli. Uygulamadan şimdi çıkılsın mı?",
+  "proxyWarning": "Optimum performans için proxy'leri Wi-Fi ile kullanın. Mobil ağlar proxy bağlantıları ve YouTube akışı ile sorunlar yaşayabilir. Proxy ayarları ile devam edilsin mi?"
 }

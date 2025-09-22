@@ -254,5 +254,6 @@
   "noInternetMessage": "You're offline. Open in offline mode or try to reconnect?",
   "retry": "Retry",
   "exit": "Exit",
-  "offlineModeMessage": "Restart required to enter Offline Mode. Exit the app now?"
+  "offlineModeMessage": "Restart required to enter Offline Mode. Exit the app now?",
+  "proxyWarning": "For optimal performance, use proxies with Wi-Fi. Mobile networks may experience issues with proxy connections and YouTube streaming. Continue with proxy settings?"
 }

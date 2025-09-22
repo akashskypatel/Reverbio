@@ -254,5 +254,6 @@
   "noInternetMessage": "Estás desconectado. ¿Abrir en modo sin conexión o intentar reconectar?",
   "retry": "Reintentar",
   "exit": "Salir",
-  "offlineModeMessage": "Reinicio requerido para entrar en el modo sin conexión. ¿Salir de la aplicación ahora?"
+  "offlineModeMessage": "Reinicio requerido para entrar en el modo sin conexión. ¿Salir de la aplicación ahora?",
+  "proxyWarning": "Para un rendimiento óptimo, use proxies con Wi-Fi. Las redes móviles pueden experimentar problemas con conexiones proxy y transmisión de YouTube. ¿Continuar con la configuración de proxy?"
 }

@@ -254,5 +254,6 @@
   "noInternetMessage": "Vous êtes hors ligne. Ouvrir en mode hors ligne ou essayer de vous reconnecter ?",
   "retry": "Réessayer",
   "exit": "Quitter",
-  "offlineModeMessage": "Redémarrage requis pour activer le mode hors ligne. Quitter l'application maintenant ?"
+  "offlineModeMessage": "Redémarrage requis pour activer le mode hors ligne. Quitter l'application maintenant ?",
+  "proxyWarning": "Pour des performances optimales, utilisez les proxys avec le Wi-Fi. Les réseaux mobiles peuvent rencontrer des problèmes avec les connexions proxy et le streaming YouTube. Continuer avec les paramètres proxy ?"
 }

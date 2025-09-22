@@ -254,5 +254,6 @@
   "noInternetMessage": "Anda sedang offline. Buka dalam mode offline atau coba sambung ulang?",
   "retry": "Coba Lagi",
   "exit": "Keluar",
-  "offlineModeMessage": "Perlu restart untuk masuk ke Mode Offline. Keluar dari aplikasi sekarang?"
+  "offlineModeMessage": "Perlu restart untuk masuk ke Mode Offline. Keluar dari aplikasi sekarang?",
+  "proxyWarning": "Untuk kinerja optimal, gunakan proxy dengan Wi-Fi. Jaringan seluler mungkin mengalami masalah dengan koneksi proxy dan streaming YouTube. Lanjutkan dengan pengaturan proxy?"
 }

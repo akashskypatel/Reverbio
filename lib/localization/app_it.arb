@@ -254,5 +254,6 @@
   "noInternetMessage": "Sei offline. Apri in modalità offline o prova a riconnetterti?",
   "retry": "Riprova",
   "exit": "Esci",
-  "offlineModeMessage": "Riavvio richiesto per attivare la Modalità Offline. Uscire dall'app ora?"
+  "offlineModeMessage": "Riavvio richiesto per attivare la Modalità Offline. Uscire dall'app ora?",
+  "proxyWarning": "Per prestazioni ottimali, utilizza i proxy con Wi-Fi. Le reti mobili potrebbero riscontrare problemi con le connessioni proxy e lo streaming YouTube. Continuare con le impostazioni proxy?"
 }

@@ -254,5 +254,6 @@
   "noInternetMessage": "Bạn đang ngoại tuyến. Mở ở chế độ ngoại tuyến hoặc thử kết nối lại?",
   "retry": "Thử lại",
   "exit": "Thoát",
-  "offlineModeMessage": "Cần khởi động lại để vào Chế độ ngoại tuyến. Thoát ứng dụng ngay bây giờ?"
+  "offlineModeMessage": "Cần khởi động lại để vào Chế độ ngoại tuyến. Thoát ứng dụng ngay bây giờ?",
+  "proxyWarning": "Để hiệu suất tối ưu, hãy sử dụng proxy với Wi-Fi. Mạng di động có thể gặp sự cố với kết nối proxy và phát trực tuyến YouTube. Tiếp tục với cài đặt proxy?"
 }
