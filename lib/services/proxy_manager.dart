@@ -22,6 +22,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
 //import 'package:discogs_api_client/discogs_api_client.dart';
@@ -525,12 +526,25 @@ class ProxyManager {
 
   Future<StreamManifest?> getSongManifest(String songId) async {
     try {
-      StreamManifest? manifest = await _validateDirect(songId);
-      if (manifest != null) return manifest;
-      if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
-        await _fetchProxies();
-      manifest = await _cycleProxies(songId);
-      return manifest;
+      final completer = Completer<StreamManifest?>();
+      final receivePort = ReceivePort();
+      await Isolate.spawn(
+        _getSongManifest,
+        _IsolateMessage(sendPort: receivePort.sendPort, songId: songId),
+      );
+
+      receivePort.listen((message) {
+        if (message is StreamManifest) {
+          completer.complete(message);
+        } else if (message is Exception) {
+          completer.completeError(message);
+        } else {
+          completer.complete(null);
+        }
+        receivePort.close();
+      });
+
+      return completer.future;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -538,6 +552,27 @@ class ProxyManager {
         stackTrace,
       );
       return null;
+    }
+  }
+
+  Future<void> _getSongManifest(_IsolateMessage message) async {
+    try {
+      final songId = message.songId;
+      StreamManifest? manifest = await _validateDirect(songId);
+      if (manifest != null) {
+        message.sendPort.send(manifest);
+        return;
+      }
+      if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
+        await _fetchProxies();
+      manifest = await _cycleProxies(songId);
+      message.sendPort.send(manifest);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
     }
   }
 
@@ -604,4 +639,11 @@ class ProxyManager {
       return IOClient();
     }
   }
+}
+
+// Message class for isolate communication
+class _IsolateMessage {
+  _IsolateMessage({required this.sendPort, required this.songId});
+  final SendPort sendPort;
+  final String songId;
 }
