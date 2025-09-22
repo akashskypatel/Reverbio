@@ -274,5 +274,6 @@
   "additionalMusicDir": "Direktori musik tambahan",
   "addAdditionalMusicDir": "Tambahkan direktori tambahan yang berisi musik di perangkat Anda",
   "removeDir": "Apakah Anda yakin ingin menghapus direktori:",
-  "removeDirMessage": "Musik dari direktori ini tidak akan ditampilkan di Reverbio jika dihapus"
+  "removeDirMessage": "Musik dari direktori ini tidak akan ditampilkan di Reverbio jika dihapus",
+  "proxyWarning": "Untuk kinerja optimal, gunakan proxy dengan Wi-Fi. Jaringan seluler mungkin mengalami masalah dengan koneksi proxy dan streaming YouTube. Lanjutkan dengan pengaturan proxy?"
 }

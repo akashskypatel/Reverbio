@@ -274,5 +274,6 @@
   "additionalMusicDir": "Thư mục nhạc bổ sung",
   "addAdditionalMusicDir": "Thêm thư mục bổ sung chứa nhạc trên thiết bị của bạn",
   "removeDir": "Bạn có chắc chắn muốn xóa thư mục:",
-  "removeDirMessage": "Nhạc từ thư mục này sẽ không được hiển thị trong Reverbio nếu bị xóa"
+  "removeDirMessage": "Nhạc từ thư mục này sẽ không được hiển thị trong Reverbio nếu bị xóa",
+  "proxyWarning": "Để hiệu suất tối ưu, hãy sử dụng proxy với Wi-Fi. Mạng di động có thể gặp sự cố với kết nối proxy và phát trực tuyến YouTube. Tiếp tục với cài đặt proxy?"
 }

@@ -274,5 +274,6 @@
   "additionalMusicDir": "Zusätzliche Musikverzeichnisse",
   "addAdditionalMusicDir": "Zusätzliche Verzeichnisse mit Musik auf Ihrem Gerät hinzufügen",
   "removeDir": "Sind Sie sicher, dass Sie das Verzeichnis entfernen möchten:",
-  "removeDirMessage": "Musik aus diesem Verzeichnis wird in Reverbio nicht mehr angezeigt, wenn es entfernt wird"
+  "removeDirMessage": "Musik aus diesem Verzeichnis wird in Reverbio nicht mehr angezeigt, wenn es entfernt wird",
+  "proxyWarning": "Für optimale Leistung verwenden Sie Proxys mit WLAN. Mobilfunknetze können Probleme mit Proxy-Verbindungen und YouTube-Streaming verursachen. Mit Proxy-Einstellungen fortfahren?"
 }

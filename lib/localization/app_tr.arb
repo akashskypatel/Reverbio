@@ -274,5 +274,6 @@
   "additionalMusicDir": "Ek müzik dizinleri",
   "addAdditionalMusicDir": "Cihazınızdaki müzik içeren ek dizinler ekleyin",
   "removeDir": "Dizini kaldırmak istediğinizden emin misiniz:",
-  "removeDirMessage": "Kaldırılırsa, bu dizindeki müzik Reverbio'da gösterilmeyecek"
+  "removeDirMessage": "Kaldırılırsa, bu dizindeki müzik Reverbio'da gösterilmeyecek",
+  "proxyWarning": "Optimum performans için proxy'leri Wi-Fi ile kullanın. Mobil ağlar proxy bağlantıları ve YouTube akışı ile sorunlar yaşayabilir. Proxy ayarları ile devam edilsin mi?"
 }

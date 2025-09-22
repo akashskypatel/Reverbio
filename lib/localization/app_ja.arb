@@ -274,5 +274,6 @@
   "additionalMusicDir": "追加の音楽ディレクトリ",
   "addAdditionalMusicDir": "デバイス上の音楽を含む追加のディレクトリを追加",
   "removeDir": "このディレクトリを削除してもよろしいですか:",
-  "removeDirMessage": "削除すると、このディレクトリの音楽はReverbioに表示されません"
+  "removeDirMessage": "削除すると、このディレクトリの音楽はReverbioに表示されません",
+  "proxyWarning": "最適なパフォーマンスには、Wi-Fiでプロキシを使用してください。モバイルネットワークではプロキシ接続とYouTubeストリーミングに問題が発生する可能性があります。プロキシ設定を继续吗?"
 }

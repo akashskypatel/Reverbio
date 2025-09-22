@@ -274,5 +274,6 @@
   "additionalMusicDir": "Diretórios de música adicionais",
   "addAdditionalMusicDir": "Adicionar diretórios adicionais que contenham música no seu dispositivo",
   "removeDir": "Tem certeza de que deseja remover o diretório:",
-  "removeDirMessage": "A música deste diretório não será mostrada no Reverbio se for removida"
+  "removeDirMessage": "A música deste diretório não será mostrada no Reverbio se for removida",
+  "proxyWarning": "Para um desempenho ideal, use proxies com Wi-Fi. As redes móveis podem ter problemas com conexões proxy e transmissão do YouTube. Continuar com as configurações de proxy?"
 }

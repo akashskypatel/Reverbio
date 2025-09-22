@@ -274,5 +274,6 @@
   "additionalMusicDir": "額外音樂目錄",
   "addAdditionalMusicDir": "添加裝置上包含音樂的額外目錄",
   "removeDir": "你確定要移除目錄嗎：",
-  "removeDirMessage": "如果移除，此目錄中的音樂將不會在 Reverbio 中顯示"
+  "removeDirMessage": "如果移除，此目錄中的音樂將不會在 Reverbio 中顯示",
+  "proxyWarning": "為達至最佳效能，請使用 Wi-Fi 代理。流動網絡可能會出現代理連接和 YouTube 串流問題。继续設置代理？"
 }
