@@ -570,20 +570,6 @@ Future<dynamic> _findMBSong(dynamic song) async {
   return song;
 }
 
-Future<StreamManifest> getSongManifest(String songId) async {
-  try {
-    final manifest =
-        useProxies.value
-            ? await px.getSongManifest(songId) ??
-                await px.localYoutubeClient.videos.streams.getManifest(songId)
-            : await px.localYoutubeClient.videos.streams.getManifest(songId);
-    return manifest;
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    throw Exception('Error getting YouTube stream manifest.');
-  }
-}
-
 const Duration _cacheDuration = Duration(hours: 3);
 
 Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
@@ -595,7 +581,7 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   }
   if (offlinePath == null || offlinePath.isEmpty)
     await PM.getSongUrl(song, getSongYoutubeUrl);
-  
+
   if (((song['autoCacheOffline'] ?? false) || autoCacheOffline.value) &&
       (song['songUrl'] != null && offlinePath == null) &&
       !skipDownload &&
@@ -608,7 +594,10 @@ NotifiableFuture queueSongInfoRequest(dynamic song) {
   try {
     final existing = getSongInfoQueue.where((e) => checkSong(e.data, song));
     if (existing.isEmpty) {
-      final futureTracker = NotifiableFuture.withFuture(song, getSongInfo(song));
+      final futureTracker = NotifiableFuture.withFuture(
+        song,
+        getSongInfo(song),
+      );
       getSongInfoQueue.add(futureTracker);
       return futureTracker;
     } else {
@@ -773,73 +762,60 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
     if (!isYouTubeSongValid(song)) await findYTSong(song);
     if (isYouTubeSongValid(song)) {
       unawaited(updateRecentlyPlayed(song));
-      song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
-      if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
-        final uri = Uri.parse(song['songUrl']);
+      final songId = song['ytid'];
+      final qualitySetting = audioQualitySetting.value;
+      final cacheKey = 'song_${songId}_${qualitySetting}_url';
+
+      final cachedUrl = await getData('cache', cacheKey);
+
+      if (cachedUrl != null) {
+        final uri = Uri.parse(cachedUrl);
         final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-        song['songUrlExpire'] = expires;
-        song['isError'] = false;
-        song['source'] = 'youtube';
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        //add 5 second grace
+        if (expires > (now + 5))
+          if (await checkUrl(cachedUrl) < 400) return cachedUrl;
+      } else {
+        song['songUrl'] = await px.getYouTubeAudioUrl(song['ytid']);
+        if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
+          final uri = Uri.parse(song['songUrl']);
+          final expires =
+              int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+          song['songUrlExpire'] = expires;
+          song['isError'] = false;
+          song['source'] = 'youtube';
+        }
       }
+      if (song['songUrl'] == null || song['songUrl'].isEmpty) {
+        logger.log(
+          'Could not find YouTube stream for this song. ${song['artist']} - ${song['title']}',
+          null,
+          null,
+        );
+        song['error'] = context.l10n!.errorCouldNotFindAStream;
+        song['isError'] = true;
+        return '';
+      }
+      //check if url resolves
+      if (await checkUrl(song['songUrl']) >= 400) {
+        logger.log(
+          'Song url could not be resolved. ${song['songUrl']}',
+          null,
+          null,
+        );
+        song['error'] = context.l10n!.urlError;
+        song['isError'] = true;
+        return '';
+      }
+      unawaited(addOrUpdateData('cache', cacheKey, song['songUrl']));
+      return song['songUrl'];
     }
-    if (song['songUrl'] == null || song['songUrl'].isEmpty) {
-      logger.log(
-        'Could not find YouTube stream for this song. ${song['artist']} - ${song['title']}',
-        null,
-        null,
-      );
-      song['error'] = context.l10n!.errorCouldNotFindAStream;
-      song['isError'] = true;
-      return '';
-    }
-    //check if url resolves
-    if (await checkUrl(song['songUrl']) >= 400) {
-      logger.log(
-        'Song url could not be resolved. ${song['songUrl']}',
-        null,
-        null,
-      );
-      song['error'] = context.l10n!.urlError;
-      song['isError'] = true;
-      return '';
-    }
-    return song['songUrl'];
   } catch (e, stackTrace) {
     song['error'] = context.l10n!.urlError;
     song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return '';
   }
-}
-
-Future<String?> getYouTubeAudioUrl(String songId) async {
-  try {
-    final qualitySetting = audioQualitySetting.value;
-    final cacheKey = 'song_${songId}_${qualitySetting}_url';
-
-    final cachedUrl = await getData(
-      'cache',
-      cacheKey,
-      cachingDuration: _cacheDuration,
-    );
-
-    if (cachedUrl != null) {
-      final uri = Uri.parse(cachedUrl);
-      final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      //add 5 second grace
-      if (expires > (now + 5))
-        if (await checkUrl(cachedUrl) < 400) return cachedUrl;
-    }
-    final manifest = await getSongManifest(songId);
-    final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
-    final audioUrl = audioQuality.url.toString();
-    unawaited(addOrUpdateData('cache', cacheKey, audioUrl));
-    return audioUrl;
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return null;
-  }
+  return '';
 }
 
 Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {

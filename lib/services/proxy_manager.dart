@@ -33,7 +33,9 @@ import 'package:http/io_client.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/data_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class Proxy {
@@ -524,22 +526,22 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> getSongManifest(String songId) async {
+  Future<String> getYouTubeAudioUrl(String songId) async {
+    final completer = Completer<String>();
+    final receivePort = ReceivePort();
     try {
-      final completer = Completer<StreamManifest?>();
-      final receivePort = ReceivePort();
       await Isolate.spawn(
-        _getSongManifest,
+        _getYouTubeAudioUrl,
         _IsolateMessage(sendPort: receivePort.sendPort, songId: songId),
       );
 
       receivePort.listen((message) {
-        if (message is StreamManifest) {
+        if (message is String && message.isNotEmpty) {
           completer.complete(message);
         } else if (message is Exception) {
           completer.completeError(message);
         } else {
-          completer.complete(null);
+          completer.complete('');
         }
         receivePort.close();
       });
@@ -551,28 +553,51 @@ class ProxyManager {
         e,
         stackTrace,
       );
-      return null;
+      completer.completeError(
+        'Error in ${stackTrace.getCurrentMethodName()}: $e\n$stackTrace',
+      );
+      return completer.future;
     }
   }
 
-  Future<void> _getSongManifest(_IsolateMessage message) async {
+  Future<StreamManifest?> _getSongManifest(String songId) async {
     try {
-      final songId = message.songId;
       StreamManifest? manifest = await _validateDirect(songId);
       if (manifest != null) {
-        message.sendPort.send(manifest);
-        return;
+        return manifest;
       }
       if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
         await _fetchProxies();
       manifest = await _cycleProxies(songId);
-      message.sendPort.send(manifest);
+      return manifest;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
+      return null;
+    }
+  }
+
+  Future<void> _getYouTubeAudioUrl(_IsolateMessage message) async {
+    try {
+      final songId = message.songId;
+      final manifest = await _getSongManifest(songId);
+      if (manifest != null) {
+        final audioQuality = selectAudioQuality(
+          manifest.audioOnly.sortByBitrate(),
+        );
+        final audioUrl = audioQuality.url.toString();
+        return message.sendPort.send(audioUrl);
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+      return message.sendPort.send('');
     }
   }
 
@@ -588,6 +613,7 @@ class ProxyManager {
       final ioClient = IOClient(client);
       final ytExplode = YoutubeExplode(YoutubeHttpClient(ioClient));
       do {
+        await Future.delayed(Duration.zero);
         final timeout = streamRequestTimeout.value;
         proxy = await _randomProxy();
         if (proxy == null) break;
