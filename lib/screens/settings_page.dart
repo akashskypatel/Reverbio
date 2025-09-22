@@ -325,7 +325,27 @@ class _SettingsPageState extends State<SettingsPage> {
               borderRadius: commonCustomBarRadiusLast,
               trailing: Switch(
                 value: value,
-                onChanged: (value) => _toggleUseProxies(context, value),
+                onChanged: (value) async {
+                  if (Platform.isAndroid && !useProxies.value)
+                    await showDialog(
+                      context: context,
+                      builder:
+                          (context) => ConfirmationDialog(
+                            message: context.l10n!.proxyWarning,
+                            confirmText: context.l10n!.confirm.toUpperCase(),
+                            cancelText: context.l10n!.cancel.toUpperCase(),
+                            onCancel: () {
+                              GoRouter.of(context).pop();
+                            },
+                            onSubmit: () {
+                              _toggleUseProxies(context, value);
+                              GoRouter.of(context).pop();
+                            },
+                          ),
+                    );
+                  else
+                    _toggleUseProxies(context, value);
+                },
               ),
             );
           },
