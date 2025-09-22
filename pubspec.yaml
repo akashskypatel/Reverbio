@@ -5,7 +5,7 @@ repository: https://github.com/akashskypatel/Reverbio
 issue_tracker: https://github.com/akashskypatel/Reverbio/issues
 
 publish_to: 'none'
-version: 1.5.5 # run update.sh after changing the version
+version: 1.5.6 # run update.sh after changing the version
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
