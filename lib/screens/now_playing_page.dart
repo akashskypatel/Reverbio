@@ -855,7 +855,8 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
       valueListenable: audioHandler.songValueNotifier,
       builder: (context, value, child) {
         final song = audioHandler.songValueNotifier.value!.song;
-        final artistData = (song['artist-credit'] ?? [song['artist'] ?? 'unknown']) as List;
+        final artistData =
+            (song['artist-credit'] ?? [song['artist'] ?? 'unknown']) as List;
         int index = 1;
         final artistLabels = artistData.fold(<Widget>[], (v, e) {
           v.add(_buildArtistLabel(e is String ? e : e['artist']));
@@ -882,10 +883,11 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
               child: Column(
                 children: [
                   MarqueeTextWidget(
-                    text: song['mbTitle'] ??
-                              song['title'] ??
-                              song['ytTitle'] ??
-                              'unknown',
+                    text:
+                        song['mbTitle'] ??
+                        song['title'] ??
+                        song['ytTitle'] ??
+                        'unknown',
                     fontColor: Theme.of(context).colorScheme.primary,
                     fontSize: screenHeight * 0.028,
                     fontWeight: FontWeight.w600,
@@ -931,17 +933,22 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
               builder:
                   (context) =>
                       ArtistPage(page: '/artist', artistData: artistData),
-              settings: RouteSettings(name: '/artist?${artistData is String ? artistData : artistData['id']}'),
+              settings: RouteSettings(
+                name:
+                    '/artist?${artistData is String ? artistData : artistData['id']}',
+              ),
             ),
           );
         } catch (_) {}
       },
       child: MarqueeTextWidget(
         text:
-            artistData['name'] ??
-            artistData['artist'] ??
-            artistData['title'] ??
-            'unknown',
+            artistData is String
+                ? artistData
+                : artistData['name'] ??
+                    artistData['artist'] ??
+                    artistData['title'] ??
+                    'unknown',
         fontColor: Theme.of(context).colorScheme.secondary,
         fontSize: screenHeight * 0.025,
         fontWeight: FontWeight.w500,

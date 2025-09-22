@@ -220,9 +220,9 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    widget.songMetadataNotifier.value = copyMap(widget.songFuture.resultOrData);
     widget.songFuture.addListener(_listener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.songMetadataNotifier.value = copyMap(widget.songFuture.resultOrData);
       if (mounted) {
         setState(() {
           if (widget.songFuture.isComplete) {
