@@ -723,7 +723,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Color activatedColor,
     Color inactivatedColor,
   ) {
-    final availableValues = [5, 15, 30, 45, 60];
+    final availableValues = [15, 30, 45, 60];
     showCustomBottomSheet(
       context,
       StatefulBuilder(
