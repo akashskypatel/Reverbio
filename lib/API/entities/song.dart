@@ -780,6 +780,7 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
           song['ytid'],
           streamRequestTimeout.value,
           audioQualitySetting.value,
+          useProxies.value,
         );
         if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
           final uri = Uri.parse(song['songUrl']);
