@@ -23,7 +23,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:audio_service/audio_service.dart';
-import 'package:background_downloader/background_downloader.dart';
+import 'package:background_downloader/background_downloader.dart' as downloader;
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +31,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -40,6 +41,7 @@ import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/logger_service.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
+import 'package:reverbio/services/proxy_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
@@ -127,9 +129,8 @@ class _ReverbioState extends State<Reverbio> {
         ),
       );
       await checkInternetConnection();
-      await FileDownloader().start();
-      await px.ensureInitialized();
-      //await tagAllOfflineFiles();
+      await downloader.FileDownloader().start();
+      await ProxyManager.ensureInitialized();
     });
 
     try {
@@ -277,4 +278,16 @@ void handleIncomingLink(Uri? uri) async {
       showToast(context.l10n!.failedToLoadPlaylist);
     }
   }
+}
+
+Future<bool> hasImageAccess() async {
+  return (await Permission.photos.status).isGranted;
+}
+
+Future<bool> hasAudioAccess() async {
+  return (await Permission.audio.status).isGranted;
+}
+
+Future<Map<Permission, PermissionStatus>> requestMediaPermissions() async {
+  return [Permission.photos, Permission.audio].request();
 }

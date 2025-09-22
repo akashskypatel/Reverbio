@@ -63,6 +63,7 @@ String? getCombinedId(dynamic entity) {
   if (entity is String) return entity;
   String? combinedId;
   if (entity is Map) {
+    if (entity['id'] == null) return null;
     final ids = Uri.parse('?${entity['id']}').queryParameters;
     if ((entity['ytid'] != null && entity['ytid'].isNotEmpty) ||
         (ids['yt'] != null && ids['yt']!.isNotEmpty)) {
@@ -125,39 +126,41 @@ String parseEntityId(dynamic entity) {
   dynamic ids;
   String entityId =
       entity is String ? entity : entity['id'] ?? getCombinedId(entity) ?? '';
-  final mbRx = RegExp(
-    r'^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$',
-    caseSensitive: false,
-  );
-  final isRx = RegExp(
-    r'^([A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5})$',
-    caseSensitive: false,
-  );
-  if (entityId.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+  if (entityId.isNotEmpty) {
+    final mbRx = RegExp(
+      r'^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$',
+      caseSensitive: false,
+    );
+    final isRx = RegExp(
+      r'^([A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5})$',
+      caseSensitive: false,
+    );
+    if (entityId.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+      ids = Uri.parse('?$entityId').queryParameters;
+      entityId = Uri(
+        host: '',
+        queryParameters: ids,
+      ).toString().replaceAll(RegExp(r'\?|\/'), '');
+    } else if (mbRx.hasMatch(entityId)) {
+      entityId = 'mb=${mbRx.firstMatch(entityId)!.group(1)}';
+    } else if (isRx.hasMatch(entityId)) {
+      entityId = 'is=${isRx.firstMatch(entityId)!.group(1)}';
+    } else if (int.tryParse(entityId) != null) {
+      entityId = 'dc=$entityId';
+    } else if (entityId.startsWith('UC-')) {
+      entityId = 'uc=$entityId';
+    } else if (entityId.isNotEmpty) {
+      entityId = 'yt=$entityId';
+    }
     ids = Uri.parse('?$entityId').queryParameters;
-    entityId = Uri(
-      host: '',
-      queryParameters: ids,
-    ).toString().replaceAll(RegExp(r'\?|\/'), '');
-  } else if (mbRx.hasMatch(entityId)) {
-    entityId = 'mb=${mbRx.firstMatch(entityId)!.group(1)}';
-  } else if (isRx.hasMatch(entityId)) {
-    entityId = 'is=${isRx.firstMatch(entityId)!.group(1)}';
-  } else if (int.tryParse(entityId) != null) {
-    entityId = 'dc=$entityId';
-  } else if (entityId.startsWith('UC-')) {
-    entityId = 'uc=$entityId';
-  } else if (entityId.isNotEmpty) {
-    entityId = 'yt=$entityId';
   }
-  ids = Uri.parse('?$entityId').queryParameters;
   if (entity is Map) {
     entity['id'] = entityId = getCombinedId(entity) ?? entityId;
-    if (ids['yt'] != null && ids['yt'].isNotEmpty) entity['ytid'] = ids['yt'];
-    if (ids['mb'] != null && ids['mb'].isNotEmpty) entity['mbid'] = ids['mb'];
-    if (ids['is'] != null && ids['is'].isNotEmpty) entity['isrc'] = ids['is'];
-    if (ids['dc'] != null && ids['dc'].isNotEmpty) entity['dcid'] = ids['dc'];
-    if (ids['uc'] != null && ids['uc'].isNotEmpty) entity['ucid'] = ids['uc'];
+    if (ids?['yt'] != null && ids?['yt'].isNotEmpty) entity['ytid'] = ids['yt'];
+    if (ids?['mb'] != null && ids?['mb'].isNotEmpty) entity['mbid'] = ids['mb'];
+    if (ids?['is'] != null && ids?['is'].isNotEmpty) entity['isrc'] = ids['is'];
+    if (ids?['dc'] != null && ids?['dc'].isNotEmpty) entity['dcid'] = ids['dc'];
+    if (ids?['uc'] != null && ids?['uc'].isNotEmpty) entity['ucid'] = ids['uc'];
   }
   entityId = getCombinedId(entity is Map ? entity : entityId) ?? entityId;
   return entityId;

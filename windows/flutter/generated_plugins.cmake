@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_js
   media_kit_libs_windows_audio
+  permission_handler_windows
   url_launcher_windows
 )
 

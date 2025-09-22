@@ -924,30 +924,40 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
   Widget _buildArtistLabel(dynamic artistData) {
     final screenHeight = widget.size.height;
     return GestureDetector(
-      onTap: () async {
-        try {
-          if (!mounted || artistData == null || artistData.isEmpty)
-            throw Exception();
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) =>
-                      ArtistPage(page: '/artist', artistData: artistData),
-              settings: RouteSettings(
-                name:
-                    '/artist?${artistData is String ? artistData : artistData['id']}',
-              ),
-            ),
-          );
-        } catch (_) {}
-      },
+      onTap:
+          artistData is String ||
+                  !mounted ||
+                  artistData == null ||
+                  artistData.isEmpty
+              ? null
+              : () async {
+                try {
+                  if (!mounted || artistData == null || artistData.isEmpty)
+                    throw Exception();
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ArtistPage(
+                            page: '/artist',
+                            artistData: artistData,
+                          ),
+                      settings: RouteSettings(
+                        name:
+                            '/artist?${artistData is String ? artistData : artistData['id']}',
+                      ),
+                    ),
+                  );
+                } catch (_) {}
+              },
       child: MarqueeTextWidget(
         text:
-            artistData['name'] ??
-            artistData['artist'] ??
-            artistData['title'] ??
-            context.l10n!.unknown,
+            artistData is String
+                ? artistData
+                : artistData['name'] ??
+                    artistData['artist'] ??
+                    artistData['title'] ??
+                    context.l10n!.unknown,
         fontColor: Theme.of(context).colorScheme.secondary,
         fontSize: screenHeight * 0.025,
         fontWeight: FontWeight.w500,

@@ -106,3 +106,8 @@ final NotifiableList<String> searchHistory = NotifiableList<String>.fromHive(
   'user',
   'searchHistory',
 );
+final NotifiableList<Map<String, dynamic>> userDeviceSongs = NotifiableList<Map<String, dynamic>>.fromHive(
+  'userNoBackup',
+  'userDeviceSongs',
+  minimizeFunction: minimizeSongData,
+);

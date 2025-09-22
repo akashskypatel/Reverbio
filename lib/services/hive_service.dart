@@ -56,9 +56,9 @@ class HiveService {
 
   static Future<dynamic> getData<T>(
     String boxName,
-    String category,
+    String category, {
     dynamic defaultValue,
-  ) async {
+  }) async {
     try {
       final _box = await _openBox(boxName);
       final value = _box.get(category, defaultValue: defaultValue);
@@ -86,14 +86,19 @@ class HiveService {
     if (T == List<String>) {
       value = getList<String>(
         value,
-        defaultValue: defaultValue as List<String>,
+        defaultValue: (defaultValue ?? <String>[]) as List<String>,
       );
     } else if (T == Map<String, dynamic>) {
       value = getMap(value, defaultValue: defaultValue as Map<String, dynamic>);
     } else if (T == List<Map<String, dynamic>>) {
       value = getList<Map<String, dynamic>>(
         value,
-        defaultValue: defaultValue as List<Map<String, dynamic>>,
+        defaultValue: (defaultValue ?? List<Map<String, dynamic>>.empty(growable: true)) as List<Map<String, dynamic>>,
+      );
+    } else if (T == List<Map>) {
+      value = getList<Map>(
+        value,
+        defaultValue: (defaultValue ?? List<Map>.empty(growable: true)) as List<Map>,
       );
     }
     return value as T;

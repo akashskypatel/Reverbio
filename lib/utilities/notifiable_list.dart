@@ -94,11 +94,7 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     _initializationCompleter = Completer<void>();
     try {
       final value =
-          await HiveService.getData<List<T>>(
-                _boxName,
-                _category,
-                List<T>.empty(growable: true),
-              )
+          (await HiveService.getData<List<T>>(_boxName, _category, defaultValue: _items) ?? _items)
               as List<T>;
       if (test != null)
         for (final item in value)

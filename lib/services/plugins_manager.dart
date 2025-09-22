@@ -50,13 +50,13 @@ typedef WF = WidgetFactory;
 
 class PluginsManager {
   PluginsManager._();
-  static final NotifiableList<Map> _pluginsData = NotifiableList<Map>.fromHive(
+  static final NotifiableList<Map<String, dynamic>> _pluginsData = NotifiableList<Map<String, dynamic>>.fromHive(
     'settings',
     'pluginsData',
   );
   static List testMethods = ['pluginName', 'pluginVersion', 'asyncTest'];
-  static NotifiableList get pluginsData => _pluginsData;
-  static final NotifiableList<Map> _plugins = NotifiableList();
+  static NotifiableList<Map<String, dynamic>> get pluginsData => _pluginsData;
+  static final NotifiableList<Map<String, dynamic>> _plugins = NotifiableList();
   static final Map _futures = {};
   static final Map _activeJob = {};
   static final Map _completed = {};
@@ -68,7 +68,7 @@ class PluginsManager {
       _isProcessingNotifiers;
   static Map<String, ValueNotifier<UniqueKey?>> get backgroundJobNotifier =>
       _backgroundJobNotifiers;
-  static List<Map> get plugins => _plugins;
+  static List<Map<String, dynamic>> get plugins => _plugins;
 
   static Future<String> _fetchAndEvaluate(String url) async {
     try {
@@ -89,7 +89,7 @@ class PluginsManager {
     await reloadPlugins();
   }
 
-  static Future<bool> syncPlugin(Map plugin) async {
+  static Future<bool> syncPlugin(Map<String, dynamic> plugin) async {
     final context = NavigationManager().context;
     if (_isProcessingNotifiers[plugin['name']]!.value) {
       showToast(
@@ -101,7 +101,7 @@ class PluginsManager {
       plugin = _plugins.firstWhere((value) => value['name'] == plugin['name']);
       final settings = getUserSettings(plugin['name']);
       plugin['settings'] = settings;
-      Map pluginData = {};
+      Map<String, dynamic> pluginData = {};
       final source =
           settings['source'] ?? plugin['source'] ?? plugin['originalSource'];
       if (source != null) {
@@ -155,7 +155,7 @@ class PluginsManager {
     }
   }
 
-  static Future<void> addPlugin(Map plugin) async {
+  static Future<void> addPlugin(Map<String, dynamic> plugin) async {
     try {
       removePlugin(plugin['name']);
       _pluginsData.add(plugin);
@@ -426,7 +426,7 @@ class PluginsManager {
     }
   }
 
-  static Future<Map> getLocalPlugin({String? path}) async {
+  static Future<Map<String, dynamic>> getLocalPlugin({String? path}) async {
     try {
       String jsContent = '';
       if (path == null || path.isEmpty) {
@@ -450,7 +450,7 @@ class PluginsManager {
     }
   }
 
-  static Future<Map> getOnlinePlugin(String url) async {
+  static Future<Map<String, dynamic>> getOnlinePlugin(String url) async {
     try {
       final uri = Uri.parse(url);
       final response = await http.get(uri);
@@ -466,7 +466,7 @@ class PluginsManager {
     }
   }
 
-  static Future<bool> addPluginData(Map data) async {
+  static Future<bool> addPluginData(Map<String, dynamic> data) async {
     try {
       if (data.isNotEmpty) {
         final flutterJs = getJavascriptRuntime();
@@ -535,7 +535,7 @@ class PluginsManager {
     }
   }
 
-  static Future<Map> getPluginData(String jsContent, String source) async {
+  static Future<Map<String, dynamic>> getPluginData(String jsContent, String source) async {
     try {
       final script = await _loadValidateDependencies(jsContent);
       if (script.isNotEmpty) {

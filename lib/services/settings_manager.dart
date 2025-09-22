@@ -25,6 +25,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/services/plugins_manager.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/notifiable_value.dart';
 import 'package:reverbio/utilities/utils.dart';
 
@@ -55,6 +56,7 @@ Future<void> initializeSettings() async {
   await offlineDirectory.ensureInitialized(
     (await getApplicationSupportDirectory()).path,
   );
+  await additionalDirectories.ensureInitialized();
 }
 
 // Preferences
@@ -191,4 +193,9 @@ final offlineDirectory = NotifiableValue<String?>.fromHive(
   'settings',
   'offlineDirectory',
   defaultValue: null,
+);
+
+final additionalDirectories = NotifiableList<String>.fromHive(
+  'settings',
+  'additionalDirectories_${Platform.operatingSystem}',
 );

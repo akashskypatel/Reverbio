@@ -23,16 +23,19 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:open_settings_plus/core/open_settings_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/entities.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/data_manager.dart';
+import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
@@ -233,7 +236,7 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (context, __) {
             return CustomBar(
               tileName: context.l10n!.offlineMode,
-              tileIcon: FluentIcons.cellular_off_24_regular,
+              tileIcon: FluentIcons.cellular_off_24_filled,
               trailing: Switch(
                 value: offlineMode.value,
                 onChanged: (value) async => toggleOfflineMode(context, value),
@@ -249,7 +252,7 @@ class _SettingsPageState extends State<SettingsPage> {
               tileName: context.l10n!.plugins,
               tileIcon:
                   value
-                      ? FluentIcons.plug_connected_24_regular
+                      ? FluentIcons.plug_connected_24_filled
                       : FluentIcons.plug_disconnected_24_filled,
               trailing: Switch(
                 value: value,
@@ -296,7 +299,7 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (context, __) {
             return CustomBar(
               tileName: context.l10n!.nonMusicBlock,
-              tileIcon: FluentIcons.skip_forward_tab_24_regular,
+              tileIcon: FluentIcons.skip_forward_tab_24_filled,
               trailing: Switch(
                 value: skipNonMusic.value,
                 onChanged: (value) => skipNonMusic.value = value,
@@ -326,7 +329,27 @@ class _SettingsPageState extends State<SettingsPage> {
               borderRadius: commonCustomBarRadiusLast,
               trailing: Switch(
                 value: useProxies.value,
-                onChanged: (value) => useProxies.value = value,
+                onChanged: (value) async {
+                  if (Platform.isAndroid && !useProxies.value)
+                    await showDialog(
+                      context: context,
+                      builder:
+                          (context) => ConfirmationDialog(
+                            message: context.l10n!.proxyWarning,
+                            confirmText: context.l10n!.confirm.toUpperCase(),
+                            cancelText: context.l10n!.cancel.toUpperCase(),
+                            onCancel: () {
+                              GoRouter.of(context).pop();
+                            },
+                            onSubmit: () {
+                              useProxies.value = value;
+                              GoRouter.of(context).pop();
+                            },
+                          ),
+                    );
+                  else
+                    useProxies.value = value;
+                },
               ),
             );
           },
@@ -347,7 +370,7 @@ class _SettingsPageState extends State<SettingsPage> {
           tileIcon: FluentIcons.broom_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
           onTap: () {
-            clearCache();
+            HiveService.clearBox('cache');
             showToast('${context.l10n!.cacheMsg}!');
           },
         ),
@@ -361,6 +384,36 @@ class _SettingsPageState extends State<SettingsPage> {
           tileIcon: FluentIcons.text_grammar_dismiss_24_filled,
           onTap: () => _showClearRecentlyPlayedDialog(context),
         ),
+        LayoutBuilder(
+          builder:
+              (context, constraints) => ListenableBuilder(
+                listenable: offlineDirectory,
+                builder:
+                    (context, child) => CustomBar(
+                      tileName: context.l10n!.changeOfflineDir,
+                      tileIcon: FluentIcons.folder_swap_24_filled,
+                      onTap: () async {
+                        await _showChangeOfflineDirDialog(context);
+                      },
+                      trailing: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * .4,
+                        ),
+                        child: Text(offlineDirectory.value, softWrap: true),
+                      ),
+                    ),
+              ),
+        ),
+        CustomBar(
+          tileName: context.l10n!.additionalMusicDir,
+          tileIcon: FluentIcons.folder_add_24_filled,
+          onTap:
+              () => _showAdditionalDirectoriesSheet(
+                context,
+                _theme.colorScheme.secondaryContainer,
+                _theme.colorScheme.surfaceContainerHigh,
+              ),
+        ),
         CustomBar(
           tileName: context.l10n!.backupUserData,
           tileIcon: FluentIcons.cloud_sync_24_filled,
@@ -370,7 +423,7 @@ class _SettingsPageState extends State<SettingsPage> {
           tileName: context.l10n!.restoreUserData,
           tileIcon: FluentIcons.cloud_add_24_filled,
           onTap: () async {
-            final response = await restoreData(context);
+            final response = await HiveService.restoreData(context);
             showToast(response);
           },
         ),
@@ -378,6 +431,11 @@ class _SettingsPageState extends State<SettingsPage> {
           tileName: context.l10n!.importPlaylists,
           tileIcon: FluentIcons.table_add_24_filled,
           onTap: () => showPlaylistImporter(context),
+        ),
+        CustomBar(
+          tileName: context.l10n!.tagOfflineFiles,
+          tileIcon: FluentIcons.tag_multiple_24_filled,
+          onTap: tagAllOfflineFiles,
         ),
         if (!isFdroidBuild)
           FutureBuilder(
@@ -474,6 +532,169 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () => NavigationManager.router.go('/settings/about'),
         ),
       ],
+    );
+  }
+
+  Future<void> _showChangeOfflineDirDialog(BuildContext context) async {
+    final appDir = await getApplicationSupportDirectory();
+    final newDir = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: context.l10n!.changeOfflineDir,
+      initialDirectory: offlineDirectory.value,
+    );
+    if (newDir != null)
+      await showDialog(
+        context: context,
+        builder:
+            (context) => ConfirmationDialog(
+              message:
+                  '${context.l10n!.newDir} $newDir\n${newDir != appDir.path && Platform.isAndroid ? context.l10n!.onUninstallOfflineDir : ''}',
+              cancelText: context.l10n!.cancel.toUpperCase(),
+              confirmText: context.l10n!.confirm.toUpperCase(),
+              onCancel: () => GoRouter.of(context).pop(),
+              onSubmit: () {
+                if (newDir != offlineDirectory.value) {
+                  offlineDirectory.value =
+                      newDir.endsWith('reverbio')
+                          ? newDir
+                          : '$newDir${Platform.pathSeparator}reverbio';
+                  Directory(offlineDirectory.value).create(recursive: true);
+                  showToast(
+                    '${context.l10n!.newDir}: "$newDir" ${context.l10n!.settingChangedMsg}',
+                    context: context,
+                  );
+                  logger.log(
+                    'Offline directory changed to: ${offlineDirectory.value}',
+                    null,
+                    null,
+                  );
+                }
+                GoRouter.of(context).pop();
+              },
+            ),
+      );
+  }
+
+  void _showAdditionalDirectoriesSheet(
+    BuildContext context,
+    Color activatedColor,
+    Color inactivatedColor,
+  ) {
+    final canCloseOnTapOutside = ValueNotifier(true);
+    showCustomBottomSheet(
+      canCloseOnTapOutside: canCloseOnTapOutside,
+      context,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            width: MediaQuery.of(context).size.width * 0.75,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Column(
+                children: [
+                  SectionHeader(
+                    title: context.l10n!.additionalMusicDir,
+                    actionsExpanded: true,
+                    actions: [
+                      IconButton(
+                        onPressed: () async {
+                          await getUserDeviceSongs();
+                        },
+                        icon: const Icon(FluentIcons.arrow_sync_24_filled),
+                        iconSize: listHeaderIconSize,
+                        color: _theme.colorScheme.primary,
+                      ),
+                      IconButton(
+                        onPressed: () async {
+                          canCloseOnTapOutside.value = false;
+                          final newDir = await FilePicker.platform
+                              .getDirectoryPath(
+                                dialogTitle: context.l10n!.changeOfflineDir,
+                                initialDirectory: offlineDirectory.value,
+                              );
+                          if (newDir != null &&
+                              Directory(newDir).existsSync() &&
+                              !additionalDirectories.contains(newDir)) {
+                            additionalDirectories.add(newDir);
+                            showToast(
+                              '${context.l10n!.additionalMusicDir}: "$newDir" ${context.l10n!.addedSuccess}',
+                              context: context,
+                            );
+                            logger.log(
+                              'Additional directory added: $newDir',
+                              null,
+                              null,
+                            );
+                          }
+                          canCloseOnTapOutside.value = true;
+                        },
+                        icon: const Icon(FluentIcons.add_24_filled),
+                        iconSize: listHeaderIconSize,
+                        color: _theme.colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                  ListenableBuilder(
+                    listenable: additionalDirectories,
+                    builder: (context, ___) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const BouncingScrollPhysics(),
+                        padding: commonListViewBottomPadding,
+                        itemCount: additionalDirectories.length,
+                        itemBuilder: (context, index) {
+                          final borderRadius = getItemBorderRadius(
+                            index,
+                            additionalDirectories.length,
+                          );
+                          return BottomSheetBar(
+                            onTap:
+                                () => launchURL(
+                                  Uri.directory(additionalDirectories[index]),
+                                ),
+                            borderRadius: borderRadius,
+                            additionalDirectories[index],
+                            _theme.colorScheme.surfaceContainerHigh,
+                            actions: [
+                              IconButton(
+                                onPressed: () async {
+                                  await showDialog(
+                                    context: context,
+                                    builder:
+                                        (context) => ConfirmationDialog(
+                                          message:
+                                              '${context.l10n!.removeDir}: ${additionalDirectories[index]}?\n${context.l10n!.removeDirMessage}',
+                                          confirmText:
+                                              context.l10n!.confirm
+                                                  .toUpperCase(),
+                                          cancelText:
+                                              context.l10n!.cancel
+                                                  .toUpperCase(),
+                                          onCancel:
+                                              () => GoRouter.of(context).pop(),
+                                          onSubmit: () {
+                                            additionalDirectories.remove(
+                                              additionalDirectories[index],
+                                            );
+                                            GoRouter.of(context).pop();
+                                          },
+                                        ),
+                                  );
+                                },
+                                icon: const Icon(FluentIcons.delete_24_filled),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -791,15 +1012,15 @@ class _SettingsPageState extends State<SettingsPage> {
                             ..value = false
                             ..value = await _showAddPluginDialog(context);
                         },
-                        icon: const Icon(FluentIcons.add_24_regular),
+                        icon: const Icon(FluentIcons.add_24_filled),
                         iconSize: listHeaderIconSize,
                         color: _theme.colorScheme.primary,
                       ),
                     ],
                   ),
-                  ValueListenableBuilder(
-                    valueListenable: PM.pluginsDataNotifier,
-                    builder: (context, value, ___) {
+                  ListenableBuilder(
+                    listenable: PM.pluginsData,
+                    builder: (context, ___) {
                       return ListView.builder(
                         shrinkWrap: true,
                         physics: const BouncingScrollPhysics(),
@@ -869,11 +1090,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                                       PM.pluginsData[index]['name'],
                                                     );
                                                   });
-                                                  await addOrUpdateData(
-                                                    'settings',
-                                                    'pluginsData',
-                                                    PM.pluginsData,
-                                                  );
                                                   showToast(
                                                     context.l10n!.pluginRemoved,
                                                   );
@@ -883,7 +1099,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                         ) ??
                                         true;
                                 },
-                                icon: const Icon(FluentIcons.delete_24_regular),
+                                icon: const Icon(FluentIcons.delete_24_filled),
                               ),
                             ],
                           );
@@ -900,7 +1116,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _reloadPlugins(Map? _plugin) async {
+  Future<void> _reloadPlugins(Map<String, dynamic>? _plugin) async {
     if (_plugin != null)
       await PM.syncPlugin(_plugin);
     else
@@ -987,7 +1203,7 @@ class _SettingsPageState extends State<SettingsPage> {
           var isOnlineMode = true;
           final isLoadedNotifier = ValueNotifier(false);
           var isValid = false;
-          var pluginData = {};
+          var pluginData = <String, dynamic>{};
           final jsUrlNotifier = ValueNotifier('');
           final urlInputController = TextEditingController();
           return StatefulBuilder(
@@ -1096,7 +1312,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          FluentIcons.arrow_download_24_regular,
+                                          FluentIcons.arrow_download_24_filled,
                                         ),
                                         const SizedBox(width: 7),
                                         Text(context.l10n!.download),
@@ -1131,7 +1347,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(FluentIcons.folder_open_24_regular),
+                                const Icon(FluentIcons.folder_open_24_filled),
                                 const SizedBox(width: 7),
                                 Text(context.l10n!.browse),
                               ],
@@ -1165,11 +1381,6 @@ class _SettingsPageState extends State<SettingsPage> {
                             value
                                 ? () async {
                                   await PM.addPluginData(pluginData);
-                                  await addOrUpdateData(
-                                    'settings',
-                                    'pluginsData',
-                                    PM.pluginsData,
-                                  );
                                   if (isValid) {
                                     setState(() {});
                                     GoRouter.of(context).pop();
@@ -1355,7 +1566,7 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
-    final response = await backupData(context);
+    final response = await HiveService.backupData(context);
     showToast(response);
   }
 }

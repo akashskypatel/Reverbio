@@ -49,7 +49,7 @@ class NotifiableValue<T> extends ValueNotifier {
       final storedValue = await HiveService.getData<T?>(
         _boxName,
         _category,
-        value,
+        defaultValue: value,
       );
       addListener(_addOrUpdateListener);
       value = storedValue ?? value;

@@ -451,7 +451,6 @@ Future<List> getSongsFromPlaylist(dynamic playlistId) async {
       (await HiveService.getData<List<Map<String, dynamic>>>(
         'cache',
         'playlistSongs$playlistId',
-        [],
       )).map((e) => Map<String, dynamic>.from(e)).toList();
   String id;
   if (playlistId.toString().contains('yt=')) {
@@ -465,7 +464,6 @@ Future<List> getSongsFromPlaylist(dynamic playlistId) async {
       songList.add(returnYtSongLayout(song));
     }
   }
-
   return songList;
 }
 

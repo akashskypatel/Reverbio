@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:audiotags/audiotags.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
@@ -521,20 +522,6 @@ Future<dynamic> _findMBSong(dynamic song) async {
   return song;
 }
 
-Future<StreamManifest> getSongManifest(String songId) async {
-  try {
-    final manifest =
-        useProxies.value
-            ? await px.getSongManifest(songId) ??
-                await px.localYoutubeClient.videos.streams.getManifest(songId)
-            : await px.localYoutubeClient.videos.streams.getManifest(songId);
-    return manifest;
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    throw Exception('Error getting YouTube stream manifest.');
-  }
-}
-
 Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   song['isError'] = false;
   song?.remove('error');
@@ -755,69 +742,65 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
     if (!isYouTubeSongValid(song)) await findYTSong(song);
     if (isYouTubeSongValid(song)) {
       unawaited(updateRecentlyPlayed(song));
-      song['songUrl'] = await getYouTubeAudioUrl(song['ytid']);
-      if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
-        final uri = Uri.parse(song['songUrl']);
+      final songId = song['ytid'];
+      final qualitySetting = audioQualitySetting.value;
+      final cacheKey = 'song_${songId}_${qualitySetting}_url';
+
+      final cachedUrl = await HiveService.getData('cache', cacheKey);
+
+      if (cachedUrl != null) {
+        final uri = Uri.parse(cachedUrl);
         final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-        song['songUrlExpire'] = expires;
-        song['isError'] = false;
-        song['source'] = 'youtube';
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        //add 5 second grace
+        if (expires > (now + 5))
+          if (await checkUrl(cachedUrl) < 400) return cachedUrl;
+      } else {
+        song['songUrl'] = await px.getYouTubeAudioUrl(
+          song['ytid'],
+          streamRequestTimeout.value,
+          audioQualitySetting.value,
+          useProxies.value,
+        );
+        if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
+          final uri = Uri.parse(song['songUrl']);
+          final expires =
+              int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+          song['songUrlExpire'] = expires;
+          song['isError'] = false;
+          song['source'] = 'youtube';
+        }
       }
+      if (song['songUrl'] == null || song['songUrl'].isEmpty) {
+        logger.log(
+          'Could not find YouTube stream for this song. ${song['artist']} - ${song['title']}',
+          null,
+          null,
+        );
+        song['error'] = context.l10n!.errorCouldNotFindAStream;
+        song['isError'] = true;
+        return '';
+      }
+      //check if url resolves
+      if (await checkUrl(song['songUrl']) >= 400) {
+        logger.log(
+          'Song url could not be resolved. ${song['songUrl']}',
+          null,
+          null,
+        );
+        song['error'] = context.l10n!.urlError;
+        song['isError'] = true;
+        return '';
+      }
+      await HiveService.addOrUpdateData('cache', cacheKey, song['songUrl']);
+      return song['songUrl'];
     }
-    if (song['songUrl'] == null || song['songUrl'].isEmpty) {
-      logger.log(
-        'Could not find YouTube stream for this song. ${song['artist']} - ${song['title']}',
-        null,
-        null,
-      );
-      song['error'] = context.l10n!.errorCouldNotFindAStream;
-      song['isError'] = true;
-      return '';
-    }
-    //check if url resolves
-    if (await checkUrl(song['songUrl']) >= 400) {
-      logger.log(
-        'Song url could not be resolved. ${song['songUrl']}',
-        null,
-        null,
-      );
-      song['error'] = context.l10n!.urlError;
-      song['isError'] = true;
-      return '';
-    }
-    return song['songUrl'];
   } catch (e, stackTrace) {
     song['error'] = context.l10n!.urlError;
     song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return '';
   }
-}
-
-Future<String?> getYouTubeAudioUrl(String songId) async {
-  try {
-    final qualitySetting = audioQualitySetting.value;
-    final cacheKey = 'song_${songId}_${qualitySetting}_url';
-
-    final cachedUrl = await HiveService.getData('cache', cacheKey, null);
-
-    if (cachedUrl != null) {
-      final uri = Uri.parse(cachedUrl);
-      final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      //add 5 second grace
-      if (expires > (now + 5))
-        if (await checkUrl(cachedUrl) < 400) return cachedUrl;
-    }
-    final manifest = await getSongManifest(songId);
-    final audioQuality = selectAudioQuality(manifest.audioOnly.sortByBitrate());
-    final audioUrl = audioQuality.url.toString();
-    unawaited(HiveService.addOrUpdateData('cache', cacheKey, audioUrl));
-    return audioUrl;
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return null;
-  }
+  return '';
 }
 
 Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
@@ -1012,6 +995,27 @@ Future<bool> checkOfflineFiles() async {
     (f) => offlineSongsSet.any((s) => checkEntityId(f, s)),
   );
   return exists;
+}
+
+Future<List<Map<String, dynamic>>> getUserDeviceSongs() async {
+  for (final dir in additionalDirectories) {
+    final fileList = Directory(dir).listSync(recursive: true);
+    for (final file in fileList) {
+      if (file is File && isAudio(file.path)) {
+        try {
+          final tag = await AudioTags.read(file.path);
+          final title = tag?.title ?? basenameWithoutExtension(file.path);
+          final artist = tag?.trackArtist ?? tag?.albumArtist;
+          if (artist != null)
+            userDeviceSongs.addOrUpdate({
+              'title': title,
+              'artist': artist,
+            }, checkSong);
+        } catch (_) {}
+      }
+    }
+  }
+  return userDeviceSongs;
 }
 
 Future<void> getExistingOfflineSongs() async {
