@@ -548,20 +548,6 @@ Future<String> getLiveStreamUrl(String songId) async {
   return streamInfo;
 }
 
-AudioStreamInfo selectAudioQuality(List<AudioStreamInfo> availableSources) {
-  final qualitySetting = audioQualitySetting.value;
-
-  if (qualitySetting == 'low') {
-    return availableSources.last;
-  } else if (qualitySetting == 'medium') {
-    return availableSources[availableSources.length ~/ 2];
-  } else if (qualitySetting == 'high') {
-    return availableSources.first;
-  } else {
-    return availableSources.withHighestBitrate();
-  }
-}
-
 Future<Map<String, dynamic>> getIPGeolocation() async {
   try {
     final uri = Uri.http('ip-api.com', 'json');

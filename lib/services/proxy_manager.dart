@@ -25,17 +25,12 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 
-//import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
-//import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/data_manager.dart';
-import 'package:reverbio/services/settings_manager.dart';
-import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class Proxy {
@@ -68,15 +63,15 @@ class ProxyManager {
     ensureInitialized();
   }
   static final ProxyManager _instance = ProxyManager._internal();
-  Future<void>? _fetchingList;
-  bool _fetched = false;
-  final Map<String, Set<Proxy>> _proxies = {};
-  final Set<Proxy> _workingProxies = {};
-  final _random = Random();
-  DateTime _lastFetched = DateTime.now();
-  IOClient _proxyClient = IOClient();
-  final YoutubeExplode _localYTClient = YoutubeExplode();
-  YoutubeExplode _proxyYTClient = YoutubeExplode();
+  static Future<void>? _fetchingList;
+  static bool _fetched = false;
+  static final Map<String, Set<Proxy>> _proxies = {};
+  static final Set<Proxy> _workingProxies = {};
+  static final _random = Random();
+  static DateTime _lastFetched = DateTime.now();
+  static IOClient _proxyClient = IOClient();
+  static final YoutubeExplode _localYTClient = YoutubeExplode();
+  static YoutubeExplode _proxyYTClient = YoutubeExplode();
 
   YoutubeExplode get localYoutubeClient => _localYTClient;
   YoutubeExplode get proxyYoutubeClient => _proxyYTClient;
@@ -97,7 +92,7 @@ class ProxyManager {
     ;
   }
 
-  Future<void> _fetchProxies() async {
+  static Future<void> _fetchProxies() async {
     try {
       if (kDebugMode) logger.log('Fetching proxies...', null, null);
       if (_fetchingList == null ||
@@ -128,7 +123,7 @@ class ProxyManager {
     }
   }
 
-  Future<void> _fetchOpenProxyListXyz() async {
+  static Future<void> _fetchOpenProxyListXyz() async {
     try {
       if (kDebugMode)
         logger.log('Fetching from OpenProxyList.xyz...', null, null);
@@ -186,7 +181,7 @@ class ProxyManager {
     }
   }
 
-  Future<void> _fetchJetkaiProxyList() async {
+  static Future<void> _fetchJetkaiProxyList() async {
     try {
       if (kDebugMode)
         logger.log('Fetching from jetkai/proxy-list...', null, null);
@@ -240,7 +235,7 @@ class ProxyManager {
     }
   }
 
-  Future<void> _fetchOpenProxyList() async {
+  static Future<void> _fetchOpenProxyList() async {
     try {
       if (kDebugMode) logger.log('Fetching from openproxylist...', null, null);
       const sources = [
@@ -294,7 +289,7 @@ class ProxyManager {
     }
   }
 
-  Future<void> _fetchSpysMe() async {
+  static Future<void> _fetchSpysMe() async {
     try {
       if (kDebugMode) logger.log('Fetching from spys.me...', null, null);
       const url = 'https://spys.me/proxy.txt';
@@ -348,7 +343,7 @@ class ProxyManager {
     }
   }
 
-  Future<void> _fetchProxyScrape() async {
+  static Future<void> _fetchProxyScrape() async {
     try {
       if (kDebugMode)
         logger.log('Fetching from proxyscrape.com...', null, null);
@@ -394,9 +389,11 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> _validateDirect(String songId) async {
+  static Future<StreamManifest?> _validateDirect(
+    String songId,
+    int timeout,
+  ) async {
     try {
-      final timeout = streamRequestTimeout.value;
       if (kDebugMode) logger.log('Validating direct connection...', null, null);
       final manifest = await _localYTClient.videos.streams
           .getManifest(songId)
@@ -414,7 +411,7 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> _validateProxy(
+  static Future<StreamManifest?> _validateProxy(
     Proxy proxy,
     String songId,
     int timeout,
@@ -473,7 +470,7 @@ class ProxyManager {
     }
   }
 
-  Future<Proxy?> _randomProxy({String? preferredCountry}) async {
+  static Future<Proxy?> _randomProxy({String? preferredCountry}) async {
     try {
       if (!_fetched) await _fetchingList;
       if (_fetched && _proxies.isEmpty) await _fetchProxies();
@@ -526,13 +523,18 @@ class ProxyManager {
     }
   }
 
-  Future<String> getYouTubeAudioUrl(String songId) async {
+  Future<String> getYouTubeAudioUrl(String songId, int timeout, String qualitySetting) async {
     final completer = Completer<String>();
     final receivePort = ReceivePort();
     try {
       await Isolate.spawn(
         _getYouTubeAudioUrl,
-        _IsolateMessage(sendPort: receivePort.sendPort, songId: songId),
+        _IsolateMessage(
+          sendPort: receivePort.sendPort,
+          songId: songId,
+          timeout: timeout,
+          qualitySetting: qualitySetting,
+        ),
       );
 
       receivePort.listen((message) {
@@ -560,15 +562,18 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> _getSongManifest(String songId) async {
+  static Future<StreamManifest?> _getSongManifest(
+    String songId,
+    int timeout,
+  ) async {
     try {
-      StreamManifest? manifest = await _validateDirect(songId);
+      StreamManifest? manifest = await _validateDirect(songId, timeout);
       if (manifest != null) {
         return manifest;
       }
       if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
         await _fetchProxies();
-      manifest = await _cycleProxies(songId);
+      manifest = await _cycleProxies(songId, timeout);
       return manifest;
     } catch (e, stackTrace) {
       logger.log(
@@ -580,13 +585,13 @@ class ProxyManager {
     }
   }
 
-  Future<void> _getYouTubeAudioUrl(_IsolateMessage message) async {
+  static Future<void> _getYouTubeAudioUrl(_IsolateMessage message) async {
     try {
-      final songId = message.songId;
-      final manifest = await _getSongManifest(songId);
+      final manifest = await _getSongManifest(message.songId, message.timeout);
       if (manifest != null) {
         final audioQuality = selectAudioQuality(
           manifest.audioOnly.sortByBitrate(),
+          message.qualitySetting
         );
         final audioUrl = audioQuality.url.toString();
         return message.sendPort.send(audioUrl);
@@ -601,7 +606,25 @@ class ProxyManager {
     }
   }
 
-  Future<StreamManifest?> _cycleProxies(String songId) async {
+  static AudioStreamInfo selectAudioQuality(
+    List<AudioStreamInfo> availableSources,
+    String qualitySetting,
+  ) {
+    if (qualitySetting == 'low') {
+      return availableSources.last;
+    } else if (qualitySetting == 'medium') {
+      return availableSources[availableSources.length ~/ 2];
+    } else if (qualitySetting == 'high') {
+      return availableSources.first;
+    } else {
+      return availableSources.withHighestBitrate();
+    }
+  }
+
+  static Future<StreamManifest?> _cycleProxies(
+    String songId,
+    int timeout,
+  ) async {
     try {
       StreamManifest? manifest;
       Proxy? proxy;
@@ -614,7 +637,6 @@ class ProxyManager {
       final ytExplode = YoutubeExplode(YoutubeHttpClient(ioClient));
       do {
         await Future.delayed(Duration.zero);
-        final timeout = streamRequestTimeout.value;
         proxy = await _randomProxy();
         if (proxy == null) break;
         client
@@ -669,7 +691,14 @@ class ProxyManager {
 
 // Message class for isolate communication
 class _IsolateMessage {
-  _IsolateMessage({required this.sendPort, required this.songId});
+  _IsolateMessage({
+    required this.sendPort,
+    required this.songId,
+    required this.timeout,
+    required this.qualitySetting,
+  });
   final SendPort sendPort;
   final String songId;
+  final int timeout;
+  final String qualitySetting;
 }

@@ -160,13 +160,13 @@ class SongBar extends StatefulWidget {
     }
   }
 
-  NotifiableFuture getMetadataFuture({bool isPrepare = false}) {
+  NotifiableFuture<Map<String, dynamic>> getMetadataFuture({bool isPrepare = false}) {
     try {
       parseEntityId(song);
       if (!isSongValid(song) || (!isMusicbrainzSongValid(song) && isPrepare)) {
         return queueSongInfoRequest(song);
       } else {
-        return NotifiableFuture.fromValue(song);
+        return NotifiableFuture<Map<String, dynamic>>.fromValue(song);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -174,7 +174,7 @@ class SongBar extends StatefulWidget {
         e,
         stackTrace,
       );
-      return NotifiableFuture.fromValue(song);
+      return NotifiableFuture<Map<String, dynamic>>.fromValue(song);
     }
   }
 

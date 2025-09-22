@@ -81,7 +81,7 @@ int activeSongId = 0;
 final lyrics = ValueNotifier<String?>(null);
 String? lastFetchedLyrics;
 
-final Set<NotifiableFuture> getSongInfoQueue = {};
+final Set<NotifiableFuture<Map<String, dynamic>>> getSongInfoQueue = {};
 
 final NotifiableFuture _writeCacheFuture = NotifiableFuture();
 
@@ -479,8 +479,8 @@ Future<dynamic> _findMBSong(dynamic song) async {
       } else if (isrc.isNotEmpty) {
         song.addAll(await _findSongByIsrc(song));
       } else {
-        if (!isYouTubeSongValid(song) && ytid.isNotEmpty) {
-          song['ytid'] = ytid;
+        song['ytid'] = ytid;
+        if (ytid.isNotEmpty) {
           final ytSong = await _getYTSongDetails(song);
           if (ytSong.isNotEmpty) {
             song['ytid'] = ytid;
@@ -590,11 +590,11 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   return song;
 }
 
-NotifiableFuture queueSongInfoRequest(dynamic song) {
+NotifiableFuture<Map<String, dynamic>> queueSongInfoRequest(dynamic song) {
   try {
     final existing = getSongInfoQueue.where((e) => checkSong(e.data, song));
     if (existing.isEmpty) {
-      final futureTracker = NotifiableFuture.withFuture(
+      final futureTracker = NotifiableFuture<Map<String, dynamic>>.withFuture(
         song,
         getSongInfo(song),
       );
@@ -776,7 +776,11 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         if (expires > (now + 5))
           if (await checkUrl(cachedUrl) < 400) return cachedUrl;
       } else {
-        song['songUrl'] = await px.getYouTubeAudioUrl(song['ytid']);
+        song['songUrl'] = await px.getYouTubeAudioUrl(
+          song['ytid'],
+          streamRequestTimeout.value,
+          audioQualitySetting.value,
+        );
         if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
           final uri = Uri.parse(song['songUrl']);
           final expires =
@@ -823,14 +827,7 @@ Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
   try {
     if (song == null || song.isEmpty) return song;
     String songId = parseEntityId(song).ytid;
-    final cached = cachedSongsList.firstWhere(
-      (e) => checkEntityId(songId, e['id']),
-      orElse: () => <String, dynamic>{},
-    );
-    if (isSongValid(cached) && isYouTubeSongValid(cached)) {
-      cached['youtube'] = true;
-      return cached!;
-    } else if (songId.isNotEmpty) {
+    if (songId.isNotEmpty) {
       songId = songId.ytid;
       final video = await yt.videos.get(songId);
       ytSong = returnYtSongLayout(video);
@@ -879,7 +876,7 @@ Future<void> makeSongOffline(dynamic song) async {
 
     if (!isMusicbrainzSongValid(song)) {
       final songInfo = await queueSongInfoRequest(song).completerFuture;
-      song.addAll(Map<String, dynamic>.from(songInfo));
+      song.addAll(songInfo);
     }
     if (!isYouTubeSongValid(song)) await findYTSong(song);
     final id = song['id'] = parseEntityId(song);
@@ -1012,25 +1009,6 @@ Future<void> getExistingOfflineSongs() async {
         }
       }
     currentOfflineSongsLength.value = userOfflineSongs.length;
-    await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-  }
-}
-
-Future<void> _matchFileToSongInfo(File file) async {
-  try {
-    final _dir = await getApplicationSupportDirectory();
-    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
-    await Directory(_artworkDirPath).create(recursive: true);
-    final filename = basenameWithoutExtension(file.path);
-    final song = await queueSongInfoRequest(filename).completerFuture;
-    final imageFiles = await _getRelatedFiles(_artworkDirPath, song);
-    if (imageFiles.isNotEmpty) {
-      song['offlineArtworkPath'] = imageFiles.first.path;
-    }
-    song['offlineAudioPath'] = file.path;
-    userOfflineSongs.addOrUpdateWhere(checkEntityId, song['id']);
     await addOrUpdateData('userNoBackup', 'offlineSongs', userOfflineSongs);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
