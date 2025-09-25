@@ -213,7 +213,7 @@ class NotifiableFuture<T> with ChangeNotifier {
 
   void cancel() {
     if (_isLoading && _completer != null && !_completer!.isCompleted) {
-      _completer!.completeError(CancelledException());
+      _completer!.complete();
       _isCancelled = true;
       _isLoading = false;
       notifyListeners();
