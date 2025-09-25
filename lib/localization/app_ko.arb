@@ -275,5 +275,10 @@
   "addAdditionalMusicDir": "기기에 있는 음악이 포함된 추가 디렉토리 추가",
   "removeDir": "이 디렉토리를 제거하시겠습니까:",
   "removeDirMessage": "제거하면 이 디렉토리의 음악이 Reverbio에 표시되지 않습니다",
-  "proxyWarning": "최적의 성능을 위해 Wi-Fi에서 프록시를 사용하세요. 모바일 네트워크에서는 프록시 연결 및 YouTube 스트리밍에 문제가 발생할 수 있습니다. 프록시 설정을继续吗?"
+  "proxyWarning": "최적의 성능을 위해 Wi-Fi에서 프록시를 사용하세요. 모바일 네트워크에서는 프록시 연결 및 YouTube 스트리밍에 문제가 발생할 수 있습니다. 프록시 설정을继续吗?",
+  "notifications": "알림",
+  "scanningStart": "오디오 파일 검색 중...",
+  "scanningEnd": "오디오 파일 검색이 완료되었습니다. 발견됨:",
+  "track": "트랙",
+  "tracks": "트랙"
 }

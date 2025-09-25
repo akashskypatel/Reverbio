@@ -275,5 +275,10 @@
   "addAdditionalMusicDir": "添加裝置上包含音樂的額外目錄",
   "removeDir": "你確定要移除目錄嗎：",
   "removeDirMessage": "如果移除，此目錄中的音樂將不會在 Reverbio 中顯示",
-  "proxyWarning": "為達至最佳效能，請使用 Wi-Fi 代理。流動網絡可能會出現代理連接和 YouTube 串流問題。继续設置代理？"
+  "proxyWarning": "為達至最佳效能，請使用 Wi-Fi 代理。流動網絡可能會出現代理連接和 YouTube 串流問題。继续設置代理？",
+  "notifications": "通知",
+  "scanningStart": "正在掃描裝置以尋找音訊檔案...",
+  "scanningEnd": "已完成掃描裝置以尋找音訊檔案。找到：",
+  "track": "歌曲",
+  "tracks": "歌曲"
 }

@@ -275,5 +275,10 @@
   "addAdditionalMusicDir": "Adicionar diretórios adicionais que contenham música no seu dispositivo",
   "removeDir": "Tem a certeza de que pretende remover o diretório:",
   "removeDirMessage": "A música deste diretório não será mostrada no Reverbio se for removida",
-  "proxyWarning": "Para um desempenho ideal, use proxies com Wi-Fi. As redes móveis podem ter problemas com conexões proxy e transmissão do YouTube. Continuar com as definições de proxy?"
+  "proxyWarning": "Para um desempenho ideal, use proxies com Wi-Fi. As redes móveis podem ter problemas com conexões proxy e transmissão do YouTube. Continuar com as definições de proxy?",
+  "notifications": "Notificações",
+  "scanningStart": "A pesquisar o dispositivo por ficheiros de áudio...",
+  "scanningEnd": "Pesquisa do dispositivo por ficheiros de áudio concluída. Encontrados:",
+  "track": "Faixa",
+  "tracks": "Faixas"
 }

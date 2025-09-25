@@ -275,5 +275,10 @@
   "addAdditionalMusicDir": "Dodaj dodatkowe katalogi zawierające muzykę na twoim urządzeniu",
   "removeDir": "Czy na pewno chcesz usunąć katalog:",
   "removeDirMessage": "Muzyka z tego katalogu nie będzie wyświetlana w Reverbio po usunięciu",
-  "proxyWarning": "Aby uzyskać optymalną wydajność, używaj proxy z Wi-Fi. Sieci komórkowe mogą mieć problemy z połączeniami proxy i strumieniowaniem YouTube. Kontynuować ustawienia proxy?"
+  "proxyWarning": "Aby uzyskać optymalną wydajność, używaj proxy z Wi-Fi. Sieci komórkowe mogą mieć problemy z połączeniami proxy i strumieniowaniem YouTube. Kontynuować ustawienia proxy?",
+  "notifications": "Powiadomienia",
+  "scanningStart": "Skanowanie urządzenia w poszukiwaniu plików audio...",
+  "scanningEnd": "Zakończono skanowanie urządzenia w poszukiwaniu plików audio. Znaleziono:",
+  "track": "Utwór",
+  "tracks": "Utwory"
 }

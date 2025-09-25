@@ -275,5 +275,10 @@
   "addAdditionalMusicDir": "Ongeza majalizo ya ziada yenye muziki kwenye kifaa chako",
   "removeDir": "Je, una uhakika unataka kuondoa saraka:",
   "removeDirMessage": "Muziki kutoka kwenye saraka hii haitaonyeshwa kwenye Reverbio ikiwa imeondolewa",
-  "proxyWarning": "Kwa utendaji bora, tumia makadirio na Wi-Fi. Mitandao ya rununu inaweza kukumbwa na matatizo na miunganisho ya makadirio na utiririshaji wa YouTube. Endelea na mipangilio ya makadirio?"
+  "proxyWarning": "Kwa utendaji bora, tumia makadirio na Wi-Fi. Mitandao ya rununu inaweza kukumbwa na matatizo na miunganisho ya makadirio na utiririshaji wa YouTube. Endelea na mipangilio ya makadirio?",
+  "notifications": "Arifa",
+  "scanningStart": "Inakagua kifaa kwa faili za sauti...",
+  "scanningEnd": "Uchunguzi wa kifaa kwa faili za sauti umekwisha. Imepatikana:",
+  "track": "Wimbo",
+  "tracks": "Nyimbo"
 }
