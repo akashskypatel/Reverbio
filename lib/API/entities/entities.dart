@@ -38,6 +38,7 @@ Future<void> initializeData() async {
   await userLikedPlaylists.ensureInitialized();
   await userRecentlyPlayed.ensureInitialized();
   await searchHistory.ensureInitialized();
+  await userDeviceSongs.ensureInitialized();
 }
 
 final NotifiableList<Map<String, dynamic>> userLikedSongsList =
@@ -106,8 +107,9 @@ final NotifiableList<String> searchHistory = NotifiableList<String>.fromHive(
   'user',
   'searchHistory',
 );
-final NotifiableList<Map<String, dynamic>> userDeviceSongs = NotifiableList<Map<String, dynamic>>.fromHive(
-  'userNoBackup',
-  'userDeviceSongs',
-  minimizeFunction: minimizeSongData,
-);
+final NotifiableList<Map<String, dynamic>> userDeviceSongs =
+    NotifiableList<Map<String, dynamic>>.fromHive(
+      'userNoBackup',
+      'userDeviceSongs',
+      minimizeFunction: minimizeSongData,
+    );
