@@ -448,10 +448,13 @@ Future<List> getPlaylists({
 
 Future<List> getSongsFromPlaylist(dynamic playlistId) async {
   final songList =
-      (await HiveService.getData<List<Map<String, dynamic>>>(
-        'cache',
-        'playlistSongs$playlistId',
-      )).map((e) => Map<String, dynamic>.from(e)).toList();
+      ((await HiveService.getData<List<Map<String, dynamic>>>(
+                'cache',
+                'playlistSongs$playlistId',
+              )) ??
+              [])
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
   String id;
   if (playlistId.toString().contains('yt=')) {
     id = Uri.parse('?$playlistId').queryParameters['yt'] ?? '';
