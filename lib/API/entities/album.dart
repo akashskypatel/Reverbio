@@ -63,6 +63,7 @@ Map<String, dynamic> minimizeAlbumData(dynamic album) {
     'genres': album['genres'] ?? album['musicbrainz']?['genres'] ?? [],
     'title': album['title'],
     'artist': album['artist'],
+    'artist-credit': album['artist-credit'],
     'first-release-date': album['first-release-date'],
     'list':
         ((album['list'] ?? []) as Iterable).where((e) => e != null).map((e) {
