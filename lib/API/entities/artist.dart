@@ -233,6 +233,36 @@ Future<dynamic> searchArtistDetails(
   }
 }
 
+Future<List<Map<String, dynamic>>> getArtistsFromSongs(
+  List<dynamic> songList,
+) async {
+  final searchList = LinkedHashSet<String>();
+  final artistList = <dynamic>[];
+  for (final song in songList) {
+    if (song['artist-credit'] != null && song['artist-credit'] is List) {
+      for (final artist in song['artist-credit']) {
+        if (artist['artist'] != null && artist['artist'] is Map) {
+          artist['artist']['primary-type'] = 'artist';
+          artist['artist']['isArtist'] = 'true';
+          artistList.addOrUpdateWhere(checkArtist, artist['artist']);
+        }
+      }
+    } else if (song['artist'] is String) {
+      final artists = splitArtists(song['artist']);
+      searchList.addAll(artists);
+    }
+  }
+  if (searchList.isNotEmpty)
+    artistList.addOrUpdateAllWhere(
+      checkArtist,
+      await searchArtistsDetails(searchList.toList()),
+    );
+  return artistList.map((e) {
+    e = Map<String, dynamic>.from(e);
+    return e as Map<String, dynamic>;
+  }).toList();
+}
+
 Future<List<dynamic>> getRecommendedArtists() async {
   final songList = globalSongs;
   if (globalArtists.isEmpty) {
