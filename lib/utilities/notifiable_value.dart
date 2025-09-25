@@ -78,7 +78,7 @@ class NotifiableValue<T> extends ValueNotifier {
 
     // Start new debounce timer
     _debounceTimer = Timer(_debounceDuration, () {
-      HiveService.addOrUpdateData(_boxName, _category, value);
+      HiveService.addOrUpdateData<T>(_boxName, _category, value);
     });
   }
 }
