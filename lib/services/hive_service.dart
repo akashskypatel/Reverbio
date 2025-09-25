@@ -54,10 +54,10 @@ class HiveService {
     isInitialized = true;
   }
 
-  static Future<dynamic> getData<T>(
+  static Future<T?> getData<T>(
     String boxName,
     String category, {
-    dynamic defaultValue,
+    T? defaultValue,
   }) async {
     try {
       final _box = await _openBox(boxName);
@@ -93,12 +93,15 @@ class HiveService {
     } else if (T == List<Map<String, dynamic>>) {
       value = getList<Map<String, dynamic>>(
         value,
-        defaultValue: (defaultValue ?? List<Map<String, dynamic>>.empty(growable: true)) as List<Map<String, dynamic>>,
+        defaultValue:
+            (defaultValue ?? List<Map<String, dynamic>>.empty(growable: true))
+                as List<Map<String, dynamic>>,
       );
     } else if (T == List<Map>) {
       value = getList<Map>(
         value,
-        defaultValue: (defaultValue ?? List<Map>.empty(growable: true)) as List<Map>,
+        defaultValue:
+            (defaultValue ?? List<Map>.empty(growable: true)) as List<Map>,
       );
     }
     return value as T;
@@ -187,14 +190,15 @@ class HiveService {
     await Hive.close();
   }
 
-  static Future<void> addOrUpdateData(
+  static Future<void> addOrUpdateData<T>(
     String boxName,
     String category,
     dynamic value,
   ) async {
     try {
       final box = await _openBox(boxName);
-      await box.put(category, getDataByType(value));
+      final _newData = getDataByType<T>(value);
+      await box.put(category, _newData);
       if (category == 'cache') {
         await box.put('${category}_date', DateTime.now());
       }
