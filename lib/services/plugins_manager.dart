@@ -50,10 +50,8 @@ typedef WF = WidgetFactory;
 
 class PluginsManager {
   PluginsManager._();
-  static final NotifiableList<Map<String, dynamic>> _pluginsData = NotifiableList<Map<String, dynamic>>.fromHive(
-    'settings',
-    'pluginsData',
-  );
+  static final NotifiableList<Map<String, dynamic>> _pluginsData =
+      NotifiableList<Map<String, dynamic>>.fromHive('settings', 'pluginsData');
   static List testMethods = ['pluginName', 'pluginVersion', 'asyncTest'];
   static NotifiableList<Map<String, dynamic>> get pluginsData => _pluginsData;
   static final NotifiableList<Map<String, dynamic>> _plugins = NotifiableList();
@@ -535,7 +533,10 @@ class PluginsManager {
     }
   }
 
-  static Future<Map<String, dynamic>> getPluginData(String jsContent, String source) async {
+  static Future<Map<String, dynamic>> getPluginData(
+    String jsContent,
+    String source,
+  ) async {
     try {
       final script = await _loadValidateDependencies(jsContent);
       if (script.isNotEmpty) {
@@ -1153,7 +1154,11 @@ class PluginsManager {
           cache.add(entity);
         else
           cache.insert(index, entity);
-        await HiveService.addOrUpdateData('cache', cacheKey, cache);
+        await HiveService.addOrUpdateData<List<dynamic>>(
+          'cache',
+          cacheKey,
+          cache,
+        );
       }
     } catch (e, stackTrace) {
       logger.log(
