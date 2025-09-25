@@ -584,11 +584,12 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           unawaited(audioPlayer.prepare(next, setMetadata: false));
       }
     } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}',
-        e,
-        stackTrace,
-      );
+      if (!(e is CancelledException))
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()}',
+          e,
+          stackTrace,
+        );
     }
   }
 
