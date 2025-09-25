@@ -23,7 +23,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:audiotags/audiotags.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
@@ -42,6 +41,7 @@ import 'package:reverbio/services/lyrics_manager.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/file_scanner.dart';
 import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
@@ -253,6 +253,10 @@ Map<String, dynamic> minimizeSongData(dynamic song) {
     'primary-type': song['primary-type'] ?? 'song',
     'title': song['mbTitle'] ?? song['title'] ?? song['ytTitle'],
     'artist': song['mbArtist'] ?? song['artist'] ?? song['ytArtist'],
+    'artist-credit': song['artist-credit'],
+    'devicePath': song['devicePath'],
+    'songUrl': song['songUrl'],
+    'offlineAudioPath': song['offlineAudioPath'],
     'duration': song['duration'],
     'cachedAt': DateTime.now().toString(),
     'image':
@@ -541,6 +545,11 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
 }
 
 NotifiableFuture<Map<String, dynamic>> queueSongInfoRequest(dynamic song) {
+  if (song == null) return NotifiableFuture.fromValue(song);
+  if (song is String) {
+    song = <String, dynamic>{'id': song};
+    song['id'] = parseEntityId(song);
+  }
   try {
     final existing = getSongInfoQueue.where((e) => checkSong(e.data, song));
     if (existing.isEmpty) {
@@ -792,7 +801,11 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         song['isError'] = true;
         return '';
       }
-      await HiveService.addOrUpdateData('cache', cacheKey, song['songUrl']);
+      await HiveService.addOrUpdateData<String>(
+        'cache',
+        cacheKey,
+        song['songUrl'],
+      );
       return song['songUrl'];
     }
   } catch (e, stackTrace) {
@@ -846,11 +859,23 @@ Future<String?> getSongLyrics(String artist, String title) async {
   return lyrics.value;
 }
 
-bool isSongAlreadyOffline(songToCheck) => userOfflineSongs.any((song) {
-  if (songToCheck is String) return checkEntityId(songToCheck, song);
-  if (songToCheck is Map) return checkEntityId(songToCheck['id'], song);
-  return false;
-});
+bool isSongAlreadyOffline(songToCheck) =>
+    userOfflineSongs.any((song) {
+      if (songToCheck is String) return checkEntityId(songToCheck, song);
+      if (songToCheck is Map) return checkEntityId(songToCheck['id'], song);
+      return false;
+    }) ||
+    userDeviceSongs.any((song) {
+      if (songToCheck is String) return checkEntityId(songToCheck, song);
+      if (songToCheck is Map &&
+          song['id'] != null &&
+          songToCheck['id'] != null &&
+          song['id'].isNotEmpty &&
+          songToCheck['id'].isNotEmpty)
+        return checkEntityId(songToCheck, song);
+      if (songToCheck is Map) return checkTitleAndArtist(songToCheck, song);
+      return false;
+    });
 
 Future<void> tagAllOfflineFiles() async {
   final offlineSongs = await getUserOfflineSongs();
@@ -864,7 +889,6 @@ Future<void> tagAllOfflineFiles() async {
   for (int i = 0; i < offlineSongs.length; i++) {
     final song =
         await queueSongInfoRequest(copyMap(offlineSongs[i])).completerFuture;
-    //await tagOfflineFile(song);
     await fileTagger.tagOfflineFile(song, parseEntityId(song));
     final num = (i + 1) / offlineSongs.length;
     progress.value = (num * 100).toInt();
@@ -888,8 +912,7 @@ Future<void> makeSongOffline(dynamic song) async {
     }
     if (!isYouTubeSongValid(song)) await findYTSong(song);
     final id = song['id'] = parseEntityId(song);
-    final _audioFile =
-        '$_audioDirPath${Platform.pathSeparator}$id'; // File('$_audioDirPath$id.m4a');
+    final _audioFile = '$_audioDirPath${Platform.pathSeparator}$id';
     final _artworkFile = File('$_artworkDirPath${Platform.pathSeparator}$id');
 
     try {
@@ -959,11 +982,13 @@ Future<List<dynamic>> getUserOfflineSongs() async {
     userOfflineSongs.clear();
     await getExistingOfflineSongs();
   }
-  return userOfflineSongs.map((e) {
-    final cached = getCachedSong(e);
-    if (isSongValid(cached)) return cached;
-    return <String, dynamic>{'id': e, 'title': null, 'artist': null};
-  }).toList();
+  final offline =
+      userOfflineSongs.map((e) {
+        final cached = getCachedSong(e);
+        if (isSongValid(cached)) return cached;
+        return <String, dynamic>{'id': e, 'title': null, 'artist': null};
+      }).toList();
+  return offline;
 }
 
 String getUserOfflineSong(dynamic song) {
@@ -997,25 +1022,22 @@ Future<bool> checkOfflineFiles() async {
   return exists;
 }
 
-Future<List<Map<String, dynamic>>> getUserDeviceSongs() async {
-  for (final dir in additionalDirectories) {
-    final fileList = Directory(dir).listSync(recursive: true);
-    for (final file in fileList) {
-      if (file is File && isAudio(file.path)) {
-        try {
-          final tag = await AudioTags.read(file.path);
-          final title = tag?.title ?? basenameWithoutExtension(file.path);
-          final artist = tag?.trackArtist ?? tag?.albumArtist;
-          if (artist != null)
-            userDeviceSongs.addOrUpdate({
-              'title': title,
-              'artist': artist,
-            }, checkSong);
-        } catch (_) {}
-      }
-    }
+Future<void> getUserDeviceSongs() async {
+  final fileScanner = FileScanner(directories: additionalDirectories.toList());
+  userDeviceSongs.clear();
+  final files = await fileScanner.getUserDeviceSongs();
+  userDeviceSongs.addOrUpdateAllWhere(checkSong, files);
+  unawaited(_getUserDeviceSongMetadata());
+}
+
+Future<void> _getUserDeviceSongMetadata() async {
+  for (dynamic song in userDeviceSongs) {
+    await queueSongInfoRequest(song).completerFuture?.then((value) {
+      song = Map<String, dynamic>.from(song);
+      if (value != null) song.addAll(value);
+    });
   }
-  return userDeviceSongs;
+  userDeviceSongs.writeToCache();
 }
 
 Future<void> getExistingOfflineSongs() async {
@@ -1025,11 +1047,18 @@ Future<void> getExistingOfflineSongs() async {
   try {
     final fileList = Directory(_audioDirPath).listSync();
     for (final file in fileList) {
+      final filename = basenameWithoutExtension(file.path);
       if (file is File && isAudio(file.path)) {
-        final filename = basenameWithoutExtension(file.path);
         final ids = filename.toIds;
         if (ids.isNotEmpty)
           userOfflineSongs.addOrUpdate(filename, checkEntityId);
+      } else if (file is File) {
+        final fileTagger = FileTagger(
+          offlineDirectory: offlineDirectory.value!,
+        );
+        final song =
+            await queueSongInfoRequest({'id': filename}).completerFuture;
+        await fileTagger.tagOfflineFile(song, parseEntityId(song));
       }
     }
   } catch (e, stackTrace) {
@@ -1086,6 +1115,14 @@ Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
             checkEntityId(songId, basenameWithoutExtension(file.path))) {
           files.add(file);
         }
+      }
+    }
+    for (final file in userDeviceSongs) {
+      if (checkSong(file, entity) &&
+          file['devicePath'] != null &&
+          file['devicePath'].isNotEmpty) {
+        if (File(file['devicePath']).existsSync())
+          files.add(File(file['devicePath']));
       }
     }
   } catch (e, stackTrace) {
@@ -1252,8 +1289,8 @@ bool checkSong(dynamic songA, dynamic songB) {
             checkEntityId(songA['id'], songB));
   if (songA['id'] == null ||
       songB['id'] == null ||
-      songA['id']?.isEmpty ||
-      songB['id']?.isEmpty)
+      songA['id'].isEmpty ||
+      songB['id'].isEmpty)
     return checkTitleAndArtist(songA, songB);
   final idCheck = checkEntityId(songA['id'], songB['id']);
   final hashA = getSongHashCode(songA);
