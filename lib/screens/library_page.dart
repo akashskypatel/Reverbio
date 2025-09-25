@@ -113,7 +113,7 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.recentlyPlayed,
                 onPressed:
-                    () => NavigationManager.router.go(
+                    () => NavigationManager.router.push(
                       '/library/userSongs/recents',
                     ),
                 cardIcon: FluentIcons.history_24_filled,
@@ -124,8 +124,7 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.likedSongs,
                 onPressed:
-                    () =>
-                        NavigationManager.router.go('/library/userSongs/liked'),
+                    () => GoRouter.of(context).push('/library/userSongs/liked'),
                 cardIcon: FluentIcons.heart_24_filled,
                 showBuildActions: false,
               ),
@@ -133,9 +132,8 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.likedArtists,
                 onPressed:
-                    () => NavigationManager.router.go(
-                      '/library/userSongs/artists',
-                    ),
+                    () =>
+                        GoRouter.of(context).push('/library/userSongs/artists'),
                 cardIcon: FluentIcons.mic_sparkle_24_filled,
                 showBuildActions: false,
               ),
@@ -143,26 +141,24 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.likedAlbums,
                 onPressed:
-                    () => NavigationManager.router.go(
-                      '/library/userSongs/albums',
-                    ),
+                    () =>
+                        GoRouter.of(context).push('/library/userSongs/albums'),
                 cardIcon: FluentIcons.cd_16_filled,
                 showBuildActions: false,
               ),
             PlaylistBar(
               context.l10n!.offlineSongs,
               onPressed:
-                  () =>
-                      NavigationManager.router.go('/library/userSongs/offline'),
+                  () => GoRouter.of(context).push('/library/userSongs/offline'),
               cardIcon: FluentIcons.cellular_off_24_filled,
               showBuildActions: false,
             ),
             PlaylistBar(
               context.l10n!.offlinePlaylists,
               onPressed:
-                  () => NavigationManager.router.go(
-                    '/library/userSongs/offlinePlaylists',
-                  ),
+                  () => GoRouter.of(
+                    context,
+                  ).push('/library/userSongs/offlinePlaylists'),
               cardIcon: FluentIcons.arrow_download_24_filled,
               borderRadius: commonCustomBarRadiusLast,
               showBuildActions: false,
