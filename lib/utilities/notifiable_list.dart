@@ -43,6 +43,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     if (initialItems != null) {
       _items.addAll(initialItems);
     }
+    if (_boxName == null || _category == null)
+      _initializationCompleter.complete(_items);
     _initializeFromHive(test);
   }
   NotifiableList._internalAsync(Future<Iterable<T>> itemsFuture)
@@ -67,15 +69,15 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     );
   }
   Future<void> _initializeFromAsync(Future<Iterable<T>> itemsFuture) async {
-    _initializationCompleter = Completer<void>();
+    notifyListeners();
     try {
       final value = await itemsFuture;
-      addAll(value);
+      _items.addAll(value);
       _isInitialized = true;
-      _initializationCompleter!.complete();
+      _initializationCompleter.complete(_items);
     } catch (e, stackTrace) {
       _isInitialized = true;
-      _initializationCompleter!.completeError(e);
+      _initializationCompleter.completeError(e);
       _hasError = true;
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -87,28 +89,38 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
   }
 
   Future<void> _initializeFromHive([bool Function(T, T)? test]) async {
+    notifyListeners();
     if (_boxName == null || _category == null) {
       _isInitialized = true;
       return;
     }
-    _initializationCompleter = Completer<void>();
     try {
       final value =
-          (await HiveService.getData<List<T>>(_boxName, _category, defaultValue: _items) ?? _items)
-              as List<T>;
+          await HiveService.getData<List<T>>(
+            _boxName,
+            _category,
+            defaultValue: _items,
+          ) ??
+          _items;
       if (test != null)
-        for (final item in value)
-          addOrUpdate(_minimize == null ? item : _minimize!(item), test);
+        for (final item in value) {
+          final index = _items.indexWhere((e) => test(e, item));
+          if (index != -1) {
+            _items[index] = item;
+          } else {
+            _items.add(item);
+          }
+        }
       else
-        addAll(value.map((e) => _minimize == null ? e : _minimize!(e)));
+        _items.addAll(value.map((e) => _minimize == null ? e : _minimize!(e)));
       addListener(writeToCache);
       _isInitialized = true;
-      _initializationCompleter!.complete();
+      _initializationCompleter.complete(_items);
     } catch (e, stackTrace) {
       _error = e;
       _stackTrace = stackTrace;
       _isInitialized = true;
-      _initializationCompleter!.completeError(e);
+      _initializationCompleter.completeError(e);
       _hasError = true;
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -125,20 +137,23 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
   bool _hasError = false;
   dynamic _error;
   StackTrace? _stackTrace;
-  Completer<void>? _initializationCompleter;
+  final Completer<Iterable<T>> _initializationCompleter =
+      Completer<Iterable<T>>();
   Timer? _debounceTimer;
   static const Duration _debounceDuration = Duration(milliseconds: 1000);
   T Function(T)? _minimize;
   bool get isLoading => !_isInitialized;
   bool get hasError => _hasError;
   bool get hasData => _items.isNotEmpty;
+  Completer<Iterable<T>> get completer => _initializationCompleter;
 
-  Future<void> ensureInitialized() async {
-    if (_isInitialized) return;
-    if (_initializationCompleter != null) {
-      return _initializationCompleter!.future;
+  Future<Iterable<T>> ensureInitialized() async {
+    if (_isInitialized) return _items;
+    if (!_initializationCompleter.isCompleted) {
+      return _initializationCompleter.future;
     }
     await _initializeFromHive();
+    return _items;
   }
 
   void writeToCache() {
@@ -149,14 +164,16 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
 
     // Start new debounce timer
     _debounceTimer = Timer(_debounceDuration, () {
-      if (_minimize != null)
-        HiveService.addOrUpdateData(
-          _boxName,
-          _category,
-          _items.map(_minimize!).toList(),
-        );
-      else
-        HiveService.addOrUpdateData(_boxName, _category, _items);
+      if (_items.isNotEmpty) {
+        if (_minimize != null)
+          HiveService.addOrUpdateData<List<T>>(
+            _boxName,
+            _category,
+            _items.map(_minimize!).toList(),
+          );
+        else
+          HiveService.addOrUpdateData<List<T>>(_boxName, _category, _items);
+      }
     });
   }
 
