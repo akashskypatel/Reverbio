@@ -212,7 +212,7 @@ void postUpdate() async {
     //to here
   }
   postUpdateRun.value[appVersion] = true;
-  await HiveService.addOrUpdateData(
+  await HiveService.addOrUpdateData<bool>(
     'settings',
     'postUpdateRun',
     postUpdateRun.value,
