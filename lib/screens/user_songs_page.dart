@@ -26,13 +26,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
-import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -56,15 +56,16 @@ class UserSongsPage extends StatefulWidget {
 }
 
 class _UserSongsPageState extends State<UserSongsPage> {
+    //with TickerProviderStateMixin {
   late ThemeData _theme;
   final _isEditEnabled = ValueNotifier(false);
   late final String _title;
-  late final IconData _icon;
+  late NotifiableList<SongBar> notifiableSongsList = getSongsList(widget.page);
+
   @override
   void initState() {
     super.initState();
     _title = getTitle(widget.page);
-    _icon = getIcon(widget.page);
   }
 
   @override
@@ -79,6 +80,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
       appBar: AppBar(
         title: Text(_title),
         actions: [
+          _buildSyncButton(),
           if (_title == context.l10n!.queue)
             Row(children: [_buildQueueActionsList()]),
           StatefulBuilder(
@@ -103,7 +105,21 @@ class _UserSongsPageState extends State<UserSongsPage> {
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
-      body: _buildCustomScrollView(_title, _icon, getSongsList(widget.page)),
+      body: SliverMainAxisGroup(
+        slivers: [
+          ValueListenableBuilder(
+            valueListenable: _isEditEnabled,
+            builder: (context, value, child) {
+              return SongList(
+                page: widget.page,
+                title: getTitle(widget.page),
+                isEditable: value,
+                songBars: notifiableSongsList,
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -424,72 +440,38 @@ class _UserSongsPageState extends State<UserSongsPage> {
     },
   );
 
-  Widget _buildCustomScrollView(
-    String title,
-    IconData icon,
-    NotifiableList<SongBar> notifiableSongsList,
-  ) {
-    return ListenableBuilder(
-      listenable: notifiableSongsList,
-      builder: (context, child) {
-        return CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: buildPlaylistHeader(
-                  title,
-                  icon,
-                  notifiableSongsList.length,
-                ),
-              ),
-            ),
+  Widget _loadingSongListWidget() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(context.l10n!.checkBackLater),
+        const SizedBox(height: 10),
+        const Spinner(),
+      ],
+    );
+  }
 
-            if (notifiableSongsList.isLoading)
-              SliverToBoxAdapter(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(context.l10n!.checkBackLater),
-                    const SizedBox(height: 10),
-                    const Spinner(),
-                  ],
-                ),
-              ),
-            if (notifiableSongsList.hasError)
-              SliverToBoxAdapter(
-                child: Icon(
-                  FluentIcons.error_circle_24_filled,
-                  color: _theme.colorScheme.primary,
-                ),
-              ),
-            ValueListenableBuilder(
-              valueListenable: _isEditEnabled,
-              builder:
-                  (context, value, child) => SongList(
-                    page: widget.page,
-                    title: getTitle(widget.page),
-                    isEditable: value,
-                    songBars: notifiableSongsList,
-                  ),
-            ),
-          ],
-        );
-      },
+  Widget _errorSongListWidget() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(context.l10n!.checkBackLater),
+        const SizedBox(height: 10),
+        const Spinner(),
+      ],
     );
   }
 
   String getTitle(String page) {
-    final context = NavigationManager().context;
     return {
-          'liked': context.l10n!.likedSongs,
-          'offline': context.l10n!.offlineSongs,
-          'recents': context.l10n!.recentlyPlayed,
-          'queue': context.l10n!.queue,
+          'liked': L10n.current.likedSongs,
+          'offline': L10n.current.offlineSongs,
+          'recents': L10n.current.recentlyPlayed,
+          'queue': L10n.current.queue,
         }[page] ??
-        context.l10n!.playlist;
+        L10n.current.playlist;
   }
 
   IconData getIcon(String page) {
@@ -502,94 +484,148 @@ class _UserSongsPageState extends State<UserSongsPage> {
         FluentIcons.heart_24_regular;
   }
 
+  Future<Iterable<Map<String, dynamic>>> _getArtists() async {
+    return notifiableSongsList.completer.future.then((value) async {
+      final songs = value.map((e) => e.song).toList();
+      return getArtistsFromSongs(songs);
+    });
+  }
+
   Future<Iterable<SongBar>> _getOfflineSongs() async {
     return Future.microtask(() async {
-      final songs = await getUserOfflineSongs();
-      return songs.map((e) => initializeSongBar(e, context));
+      final offline = userOfflineSongs.map((e) {
+        final cached = getCachedSong(e);
+        final song =
+            isSongValid(cached)
+                ? cached!
+                : <String, dynamic>{'id': e, 'title': null, 'artist': null};
+        return initializeSongBar(song, context);
+      });
+      final device = userDeviceSongs.map((e) => initializeSongBar(e, context));
+      return [...offline, ...device];
+    });
+  }
+
+  Future<Iterable<SongBar>> _getUserLikedSongs() async {
+    return Future.microtask(() async {
+      return userLikedSongsList.map((e) => initializeSongBar(e, context));
+    });
+  }
+
+  Future<Iterable<SongBar>> _getUserRecentSongs() async {
+    return Future.microtask(() async {
+      return userLikedSongsList.map((e) => initializeSongBar(e, context));
     });
   }
 
   NotifiableList<SongBar> getSongsList(String page) {
     switch (page) {
       case 'liked':
-        return NotifiableList.from(
-          userLikedSongsList.map((e) => initializeSongBar(e, context)),
-        );
+        return NotifiableList.fromAsync(_getUserLikedSongs());
       case 'offline':
         return NotifiableList.fromAsync(_getOfflineSongs());
       case 'recents':
-        return NotifiableList.from(
-          userRecentlyPlayed.map((e) => initializeSongBar(e, context)),
-        );
+        return NotifiableList.fromAsync(_getUserRecentSongs());
       case 'queue':
       default:
         return audioHandler.queueSongBars;
     }
   }
 
-  Widget buildPlaylistHeader(String title, IconData icon, int length) {
-    return PlaylistHeader(
-      _buildPlaylistImage(title, icon, length),
-      title,
-      length,
-      customWidget: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ValueListenableBuilder(
-            valueListenable: audioHandler.songValueNotifier,
-            builder: (context, value, _) {
-              final song = value?.song;
-              return Column(
+  Widget buildPlaylistHeader(String title, IconData icon) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: ListenableBuilder(
+          listenable: notifiableSongsList,
+          builder: (context, child) {
+            return PlaylistHeader(
+              _buildPlaylistImage(title, icon, notifiableSongsList.length),
+              title,
+              notifiableSongsList.length,
+              customWidget: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (value != null)
-                    Text(
-                      song?['mbTitle'] ??
-                          song?['title'] ??
-                          song?['ytTitle'] ??
-                          context.l10n!.unknown,
-                      style: TextStyle(
-                        color: _theme.colorScheme.primary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  if (value != null)
-                    Text(
-                      song?['mbArtist'] ??
-                          song?['artist'] ??
-                          song?['ytArtist'] ??
-                          context.l10n!.unknown,
-                      style: TextStyle(
-                        color: _theme.colorScheme.secondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
+                  ValueListenableBuilder(
+                    valueListenable: audioHandler.songValueNotifier,
+                    builder: (context, value, _) {
+                      final song = value?.song;
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (value != null)
+                            Text(
+                              song?['mbTitle'] ??
+                                  song?['title'] ??
+                                  song?['ytTitle'] ??
+                                  context.l10n!.unknown,
+                              style: TextStyle(
+                                color: _theme.colorScheme.primary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          if (value != null)
+                            Text(
+                              song?['mbArtist'] ??
+                                  song?['artist'] ??
+                                  song?['ytArtist'] ??
+                                  context.l10n!.unknown,
+                              style: TextStyle(
+                                color: _theme.colorScheme.secondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder(
+                    valueListenable: audioHandler.positionDataNotifier,
+                    builder:
+                        (context, value, _) =>
+                            value.duration != Duration.zero
+                                ? PositionSlider(
+                                  positionDataNotifier:
+                                      audioHandler.positionDataNotifier,
+                                )
+                                : const SizedBox.shrink(),
+                  ),
                 ],
-              );
-            },
-          ),
-          ValueListenableBuilder(
-            valueListenable: audioHandler.positionDataNotifier,
-            builder:
-                (context, value, _) =>
-                    value.duration != Duration.zero
-                        ? PositionSlider(
-                          positionDataNotifier:
-                              audioHandler.positionDataNotifier,
-                        )
-                        : const SizedBox.shrink(),
-          ),
-        ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  void _listener() {
-    if (mounted) setState(() {});
+  Widget _buildSyncButton() {
+    return IconButton(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      icon: const Icon(FluentIcons.arrow_sync_24_filled),
+      iconSize: pageHeaderIconSize,
+      onPressed: () async {
+        if (widget.page == 'offline') {
+          final futures =
+              <Future>[]
+                ..add(getExistingOfflineSongs())
+                ..add(getUserDeviceSongs());
+          await Future.wait(futures);
+        }
+        final songBars = getSongsList(widget.page);
+        for (final songBar in songBars) {
+          notifiableSongsList.addOrUpdate(
+            songBar,
+            (a, b) => checkSong(a.song, b.song),
+          );
+        }
+      },
+    );
   }
 
   Widget _buildPlaylistImage(String title, IconData icon, int length) {
