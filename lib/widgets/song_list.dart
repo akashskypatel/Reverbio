@@ -56,7 +56,10 @@ class SongList extends StatefulWidget {
   State<SongList> createState() => _SongListState();
 }
 
-class _SongListState extends State<SongList> {
+class _SongListState extends State<SongList> with TickerProviderStateMixin {
+  //late NotifiableList<Map<String, dynamic>> notifiableArtistList = NotifiableList.fromAsync(_getArtists());
+  //final int _tabCount = 1;
+  //late final TabController _tabController;
   late ThemeData _theme;
   bool isProcessing = true;
   bool loopSongs = false;
@@ -69,6 +72,7 @@ class _SongListState extends State<SongList> {
   @override
   void initState() {
     super.initState();
+    //_tabController = TabController(length: _tabCount, vsync: this);
   }
 
   @override
@@ -113,6 +117,13 @@ class _SongListState extends State<SongList> {
                 ),
               ),
             ),
+            if (widget.songBars.isLoading)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsetsGeometry.all(10),
+                  child: Spinner(),
+                ),
+              ),
             if (widget.songBars.hasData) _buildSongList(context),
             if (!widget.songBars.hasData)
               SliverToBoxAdapter(
@@ -126,19 +137,80 @@ class _SongListState extends State<SongList> {
                   ),
                 ),
               ),
-            if (widget.songBars.hasError)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsetsGeometry.all(10),
-                  child: Spinner(),
-                ),
-              ),
           ],
         );
       },
     );
   }
 
+  /*
+  Widget _buildArtistList() {
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverAppBar(
+          toolbarHeight: 0,
+          automaticallyImplyLeading: false,
+          pinned: true,
+          floating: true,
+          snap: true,
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(text: context.l10n!.artists.toUpperCase()),
+              //Tab(text: context.l10n!.albums.toUpperCase()),
+            ],
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: IndexedStack(
+            index: _tabController.index,
+            children: [
+              ArtistList(
+                page: widget.page,
+                notifiableArtistList: notifiableArtistList,
+                child: SliverMainAxisGroup(
+                  slivers: [
+                    if (widget.songBars.isLoading)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsetsGeometry.all(10),
+                          child: Spinner(),
+                        ),
+                      ),
+                    if (widget.songBars.hasData) _buildSongList(context),
+                    if (!widget.songBars.hasData)
+                      SliverToBoxAdapter(
+                        child: Align(
+                          child: Padding(
+                            padding: const EdgeInsetsGeometry.all(10),
+                            child: Text(
+                              context.l10n!.noData,
+                              style: TextStyle(
+                                color: _theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<Iterable<Map<String, dynamic>>> _getArtists() async {
+    return widget.songBars.completer.future.then((value) async {
+      final songs = value.map((e) => e.song).toList();
+      return getArtistsFromSongs(songs);
+    });
+  }
+*/
   dynamic _getSongListData() {
     final data =
         widget.songBars.map((e) {
@@ -387,6 +459,7 @@ class _SongListState extends State<SongList> {
               songBar.song['id'] ??
                   '${songBar.song['artist']} - ${songBar.song['title']}',
             );
+            // TODO: possible use value notifier
             return ReorderableDragStartListener(
               key: key,
               enabled: widget.isEditable,
