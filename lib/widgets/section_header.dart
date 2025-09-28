@@ -22,6 +22,7 @@ import 'dart:async';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/widgets/section_title.dart';
 
@@ -33,6 +34,8 @@ class SectionHeader extends StatefulWidget {
     this.autoCloseSeconds = 5,
     this.actionsExpanded = false,
     this.expandedActions,
+    this.showSearch = false,
+    this.searchController,
   });
 
   final String title;
@@ -40,6 +43,8 @@ class SectionHeader extends StatefulWidget {
   final int autoCloseSeconds;
   final bool actionsExpanded;
   final List<Widget>? expandedActions;
+  final bool showSearch;
+  final SearchController? searchController;
   @override
   State<SectionHeader> createState() => _SectionHeaderState();
 }
@@ -49,6 +54,7 @@ class _SectionHeaderState extends State<SectionHeader>
   late ThemeData _theme;
   bool _expanded = false;
   Timer? _closeTimer;
+  bool _searchExpanded = false;
 
   void _toggleExpanded() {
     setState(() {
@@ -83,6 +89,8 @@ class _SectionHeaderState extends State<SectionHeader>
           ),
         ),
 
+        if (widget.showSearch && widget.searchController != null)
+          _buildSearchActionButton(expandedConstraint),
         if (widget.actions != null &&
             widget.actions!.isNotEmpty &&
             !widget.actionsExpanded)
@@ -125,6 +133,58 @@ class _SectionHeaderState extends State<SectionHeader>
             widget.expandedActions!.isNotEmpty)
           Row(children: widget.expandedActions!),
       ],
+    );
+  }
+
+  Widget _buildSearchActionButton(BoxConstraints expandedConstraint) {
+    return AnimatedCrossFade(
+      crossFadeState:
+          _searchExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+      firstChild: IconButton(
+        tooltip: context.l10n!.shuffle,
+        color: _theme.colorScheme.primary,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        icon: const Icon(FluentIcons.search_24_filled),
+        iconSize: listHeaderIconSize,
+        onPressed: () {},
+      ),
+      secondChild: SearchBar(
+        constraints: BoxConstraints(
+          maxHeight: listHeaderIconSize,
+          maxWidth: expandedConstraint.maxWidth,
+        ),
+        controller: widget.searchController,
+        padding: const WidgetStatePropertyAll<EdgeInsets>(
+          EdgeInsets.symmetric(horizontal: 5),
+        ),
+        onTap: () {
+          // Expands when tapped
+          widget.searchController!.openView();
+        },
+        onChanged: (_) {
+          widget.searchController!.openView();
+        },
+        leading: IconButton(
+          iconSize: listHeaderIconSize,
+          icon: const Icon(FluentIcons.search_24_filled),
+          onPressed: () {
+            widget.searchController!.openView();
+          },
+        ),
+        trailing: [
+          IconButton(
+            iconSize: listHeaderIconSize,
+            icon: const Icon(FluentIcons.dismiss_24_filled),
+            onPressed: () {
+              widget.searchController!.closeView(null);
+            },
+          ),
+        ],
+      ),
+      duration: const Duration(milliseconds: 300),
     );
   }
 }

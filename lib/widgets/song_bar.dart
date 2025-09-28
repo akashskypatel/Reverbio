@@ -69,6 +69,7 @@ class SongBar extends StatefulWidget {
   final VoidCallback? onRemove;
   final bool showMusicDuration;
   final BorderRadius borderRadius;
+  final ValueNotifier<bool> _isVisible = ValueNotifier(true);
   final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
@@ -90,6 +91,10 @@ class SongBar extends StatefulWidget {
 
   @override
   _SongBarState createState() => _SongBarState();
+
+  bool setVisibility(bool show) {
+    return _isVisible.value = show;
+  }
 
   Future<void> _prepareSong() async {
     try {
@@ -268,10 +273,17 @@ class _SongBarState extends State<SongBar> {
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
     final primaryColor = _theme.colorScheme.primary;
-    return _buildSongBarOld(context, primaryColor);
+    return ValueListenableBuilder(
+      valueListenable: widget._isVisible,
+      builder:
+          (context, value, child) => Visibility(
+            visible: value,
+            child: _buildSongBar(context, primaryColor),
+          ),
+    );
   }
 
-  Widget _buildSongBarOld(BuildContext context, Color primaryColor) {
+  Widget _buildSongBar(BuildContext context, Color primaryColor) {
     return ListenableBuilder(
       listenable: widget.songFuture,
       builder: (context, child) {

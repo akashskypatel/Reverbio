@@ -31,6 +31,7 @@ import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -63,6 +64,8 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
   late ThemeData _theme;
   bool isProcessing = true;
   bool loopSongs = false;
+  final SearchController _searchController = SearchController();
+
   final Map<String, bool> _sortState = {
     'title': false,
     'artist': false,
@@ -96,6 +99,8 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
                   listenable: PM.pluginsData,
                   builder: (context, __) {
                     return SectionHeader(
+                      searchController: _searchController,
+                      showSearch: true,
                       expandedActions: widget.expandedActions,
                       title: widget.title,
                       actions: [
@@ -124,7 +129,7 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
                   child: Spinner(),
                 ),
               ),
-            if (widget.songBars.hasData) _buildSongList(context),
+            if (widget.songBars.hasData) _buildSearchAnchor(),
             if (!widget.songBars.hasData)
               SliverToBoxAdapter(
                 child: Align(
@@ -140,6 +145,34 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildSearchAnchor() {
+    return SliverToBoxAdapter(
+      child: SearchAnchor(
+        searchController: _searchController,
+        builder: (context, controller) =>
+        CustomScrollView(
+          shrinkWrap: true,
+          slivers: [
+         _buildSongList(context)])
+         ,
+        suggestionsBuilder: (context, controller) {
+          return List<Widget>.generate(widget.songBars.length, (index) {
+            final song = widget.songBars[index].song;
+            final title = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
+            final artist =
+                song['mbArtist'] ?? song['artist'] ?? song['ytArtist'];
+            if (title == null) return const SizedBox.shrink();
+            return ListTile(
+              dense: true,
+              title: Text(title),
+              subtitle: Text(artist),
+            );
+          });
+        },
+      ),
     );
   }
 

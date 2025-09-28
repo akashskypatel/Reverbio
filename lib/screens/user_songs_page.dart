@@ -56,7 +56,7 @@ class UserSongsPage extends StatefulWidget {
 }
 
 class _UserSongsPageState extends State<UserSongsPage> {
-    //with TickerProviderStateMixin {
+  //with TickerProviderStateMixin {
   late ThemeData _theme;
   final _isEditEnabled = ValueNotifier(false);
   late final String _title;
@@ -105,7 +105,8 @@ class _UserSongsPageState extends State<UserSongsPage> {
           if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
-      body: SliverMainAxisGroup(
+      body: CustomScrollView(
+        shrinkWrap: true,
         slivers: [
           ValueListenableBuilder(
             valueListenable: _isEditEnabled,
