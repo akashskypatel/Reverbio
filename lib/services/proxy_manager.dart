@@ -398,10 +398,13 @@ class ProxyManager {
       StreamManifest? manifest;
       if (timeout != null)
         manifest = await _localYTClient.videos.streams
-            .getManifest(songId)
+            .getManifest(songId, ytClients: [YoutubeApiClient.androidVr])
             .timeout(Duration(seconds: timeout));
       else
-        manifest = await _localYTClient.videos.streams.getManifest(songId);
+        manifest = await _localYTClient.videos.streams.getManifest(
+          songId,
+          ytClients: [YoutubeApiClient.androidVr],
+        );
       if (kDebugMode)
         logger.log(
           'Direct connection succeeded. Proxy not needed.',
@@ -424,7 +427,7 @@ class ProxyManager {
     if (kDebugMode) logger.log('Validating proxy...', null, null);
     try {
       final manifest = await ytExplode.videos.streams
-          .getManifest(songId)
+          .getManifest(songId, ytClients: [YoutubeApiClient.androidVr])
           .timeout(Duration(seconds: timeout));
       _workingProxies.add(proxy);
       if (kDebugMode)
