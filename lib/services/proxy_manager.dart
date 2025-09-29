@@ -400,7 +400,10 @@ class ProxyManager {
             .getManifest(songId, ytClients: [YoutubeApiClient.androidVr])
             .timeout(Duration(seconds: timeout));
       else
-        manifest = await _localYTClient.videos.streams.getManifest(songId, ytClients: [YoutubeApiClient.androidVr]);
+        manifest = await _localYTClient.videos.streams.getManifest(
+          songId,
+          ytClients: [YoutubeApiClient.androidVr],
+        );
       if (kDebugMode)
         logger.log(
           'Direct connection succeeded. Proxy not needed.',
