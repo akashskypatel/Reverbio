@@ -70,7 +70,7 @@ class _ArtistListState extends State<ArtistList> {
                 //Drawer slide
                 _buildDrawerSlide(),
                 widget.child,
-                //LimitedBox(maxWidth: remWidth, child: widget.child),
+                LimitedBox(maxWidth: remWidth, maxHeight: maxHeight, child: widget.child,),
               ],
             ),
           ],
@@ -155,7 +155,6 @@ class _ArtistListState extends State<ArtistList> {
   }
 
   Widget _buildListViewArtistTiles() {
-    final maxWidth = MediaQuery.of(context).size.width * .15;
     return ListView.builder(
       itemCount: widget.notifiableArtistList.length,
       itemBuilder: (context, index) {
