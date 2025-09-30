@@ -35,7 +35,7 @@ class SectionHeader extends StatefulWidget {
     this.actionsExpanded = false,
     this.expandedActions,
     this.showSearch = false,
-    this.searchController,
+    this.onChanged,
   });
 
   final String title;
@@ -44,7 +44,8 @@ class SectionHeader extends StatefulWidget {
   final bool actionsExpanded;
   final List<Widget>? expandedActions;
   final bool showSearch;
-  final SearchController? searchController;
+  final void Function(String)? onChanged;
+
   @override
   State<SectionHeader> createState() => _SectionHeaderState();
 }
@@ -52,22 +53,51 @@ class SectionHeader extends StatefulWidget {
 class _SectionHeaderState extends State<SectionHeader>
     with TickerProviderStateMixin {
   late ThemeData _theme;
-  bool _expanded = false;
-  Timer? _closeTimer;
+  bool _toolsExpanded = false;
+  Timer? _toolCloseTimer;
   bool _searchExpanded = false;
+  Timer? searchCloseTimer;
+  final Duration _expandDuration = const Duration(milliseconds: 300);
+  SearchController? searchController;
 
-  void _toggleExpanded() {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showSearch) searchController = SearchController();
+  }
+
+  void _toggleToolExpanded() {
     setState(() {
-      _expanded = !_expanded;
+      _toolsExpanded = !_toolsExpanded;
+      _searchExpanded = false;
     });
 
-    _closeTimer?.cancel();
+    _toolCloseTimer?.cancel();
 
-    if (_expanded) {
-      _closeTimer = Timer(Duration(seconds: widget.autoCloseSeconds), () {
+    if (_toolsExpanded) {
+      _toolCloseTimer = Timer(Duration(seconds: widget.autoCloseSeconds), () {
         if (mounted) {
           setState(() {
-            _expanded = false;
+            _toolsExpanded = false;
+          });
+        }
+      });
+    }
+  }
+
+  void _toggleSearchExpanded({bool? isOpen}) {
+    setState(() {
+      _toolsExpanded = false;
+      _searchExpanded = isOpen ?? !_searchExpanded;
+    });
+
+    searchCloseTimer?.cancel();
+
+    if (_searchExpanded) {
+      searchCloseTimer = Timer(Duration(seconds: widget.autoCloseSeconds), () {
+        if (mounted) {
+          setState(() {
+            _searchExpanded = false;
           });
         }
       });
@@ -89,8 +119,7 @@ class _SectionHeaderState extends State<SectionHeader>
           ),
         ),
 
-        if (widget.showSearch && widget.searchController != null)
-          _buildSearchActionButton(expandedConstraint),
+        if (widget.showSearch) _buildSearchActionButton(expandedConstraint),
         if (widget.actions != null &&
             widget.actions!.isNotEmpty &&
             !widget.actionsExpanded)
@@ -98,12 +127,12 @@ class _SectionHeaderState extends State<SectionHeader>
             padding: commonSingleChildScrollViewPadding,
             child: IconButton(
               icon: Icon(
-                _expanded
+                _toolsExpanded
                     ? FluentIcons.dismiss_24_regular
                     : FluentIcons.more_horizontal_28_filled,
                 color: _theme.colorScheme.primary,
               ),
-              onPressed: _toggleExpanded,
+              onPressed: _toggleToolExpanded,
             ),
           ),
         if (widget.actionsExpanded && widget.actions != null)
@@ -116,10 +145,10 @@ class _SectionHeaderState extends State<SectionHeader>
           ),
         if (!widget.actionsExpanded && widget.actions != null)
           AnimatedSize(
-            duration: const Duration(milliseconds: 300),
+            duration: _expandDuration,
             curve: Curves.easeInOut,
             child:
-                _expanded && widget.actions != null
+                _toolsExpanded && widget.actions != null
                     ? ConstrainedBox(
                       constraints: expandedConstraint,
                       child: SingleChildScrollView(
@@ -138,6 +167,8 @@ class _SectionHeaderState extends State<SectionHeader>
 
   Widget _buildSearchActionButton(BoxConstraints expandedConstraint) {
     return AnimatedCrossFade(
+      sizeCurve: Curves.easeInOut,
+      duration: _expandDuration,
       crossFadeState:
           _searchExpanded
               ? CrossFadeState.showSecond
@@ -149,42 +180,47 @@ class _SectionHeaderState extends State<SectionHeader>
         highlightColor: Colors.transparent,
         icon: const Icon(FluentIcons.search_24_filled),
         iconSize: listHeaderIconSize,
-        onPressed: () {},
+        onPressed: _toggleSearchExpanded,
       ),
-      secondChild: SearchBar(
-        constraints: BoxConstraints(
-          maxHeight: listHeaderIconSize,
-          maxWidth: expandedConstraint.maxWidth,
-        ),
-        controller: widget.searchController,
-        padding: const WidgetStatePropertyAll<EdgeInsets>(
-          EdgeInsets.symmetric(horizontal: 5),
-        ),
-        onTap: () {
-          // Expands when tapped
-          widget.searchController!.openView();
-        },
-        onChanged: (_) {
-          widget.searchController!.openView();
-        },
-        leading: IconButton(
-          iconSize: listHeaderIconSize,
-          icon: const Icon(FluentIcons.search_24_filled),
-          onPressed: () {
-            widget.searchController!.openView();
-          },
-        ),
-        trailing: [
-          IconButton(
-            iconSize: listHeaderIconSize,
-            icon: const Icon(FluentIcons.dismiss_24_filled),
-            onPressed: () {
-              widget.searchController!.closeView(null);
-            },
-          ),
-        ],
+      secondChild: AnimatedSize(
+        curve: Curves.easeInOut,
+        duration: _expandDuration,
+        child:
+            _searchExpanded
+                ? SearchBar(
+                  constraints: BoxConstraints(
+                    maxHeight: listHeaderIconSize + 16,
+                    maxWidth: expandedConstraint.maxWidth,
+                  ),
+                  controller: searchController,
+                  padding: const WidgetStatePropertyAll<EdgeInsets>(
+                    EdgeInsets.zero,
+                  ),
+                  onChanged: (value) {
+                    _toggleSearchExpanded(isOpen: true);
+                    if (widget.onChanged != null) widget.onChanged!(value);
+                  },
+                  leading: IconButton(
+                    color: _theme.colorScheme.primary,
+                    iconSize: listHeaderIconSize,
+                    icon: const Icon(FluentIcons.search_24_filled),
+                    onPressed: () {},
+                  ),
+                  trailing: [
+                    IconButton(
+                      iconSize: listHeaderIconSize,
+                      color: _theme.colorScheme.primary,
+                      icon: const Icon(FluentIcons.dismiss_24_filled),
+                      onPressed: () {
+                        _toggleSearchExpanded(isOpen: false);
+                        searchController?.clear();
+                        if (widget.onChanged != null) widget.onChanged!('');
+                      },
+                    ),
+                  ],
+                )
+                : const SizedBox.shrink(),
       ),
-      duration: const Duration(milliseconds: 300),
     );
   }
 }

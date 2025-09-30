@@ -80,6 +80,8 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<BorderRadius> _borderRadiusNotifier;
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
   Map<String, dynamic> get song => songMetadataNotifier.value;
+  String? get title => song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
+  String? get artist => song['mbArtist'] ?? song['artist'] ?? song['ytArtist'];
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
   bool get isPrepared => _isPreparedNotifier.value;
