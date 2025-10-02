@@ -36,6 +36,7 @@ class SectionHeader extends StatefulWidget {
     this.expandedActions,
     this.showSearch = false,
     this.onChanged,
+    this.icon,
   });
 
   final String title;
@@ -45,7 +46,7 @@ class SectionHeader extends StatefulWidget {
   final List<Widget>? expandedActions;
   final bool showSearch;
   final void Function(String)? onChanged;
-
+  final IconData? icon;
   @override
   State<SectionHeader> createState() => _SectionHeaderState();
 }
@@ -112,13 +113,17 @@ class _SectionHeaderState extends State<SectionHeader>
     );
     return Row(
       children: [
+        if (widget.icon != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Icon(widget.icon, color: _theme.colorScheme.primary),
+          ),
         Flexible(
           fit: FlexFit.tight,
           child: ClipRect(
             child: SectionTitle(widget.title, _theme.colorScheme.primary),
           ),
         ),
-
         if (widget.showSearch) _buildSearchActionButton(expandedConstraint),
         if (widget.actions != null &&
             widget.actions!.isNotEmpty &&
