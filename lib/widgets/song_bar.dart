@@ -47,6 +47,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/bottom_sheet_bar.dart';
+import 'package:reverbio/widgets/edit_metadata_dialog.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -519,7 +520,7 @@ class _SongBarState extends State<SongBar> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       );
       if (value != null) {
-        _popupMenuItemAction(value, song);
+        await _popupMenuItemAction(value, song);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -683,12 +684,41 @@ class _SongBarState extends State<SongBar> {
                 Text(context.l10n!.openInMusicBrainz),
               ],
             ),
+          )
+        else
+          PopupMenuItem<String>(
+            value: 'get_musicbrainz',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.database_search_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.getMetadata),
+              ],
+            ),
           ),
-        ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((
-          e,
-        ) {
-          return e as PopupMenuItem<String>;
-        }),
+        if (isSongAlreadyOffline(song))
+          PopupMenuItem<String>(
+            value: 'tag',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.tag_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.editTags),
+              ],
+            ),
+          ),
+        if (enablePlugins.value)
+          ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((
+            e,
+          ) {
+            return e as PopupMenuItem<String>;
+          }),
       ];
     } catch (e, stackTrace) {
       logger.log(
@@ -707,11 +737,11 @@ class _SongBarState extends State<SongBar> {
     return data;
   }
 
-  void _popupMenuItemAction(String value, dynamic song) {
+  Future<void> _popupMenuItemAction(String value, dynamic song) async {
     switch (value) {
       case 'like':
         songLikeStatus.value = !songLikeStatus.value;
-        updateSongLikeStatus(song, songLikeStatus.value);
+        unawaited(updateSongLikeStatus(song, songLikeStatus.value));
         break;
       case 'remove':
         if (widget.onRemove != null) widget.onRemove!();
@@ -729,13 +759,13 @@ class _SongBarState extends State<SongBar> {
         if (songOfflineStatus.value) {
           unawaited(removeSongFromOffline(song));
         } else {
-          makeSongOffline(song);
+          unawaited(makeSongOffline(song));
         }
         songOfflineStatus.value = !songOfflineStatus.value;
         break;
       case 'get_youtube':
         if (song['ytid'] == null || song['ytid'].isEmpty)
-          widget.getYtSong(null);
+          unawaited(widget.getYtSong(null));
       case 'youtube_links':
         if (song['ytSongs'] != null && song['ytSongs'].isNotEmpty)
           showYoutubeLinksBottomSheet(context, widget.getYtSong, song);
@@ -744,17 +774,26 @@ class _SongBarState extends State<SongBar> {
           final uri = Uri.parse(
             'https://www.youtube.com/watch?v=${song['ytid']}',
           );
-          launchURL(uri);
+          await launchURL(uri);
         }
         break;
       case 'musicbrainz':
         if (song['rid'] != null && song['rid'].isNotEmpty) {
           final uri = Uri.parse(
-            'https://musicbrainz.org/recording/${song['rid']}',
+            'https://musicbrainz.org/recording/${song['rid'] ?? song['mbid']}',
           );
-          launchURL(uri);
+          await launchURL(uri);
         }
         break;
+      case 'get_musicbrainz':
+        await widget._prepareSong();
+        final uri = Uri.parse(
+          'https://musicbrainz.org/recording/${song['rid'] ?? song['mbid']}',
+        );
+        await launchURL(uri);
+        break;
+      case 'tag':
+        await showEditMetadataDialog(context, song);
     }
   }
 
@@ -767,7 +806,9 @@ class _SongBarState extends State<SongBar> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: _theme.colorScheme.surface,
       icon: Icon(FluentIcons.more_vertical_24_filled, color: primaryColor),
-      onSelected: (value) => _popupMenuItemAction(value, song),
+      onSelected: (value) async {
+        await _popupMenuItemAction(value, song);
+      },
       itemBuilder: (context) => _buildPopupMenuItems(context, song),
     );
   }
