@@ -45,10 +45,15 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
     return showToast(context: context, context.l10n!.cannotOpenFile);
   }
   Tag? tags;
-  List<Picture> pictures = [];
+  final pictures = <Picture>[];
   try {
     tags = await AudioTags.read(offlinePath);
-    pictures = tags?.pictures ?? pictures;
+    pictures.addAll(
+      tags?.pictures.map(
+            (e) => Picture(bytes: e.bytes, pictureType: e.pictureType),
+          ) ??
+          [],
+    );
   } catch (_) {
     return showToast(context: context, context.l10n!.cannotOpenFile);
   }
@@ -525,6 +530,14 @@ Widget _imageInput(
       return Stack(
         children: [
           BaseCard(
+            onPressed: () async {
+              initialValue[index] =
+                  await showImagePickerDialog(
+                    context,
+                    initialValue: initialValue[index],
+                  ) ??
+                  initialValue[index];
+            },
             size: dimension,
             showIconLabel: false,
             label: initialValue[index].pictureType.toString().replaceAll(
@@ -605,7 +618,10 @@ Widget _imageInput(
   );
 }
 
-Future<Picture?> showImagePickerDialog(BuildContext context) async {
+Future<Picture?> showImagePickerDialog(
+  BuildContext context, {
+  Picture? initialValue,
+}) async {
   final dimension = MediaQuery.of(context).size.shortestSide * .90;
   final theme = Theme.of(context).colorScheme;
   final activeButtonBackground = theme.secondaryContainer;
@@ -613,8 +629,14 @@ Future<Picture?> showImagePickerDialog(BuildContext context) async {
   bool localMode = true;
   final imagePathController = TextEditingController();
   final imagePathFocus = FocusNode();
-  final pictureTypeController = TextEditingController();
-  Picture? picture;
+  Picture? picture =
+      initialValue != null
+          ? Picture(
+            pictureType: initialValue.pictureType,
+            bytes: initialValue.bytes,
+          )
+          : null;
+  PictureType picTypeValue = picture?.pictureType ?? PictureType.coverFront;
   return showDialog<Picture?>(
     context: context,
     builder: (context) {
@@ -662,8 +684,19 @@ Future<Picture?> showImagePickerDialog(BuildContext context) async {
                     ],
                   ),
                   DropdownMenu<PictureType>(
-                    controller: pictureTypeController,
-                    initialSelection: PictureType.other,
+                    initialSelection: picture?.pictureType ?? PictureType.other,
+                    onSelected: (value) {
+                      if (value != null && context.mounted) {
+                        setState(() {
+                          picTypeValue = value;
+                          if (picture != null)
+                            picture = Picture(
+                              bytes: picture!.bytes,
+                              pictureType: picTypeValue,
+                            );
+                        });
+                      }
+                    },
                     label: Text(context.l10n!.pictureType),
                     dropdownMenuEntries: List.generate(
                       PictureType.values.length,
@@ -706,7 +739,7 @@ Future<Picture?> showImagePickerDialog(BuildContext context) async {
                               setState(() {
                                 final imageData = imageFile.readAsBytesSync();
                                 picture = Picture(
-                                  pictureType: PictureType.other,
+                                  pictureType: picTypeValue,
                                   bytes: imageData,
                                 );
                               });
@@ -719,7 +752,7 @@ Future<Picture?> showImagePickerDialog(BuildContext context) async {
                               setState(() {
                                 final imageData = imageFile.readAsBytesSync();
                                 picture = Picture(
-                                  pictureType: PictureType.other,
+                                  pictureType: picTypeValue,
                                   bytes: imageData,
                                 );
                               });
@@ -740,7 +773,7 @@ Future<Picture?> showImagePickerDialog(BuildContext context) async {
                                 final imageData = imageFile.readAsBytesSync();
                                 imagePathController.text = imageFile.path;
                                 picture = Picture(
-                                  pictureType: PictureType.other,
+                                  pictureType: picTypeValue,
                                   bytes: imageData,
                                 );
                               });
@@ -765,7 +798,7 @@ Future<Picture?> showImagePickerDialog(BuildContext context) async {
             child: Text(context.l10n!.confirm.toUpperCase()),
           ),
           TextButton(
-            onPressed: () => GoRouter.of(context).pop(),
+            onPressed: () => GoRouter.of(context).pop(initialValue),
             child: Text(context.l10n!.cancel.toUpperCase()),
           ),
         ],
