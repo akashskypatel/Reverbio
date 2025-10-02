@@ -490,9 +490,8 @@ class _LibraryPageState extends State<LibraryPage> {
                           ),
                           IconButton(
                             onPressed: () async {
-                              final path =
+                              imageUrl =
                                   await pickImageFile(); //TODO: save image data to playlist directly
-                              imageUrl = path;
                               if (imageUrl != null)
                                 imagePathController.text = imageUrl!;
                             },
