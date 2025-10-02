@@ -23,12 +23,14 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -649,7 +651,7 @@ Future<File> copyFileToDir(
 
     final ext = extension(path);
     String fileName = basenameWithoutExtension(path);
-    File targetFile = File('$dir/$fileName$ext');
+    File targetFile = File('$dir${Platform.pathSeparator}$fileName$ext');
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       if (!await targetFile.exists()) {
@@ -657,7 +659,7 @@ Future<File> copyFileToDir(
       }
       // Increment filename and update target path
       fileName = incrementFileName(fileName);
-      targetFile = File('$dir/$fileName$ext');
+      targetFile = File('$dir${Platform.pathSeparator}$fileName$ext');
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -665,7 +667,7 @@ Future<File> copyFileToDir(
   return File(path);
 }
 
-Future<String?> pickImageFile({int maxAttempts = 100}) async {
+Future<String?> pickImageFile({bool copyToAppDir = true}) async {
   final _dir = Directory(offlineDirectory.value!);
   final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
   await Directory(_artworkDirPath).create(recursive: true);
@@ -676,10 +678,52 @@ Future<String?> pickImageFile({int maxAttempts = 100}) async {
         allowedExtensions: ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp'],
       ))?.files.first;
   if (file == null || file.path == null) return null;
+  if (copyToAppDir) {
+    final copy = await copyFileToDir(file.path!, _artworkDirPath);
+    return copy.path;
+  } else {
+    return file.path;
+  }
+}
 
-  final copy = await copyFileToDir(file.path!, _artworkDirPath);
+Future<File?> getImageFileData({String? path}) async {
+  final filePath = path ?? await pickImageFile(copyToAppDir: false);
+  if (filePath == null) return null;
+  if (isFilePath(filePath) && doesFileExist(filePath)) return File(filePath);
+  if (isUrl(filePath) && (await checkUrl(filePath)) < 400) {
+    final data = await getImageBytesFromUrl(filePath);
+    if (data == null) return null;
+    return getFileFromUint8List(data, Uri.parse(filePath).pathSegments.last);
+  }
+  return null;
+}
 
-  return copy.path;
+Future<File> getFileFromUint8List(Uint8List data, String fileName) async {
+  // Get the temporary directory for storing the file
+  final directory = await getTemporaryDirectory();
+  final filePath = '${directory.path}${Platform.pathSeparator}$fileName';
+
+  // Create a File object
+  final file = File(filePath);
+
+  // Write the Uint8List data to the file
+  await file.writeAsBytes(data);
+
+  return file;
+}
+
+Future<Uint8List?> getImageBytesFromUrl(String imageUrl) async {
+  try {
+    final response = await http.get(Uri.parse(imageUrl));
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
 }
 
 Future<void> cacheEntity(dynamic entity) async {
