@@ -45,7 +45,7 @@ class BaseCard extends StatefulWidget {
     this.iconSize,
     this.image,
     this.inputData,
-    this.showLabel = false,
+    this.label,
     this.showOverflowLabel = false,
     this.showLike = false,
     this.onPressed,
@@ -53,21 +53,24 @@ class BaseCard extends StatefulWidget {
     this.loadingWidget,
     this.imageOverlayMask = false,
     this.showIconLabel = true,
+    this.customButton,
   });
   final IconData icon;
   final double? iconSize;
   final double size;
-  final bool showLabel;
+  final String? label;
   final bool showOverflowLabel;
   final bool showLike;
   final bool showIconLabel;
-  final CachedNetworkImage? image;
+  final Image? image;
   final bool imageOverlayMask;
   final Map<dynamic, dynamic>? inputData;
   final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
   final VoidCallback? onPressed;
   final double paddingValue;
   final Widget? loadingWidget;
+  final IconButton? customButton;
+
   static const double typeLabelOffset = 10;
   @override
   State<BaseCard> createState() => _BaseCardState();
@@ -90,7 +93,7 @@ class _BaseCardState extends State<BaseCard> {
 
   String? dataType;
   final borderRadius = 13.0;
-  late final likeSize = widget.size * 0.20;
+  late final buttonSize = widget.size * 0.20;
   late final double artistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late ThemeData _theme;
@@ -208,8 +211,11 @@ class _BaseCardState extends State<BaseCard> {
                                       return snapshot.data!;
                                     },
                                   ),
-                                if (widget.showLabel) _buildLabel(),
+                                if (widget.label != null) _buildLabel(),
                                 if (widget.showLike) _buildLiked(),
+                                if (!widget.showLike &&
+                                    widget.customButton != null)
+                                  _buildCustomButton(),
                               ],
                             ),
                           ),
@@ -233,6 +239,7 @@ class _BaseCardState extends State<BaseCard> {
 
   Future<Widget> _buildImage(BuildContext context) async {
     try {
+      if (widget.image != null) return widget.image!;
       final image = await getValidImage(widget.inputData);
       if (image == null) return _buildNoArtworkCard(context);
       if (image.isFileUri && doesFileExist(image.toString())) {
@@ -290,6 +297,7 @@ class _BaseCardState extends State<BaseCard> {
   }
 
   Widget _buildNoArtworkCard(BuildContext context) {
+    if (widget.image != null) return widget.image!;
     return Stack(
       children: [
         if (widget.imageOverlayMask)
@@ -341,6 +349,39 @@ class _BaseCardState extends State<BaseCard> {
     );
   }
 
+  Widget _buildCustomButton() {
+    if (widget.customButton == null) return const SizedBox.shrink();
+    final _customButton = widget.customButton!;
+    final shadowOffset = -(buttonSize / 18);
+    return Align(
+      alignment: Alignment.topRight,
+      child: Stack(
+        children: [
+          Transform.translate(
+            offset: Offset(shadowOffset + (shadowOffset * .5), shadowOffset),
+            child: IconButton(
+              onPressed: null,
+              icon: Icon(
+                (_customButton.icon as Icon).icon,
+                size: _customButton.iconSize ?? buttonSize,
+                color: _theme.colorScheme.surface,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: _customButton.onPressed,
+            icon: Icon(
+              (_customButton.icon as Icon).icon,
+              size: _customButton.iconSize ?? buttonSize,
+            ),
+            color: _theme.colorScheme.primary,
+            hoverColor: _theme.colorScheme.surface.withAlpha(128),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLiked() {
     return StatefulBuilder(
       builder: (context, setState) {
@@ -360,7 +401,7 @@ class _BaseCardState extends State<BaseCard> {
                     value
                         ? FluentIcons.heart_12_filled
                         : FluentIcons.heart_12_regular;
-                final shadowOffset = -(likeSize / 18);
+                final shadowOffset = -(buttonSize / 18);
                 return Align(
                   alignment: Alignment.topRight,
                   child: Stack(
@@ -374,7 +415,7 @@ class _BaseCardState extends State<BaseCard> {
                           onPressed: null,
                           icon: Icon(
                             liked,
-                            size: likeSize,
+                            size: buttonSize,
                             color: _theme.colorScheme.surface,
                           ),
                         ),
@@ -384,7 +425,7 @@ class _BaseCardState extends State<BaseCard> {
                           _toggleLike(context);
                           if (mounted) setState(() {});
                         },
-                        icon: Icon(liked, size: likeSize),
+                        icon: Icon(liked, size: buttonSize),
                         color: _theme.colorScheme.primary,
                         hoverColor: _theme.colorScheme.surface.withAlpha(128),
                       ),
@@ -480,7 +521,7 @@ class _BaseCardState extends State<BaseCard> {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
           overflow: TextOverflow.ellipsis,
-          _labelType(),
+          widget.label!, //_labelType(),
           style: _theme.textTheme.labelSmall?.copyWith(
             color: colorScheme.onSecondaryContainer,
           ),

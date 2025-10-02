@@ -147,7 +147,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
       inputData: data,
       icon: widget.icon,
       size: playlistHeight,
-      showLabel: !isArtist,
+      label: !isArtist ? dataType : null,
       showOverflowLabel: true,
       showLike: true,
       onPressed: () {
