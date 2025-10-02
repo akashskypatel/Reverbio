@@ -671,3 +671,7 @@ extension MapMinimize on Map<String, dynamic> {
     return this;
   }
 }
+
+extension StringNullEmptyExtension on String {
+  String? get nullIfEmpty => this.isEmpty ? null : this;
+}
