@@ -240,7 +240,7 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
               color: _theme.colorScheme.primary,
             ),
             const SizedBox(width: 8),
-            Text(context.l10n!.download),
+            Text(context.l10n!.downloaded),
           ],
         ),
       ),
