@@ -27,6 +27,7 @@ import 'dart:typed_data';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:path/path.dart';
@@ -46,6 +47,7 @@ YoutubeExplode yt =
     useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
 DiscogsApiClient dc = DiscogsApiClient(); // px.discogsClient;
 MusicBrainzApiClient mb = MusicBrainzApiClient(); // px.musicbrainzClient;
+final imageCache = PaintingBinding.instance.imageCache;
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
@@ -698,9 +700,16 @@ Future<File?> getImageFileData({String? path}) async {
   return null;
 }
 
-Future<File> getFileFromUint8List(Uint8List data, String fileName) async {
+Future<File> getFileFromUint8List(
+  Uint8List data,
+  String fileName, {
+  String? tempDir,
+}) async {
   // Get the temporary directory for storing the file
-  final directory = await getTemporaryDirectory();
+  final directory =
+      tempDir != null
+          ? Directory(ensureReverbioPath(tempDir))
+          : Directory(ensureReverbioPath((await getTemporaryDirectory()).path));
   final filePath = '${directory.path}${Platform.pathSeparator}$fileName';
 
   // Create a File object
