@@ -22,15 +22,17 @@
 import 'package:flutter/material.dart';
 
 class Spinner extends StatelessWidget {
-  const Spinner({super.key, this.value});
+  const Spinner({super.key, this.value, this.color});
   final double? value;
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     return Center(
       child: CircularProgressIndicator(
         value: value,
         valueColor: AlwaysStoppedAnimation<Color>(
-          Theme.of(context).colorScheme.primary,
+          color ?? Theme.of(context).colorScheme.primary,
         ),
       ),
     );
