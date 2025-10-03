@@ -32,6 +32,7 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
@@ -222,74 +223,36 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                       final future = queueSongInfoRequest(song);
                                       await future.completerFuture?.then((
                                         value,
-                                      ) {
+                                      ) async {
+                                        final fileTagger = FileTagger();
+                                        final newTag = await fileTagger
+                                            .getOfflineFileTag(value);
                                         showToast(
                                           context.l10n!.fetchedMetadata,
                                         );
                                         if (context.mounted)
                                           setState(() {
                                             song.addAll(value);
+                                            pictures.addAll(
+                                              newTag?.pictures ?? [],
+                                            );
+                                            bpmController.text =
+                                                newTag?.bpm?.toString() ?? '';
                                             titleController.text =
-                                                song['mbTitle'] ??
-                                                song['title'] ??
-                                                song['ytTitle'] ??
-                                                tags?.title ??
-                                                '';
+                                                newTag?.title ?? '';
                                             trackArtistController.text =
-                                                combineArtists(song) ??
-                                                tags?.trackArtist ??
-                                                '';
+                                                newTag?.trackArtist ?? '';
                                             yearController.text =
-                                                DateTime.tryParse(
-                                                  song['first-release-date'],
-                                                )?.year.toString() ??
-                                                tags?.year?.toString() ??
-                                                '';
+                                                newTag?.year?.toString() ?? '';
                                             durationController.text =
-                                                int.tryParse(
-                                                  song['duration']
-                                                          ?.toString() ??
-                                                      '',
-                                                )?.toString() ??
-                                                tags?.duration?.toString() ??
+                                                newTag?.duration?.toString() ??
                                                 '';
                                             genreController.text =
-                                                (song['genres'] as List?)
-                                                    ?.map((e) => e['name'])
-                                                    .join(', ') ??
-                                                tags?.genre ??
-                                                '';
-                                            final album = <String, dynamic>{};
-                                            for (final release
-                                                in (song['releases'] ?? [])) {
-                                              if (album.isEmpty &&
-                                                  release['release-group'] !=
-                                                      null &&
-                                                  release['country'] == 'XW') {
-                                                album.addAll(
-                                                  Map<String, dynamic>.from(
-                                                    release['release-group'],
-                                                  ),
-                                                );
-                                                break;
-                                              }
-                                            }
-                                            if (album.isEmpty &&
-                                                song['releases']?['release-group'] !=
-                                                    null)
-                                              album.addAll(
-                                                Map<String, dynamic>.from(
-                                                  song['releases'][0]['release-group'],
-                                                ),
-                                              );
+                                                newTag?.genre ?? '';
                                             albumController.text =
-                                                album['title'] ??
-                                                tags?.album ??
-                                                '';
+                                                newTag?.album ?? '';
                                             albumArtistController.text =
-                                                combineArtists(album) ??
-                                                tags?.album ??
-                                                '';
+                                                newTag?.album ?? '';
                                           });
                                       });
                                     },
