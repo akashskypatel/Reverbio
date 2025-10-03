@@ -685,27 +685,40 @@ List<String>? parseImage(dynamic obj) {
   return images.isNotEmpty ? images.toList() : null;
 }
 
-Future<Uri?> getValidImage(dynamic obj) async {
+Future<Uri?> getValidImage(dynamic obj, {bool cache = true}) async {
   try {
     if (obj == null) return null;
     if (obj['validImage'] != null) {
-      if (isFilePath(obj['validImage']))
+      if (isFilePath(obj['validImage']) &&
+          doesFileExist(obj['validImage']) &&
+          (getMimeTypeFromFile(obj['validImage'])?.contains('image') ?? false))
         return Uri.file(obj['validImage']);
-      else if (await checkUrl(obj['validImage'].toString()) <= 300)
+      else if (await checkUrl(obj['validImage'].toString()) <= 300 &&
+          ((await getMimeTypeFromUrl(
+                obj['validImage'].toString(),
+              ))?.contains('image') ??
+              false))
         return Uri.parse(obj['validImage']);
     }
     final images = parseImage(obj) ?? [];
     if (images.isEmpty) return null;
     for (final path in images) {
-      if (isFilePath(path) && doesFileExist(path)) {
+      if (isFilePath(path) &&
+          doesFileExist(path) &&
+          (getMimeTypeFromFile(path)?.contains('image') ?? false)) {
         obj['validImage'] = path;
-        await cacheEntity(obj);
+        if (cache) await cacheEntity(obj);
         return Uri.file(path);
       } else {
         final imageUrl = Uri.parse(path);
-        if (await checkUrl(imageUrl.toString()) <= 300) {
+        final mimeCheck =
+            (await getMimeTypeFromUrl(
+              imageUrl.toString(),
+            ))?.contains('image') ??
+            false;
+        if (await checkUrl(imageUrl.toString()) <= 300 && mimeCheck) {
           obj['validImage'] = imageUrl.toString();
-          await cacheEntity(obj);
+          if (cache) await cacheEntity(obj);
           return imageUrl;
         }
       }
@@ -957,8 +970,11 @@ String getExtensionFromMime(String? mimeType) {
     'image/webp': 'webp',
     'image/bmp': 'bmp',
     'image/x-icon': 'ico',
+    'audio/mp3': 'mp3',
     'audio/weba': 'webm',
+    'video/weba': 'webm',
     'audio/webm': 'webm',
+    'video/webm': 'webm',
   };
 
   final extension =
@@ -997,4 +1013,46 @@ Locale parseLocale(String languageCode) {
     return Locale.fromSubtags(languageCode: parts[0], scriptCode: parts[1]);
   }
   return Locale(languageCode);
+}
+
+Future<String?> getMimeTypeFromUrl(String url) async {
+  try {
+    // Try HEAD request first (most efficient)
+    final headResponse = await http.head(Uri.parse(url));
+
+    if (headResponse.statusCode == 200) {
+      final contentType = headResponse.headers['content-type'];
+      if (contentType != null && contentType.isNotEmpty) {
+        return _cleanContentType(contentType);
+      }
+    }
+
+    // Fallback to GET request if HEAD fails or has no content-type
+    final getResponse = await http.get(Uri.parse(url));
+    if (getResponse.statusCode == 200) {
+      final contentType = getResponse.headers['content-type'];
+      if (contentType != null && contentType.isNotEmpty) {
+        return _cleanContentType(contentType);
+      }
+    }
+
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+String _cleanContentType(String contentType) {
+  return contentType.split(';').first.trim();
+}
+
+String ensureReverbioPath(String filePath) {
+  final normalized = normalize(filePath);
+  final segments = split(normalized);
+  
+  if (segments.isNotEmpty && segments.last == 'reverbio') {
+    return normalized;
+  }
+  
+  return join(normalized, 'reverbio');
 }
