@@ -675,3 +675,50 @@ extension MapMinimize on Map<String, dynamic> {
 extension StringNullEmptyExtension on String {
   String? get nullIfEmpty => this.isEmpty ? null : this;
 }
+
+extension ImageCopyWith on Image {
+  Image copyWith({
+    Key? key,
+    Widget Function(BuildContext, Widget, int?, bool)? frameBuilder,
+    Widget Function(BuildContext, Widget, ImageChunkEvent?)? loadingBuilder,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    String? semanticLabel,
+    bool? excludeFromSemantics,
+    double? width,
+    double? height,
+    Color? color,
+    Animation<double>? opacity,
+    BlendMode? colorBlendMode,
+    BoxFit? fit,
+    AlignmentGeometry? alignment,
+    ImageRepeat? repeat,
+    Rect? centerSlice,
+    bool? matchTextDirection,
+    bool? gaplessPlayback,
+    bool? isAntiAlias,
+    FilterQuality? filterQuality,
+  }) {
+    return Image(
+      key: key ?? this.key,
+      image: this.image,
+      frameBuilder: frameBuilder ?? this.frameBuilder,
+      loadingBuilder: loadingBuilder ?? this.loadingBuilder,
+      errorBuilder: errorBuilder ?? this.errorBuilder,
+      semanticLabel: semanticLabel ?? this.semanticLabel,
+      excludeFromSemantics: excludeFromSemantics ?? this.excludeFromSemantics,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      color: color ?? this.color,
+      opacity: opacity ?? this.opacity,
+      colorBlendMode: colorBlendMode ?? this.colorBlendMode,
+      fit: fit ?? this.fit,
+      alignment: alignment ?? this.alignment,
+      repeat: repeat ?? this.repeat,
+      centerSlice: centerSlice ?? this.centerSlice,
+      matchTextDirection: matchTextDirection ?? this.matchTextDirection,
+      gaplessPlayback: gaplessPlayback ?? this.gaplessPlayback,
+      isAntiAlias: isAntiAlias ?? this.isAntiAlias,
+      filterQuality: filterQuality ?? this.filterQuality,
+    );
+  }
+}
