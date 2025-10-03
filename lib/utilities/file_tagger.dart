@@ -24,33 +24,187 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:audiotags/audiotags.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class FileTagger {
-  FileTagger({required this.offlineDirectory});
-  final String offlineDirectory;
-  final _extensionRegex = RegExp(r'\.[^\.]+$');
+  FileTagger({this.offlineDirectory});
+  final String? offlineDirectory;
+  static final _extensionRegex = RegExp(r'\.[^\.]+$');
   late final _audioDirPath = '$offlineDirectory${Platform.pathSeparator}tracks';
   late final _artworkDirPath =
       '$offlineDirectory${Platform.pathSeparator}artworks';
-  // Public method to tag files (spawns isolate)
+  
+  // Public method to read offline file tags (spawns isolate)
+  Future<Tag?> getOfflineFileTag(dynamic song) async {
+    final completer = Completer<Tag?>();
+    final receivePort = ReceivePort();
+    String? filePath;
+
+    if (song != null) filePath = await getOfflinePath(song);
+
+    if (filePath != null && filePath.isNotEmpty) {
+      await Isolate.spawn(
+        _getOfflineFileTag,
+        _IsolateTagReaderMessage(
+          sendPort: receivePort.sendPort,
+          path: filePath,
+          song: song,
+        ),
+      );
+
+      receivePort.listen((message) {
+        if (message is Exception || message == null) {
+          completer.completeError(message);
+        } else {
+          final tag = Tag(
+            title: message['title']?.toString(),
+            trackArtist: message['trackArtist']?.toString(),
+            album: message['album']?.toString(),
+            albumArtist: message['albumArtist']?.toString(),
+            year: int.tryParse(message['year']?.toString() ?? ''),
+            genre: message['genre']?.toString(),
+            trackNumber: int.tryParse(message['trackNumber']?.toString() ?? ''),
+            trackTotal: int.tryParse(message['trackTotal']?.toString() ?? ''),
+            discNumber: int.tryParse(message['discNumber']?.toString() ?? ''),
+            discTotal: int.tryParse(message['discTotal']?.toString() ?? ''),
+            lyrics: message['lyrics']?.toString(),
+            duration: int.tryParse(message['duration']?.toString() ?? ''),
+            pictures:
+                ((message['pictures'] ?? []) as List<dynamic>)
+                    .map(
+                      (e) => Picture(
+                        bytes: Uint8List.fromList(e['bytes'] ?? []),
+                        pictureType: PictureType.values.elementAt(
+                          e['pictureType'] ?? 0,
+                        ),
+                      ),
+                    )
+                    .toList(),
+            bpm: double.tryParse(message['bpm']?.toString() ?? ''),
+          );
+          completer.complete(tag);
+        }
+        receivePort.close();
+      });
+    } else {
+      completer.completeError(L10n.current.cannotOpenFile);
+      receivePort.close();
+    }
+
+    return completer.future;
+  }
+
+  static Future<void> _getOfflineFileTag(
+    _IsolateTagReaderMessage message,
+  ) async {
+    Map<String, dynamic>? tagMap;
+    try {
+      final tags = await AudioTags.read(message.path);
+      tagMap = <String, dynamic>{
+        'title': tags?.title,
+        'trackArtist': tags?.trackArtist,
+        'album': tags?.album,
+        'albumArtist': tags?.albumArtist,
+        'year': tags?.year,
+        'genre': tags?.genre,
+        'trackNumber': tags?.trackNumber,
+        'trackTotal': tags?.trackTotal,
+        'discNumber': tags?.discNumber,
+        'discTotal': tags?.discTotal,
+        'lyrics': tags?.lyrics,
+        'duration': tags?.duration,
+        'pictures':
+            tags?.pictures
+                .map(
+                  (e) => {
+                    'bytes': e.bytes.toList(),
+                    'mimeType':
+                        e.mimeType != null
+                            ? MimeType.values.indexOf(e.mimeType!)
+                            : null,
+                    'pictureType': PictureType.values.indexOf(e.pictureType),
+                  },
+                )
+                .toList(),
+        'bpm': tags?.bpm,
+      };
+      message.sendPort.send(tagMap);
+    } catch (_) {
+      final album = <String, dynamic>{};
+      for (final release in (message.song['releases'] ?? [])) {
+        if (album.isEmpty &&
+            release['release-group'] != null &&
+            release['country'] == 'XW') {
+          album.addAll(Map<String, dynamic>.from(release['release-group']));
+          break;
+        }
+      }
+      if (album.isEmpty && message.song['releases']?['release-group'] != null)
+        album.addAll(
+          Map<String, dynamic>.from(
+            message.song['releases'][0]['release-group'],
+          ),
+        );
+      File? picFile;
+      await getValidImage(message.song, cache: false).then((value) async {
+        if (value != null)
+          picFile = await getImageFileData(path: value.toString());
+      });
+      tagMap = <String, dynamic>{
+        'title': message.song['title'],
+        'trackArtist': combineArtists(message.song),
+        'album': album['title'],
+        'albumArtist': combineArtists(album),
+        'year':
+            DateTime.tryParse(
+              message.song['first-release-date']?.toString() ?? '',
+            )?.year,
+        'genre': (message.song['genres'] as List?)
+            ?.map((e) => e['name'])
+            .join(', '),
+        'duration': message.song['duration'],
+        'pictures':
+            picFile != null
+                ? [
+                  {
+                    'bytes': picFile!.readAsBytesSync().toList(),
+                    'pictureType': PictureType.values.indexOf(
+                      PictureType.coverFront,
+                    ),
+                  },
+                ]
+                : [],
+        'bpm': message.song['bpm'],
+      };
+      picFile?.deleteSync();
+      message.sendPort.send(tagMap);
+    }
+  }
+
   Future<void> tagOfflineFile(dynamic song, String id) async {
     final completer = Completer<void>();
     final receivePort = ReceivePort();
-
+    if (offlineDirectory == null) {
+      completer.completeError('Directory not provided');
+      receivePort.close();
+      return;
+    }
     await Isolate.spawn(
       _tagOfflineFileIsolate,
-      _IsolateMessage(
+      _IsolateTagWriterMessage(
         sendPort: receivePort.sendPort,
         song: song,
         id: id,
-        offlineDirectory: offlineDirectory,
+        offlineDirectory: offlineDirectory!,
         tagger: this, // Pass reference for static method access
       ),
     );
@@ -68,7 +222,7 @@ class FileTagger {
   }
 
   // Isolate entry point (static method)
-  static void _tagOfflineFileIsolate(_IsolateMessage message) {
+  static void _tagOfflineFileIsolate(_IsolateTagWriterMessage message) {
     try {
       message.tagger._tagOfflineFileImpl(message.song, message.id);
       message.sendPort.send('success');
@@ -313,7 +467,7 @@ class FileTagger {
   }
 
   // MIME type utilities
-  String? getMimeTypeFromFile(String filePath) {
+  static String? getMimeTypeFromFile(String filePath) {
     try {
       final file = File(filePath);
       final raf = file.openSync();
@@ -335,7 +489,7 @@ class FileTagger {
     }
   }
 
-  String getExtensionFromMime(String? mimeType) {
+  static String getExtensionFromMime(String? mimeType) {
     if (mimeType == null) return 'bin';
 
     final extensions = {
@@ -345,8 +499,11 @@ class FileTagger {
       'image/webp': 'webp',
       'image/bmp': 'bmp',
       'image/x-icon': 'ico',
+      'audio/mp3': 'mp3',
       'audio/weba': 'webm',
+      'video/weba': 'webm',
       'audio/webm': 'webm',
+      'video/webm': 'webm',
     };
 
     final extension =
@@ -358,20 +515,20 @@ class FileTagger {
   }
 
   // Path utilities
-  String _ensureCorrectExtension(String filePath, String extension) {
+  static String _ensureCorrectExtension(String filePath, String extension) {
     final withoutExtension = filePath.replaceAll(_extensionRegex, '');
     return '$withoutExtension$extension';
   }
 
-  String _getFileExtension(String filePath) {
+  static String _getFileExtension(String filePath) {
     final match = _extensionRegex.firstMatch(filePath);
     return match?.group(0) ?? '';
   }
 }
 
 // Message class for isolate communication
-class _IsolateMessage {
-  _IsolateMessage({
+class _IsolateTagWriterMessage {
+  _IsolateTagWriterMessage({
     required this.sendPort,
     required this.song,
     required this.id,
@@ -383,4 +540,15 @@ class _IsolateMessage {
   final String id;
   final String offlineDirectory;
   final FileTagger tagger;
+}
+
+class _IsolateTagReaderMessage {
+  _IsolateTagReaderMessage({
+    required this.sendPort,
+    required this.path,
+    required this.song,
+  });
+  final SendPort sendPort;
+  final String path;
+  final dynamic song;
 }
