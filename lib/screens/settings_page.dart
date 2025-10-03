@@ -553,10 +553,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onCancel: () => GoRouter.of(context).pop(),
               onSubmit: () {
                 if (newDir != offlineDirectory.value) {
-                  offlineDirectory.value =
-                      newDir.endsWith('reverbio')
-                          ? newDir
-                          : '$newDir${Platform.pathSeparator}reverbio';
+                  offlineDirectory.value = ensureReverbioPath(newDir);
                   Directory(offlineDirectory.value).create(recursive: true);
                   showToast(
                     '${context.l10n!.newDir}: "$newDir" ${context.l10n!.settingChangedMsg}',
