@@ -37,9 +37,9 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
@@ -339,7 +339,7 @@ class _SongBarState extends State<SongBar> {
                     padding: commonBarContentPadding,
                     child: Row(
                       children: [
-                        _buildAlbumArt(primaryColor, song),
+                        _buildArtwork(song),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -462,36 +462,45 @@ class _SongBarState extends State<SongBar> {
     AnimatedHeart.show(context: context, details: details, like: !isLiked);
   }
 
-  Widget _buildAlbumArt(Color primaryColor, dynamic song) {
+  Widget _buildArtwork(dynamic song) {
     const size = 45.0;
-    final isDurationAvailable =
-        widget.showMusicDuration && song['duration'] != null;
-    return Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        BaseCard(
-          inputData: song,
-          icon: FluentIcons.music_note_2_24_filled,
-          size: size,
-          paddingValue: 0,
-          loadingWidget: const Spinner(),
-          imageOverlayMask: true,
-        ),
-        if (isDurationAvailable)
-          SizedBox(
-            width: size,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '(${formatDuration(song['duration'])})',
-                style: TextStyle(
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+    final fileTagger = FileTagger();
+    return FutureBuilder(
+      future: fileTagger.getOfflineFileTag(song),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            !snapshot.hasData ||
+            snapshot.data == null ||
+            snapshot.hasError ||
+            snapshot.data!.pictures.isEmpty)
+          return BaseCard(
+            inputData: song,
+            icon: FluentIcons.music_note_2_24_filled,
+            size: size,
+            paddingValue: 0,
+            loadingWidget: SizedBox.square(
+              dimension: 35,
+              child: Spinner(color: _theme.colorScheme.onSecondary),
             ),
-          ),
-      ],
+            duration: song['duration'],
+            showIconLabel: false,
+          );
+        else {
+          return BaseCard(
+            inputData: song,
+            image: Image.memory(snapshot.data!.pictures.first.bytes),
+            icon: FluentIcons.music_note_2_24_filled,
+            size: size,
+            paddingValue: 0,
+            loadingWidget: SizedBox.square(
+              dimension: 35,
+              child: Spinner(color: _theme.colorScheme.onSecondary),
+            ),
+            duration: song['duration'],
+            showIconLabel: false,
+          );
+        }
+      },
     );
   }
 

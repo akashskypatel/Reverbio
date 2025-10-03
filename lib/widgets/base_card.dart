@@ -33,6 +33,7 @@ import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -51,19 +52,21 @@ class BaseCard extends StatefulWidget {
     this.onPressed,
     this.paddingValue = 8,
     this.loadingWidget,
-    this.imageOverlayMask = false,
+    this.duration,
+    //this.imageOverlayMask = false,
     this.showIconLabel = true,
     this.customButton,
   });
   final IconData icon;
   final double? iconSize;
+  final int? duration;
   final double size;
   final String? label;
   final bool showOverflowLabel;
   final bool showLike;
   final bool showIconLabel;
   final Image? image;
-  final bool imageOverlayMask;
+  //final bool imageOverlayMask;
   final Map<dynamic, dynamic>? inputData;
   final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
   final VoidCallback? onPressed;
@@ -181,36 +184,16 @@ class _BaseCardState extends State<BaseCard> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(borderRadius),
                               color: colorScheme.secondary,
+                              backgroundBlendMode:
+                                  (widget.duration != null &&
+                                          widget.duration! > 0)
+                                      ? BlendMode.multiply
+                                      : null,
                             ),
                             child: Stack(
+                              alignment: AlignmentDirectional.center,
                               children: [
-                                if (mounted)
-                                  FutureBuilder(
-                                    initialData:
-                                        widget.loadingWidget != null
-                                            ? SizedBox(
-                                              width: widget.size,
-                                              height: widget.size,
-                                              child: widget.loadingWidget,
-                                            )
-                                            : _buildNoArtworkCard(context),
-                                    future: _buildImage(context),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                              ConnectionState.none ||
-                                          snapshot.hasError ||
-                                          snapshot.data == null) {
-                                        if (widget.loadingWidget != null)
-                                          return SizedBox(
-                                            width: widget.size,
-                                            height: widget.size,
-                                            child: widget.loadingWidget,
-                                          );
-                                        return _buildNoArtworkCard(context);
-                                      }
-                                      return snapshot.data!;
-                                    },
-                                  ),
+                                if (mounted) _buildImage(context),
                                 if (widget.label != null) _buildLabel(),
                                 if (widget.showLike) _buildLiked(),
                                 if (!widget.showLike &&
@@ -237,9 +220,87 @@ class _BaseCardState extends State<BaseCard> {
     return null;
   }
 
-  Future<Widget> _buildImage(BuildContext context) async {
+  Widget _buildImage(BuildContext context) {
+    return FutureBuilder(
+      initialData: Stack(
+        alignment: AlignmentDirectional.center,
+        children: <Widget>[
+          if (widget.loadingWidget == null)
+            SizedBox.square(
+              dimension: widget.size * .50,
+              child: const Spinner(),
+            )
+          else
+            SizedBox.square(
+              dimension: widget.size * .50,
+              child: widget.loadingWidget,
+            ),
+          if (widget.duration != null && widget.duration! > 0)
+            SizedBox(
+              width: 45,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '(${formatDuration(widget.duration!)})',
+                  style: TextStyle(
+                    color: _theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      future: _getImage(context),
+      builder: (context, snapshot) {
+        Widget? _widget;
+        if (snapshot.connectionState == ConnectionState.none ||
+            snapshot.hasError ||
+            snapshot.data == null) {
+          _widget = _buildNoArtworkCard(context);
+        }
+        _widget = snapshot.data;
+        return Stack(
+          alignment: AlignmentDirectional.center,
+          children: <Widget>[
+            _widget!,
+            if (widget.duration != null && widget.duration! > 0)
+              SizedBox(
+                width: 45,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '(${formatDuration(widget.duration!)})',
+                    style: TextStyle(
+                      color: _theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<Widget> _getImage(BuildContext context) async {
     try {
-      if (widget.image != null) return widget.image!;
+      if (widget.image != null)
+        return widget.image!.copyWith(
+          color:
+              (widget.duration != null && widget.duration! > 0)
+                  ? _theme.colorScheme.primaryContainer
+                  : null,
+          colorBlendMode:
+              (widget.duration != null && widget.duration! > 0)
+                  ? BlendMode.multiply
+                  : null,
+          opacity:
+              (widget.duration != null && widget.duration! > 0)
+                  ? const AlwaysStoppedAnimation(0.45)
+                  : null,
+        );
       final image = await getValidImage(widget.inputData);
       if (image == null) return _buildNoArtworkCard(context);
       if (image.isFileUri && doesFileExist(image.toString())) {
@@ -268,12 +329,15 @@ class _BaseCardState extends State<BaseCard> {
           fit: BoxFit.cover,
           errorBuilder: (context, __, ___) => _buildNoArtworkCard(context),
           color:
-              widget.imageOverlayMask
+              (widget.duration != null && widget.duration! > 0)
                   ? _theme.colorScheme.primaryContainer
                   : null,
-          colorBlendMode: widget.imageOverlayMask ? BlendMode.multiply : null,
+          colorBlendMode:
+              (widget.duration != null && widget.duration! > 0)
+                  ? BlendMode.multiply
+                  : null,
           opacity:
-              widget.imageOverlayMask
+              (widget.duration != null && widget.duration! > 0)
                   ? const AlwaysStoppedAnimation(0.45)
                   : null,
         ),
@@ -291,27 +355,35 @@ class _BaseCardState extends State<BaseCard> {
       placeholder: (context, url) => const Spinner(),
       errorWidget: (context, url, error) => _buildNoArtworkCard(context),
       color:
-          widget.imageOverlayMask ? _theme.colorScheme.primaryContainer : null,
-      colorBlendMode: widget.imageOverlayMask ? BlendMode.multiply : null,
+          (widget.duration != null && widget.duration! > 0)
+              ? _theme.colorScheme.primaryContainer
+              : null,
+      colorBlendMode:
+          (widget.duration != null && widget.duration! > 0)
+              ? BlendMode.multiply
+              : null,
     );
   }
 
   Widget _buildNoArtworkCard(BuildContext context) {
-    if (widget.image != null) return widget.image!;
+    if (widget.image != null)
+      return widget.image!.copyWith(
+        color:
+            (widget.duration != null && widget.duration! > 0)
+                ? _theme.colorScheme.primaryContainer
+                : null,
+        colorBlendMode:
+            (widget.duration != null && widget.duration! > 0)
+                ? BlendMode.multiply
+                : null,
+        opacity:
+            (widget.duration != null && widget.duration! > 0)
+                ? const AlwaysStoppedAnimation(0.45)
+                : null,
+      );
     return Stack(
+      alignment: Alignment.center,
       children: [
-        if (widget.imageOverlayMask)
-          SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: ClipRRect(
-              child: Container(
-                color: Colors.black.withValues(
-                  alpha: 0.8,
-                ), // Translucent overlay
-              ),
-            ),
-          ),
         Align(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
