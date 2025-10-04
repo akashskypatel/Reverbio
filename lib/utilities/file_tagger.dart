@@ -42,14 +42,13 @@ class FileTagger {
   late final _audioDirPath = '$offlineDirectory${Platform.pathSeparator}tracks';
   late final _artworkDirPath =
       '$offlineDirectory${Platform.pathSeparator}artworks';
-  
+
   // Public method to read offline file tags (spawns isolate)
-  Future<Tag?> getOfflineFileTag(dynamic song) async {
+  Future<Tag?> getTagFromOfflineFile(dynamic song, {String? filePath}) async {
     final completer = Completer<Tag?>();
     final receivePort = ReceivePort();
-    String? filePath;
 
-    if (song != null) filePath = await getOfflinePath(song);
+    if (song != null && song.isNotEmpty) filePath = await getOfflinePath(song);
 
     if (filePath != null && filePath.isNotEmpty) {
       await Isolate.spawn(
@@ -62,7 +61,7 @@ class FileTagger {
       );
 
       receivePort.listen((message) {
-        if (message is Exception || message == null) {
+        if (message is Exception) {
           completer.completeError(message);
         } else {
           final tag = Tag(
@@ -79,8 +78,8 @@ class FileTagger {
             lyrics: message['lyrics']?.toString(),
             duration: int.tryParse(message['duration']?.toString() ?? ''),
             pictures:
-                ((message['pictures'] ?? []) as List<dynamic>)
-                    .map(
+                (message['pictures'] as List?)
+                    ?.map(
                       (e) => Picture(
                         bytes: Uint8List.fromList(e['bytes'] ?? []),
                         pictureType: PictureType.values.elementAt(
@@ -88,7 +87,8 @@ class FileTagger {
                         ),
                       ),
                     )
-                    .toList(),
+                    .toList() ??
+                <Picture>[],
             bpm: double.tryParse(message['bpm']?.toString() ?? ''),
           );
           completer.complete(tag);
@@ -138,56 +138,67 @@ class FileTagger {
         'bpm': tags?.bpm,
       };
       message.sendPort.send(tagMap);
+      return;
     } catch (_) {
-      final album = <String, dynamic>{};
-      for (final release in (message.song['releases'] ?? [])) {
-        if (album.isEmpty &&
-            release['release-group'] != null &&
-            release['country'] == 'XW') {
-          album.addAll(Map<String, dynamic>.from(release['release-group']));
-          break;
-        }
-      }
-      if (album.isEmpty && message.song['releases']?['release-group'] != null)
-        album.addAll(
-          Map<String, dynamic>.from(
-            message.song['releases'][0]['release-group'],
-          ),
-        );
-      File? picFile;
-      await getValidImage(message.song, cache: false).then((value) async {
-        if (value != null)
-          picFile = await getImageFileData(path: value.toString());
-      });
-      tagMap = <String, dynamic>{
-        'title': message.song['title'],
-        'trackArtist': combineArtists(message.song),
-        'album': album['title'],
-        'albumArtist': combineArtists(album),
-        'year':
-            DateTime.tryParse(
-              message.song['first-release-date']?.toString() ?? '',
-            )?.year,
-        'genre': (message.song['genres'] as List?)
-            ?.map((e) => e['name'])
-            .join(', '),
-        'duration': message.song['duration'],
-        'pictures':
-            picFile != null
-                ? [
-                  {
-                    'bytes': picFile!.readAsBytesSync().toList(),
-                    'pictureType': PictureType.values.indexOf(
-                      PictureType.coverFront,
-                    ),
-                  },
-                ]
-                : [],
-        'bpm': message.song['bpm'],
-      };
-      picFile?.deleteSync();
-      message.sendPort.send(tagMap);
+      message.sendPort.send(null);
+      return;
     }
+  }
+
+  Future<Tag?> getTagFromMetadata(dynamic song) async {
+    try {
+      if (song != null && song.isNotEmpty) {
+        final album = <String, dynamic>{};
+        for (final release in (song['releases'] ?? [])) {
+          if (album.isEmpty &&
+              release['release-group'] != null &&
+              release['country'] == 'XW') {
+            album.addAll(Map<String, dynamic>.from(release['release-group']));
+            break;
+          }
+        }
+        if (album.isEmpty && song['releases']?['release-group'] != null)
+          album.addAll(
+            Map<String, dynamic>.from(song['releases'][0]['release-group']),
+          );
+        File? picFile;
+        await getValidImage(song, cache: false).then((value) async {
+          if (value != null)
+            picFile = await getImageFileData(path: value.toString());
+        });
+        final tag = Tag(
+          title: song['title'],
+          trackArtist: combineArtists(song),
+          album: album['title'],
+          albumArtist: combineArtists(album),
+          year:
+              DateTime.tryParse(
+                song['first-release-date']?.toString() ?? '',
+              )?.year,
+          genre: (song['genres'] as List?)?.map((e) => e['name']).join(', '),
+          duration: song['duration'],
+          pictures:
+              picFile != null
+                  ? [
+                    Picture(
+                      bytes: picFile!.readAsBytesSync(),
+                      pictureType: PictureType.coverFront,
+                    ),
+                  ]
+                  : [],
+          bpm: song['bpm'],
+        );
+        picFile?.deleteSync();
+        return tag;
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}',
+        e,
+        stackTrace,
+      );
+    }
+    return null;
   }
 
   Future<void> tagOfflineFile(dynamic song, String id) async {

@@ -45,10 +45,11 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
   if (offlinePath == null || !doesFileExist(offlinePath)) {
     return showToast(context: context, context.l10n!.cannotOpenFile);
   }
+  final fileTagger = FileTagger();
   Tag? tags;
   final pictures = <Picture>[];
   try {
-    tags = await AudioTags.read(offlinePath);
+    tags = await fileTagger.getTagFromOfflineFile(song);
     pictures.addAll(
       tags?.pictures.map(
             (e) => Picture(bytes: e.bytes, pictureType: e.pictureType),
@@ -224,35 +225,51 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                       await future.completerFuture?.then((
                                         value,
                                       ) async {
-                                        final fileTagger = FileTagger();
-                                        final newTag = await fileTagger
-                                            .getOfflineFileTag(value);
+                                        final fileTag = await fileTagger
+                                            .getTagFromOfflineFile(value);
                                         showToast(
                                           context.l10n!.fetchedMetadata,
                                         );
+                                        final metaTag = await fileTagger
+                                            .getTagFromMetadata(song);
                                         if (context.mounted)
                                           setState(() {
                                             song.addAll(value);
-                                            pictures.addAll(
-                                              newTag?.pictures ?? [],
-                                            );
+                                            pictures
+                                              ..addAll(fileTag?.pictures ?? [])
+                                              ..addAll(metaTag?.pictures ?? []);
                                             bpmController.text =
-                                                newTag?.bpm?.toString() ?? '';
+                                                fileTag?.bpm?.toString() ??
+                                                metaTag?.bpm?.toString() ??
+                                                '';
                                             titleController.text =
-                                                newTag?.title ?? '';
+                                                fileTag?.title ??
+                                                metaTag?.title ??
+                                                '';
                                             trackArtistController.text =
-                                                newTag?.trackArtist ?? '';
+                                                fileTag?.trackArtist ??
+                                                metaTag?.trackArtist ??
+                                                '';
                                             yearController.text =
-                                                newTag?.year?.toString() ?? '';
+                                                fileTag?.year?.toString() ??
+                                                metaTag?.year?.toString() ??
+                                                '';
                                             durationController.text =
-                                                newTag?.duration?.toString() ??
+                                                fileTag?.duration?.toString() ??
+                                                metaTag?.duration?.toString() ??
                                                 '';
                                             genreController.text =
-                                                newTag?.genre ?? '';
+                                                fileTag?.genre ??
+                                                metaTag?.genre ??
+                                                '';
                                             albumController.text =
-                                                newTag?.album ?? '';
+                                                fileTag?.album ??
+                                                metaTag?.album ??
+                                                '';
                                             albumArtistController.text =
-                                                newTag?.album ?? '';
+                                                fileTag?.album ??
+                                                metaTag?.album ??
+                                                '';
                                           });
                                       });
                                     },

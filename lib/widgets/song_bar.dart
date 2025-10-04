@@ -466,7 +466,7 @@ class _SongBarState extends State<SongBar> {
     const size = 45.0;
     final fileTagger = FileTagger();
     return FutureBuilder(
-      future: fileTagger.getOfflineFileTag(song),
+      future: fileTagger.getTagFromOfflineFile(song),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting ||
             !snapshot.hasData ||
