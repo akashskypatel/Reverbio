@@ -48,55 +48,65 @@ class FileTagger {
     final completer = Completer<Tag?>();
     final receivePort = ReceivePort();
 
-    if (song != null && song.isNotEmpty) filePath = await getOfflinePath(song);
+    try {
+      if (song != null && song.isNotEmpty)
+        filePath = await getOfflinePath(song);
 
-    if (filePath != null && filePath.isNotEmpty) {
-      await Isolate.spawn(
-        _getOfflineFileTag,
-        _IsolateTagReaderMessage(
-          sendPort: receivePort.sendPort,
-          path: filePath,
-          song: song,
-        ),
-      );
+      if (filePath != null && filePath.isNotEmpty) {
+        await Isolate.spawn(
+          _getOfflineFileTag,
+          _IsolateTagReaderMessage(
+            sendPort: receivePort.sendPort,
+            path: filePath,
+            song: song,
+          ),
+        );
 
-      receivePort.listen((message) {
-        if (message is Exception) {
-          completer.completeError(message);
-        } else {
-          final tag = Tag(
-            title: message['title']?.toString(),
-            trackArtist: message['trackArtist']?.toString(),
-            album: message['album']?.toString(),
-            albumArtist: message['albumArtist']?.toString(),
-            year: int.tryParse(message['year']?.toString() ?? ''),
-            genre: message['genre']?.toString(),
-            trackNumber: int.tryParse(message['trackNumber']?.toString() ?? ''),
-            trackTotal: int.tryParse(message['trackTotal']?.toString() ?? ''),
-            discNumber: int.tryParse(message['discNumber']?.toString() ?? ''),
-            discTotal: int.tryParse(message['discTotal']?.toString() ?? ''),
-            lyrics: message['lyrics']?.toString(),
-            duration: int.tryParse(message['duration']?.toString() ?? ''),
-            pictures:
-                (message['pictures'] as List?)
-                    ?.map(
-                      (e) => Picture(
-                        bytes: Uint8List.fromList(e['bytes'] ?? []),
-                        pictureType: PictureType.values.elementAt(
-                          e['pictureType'] ?? 0,
+        receivePort.listen((message) {
+          if (message is Exception) {
+            completer.completeError(message);
+          } else if (message != null) {
+            final tag = Tag(
+              title: message['title']?.toString(),
+              trackArtist: message['trackArtist']?.toString(),
+              album: message['album']?.toString(),
+              albumArtist: message['albumArtist']?.toString(),
+              year: int.tryParse(message['year']?.toString() ?? ''),
+              genre: message['genre']?.toString(),
+              trackNumber: int.tryParse(
+                message['trackNumber']?.toString() ?? '',
+              ),
+              trackTotal: int.tryParse(message['trackTotal']?.toString() ?? ''),
+              discNumber: int.tryParse(message['discNumber']?.toString() ?? ''),
+              discTotal: int.tryParse(message['discTotal']?.toString() ?? ''),
+              lyrics: message['lyrics']?.toString(),
+              duration: int.tryParse(message['duration']?.toString() ?? ''),
+              pictures:
+                  (message['pictures'] as List?)
+                      ?.map(
+                        (e) => Picture(
+                          bytes: Uint8List.fromList(e['bytes'] ?? []),
+                          pictureType: PictureType.values.elementAt(
+                            e['pictureType'] ?? 0,
+                          ),
                         ),
-                      ),
-                    )
-                    .toList() ??
-                <Picture>[],
-            bpm: double.tryParse(message['bpm']?.toString() ?? ''),
-          );
-          completer.complete(tag);
-        }
+                      )
+                      .toList() ??
+                  <Picture>[],
+              bpm: double.tryParse(message['bpm']?.toString() ?? ''),
+            );
+            completer.complete(tag);
+          } else {
+            completer.complete(null);
+          }
+          receivePort.close();
+        });
+      } else {
+        completer.completeError(L10n.current.cannotOpenFile);
         receivePort.close();
-      });
-    } else {
-      completer.completeError(L10n.current.cannotOpenFile);
+      }
+    } catch (e, stackTrace) {
+      completer.completeError(e, stackTrace);
       receivePort.close();
     }
 
@@ -147,7 +157,9 @@ class FileTagger {
 
   Future<Tag?> getTagFromMetadata(dynamic song) async {
     try {
-      if (song != null && song.isNotEmpty) {
+      if (!isMusicbrainzSongValid(song))
+        song = await queueSongInfoRequest(song).completerFuture;
+      if (song != null && song.isNotEmpty && isSongValid(song)) {
         final album = <String, dynamic>{};
         for (final release in (song['releases'] ?? [])) {
           if (album.isEmpty &&
@@ -157,7 +169,7 @@ class FileTagger {
             break;
           }
         }
-        if (album.isEmpty && song['releases']?['release-group'] != null)
+        if (album.isEmpty && song['releases']?[0]['release-group'] != null)
           album.addAll(
             Map<String, dynamic>.from(song['releases'][0]['release-group']),
           );
@@ -199,6 +211,31 @@ class FileTagger {
       );
     }
     return null;
+  }
+
+  Future<Tag> getTagFromFileOrMetadata(dynamic song) async {
+    final fileTag = await getTagFromOfflineFile(song);
+    final metaTag = await getTagFromMetadata(song);
+    final pictures =
+        <Picture>[]
+          ..addAll(fileTag?.pictures ?? [])
+          ..addAll(metaTag?.pictures ?? []);
+    return Tag(
+      title: fileTag?.title ?? metaTag?.title,
+      trackArtist: fileTag?.trackArtist ?? metaTag?.trackArtist,
+      album: fileTag?.album ?? metaTag?.album,
+      albumArtist: fileTag?.albumArtist ?? metaTag?.albumArtist,
+      year: fileTag?.year ?? metaTag?.year,
+      genre: fileTag?.genre ?? metaTag?.genre,
+      trackNumber: fileTag?.trackNumber ?? metaTag?.trackNumber,
+      trackTotal: fileTag?.trackTotal ?? metaTag?.trackTotal,
+      discNumber: fileTag?.discNumber ?? metaTag?.discNumber,
+      discTotal: fileTag?.discTotal ?? metaTag?.discTotal,
+      lyrics: fileTag?.lyrics ?? metaTag?.lyrics,
+      duration: fileTag?.duration ?? metaTag?.duration,
+      pictures: pictures,
+      bpm: fileTag?.bpm ?? metaTag?.bpm,
+    );
   }
 
   Future<void> tagOfflineFile(dynamic song, String id) async {

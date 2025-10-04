@@ -225,8 +225,6 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                       await future.completerFuture?.then((
                                         value,
                                       ) async {
-                                        final fileTag = await fileTagger
-                                            .getTagFromOfflineFile(value);
                                         showToast(
                                           context.l10n!.fetchedMetadata,
                                         );
@@ -235,41 +233,26 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                         if (context.mounted)
                                           setState(() {
                                             song.addAll(value);
-                                            pictures
-                                              ..addAll(fileTag?.pictures ?? [])
-                                              ..addAll(metaTag?.pictures ?? []);
+                                            pictures.addAll(
+                                              metaTag?.pictures ?? [],
+                                            );
                                             bpmController.text =
-                                                fileTag?.bpm?.toString() ??
-                                                metaTag?.bpm?.toString() ??
-                                                '';
+                                                metaTag?.bpm?.toString() ?? '';
                                             titleController.text =
-                                                fileTag?.title ??
-                                                metaTag?.title ??
-                                                '';
+                                                metaTag?.title ?? '';
                                             trackArtistController.text =
-                                                fileTag?.trackArtist ??
-                                                metaTag?.trackArtist ??
-                                                '';
+                                                metaTag?.trackArtist ?? '';
                                             yearController.text =
-                                                fileTag?.year?.toString() ??
-                                                metaTag?.year?.toString() ??
-                                                '';
+                                                metaTag?.year?.toString() ?? '';
                                             durationController.text =
-                                                fileTag?.duration?.toString() ??
                                                 metaTag?.duration?.toString() ??
                                                 '';
                                             genreController.text =
-                                                fileTag?.genre ??
-                                                metaTag?.genre ??
-                                                '';
+                                                metaTag?.genre ?? '';
                                             albumController.text =
-                                                fileTag?.album ??
-                                                metaTag?.album ??
-                                                '';
+                                                metaTag?.album ?? '';
                                             albumArtistController.text =
-                                                fileTag?.album ??
-                                                metaTag?.album ??
-                                                '';
+                                                metaTag?.album ?? '';
                                           });
                                       });
                                     },

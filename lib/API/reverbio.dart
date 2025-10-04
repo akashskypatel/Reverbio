@@ -710,10 +710,13 @@ Future<File> getFileFromUint8List(
       tempDir != null
           ? Directory(ensureReverbioPath(tempDir))
           : Directory(ensureReverbioPath((await getTemporaryDirectory()).path));
+  
+  await directory.create(recursive: true);
+
   final filePath = '${directory.path}${Platform.pathSeparator}$fileName';
 
   // Create a File object
-  final file = File(filePath);
+  final file = File(filePath)..createSync();
 
   // Write the Uint8List data to the file
   await file.writeAsBytes(data);
