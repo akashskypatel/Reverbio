@@ -194,8 +194,14 @@ class _BaseCardState extends State<BaseCard> {
                               alignment: AlignmentDirectional.center,
                               children: [
                                 if (mounted) _buildImage(context),
-                                if (widget.label != null) _buildLabel(),
-                                if (widget.showLike) _buildLiked(),
+                                if (widget.label != null)
+                                  Align(
+                                    alignment: AlignmentGeometry.topLeft,
+                                    child: _buildLabel(),
+                                  ),
+                                if (widget.showLike &&
+                                    widget.customButton == null)
+                                  _buildLiked(),
                                 if (!widget.showLike &&
                                     widget.customButton != null)
                                   _buildCustomButton(),
