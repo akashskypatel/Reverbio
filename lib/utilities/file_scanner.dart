@@ -30,6 +30,7 @@ import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class FileScanner {
@@ -92,11 +93,12 @@ class FileScanner {
           final title = tag?.title ?? basenameWithoutExtension(file.path);
           final artist = tag?.trackArtist ?? tag?.albumArtist;
           if (artist != null && title.isNotEmpty) {
-            final song = {
+            final song = <String, dynamic>{
               'title': title,
               'artist': artist,
               'devicePath': file.path,
             };
+            if (tag != null) song['audioTags'] = tagToMap(tag);
             userDeviceSongs.addOrUpdateWhere(checkSong, song);
           }
         } catch (_) {}
