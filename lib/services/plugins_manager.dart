@@ -675,18 +675,19 @@ class PluginsManager {
   ) {
     final widgetList = <Widget>[];
     try {
-      for (final plugin in _plugins) {
-        final result = getWidgets(plugin['name']);
-        if (result.isNotEmpty) {
-          final widgets =
-              result.where((value) => value['type'] == type).toList();
-          for (final widget in widgets) {
-            widgetList.add(
-              WF.getWidget(plugin['name'], widget, context, getDataFn),
-            );
+      if (enablePlugins.value)
+        for (final plugin in _plugins) {
+          final result = getWidgets(plugin['name']);
+          if (result.isNotEmpty) {
+            final widgets =
+                result.where((value) => value['type'] == type).toList();
+            for (final widget in widgets) {
+              widgetList.add(
+                WF.getWidget(plugin['name'], widget, context, getDataFn),
+              );
+            }
           }
         }
-      }
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
