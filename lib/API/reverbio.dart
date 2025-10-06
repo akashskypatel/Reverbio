@@ -23,15 +23,12 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -47,7 +44,6 @@ YoutubeExplode yt =
     useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
 DiscogsApiClient dc = DiscogsApiClient(); // px.discogsClient;
 MusicBrainzApiClient mb = MusicBrainzApiClient(); // px.musicbrainzClient;
-final imageCache = PaintingBinding.instance.imageCache;
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
@@ -685,56 +681,6 @@ Future<String?> pickImageFile({bool copyToAppDir = true}) async {
     return copy.path;
   } else {
     return file.path;
-  }
-}
-
-Future<File?> getImageFileData({String? path}) async {
-  final filePath = path ?? await pickImageFile(copyToAppDir: false);
-  if (filePath == null) return null;
-  if (isFilePath(filePath) && doesFileExist(filePath)) return File(filePath);
-  if (isUrl(filePath) && (await checkUrl(filePath)) < 400) {
-    final data = await getImageBytesFromUrl(filePath);
-    if (data == null) return null;
-    return getFileFromUint8List(data, Uri.parse(filePath).pathSegments.last);
-  }
-  return null;
-}
-
-Future<File> getFileFromUint8List(
-  Uint8List data,
-  String fileName, {
-  String? tempDir,
-}) async {
-  // Get the temporary directory for storing the file
-  final directory =
-      tempDir != null
-          ? Directory(ensureReverbioPath(tempDir))
-          : Directory(ensureReverbioPath((await getTemporaryDirectory()).path));
-  
-  await directory.create(recursive: true);
-
-  final filePath = '${directory.path}${Platform.pathSeparator}$fileName';
-
-  // Create a File object
-  final file = File(filePath)..createSync();
-
-  // Write the Uint8List data to the file
-  await file.writeAsBytes(data);
-
-  return file;
-}
-
-Future<Uint8List?> getImageBytesFromUrl(String imageUrl) async {
-  try {
-    final response = await http.get(Uri.parse(imageUrl));
-
-    if (response.statusCode == 200) {
-      return response.bodyBytes;
-    } else {
-      return null;
-    }
-  } catch (e) {
-    return null;
   }
 }
 

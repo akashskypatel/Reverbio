@@ -49,6 +49,8 @@ class SongArtworkWidget extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: Image.file(
+              cacheHeight: (size * 1.1).toInt(),
+              cacheWidth: (size * 1.1).toInt(),
               File(mediaItem.extras?['artWorkPath']),
               fit: BoxFit.cover,
             ),
@@ -57,6 +59,8 @@ class SongArtworkWidget extends StatelessWidget {
         : CachedNetworkImage(
           width: size,
           height: size,
+          memCacheHeight: (size * 1.1).toInt(),
+          memCacheWidth: (size * 1.1).toInt(),
           imageUrl: mediaItem.artUri.toString(),
           imageBuilder:
               (context, imageProvider) => ClipRRect(

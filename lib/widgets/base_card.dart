@@ -294,6 +294,8 @@ class _BaseCardState extends State<BaseCard> {
     try {
       if (widget.image != null)
         return widget.image!.copyWith(
+          errorBuilder:
+              (context, error, stackTrace) => _buildNoArtworkCard(context),
           color:
               (widget.duration != null && widget.duration! > 0)
                   ? _theme.colorScheme.primaryContainer
@@ -331,6 +333,8 @@ class _BaseCardState extends State<BaseCard> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: Image.file(
+          cacheHeight: (widget.size * 1.1).toInt(),
+          cacheWidth: (widget.size * 1.1).toInt(),
           File(path),
           fit: BoxFit.cover,
           errorBuilder: (context, __, ___) => _buildNoArtworkCard(context),
@@ -357,6 +361,8 @@ class _BaseCardState extends State<BaseCard> {
       imageUrl: imageUrl.toString(),
       height: widget.size,
       width: widget.size,
+      memCacheHeight: (widget.size * 1.1).toInt(),
+      memCacheWidth: (widget.size * 1.1).toInt(),
       fit: BoxFit.cover,
       placeholder: (context, url) => const Spinner(),
       errorWidget: (context, url, error) => _buildNoArtworkCard(context),
@@ -374,6 +380,8 @@ class _BaseCardState extends State<BaseCard> {
   Widget _buildNoArtworkCard(BuildContext context) {
     if (widget.image != null)
       return widget.image!.copyWith(
+        errorBuilder:
+            (context, error, stackTrace) => _buildNoArtworkCard(context),
         color:
             (widget.duration != null && widget.duration! > 0)
                 ? _theme.colorScheme.primaryContainer

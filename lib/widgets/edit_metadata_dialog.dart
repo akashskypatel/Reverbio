@@ -27,7 +27,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
-import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -38,6 +37,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/section_header.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
   final theme = Theme.of(context);
@@ -82,7 +82,7 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
     text: tags?.duration?.toString(),
   );
   final bpmController = TextEditingController(text: tags?.bpm?.toString());
-
+  bool metaLoading = false;
   bool showTitleError = false;
   bool showArtistError = false;
   return showDialog(
@@ -183,6 +183,10 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                 actions: [
                                   ElevatedButton(
                                     onPressed: () async {
+                                      if (context.mounted)
+                                        setState(() {
+                                          metaLoading = true;
+                                        });
                                       final title =
                                           song['mbTitle'] ??
                                           song['title'] ??
@@ -222,50 +226,59 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                           song['ytArtist'] ??
                                           tags?.trackArtist;
                                       final future = queueSongInfoRequest(song);
-                                      await future.completerFuture?.then((
-                                        value,
-                                      ) async {
-                                        showToast(
-                                          context.l10n!.fetchedMetadata,
-                                        );
-                                        final metaTag = await fileTagger
-                                            .getTagFromMetadata(song);
-                                        if (context.mounted)
-                                          setState(() {
-                                            song.addAll(value);
-                                            pictures.addAll(
-                                              metaTag?.pictures ?? [],
-                                            );
-                                            bpmController.text =
-                                                metaTag?.bpm?.toString() ?? '';
-                                            titleController.text =
-                                                metaTag?.title ?? '';
-                                            trackArtistController.text =
-                                                metaTag?.trackArtist ?? '';
-                                            yearController.text =
-                                                metaTag?.year?.toString() ?? '';
-                                            durationController.text =
-                                                metaTag?.duration?.toString() ??
-                                                '';
-                                            genreController.text =
-                                                metaTag?.genre ?? '';
-                                            albumController.text =
-                                                metaTag?.album ?? '';
-                                            albumArtistController.text =
-                                                metaTag?.album ?? '';
-                                          });
-                                      });
+                                      final value =
+                                          await future.completerFuture;
+                                      final metaTag =
+                                          await FileTagger.getTagFromMetadata(
+                                            value,
+                                          );
+                                      if (context.mounted)
+                                        setState(() {
+                                          song.addAll(value);
+                                          pictures.addAll(
+                                            metaTag?.pictures ?? [],
+                                          );
+                                          bpmController.text =
+                                              metaTag?.bpm?.toString() ?? '';
+                                          titleController.text =
+                                              metaTag?.title ?? '';
+                                          trackArtistController.text =
+                                              metaTag?.trackArtist ?? '';
+                                          yearController.text =
+                                              metaTag?.year?.toString() ?? '';
+                                          durationController.text =
+                                              metaTag?.duration?.toString() ??
+                                              '';
+                                          genreController.text =
+                                              metaTag?.genre ?? '';
+                                          albumController.text =
+                                              metaTag?.album ?? '';
+                                          albumArtistController.text =
+                                              metaTag?.album ?? '';
+                                          metaLoading = false;
+                                          showToast(
+                                            context.l10n!.fetchedMetadata,
+                                          );
+                                        });
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor:
                                           theme.colorScheme.surfaceContainer,
                                     ),
                                     child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       spacing: 10,
                                       children: [
-                                        const Icon(
-                                          FluentIcons.database_search_24_filled,
-                                        ),
+                                        if (metaLoading)
+                                          const SizedBox.square(
+                                            dimension: 18,
+                                            child: Spinner(),
+                                          )
+                                        else
+                                          const Icon(
+                                            FluentIcons
+                                                .database_search_24_filled,
+                                          ),
                                         Text(context.l10n!.getMetadata),
                                       ],
                                     ),
@@ -511,6 +524,8 @@ Widget _imageInput(
               width: dimension,
               height: dimension,
               initialValue[index].bytes,
+              cacheHeight: (dimension * 1.1).toInt(),
+              cacheWidth: (dimension * 1.1).toInt(),
             ),
             customButton: IconButton(
               iconSize: 35,
@@ -695,30 +710,38 @@ Future<Picture?> showImagePickerDialog(
                         child: TextFormField(
                           focusNode: imagePathFocus,
                           onTapOutside: (_) async {
-                            final imageFile = await getImageFileData(
+                            final imageFile = await getImageProvider(
                               path: imagePathController.text,
                             );
-                            if (imageFile != null && context.mounted)
-                              setState(() {
-                                final imageData = imageFile.readAsBytesSync();
-                                picture = Picture(
-                                  pictureType: picTypeValue,
-                                  bytes: imageData,
-                                );
-                              });
+                            if (imageFile != null && context.mounted) {
+                              final imageData = await getCachedImageBytes(
+                                imageFile,
+                              );
+                              if (imageData != null)
+                                setState(() {
+                                  picture = Picture(
+                                    pictureType: picTypeValue,
+                                    bytes: imageData,
+                                  );
+                                });
+                            }
                           },
                           onFieldSubmitted: (newValue) async {
-                            final imageFile = await getImageFileData(
+                            final imageFile = await getImageProvider(
                               path: newValue,
                             );
-                            if (imageFile != null && context.mounted)
-                              setState(() {
-                                final imageData = imageFile.readAsBytesSync();
-                                picture = Picture(
-                                  pictureType: picTypeValue,
-                                  bytes: imageData,
-                                );
-                              });
+                            if (imageFile != null && context.mounted) {
+                              final imageData = await getCachedImageBytes(
+                                imageFile,
+                              );
+                              if (imageData != null)
+                                setState(() {
+                                  picture = Picture(
+                                    pictureType: picTypeValue,
+                                    bytes: imageData,
+                                  );
+                                });
+                            }
                           },
                           controller: imagePathController,
                           decoration: InputDecoration(
@@ -730,7 +753,7 @@ Future<Picture?> showImagePickerDialog(
                       if (localMode)
                         IconButton(
                           onPressed: () async {
-                            final imageFile = await getImageFileData();
+                            final imageFile = await getImageFile();
                             if (imageFile != null && context.mounted)
                               setState(() {
                                 final imageData = imageFile.readAsBytesSync();

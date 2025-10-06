@@ -24,7 +24,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:audiotags/audiotags.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
@@ -33,15 +32,27 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class FileTagger {
-  FileTagger({this.offlineDirectory});
-  final String? offlineDirectory;
+  FileTagger();
   static final _extensionRegex = RegExp(r'\.[^\.]+$');
-  late final _audioDirPath = '$offlineDirectory${Platform.pathSeparator}tracks';
-  late final _artworkDirPath =
-      '$offlineDirectory${Platform.pathSeparator}artworks';
+  static final supportedFormats = {
+    'AAC': ['aac'],
+    'Ape': ['ape'],
+    'AIFF': ['aiff', 'aif'],
+    'FLAC': ['flac'],
+    'MP3': ['mp3'],
+    'MP4': ['mp4', 'm4a', 'm4b'],
+    'MPC': ['mpc', 'mp+'],
+    'Opus': ['opus'],
+    'Ogg': ['ogg', 'oga'],
+    'Speex': ['spx'],
+    'WAV': ['wav'],
+    'WavPack': ['wv'],
+  };
 
   // Public method to read offline file tags (spawns isolate)
   Future<Tag?> getTagFromOfflineFile(dynamic song, {String? filePath}) async {
@@ -66,35 +77,7 @@ class FileTagger {
           if (message is Exception) {
             completer.completeError(message);
           } else if (message != null) {
-            final tag = Tag(
-              title: message['title']?.toString(),
-              trackArtist: message['trackArtist']?.toString(),
-              album: message['album']?.toString(),
-              albumArtist: message['albumArtist']?.toString(),
-              year: int.tryParse(message['year']?.toString() ?? ''),
-              genre: message['genre']?.toString(),
-              trackNumber: int.tryParse(
-                message['trackNumber']?.toString() ?? '',
-              ),
-              trackTotal: int.tryParse(message['trackTotal']?.toString() ?? ''),
-              discNumber: int.tryParse(message['discNumber']?.toString() ?? ''),
-              discTotal: int.tryParse(message['discTotal']?.toString() ?? ''),
-              lyrics: message['lyrics']?.toString(),
-              duration: int.tryParse(message['duration']?.toString() ?? ''),
-              pictures:
-                  (message['pictures'] as List?)
-                      ?.map(
-                        (e) => Picture(
-                          bytes: Uint8List.fromList(e['bytes'] ?? []),
-                          pictureType: PictureType.values.elementAt(
-                            e['pictureType'] ?? 0,
-                          ),
-                        ),
-                      )
-                      .toList() ??
-                  <Picture>[],
-              bpm: double.tryParse(message['bpm']?.toString() ?? ''),
-            );
+            final tag = mapToTag(message);
             completer.complete(tag);
           } else {
             completer.complete(null);
@@ -119,46 +102,17 @@ class FileTagger {
     Map<String, dynamic>? tagMap;
     try {
       final tags = await AudioTags.read(message.path);
-      tagMap = <String, dynamic>{
-        'title': tags?.title,
-        'trackArtist': tags?.trackArtist,
-        'album': tags?.album,
-        'albumArtist': tags?.albumArtist,
-        'year': tags?.year,
-        'genre': tags?.genre,
-        'trackNumber': tags?.trackNumber,
-        'trackTotal': tags?.trackTotal,
-        'discNumber': tags?.discNumber,
-        'discTotal': tags?.discTotal,
-        'lyrics': tags?.lyrics,
-        'duration': tags?.duration,
-        'pictures':
-            tags?.pictures
-                .map(
-                  (e) => {
-                    'bytes': e.bytes.toList(),
-                    'mimeType':
-                        e.mimeType != null
-                            ? MimeType.values.indexOf(e.mimeType!)
-                            : null,
-                    'pictureType': PictureType.values.indexOf(e.pictureType),
-                  },
-                )
-                .toList(),
-        'bpm': tags?.bpm,
-      };
-      message.sendPort.send(tagMap);
-      return;
-    } catch (_) {
-      message.sendPort.send(null);
-      return;
-    }
+      if (tags != null) {
+        tagMap = tagToMap(tags);
+        message.sendPort.send(tagMap);
+        return;
+      }
+    } catch (_) {}
+    message.sendPort.send(null);
   }
 
-  Future<Tag?> getTagFromMetadata(dynamic song) async {
+  static Future<Tag?> getTagFromMetadata(dynamic song) async {
     try {
-      if (!isMusicbrainzSongValid(song))
-        song = await queueSongInfoRequest(song).completerFuture;
       if (song != null && song.isNotEmpty && isSongValid(song)) {
         final album = <String, dynamic>{};
         for (final release in (song['releases'] ?? [])) {
@@ -175,8 +129,12 @@ class FileTagger {
           );
         File? picFile;
         await getValidImage(song, cache: false).then((value) async {
-          if (value != null)
-            picFile = await getImageFileData(path: value.toString());
+          if (value != null) {
+            if (isFilePath(value.toString()))
+              picFile = File(value.toString());
+            else if (isUrl(value.toString()))
+              picFile = await getFileFromUrl(value.toString());
+          }
         });
         final tag = Tag(
           title: song['title'],
@@ -200,7 +158,6 @@ class FileTagger {
                   : [],
           bpm: song['bpm'],
         );
-        picFile?.deleteSync();
         return tag;
       }
     } catch (e, stackTrace) {
@@ -214,45 +171,62 @@ class FileTagger {
   }
 
   Future<Tag> getTagFromFileOrMetadata(dynamic song) async {
-    final fileTag = await getTagFromOfflineFile(song);
     final metaTag = await getTagFromMetadata(song);
+    final songTag = mapToTag(song['audioTags']);
+    final fileTag =
+        songTag.equalsWithoutPictures(metaTag)
+            ? metaTag
+            : await getTagFromOfflineFile(song);
     final pictures =
         <Picture>[]
           ..addAll(fileTag?.pictures ?? [])
           ..addAll(metaTag?.pictures ?? []);
-    return Tag(
-      title: fileTag?.title ?? metaTag?.title,
-      trackArtist: fileTag?.trackArtist ?? metaTag?.trackArtist,
-      album: fileTag?.album ?? metaTag?.album,
-      albumArtist: fileTag?.albumArtist ?? metaTag?.albumArtist,
+    final tag = Tag(
+      title: fileTag?.title?.nullIfEmpty ?? metaTag?.title,
+      trackArtist: fileTag?.trackArtist?.nullIfEmpty ?? metaTag?.trackArtist,
+      album: fileTag?.album?.nullIfEmpty ?? metaTag?.album,
+      albumArtist: fileTag?.albumArtist?.nullIfEmpty ?? metaTag?.albumArtist,
       year: fileTag?.year ?? metaTag?.year,
-      genre: fileTag?.genre ?? metaTag?.genre,
+      genre: fileTag?.genre?.nullIfEmpty ?? metaTag?.genre,
       trackNumber: fileTag?.trackNumber ?? metaTag?.trackNumber,
       trackTotal: fileTag?.trackTotal ?? metaTag?.trackTotal,
       discNumber: fileTag?.discNumber ?? metaTag?.discNumber,
       discTotal: fileTag?.discTotal ?? metaTag?.discTotal,
-      lyrics: fileTag?.lyrics ?? metaTag?.lyrics,
+      lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag?.lyrics,
       duration: fileTag?.duration ?? metaTag?.duration,
       pictures: pictures,
       bpm: fileTag?.bpm ?? metaTag?.bpm,
     );
+    song['audioTags'] = tagToMap(tag);
+    addSongToCache(song);
+    return tag;
   }
 
-  Future<void> tagOfflineFile(dynamic song, String id) async {
+  Future<void> tagOfflineFile(
+    dynamic song,
+    String id, {
+    String? directory,
+    String? filePath,
+  }) async {
     final completer = Completer<void>();
     final receivePort = ReceivePort();
-    if (offlineDirectory == null) {
-      completer.completeError('Directory not provided');
-      receivePort.close();
-      return;
-    }
+    directory ??= offlineDirectory.value;
+
+    _createDirectories(directory!);
+
     await Isolate.spawn(
       _tagOfflineFileIsolate,
       _IsolateTagWriterMessage(
         sendPort: receivePort.sendPort,
         song: song,
         id: id,
-        offlineDirectory: offlineDirectory!,
+        audioFiles:
+            filePath == null
+                ? _getRelatedFilesSync(
+                  '$directory${Platform.pathSeparator}tracks',
+                  id,
+                )
+                : [filePath],
         tagger: this, // Pass reference for static method access
       ),
     );
@@ -260,7 +234,9 @@ class FileTagger {
     receivePort.listen((message) {
       if (message is Exception) {
         completer.completeError(message);
-      } else {
+      } else if (message is List<Tag>) {
+        song['audioTags'] = tagToMap(message.first);
+        addSongToCache(song);
         completer.complete();
       }
       receivePort.close();
@@ -270,10 +246,16 @@ class FileTagger {
   }
 
   // Isolate entry point (static method)
-  static void _tagOfflineFileIsolate(_IsolateTagWriterMessage message) {
+  static Future<void> _tagOfflineFileIsolate(
+    _IsolateTagWriterMessage message,
+  ) async {
     try {
-      message.tagger._tagOfflineFileImpl(message.song, message.id);
-      message.sendPort.send('success');
+      final tags = await message.tagger._processAudioFiles(
+        message.audioFiles,
+        message.song,
+        message.id,
+      );
+      message.sendPort.send(tags);
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -284,34 +266,27 @@ class FileTagger {
     }
   }
 
-  // Main implementation
-  void _tagOfflineFileImpl(dynamic song, String id) {
-    _createDirectories();
-
-    final audioList = _getRelatedFilesSync(_audioDirPath, id);
-    final artworkList = _getRelatedFilesSync(_artworkDirPath, id);
-
-    _processAudioFiles(audioList, artworkList, song, id);
-    _processArtworkFiles(artworkList, id);
-  }
-
   // Directory operations
-  void _createDirectories() {
+  void _createDirectories(String directory) {
+    final _audioDirPath = '$directory${Platform.pathSeparator}tracks';
+    final _artworkDirPath = '$directory${Platform.pathSeparator}artworks';
     Directory(_audioDirPath).createSync(recursive: true);
     Directory(_artworkDirPath).createSync(recursive: true);
   }
 
   // File processing
-  void _processAudioFiles(
-    List<File> audioList,
-    List<File> artworkList,
+  Future<List<Tag>> _processAudioFiles(
+    List<String> audioList,
     dynamic song,
     String id,
-  ) {
-    for (final file in audioList) {
+  ) async {
+    final tags = <Tag>[];
+    for (final filePath in audioList) {
+      final file = File(filePath);
       if (file.existsSync()) {
         try {
-          _processSingleAudioFile(file, artworkList, song, id);
+          final tag = await tagSingleAudioFile(file, song);
+          if (tag != null) tags.add(tag);
         } catch (e, stackTrace) {
           logger.log(
             'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -322,38 +297,43 @@ class FileTagger {
         _renameFileWithCorrectExtension(file, id);
       }
     }
+    return tags;
   }
 
-  Future<void> _processSingleAudioFile(
-    File file,
-    List<File> artworkList,
-    dynamic song,
-    String id,
-  ) async {
+  Future<Tag?> tagSingleAudioFile(File file, dynamic song) async {
     try {
-      final tag = await AudioTags.read(file.path);
-      final songTitle = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
-      final songArtist = song['mbArtist'] ?? song['artist'] ?? song['ytArtist'];
-      final songAlbum = song['album'];
-      final songAlbumArtist = song['albumArtist'];
-      final pictures = tag?.pictures ?? [];
-      final needsRetagging =
-          tag == null ||
-          tag.title != songTitle ||
-          tag.trackArtist != songArtist ||
-          tag.pictures.isEmpty;
-      if (songTitle != songArtist && needsRetagging) {
-        await _addPicturesToTag(file, artworkList, song, id, pictures);
-
+      final metaTag = await getTagFromMetadata(song);
+      final songTag = mapToTag(song['audioTags']);
+      final fileTag =
+          songTag.equalsWithoutPictures(metaTag)
+              ? metaTag
+              : await AudioTags.read(file.path);
+      final pictures =
+          <Picture>[]
+            ..addAll(fileTag?.pictures ?? [])
+            ..addAll(metaTag?.pictures ?? []);
+      if (fileTag != metaTag && metaTag != null) {
         final newTag = Tag(
-          title: songTitle,
-          trackArtist: songArtist,
-          album: songAlbum,
-          albumArtist: songAlbumArtist,
+          title: fileTag?.title?.nullIfEmpty ?? metaTag.title,
+          trackArtist: fileTag?.trackArtist?.nullIfEmpty ?? metaTag.trackArtist,
+          album: fileTag?.album?.nullIfEmpty ?? metaTag.album,
+          albumArtist: fileTag?.albumArtist?.nullIfEmpty ?? metaTag.albumArtist,
+          year: fileTag?.year ?? metaTag.year,
+          genre: fileTag?.genre?.nullIfEmpty ?? metaTag.genre,
+          trackNumber: fileTag?.trackNumber ?? metaTag.trackNumber,
+          trackTotal: fileTag?.trackTotal ?? metaTag.trackTotal,
+          discNumber: fileTag?.discNumber ?? metaTag.discNumber,
+          discTotal: fileTag?.discTotal ?? metaTag.discTotal,
+          lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag.lyrics,
+          duration: fileTag?.duration ?? metaTag.duration,
           pictures: pictures,
+          bpm: fileTag?.bpm ?? metaTag.bpm,
         );
         if (File(file.path).existsSync())
           await AudioTags.write(file.path, newTag);
+        return newTag;
+      } else {
+        return fileTag;
       }
     } catch (e, stackTrace) {
       switch (e) {
@@ -367,59 +347,7 @@ class FileTagger {
         default:
       }
     }
-  }
-
-  Future<void> _addPicturesToTag(
-    File audioFile,
-    List<File> artworkList,
-    dynamic song,
-    String id,
-    List<Picture> pictures,
-  ) async {
-    try {
-      if (pictures.isNotEmpty) return;
-
-      if (artworkList.isEmpty) {
-        final imagePath = await getValidImage(song);
-        if (imagePath != null) {
-          final artworkFile = await _downloadAndSaveArtworkFile(
-            imagePath,
-            '$_artworkDirPath${Platform.pathSeparator}$id',
-          );
-          if (artworkFile != null) {
-            pictures.add(
-              Picture(
-                pictureType: PictureType.other,
-                bytes: artworkFile.readAsBytesSync(),
-              ),
-            );
-          }
-        }
-      } else {
-        for (final artwork in artworkList) {
-          pictures.add(
-            Picture(
-              pictureType: PictureType.other,
-              bytes: artwork.readAsBytesSync(),
-            ),
-          );
-        }
-      }
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-    }
-  }
-
-  void _processArtworkFiles(List<File> artworkList, String id) {
-    for (final file in artworkList) {
-      if (file.existsSync()) {
-        _renameFileWithCorrectExtension(file, id);
-      }
-    }
+    return null;
   }
 
   void _renameFileWithCorrectExtension(File file, String id) {
@@ -435,8 +363,8 @@ class FileTagger {
   }
 
   // File search utilities
-  List<File> _getRelatedFilesSync(String directory, String id) {
-    final files = <File>[];
+  List<String> _getRelatedFilesSync(String directory, String id) {
+    final files = <String>[];
     try {
       final ids = id.toIds;
       final dir = Directory(directory);
@@ -451,7 +379,7 @@ class FileTagger {
                 songId,
                 path.basenameWithoutExtension(file.path),
               )) {
-                files.add(file);
+                files.add(file.path);
                 break;
               }
             }
@@ -580,14 +508,14 @@ class _IsolateTagWriterMessage {
     required this.sendPort,
     required this.song,
     required this.id,
-    required this.offlineDirectory,
     required this.tagger,
+    required this.audioFiles,
   });
   final SendPort sendPort;
   final dynamic song;
   final String id;
-  final String offlineDirectory;
   final FileTagger tagger;
+  final List<String> audioFiles;
 }
 
 class _IsolateTagReaderMessage {

@@ -488,7 +488,11 @@ class _SongBarState extends State<SongBar> {
         else {
           return BaseCard(
             inputData: song,
-            image: Image.memory(snapshot.data!.pictures.first.bytes),
+            image: Image.memory(
+              snapshot.data!.pictures.first.bytes,
+              cacheHeight: (size * 1.1).toInt(),
+              cacheWidth: (size * 1.1).toInt(),
+            ),
             icon: FluentIcons.music_note_2_24_filled,
             size: size,
             paddingValue: 0,

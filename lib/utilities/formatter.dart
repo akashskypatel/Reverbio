@@ -19,6 +19,9 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:typed_data';
+
+import 'package:audiotags/audiotags.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -90,4 +93,66 @@ String formatDuration(int audioDurationInSeconds) {
     minutes.toString().padLeft(2, '0'),
     seconds.toString().padLeft(2, '0'),
   ].join(':');
+}
+
+Map<String, dynamic> tagToMap(Tag tags) {
+  return <String, dynamic>{
+    'title': tags.title,
+    'trackArtist': tags.trackArtist,
+    'album': tags.album,
+    'albumArtist': tags.albumArtist,
+    'year': tags.year,
+    'genre': tags.genre,
+    'trackNumber': tags.trackNumber,
+    'trackTotal': tags.trackTotal,
+    'discNumber': tags.discNumber,
+    'discTotal': tags.discTotal,
+    'lyrics': tags.lyrics,
+    'duration': tags.duration,
+    'pictures':
+        tags.pictures
+            .map(
+              (e) => {
+                'bytes': e.bytes.toList(),
+                'mimeType':
+                    e.mimeType != null
+                        ? MimeType.values.indexOf(e.mimeType!)
+                        : null,
+                'pictureType': PictureType.values.indexOf(e.pictureType),
+              },
+            )
+            .toList(),
+    'bpm': tags.bpm,
+  };
+}
+
+Tag mapToTag(dynamic tagMap) {
+  if (tagMap == null || tagMap.isEmpty) return const Tag(pictures: []);
+  return Tag(
+    title: tagMap['title']?.toString(),
+    trackArtist: tagMap['trackArtist']?.toString(),
+    album: tagMap['album']?.toString(),
+    albumArtist: tagMap['albumArtist']?.toString(),
+    year: int.tryParse(tagMap['year']?.toString() ?? ''),
+    genre: tagMap['genre']?.toString(),
+    trackNumber: int.tryParse(tagMap['trackNumber']?.toString() ?? ''),
+    trackTotal: int.tryParse(tagMap['trackTotal']?.toString() ?? ''),
+    discNumber: int.tryParse(tagMap['discNumber']?.toString() ?? ''),
+    discTotal: int.tryParse(tagMap['discTotal']?.toString() ?? ''),
+    lyrics: tagMap['lyrics']?.toString(),
+    duration: int.tryParse(tagMap['duration']?.toString() ?? ''),
+    pictures:
+        (tagMap['pictures'] as List?)
+            ?.map(
+              (e) => Picture(
+                bytes: Uint8List.fromList(e['bytes'] ?? []),
+                pictureType: PictureType.values.elementAt(
+                  e['pictureType'] ?? 0,
+                ),
+              ),
+            )
+            .toList() ??
+        <Picture>[],
+    bpm: double.tryParse(tagMap['bpm']?.toString() ?? ''),
+  );
 }

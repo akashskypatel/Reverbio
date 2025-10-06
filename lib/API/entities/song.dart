@@ -248,6 +248,7 @@ void addSongToCache(Map<String, dynamic> song) {
 }
 
 Map<String, dynamic> minimizeSongData(dynamic song) {
+  song['audioTags']?.remove('pictures');
   return {
     'id': parseEntityId(song),
     'primary-type': song['primary-type'] ?? 'song',
@@ -259,6 +260,7 @@ Map<String, dynamic> minimizeSongData(dynamic song) {
     'offlineAudioPath': song['offlineAudioPath'],
     'duration': song['duration'],
     'cachedAt': DateTime.now().toString(),
+    'audioTags': song['audioTags'],
     'image':
         song['validImage'] ??
         song['highResImage'] ??
@@ -885,7 +887,7 @@ Future<void> tagAllOfflineFiles() async {
     id: 'tagOffline',
     data: progress,
   );
-  final fileTagger = FileTagger(offlineDirectory: offlineDirectory.value!);
+  final fileTagger = FileTagger();
   for (int i = 0; i < offlineSongs.length; i++) {
     final song =
         await queueSongInfoRequest(copyMap(offlineSongs[i])).completerFuture;
@@ -1031,10 +1033,12 @@ Future<void> getUserDeviceSongs() async {
 }
 
 Future<void> _getUserDeviceSongMetadata() async {
+  final fileTagger = FileTagger();
   for (dynamic song in userDeviceSongs) {
     await queueSongInfoRequest(song).completerFuture?.then((value) {
       song = Map<String, dynamic>.from(song);
       if (value != null) song.addAll(value);
+      fileTagger.tagOfflineFile(song, song['id'], filePath: song['devicePath']);
     });
   }
   userDeviceSongs.writeToCache();
@@ -1053,9 +1057,7 @@ Future<void> getExistingOfflineSongs() async {
         if (ids.isNotEmpty)
           userOfflineSongs.addOrUpdate(filename, checkEntityId);
       } else if (file is File) {
-        final fileTagger = FileTagger(
-          offlineDirectory: offlineDirectory.value!,
-        );
+        final fileTagger = FileTagger();
         final song =
             await queueSongInfoRequest({'id': filename}).completerFuture;
         await fileTagger.tagOfflineFile(song, parseEntityId(song));
