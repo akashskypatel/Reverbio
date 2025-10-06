@@ -23,6 +23,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -32,6 +34,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -43,6 +46,8 @@ import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
+final imageCache = PaintingBinding.instance.imageCache;
 
 const androidDeviceTypes = {
   19: {'id': 'TYPE_AUX_LINE', 'name': 'AUX Line', 'include': true},
@@ -686,48 +691,58 @@ List<String>? parseImage(dynamic obj) {
 }
 
 Future<Uri?> getValidImage(dynamic obj, {bool cache = true}) async {
+  Uri? imageUri;
   try {
     if (obj == null) return null;
     if (obj['validImage'] != null) {
       if (isFilePath(obj['validImage']) &&
           doesFileExist(obj['validImage']) &&
           (getMimeTypeFromFile(obj['validImage'])?.contains('image') ?? false))
-        return Uri.file(obj['validImage']);
+        imageUri = Uri.file(obj['validImage']);
       else if (await checkUrl(obj['validImage'].toString()) <= 300 &&
           ((await getMimeTypeFromUrl(
                 obj['validImage'].toString(),
               ))?.contains('image') ??
               false))
-        return Uri.parse(obj['validImage']);
-    }
-    final images = parseImage(obj) ?? [];
-    if (images.isEmpty) return null;
-    for (final path in images) {
-      if (isFilePath(path) &&
-          doesFileExist(path) &&
-          (getMimeTypeFromFile(path)?.contains('image') ?? false)) {
-        obj['validImage'] = path;
-        if (cache) await cacheEntity(obj);
-        return Uri.file(path);
-      } else {
-        final imageUrl = Uri.parse(path);
-        final mimeCheck =
-            (await getMimeTypeFromUrl(
-              imageUrl.toString(),
-            ))?.contains('image') ??
-            false;
-        if (await checkUrl(imageUrl.toString()) <= 300 && mimeCheck) {
-          obj['validImage'] = imageUrl.toString();
-          if (cache) await cacheEntity(obj);
-          return imageUrl;
+        imageUri = Uri.parse(obj['validImage']);
+    } else {
+      final images = parseImage(obj) ?? [];
+      if (images.isEmpty)
+        return null;
+      else
+        for (final path in images) {
+          if (isFilePath(path) &&
+              doesFileExist(path) &&
+              (getMimeTypeFromFile(path)?.contains('image') ?? false)) {
+            obj['validImage'] = path;
+            if (cache) await cacheEntity(obj);
+            imageUri = Uri.file(path);
+          } else {
+            final imageUrl = Uri.parse(path);
+            final mimeCheck =
+                (await getMimeTypeFromUrl(
+                  imageUrl.toString(),
+                ))?.contains('image') ??
+                false;
+            if (await checkUrl(imageUrl.toString()) <= 300 && mimeCheck) {
+              obj['validImage'] = imageUrl.toString();
+              if (cache) await cacheEntity(obj);
+              imageUri = imageUrl;
+            }
+          }
         }
-      }
     }
-    return null;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
   }
-  return null;
+  if (imageUri != null) {
+    if (isFilePath(imageUri.toString())) {
+      FileImage(File(imageUri.path)).resolve(ImageConfiguration.empty);
+    } else if (isUrl(imageUri.toString())) {
+      NetworkImage(imageUri.toString()).resolve(ImageConfiguration.empty);
+    }
+  }
+  return imageUri;
 }
 
 int? parseTimeStringToSeconds(String timeString) {
@@ -1002,7 +1017,21 @@ String? getMimeTypeFromFile(String filePath) {
     } finally {
       raf.closeSync();
     }
-  } catch (e) {
+  } catch (_) {
+    return null;
+  }
+}
+
+String? getMimeFromBytes(Uint8List bytes) {
+  try {
+    const bytesToRead = 128;
+
+    // Use the first 128 bytes or all bytes if less than 128
+    final headerBytes =
+        bytes.length < bytesToRead ? bytes : bytes.sublist(0, bytesToRead);
+
+    return lookupMimeType('', headerBytes: headerBytes);
+  } catch (_) {
     return null;
   }
 }
@@ -1049,10 +1078,167 @@ String _cleanContentType(String contentType) {
 String ensureReverbioPath(String filePath) {
   final normalized = normalize(filePath);
   final segments = split(normalized);
-  
+
   if (segments.isNotEmpty && segments.last == 'reverbio') {
     return normalized;
   }
-  
+
   return join(normalized, 'reverbio');
+}
+
+Future<File?> getImageFile({String? path}) async {
+  try {
+    final filePath = path ?? await pickImageFile(copyToAppDir: false);
+    if (filePath == null) return null;
+    if (isFilePath(filePath) && doesFileExist(filePath)) {
+      FileImage(File(filePath)).resolve(ImageConfiguration.empty);
+      return File(filePath);
+    } else if (isUrl(filePath) && (await checkUrl(filePath)) < 400) {
+      final file = await getFileFromUrl(filePath);
+      NetworkImage(filePath).resolve(ImageConfiguration.empty);
+      return file;
+    }
+  } catch (_) {}
+  return null;
+}
+
+Future<ImageProvider?> getImageProvider({String? path}) async {
+  try {
+    final filePath = path ?? await pickImageFile(copyToAppDir: false);
+    if (filePath == null) return null;
+    if (isFilePath(filePath) && doesFileExist(filePath)) {
+      return FileImage(File(filePath));
+    } else if (isUrl(filePath) && (await checkUrl(filePath)) < 400) {
+      return NetworkImage(filePath);
+    }
+  } catch (_) {}
+  return null;
+}
+
+Future<File?> getFileFromUrl(String url) async {
+  try {
+    final bytes = await getImageBytesFromUrl(url);
+    if (bytes != null) return getFileFromBytes(bytes, getFileNameFromUrl(url));
+  } catch (_) {}
+  return null;
+}
+
+String getFileNameFromUrl(String url) {
+  final uri = Uri.parse(url);
+  if (uri.host.contains(RegExp('youtube|youtu.be'))) {
+    final fragments = uri.pathSegments;
+    return fragments.last.contains('default')
+        ? fragments[fragments.length - 2]
+        : fragments.last;
+  } else {
+    return uri.pathSegments.last;
+  }
+}
+
+Future<File?> getFileFromBytes(
+  Uint8List data,
+  String fileName, {
+  String? tempDir,
+}) async {
+  try {
+    // Get the temporary directory for storing the file
+    final directory =
+        tempDir != null
+            ? Directory(ensureReverbioPath(tempDir))
+            : Directory(
+              ensureReverbioPath((await getTemporaryDirectory()).path),
+            );
+
+    await directory.create(recursive: true);
+
+    String filePath = '${directory.path}${Platform.pathSeparator}$fileName';
+    final mime = getMimeFromBytes(data);
+    final extension = getExtensionFromMime(mime);
+    filePath = ensureCorrectExtension(filePath, extension: extension);
+
+    // Create a File object
+    final file = File(filePath);
+
+    if (!file.existsSync()) {
+      file.createSync();
+
+      // Write the Uint8List data to the file
+      await file.writeAsBytes(data);
+
+      FileImage(file).resolve(ImageConfiguration.empty);
+    }
+
+    return file;
+  } catch (_) {
+    return null;
+  }
+}
+
+String ensureCorrectExtension(String filePath, {String? extension}) {
+  try {
+    if (extension == null) {
+      final mime = getMimeTypeFromFile(filePath);
+      extension = getExtensionFromMime(mime);
+    }
+    final _extensionRegex = RegExp(r'\.[^\.]+$');
+    final withoutExtension = filePath.replaceAll(_extensionRegex, '');
+    filePath = '$withoutExtension$extension';
+  } catch (_) {}
+  return filePath;
+}
+
+Future<Uint8List?> getImageBytesFromUrl(String imageUrl) async {
+  try {
+    final cached = await getCachedImageBytes(NetworkImage(imageUrl));
+    if (cached != null) return cached;
+
+    final response = await http.get(Uri.parse(imageUrl));
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
+  try {
+    final ImageStream stream = imageProvider.resolve(ImageConfiguration.empty);
+    final completer = Completer<Uint8List?>();
+    ImageStreamListener? listener;
+
+    listener = ImageStreamListener(
+      (ImageInfo image, bool synchronousCall) async {
+        if (!completer.isCompleted) {
+          final ByteData? byteData = await image.image.toByteData(
+            format: ImageByteFormat.png,
+          ); // Or .rawRgba
+          if (byteData != null) {
+            completer.complete(byteData.buffer.asUint8List());
+          } else {
+            completer.complete(null);
+          }
+        }
+        if (listener != null) {
+          stream.removeListener(listener);
+        }
+      },
+      onError: (dynamic exception, StackTrace? stackTrace) {
+        if (!completer.isCompleted) {
+          completer.complete(null);
+        }
+        if (listener != null) {
+          stream.removeListener(listener);
+        }
+      },
+    );
+
+    stream.addListener(listener);
+    return completer.future;
+  } catch (_) {
+    return null;
+  }
 }
