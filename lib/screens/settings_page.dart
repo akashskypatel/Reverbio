@@ -371,6 +371,7 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: commonCustomBarRadiusFirst,
           onTap: () {
             HiveService.clearBox('cache');
+            clearTempFiles();
             showToast('${context.l10n!.cacheMsg}!');
           },
         ),
