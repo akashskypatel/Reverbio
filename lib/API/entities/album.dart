@@ -171,7 +171,7 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
         ids['mb']!,
         inc: ['artists', 'releases', 'annotation', 'tags', 'genres', 'ratings'],
       );
-      if (album['error'] != null) throw album['error'];
+      if (album['error'] != null) return album;
       album['artist'] = combineArtists(album) ?? album['artist'];
       album['album'] = album['title'];
       album['cachedAt'] = DateTime.now().toString();
