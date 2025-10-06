@@ -878,9 +878,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
                 id: update.task.taskId,
               );
               unawaited(
-                FileTagger(
-                  offlineDirectory: offlineDirectory.value!,
-                ).tagOfflineFile(update.task.taskId, update.task.taskId),
+                FileTagger().tagOfflineFile(
+                  update.task.taskId,
+                  update.task.taskId,
+                ),
               );
               break;
             case TaskStatus.canceled:
