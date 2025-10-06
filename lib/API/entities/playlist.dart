@@ -703,7 +703,7 @@ Future<bool> uploadCsvPlaylist(BuildContext context) async {
       '${context.l10n!.addedPlaylistFiles}: $count/$fileCount',
       context: context,
     );
-    unawaited(clearFilePickerTempFiles());
+    unawaited(clearTempFiles());
   } catch (e, stackTrace) {
     showToast(
       '${context.l10n!.addedSomePlaylistFiles}: $count/$fileCount',

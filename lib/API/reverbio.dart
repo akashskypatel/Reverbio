@@ -617,12 +617,6 @@ bool checkEntityId(dynamic entity, dynamic other) {
   return result;
 }
 
-Future<void> clearFilePickerTempFiles() async {
-  try {
-    await FilePicker.platform.clearTemporaryFiles();
-  } catch (_) {}
-}
-
 String incrementFileName(String input) {
   try {
     final regex = RegExp(r'\((\d+)\)$');

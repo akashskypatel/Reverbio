@@ -27,6 +27,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
@@ -1241,4 +1242,19 @@ Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
   } catch (_) {
     return null;
   }
+}
+
+Future<void> clearTempFiles() async {
+  try {
+    await FilePicker.platform.clearTemporaryFiles();
+    final tempFiles =
+        Directory(
+          ensureReverbioPath((await getTemporaryDirectory()).path),
+        ).listSync();
+    for (final file in tempFiles) {
+      try {
+        file.deleteSync();
+      } catch (_) {}
+    }
+  } catch (_) {}
 }

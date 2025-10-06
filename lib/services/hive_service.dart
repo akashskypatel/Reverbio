@@ -184,7 +184,7 @@ class HiveService {
     }
   }
 
-  void close() async {
+  static Future<void> close() async {
     await compactAllBoxes();
     await closeAllBoxes();
     await Hive.close();

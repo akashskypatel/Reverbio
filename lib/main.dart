@@ -30,7 +30,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -157,8 +156,10 @@ class _ReverbioState extends State<Reverbio> {
 
   @override
   void dispose() {
-    Hive.close();
+    unawaited(HiveService.close());
     unawaited(audioHandler.dispose());
+    unawaited(clearTempFiles());
+    downloader.FileDownloader().destroy();
     super.dispose();
   }
 

@@ -436,7 +436,7 @@ class PluginsManager {
         if (path == null || path.isEmpty) return {};
       }
       jsContent = await File(path).readAsString();
-      unawaited(clearFilePickerTempFiles());
+      unawaited(clearTempFiles());
       return getPluginData(jsContent, path);
     } catch (e, stackTrace) {
       logger.log(
