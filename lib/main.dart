@@ -47,6 +47,8 @@ import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:window_manager/window_manager.dart';
 
 ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
 HiveService hiveService = HiveService();
@@ -82,7 +84,7 @@ class Reverbio extends StatefulWidget {
   _ReverbioState createState() => _ReverbioState();
 }
 
-class _ReverbioState extends State<Reverbio> {
+class _ReverbioState extends State<Reverbio> with WindowListener {
   void changeSettings({
     ThemeMode? newThemeMode,
     Locale? newLocale,
@@ -117,8 +119,15 @@ class _ReverbioState extends State<Reverbio> {
   @override
   void initState() {
     super.initState();
+    windowManager.addListener(this);
+    initialize();
+  }
+
+  void initialize() async {
+    await windowManager.setPreventClose(true);
+    if (mounted) setState(() {});
     getUserGeolocation();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       SystemChrome.setSystemUIOverlayStyle(
@@ -155,7 +164,35 @@ class _ReverbioState extends State<Reverbio> {
   }
 
   @override
+  void onWindowClose() async {
+    final _isPreventClose = await windowManager.isPreventClose();
+    if (_isPreventClose) {
+      await showDialog(
+        context: NavigationManager().context,
+        builder: (_) {
+          return ConfirmationDialog(
+            title: L10n.current.quitApp,
+            confirmText: L10n.current.confirm,
+            cancelText: L10n.current.cancel,
+            onCancel: () {
+              Navigator.of(context).pop();
+            },
+            onSubmit: () async {
+              await clearTempFiles();
+              await HiveService.close();
+              downloader.FileDownloader().destroy();
+              Navigator.of(context).pop();
+              await windowManager.destroy();
+            },
+          );
+        },
+      );
+    }
+  }
+
+  @override
   void dispose() {
+    windowManager.removeListener(this);
     unawaited(HiveService.close());
     unawaited(audioHandler.dispose());
     unawaited(clearTempFiles());
@@ -203,9 +240,18 @@ class _ReverbioState extends State<Reverbio> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
   await initialization();
-
-  runApp(const Reverbio());
+  const windowOptions = WindowOptions(
+    center: true,
+    backgroundColor: Colors.transparent,
+    titleBarStyle: TitleBarStyle.normal,
+  );
+  await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+  runApp(const MaterialApp(home: Reverbio()));
 }
 
 Future<void> initialization() async {

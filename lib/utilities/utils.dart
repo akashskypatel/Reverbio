@@ -1246,15 +1246,20 @@ Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
 
 Future<void> clearTempFiles() async {
   try {
-    await FilePicker.platform.clearTemporaryFiles();
-    final tempFiles =
-        Directory(
-          ensureReverbioPath((await getTemporaryDirectory()).path),
-        ).listSync();
-    for (final file in tempFiles) {
-      try {
-        file.deleteSync();
-      } catch (_) {}
+    // ignore: body_might_complete_normally_catch_error, argument_type_not_assignable_to_error_handler
+    await FilePicker.platform.clearTemporaryFiles().catchError((){});
+    try {
+      Directory(
+        ensureReverbioPath((await getTemporaryDirectory()).path),
+      ).deleteSync(recursive: true);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}',
+        e,
+        stackTrace,
+      );
     }
-  } catch (_) {}
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
+  }
 }
