@@ -306,5 +306,6 @@
   "tagsNoChanges": "Không phát hiện thay đổi nào trong thẻ metadata",
   "getMetadata": "Lấy metadata Musicbrainz",
   "enterTitleAndArtist": "Nhập tiêu đề bài hát và nghệ sĩ để tìm kiếm metadata",
-  "fetchedMetadata": "Đã lấy metadata thành công"
+  "fetchedMetadata": "Đã lấy metadata thành công",
+  "quitApp": "Bạn có chắc chắn muốn thoát ứng dụng không?"
 }

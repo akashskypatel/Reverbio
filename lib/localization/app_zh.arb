@@ -306,5 +306,6 @@
   "tagsNoChanges": "未检测到元数据标签有更改",
   "getMetadata": "获取 Musicbrainz 元数据",
   "enterTitleAndArtist": "输入歌曲标题和艺人以搜索元数据",
-  "fetchedMetadata": "成功获取元数据"
+  "fetchedMetadata": "成功获取元数据",
+  "quitApp": "你确定要退出应用吗？"
 }

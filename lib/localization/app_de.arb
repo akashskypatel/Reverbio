@@ -306,5 +306,6 @@
   "tagsNoChanges": "Keine Änderungen in den Metadaten-Tags erkannt",
   "getMetadata": "Musicbrainz-Metadaten abrufen",
   "enterTitleAndArtist": "Titel und Künstler eingeben, um nach Metadaten zu suchen",
-  "fetchedMetadata": "Metadaten erfolgreich abgerufen"
+  "fetchedMetadata": "Metadaten erfolgreich abgerufen",
+  "quitApp": "Sind Sie sicher, dass Sie die App beenden möchten?"
 }

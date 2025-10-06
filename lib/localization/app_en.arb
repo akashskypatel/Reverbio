@@ -306,5 +306,6 @@
   "tagsNoChanges": "No changes detected in metadata tags",
   "getMetadata": "Get Musicbrainz metadata",
   "enterTitleAndArtist": "Enter track title and artist to search metadata",
-  "fetchedMetadata": "Fetched metadata successfully"
+  "fetchedMetadata": "Fetched metadata successfully",
+  "quitApp": "Are you sure you want to exit the app?"
 }

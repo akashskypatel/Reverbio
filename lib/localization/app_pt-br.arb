@@ -306,5 +306,6 @@
   "tagsNoChanges": "Nenhuma alteração detectada nas tags de metadados",
   "getMetadata": "Obter metadados do Musicbrainz",
   "enterTitleAndArtist": "Insira o título da faixa e o artista para pesquisar metadados",
-  "fetchedMetadata": "Metadados obtidos com sucesso"
+  "fetchedMetadata": "Metadados obtidos com sucesso",
+  "quitApp": "Tem certeza de que deseja sair do aplicativo?"
 }

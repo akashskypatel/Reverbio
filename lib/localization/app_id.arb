@@ -306,5 +306,6 @@
   "tagsNoChanges": "Tidak ada perubahan yang terdeteksi dalam tag metadata",
   "getMetadata": "Dapatkan metadata Musicbrainz",
   "enterTitleAndArtist": "Masukkan judul lagu dan artis untuk mencari metadata",
-  "fetchedMetadata": "Metadata berhasil diambil"
+  "fetchedMetadata": "Metadata berhasil diambil",
+  "quitApp": "Apakah Anda yakin ingin keluar dari aplikasi?"
 }

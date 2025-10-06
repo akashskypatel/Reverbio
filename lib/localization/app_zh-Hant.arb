@@ -306,5 +306,6 @@
   "tagsNoChanges": "未檢測到元數據標籤有更改",
   "getMetadata": "獲取 Musicbrainz 元數據",
   "enterTitleAndArtist": "輸入歌曲標題和藝人以搜尋元數據",
-  "fetchedMetadata": "成功獲取元數據"
+  "fetchedMetadata": "成功獲取元數據",
+  "quitApp": "你確定要退出應用程式嗎？"
 }

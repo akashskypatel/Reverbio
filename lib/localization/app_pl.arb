@@ -306,5 +306,6 @@
   "tagsNoChanges": "Nie wykryto zmian w znacznikach metadanych",
   "getMetadata": "Pobierz metadane Musicbrainz",
   "enterTitleAndArtist": "Wpisz tytuł utworu i wykonawcę, aby wyszukać metadane",
-  "fetchedMetadata": "Pomyślnie pobrano metadane"
+  "fetchedMetadata": "Pomyślnie pobrano metadane",
+  "quitApp": "Czy na pewno chcesz zamknąć aplikację?"
 }

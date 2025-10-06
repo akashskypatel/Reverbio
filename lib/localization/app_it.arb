@@ -306,5 +306,6 @@
   "tagsNoChanges": "Nessuna modifica rilevata nei tag metadati",
   "getMetadata": "Ottieni metadati Musicbrainz",
   "enterTitleAndArtist": "Inserisci titolo del brano e artista per cercare metadati",
-  "fetchedMetadata": "Metadati recuperati con successo"
+  "fetchedMetadata": "Metadati recuperati con successo",
+  "quitApp": "Sei sicuro di voler uscire dall'app?"
 }

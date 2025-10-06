@@ -306,5 +306,6 @@
   "tagsNoChanges": "メタデータタグに変更は検出されませんでした",
   "getMetadata": "Musicbrainzメタデータを取得",
   "enterTitleAndArtist": "メタデータを検索するにはトラックタイトルとアーティストを入力してください",
-  "fetchedMetadata": "メタデータの取得に成功しました"
+  "fetchedMetadata": "メタデータの取得に成功しました",
+  "quitApp": "アプリを終了してもよろしいですか？"
 }

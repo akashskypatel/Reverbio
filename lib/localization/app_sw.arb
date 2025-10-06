@@ -306,5 +306,6 @@
   "tagsNoChanges": "Hakuna mabadiliko yaliyogunduliwa kwenye vitambulisho vya metadata",
   "getMetadata": "Pata metadata ya Musicbrainz",
   "enterTitleAndArtist": "Weka kichwa cha wimbo na msanii kutafuta metadata",
-  "fetchedMetadata": "Imepatikana metadata kwa mafanikio"
+  "fetchedMetadata": "Imepatikana metadata kwa mafanikio",
+  "quitApp": "Je, una uhakika unataka kutoka kwenye programu?"
 }

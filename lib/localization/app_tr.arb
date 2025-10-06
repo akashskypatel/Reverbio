@@ -306,5 +306,6 @@
   "tagsNoChanges": "Meta veri etiketlerinde değişiklik tespit edilmedi",
   "getMetadata": "Musicbrainz meta verilerini al",
   "enterTitleAndArtist": "Meta veri aramak için parça başlığı ve sanatçıyı girin",
-  "fetchedMetadata": "Meta veri başarıyla alındı"
+  "fetchedMetadata": "Meta veri başarıyla alındı",
+  "quitApp": "Uygulamadan çıkmak istediğinizden emin misiniz?"
 }

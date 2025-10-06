@@ -306,5 +306,6 @@
   "tagsNoChanges": "Aucun changement détecté dans les balises de métadonnées",
   "getMetadata": "Obtenir les métadonnées Musicbrainz",
   "enterTitleAndArtist": "Entrez le titre du morceau et l'artiste pour rechercher des métadonnées",
-  "fetchedMetadata": "Métadonnées récupérées avec succès"
+  "fetchedMetadata": "Métadonnées récupérées avec succès",
+  "quitApp": "Êtes-vous sûr de vouloir quitter l'application ?"
 }
