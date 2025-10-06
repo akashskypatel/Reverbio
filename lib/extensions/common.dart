@@ -22,6 +22,7 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:audiotags/audiotags.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/main.dart';
@@ -720,5 +721,24 @@ extension ImageCopyWith on Image {
       isAntiAlias: isAntiAlias ?? this.isAntiAlias,
       filterQuality: filterQuality ?? this.filterQuality,
     );
+  }
+}
+
+extension AudioTagEqualsExtension on Tag {
+  bool equalsWithoutPictures(Tag? other) {
+    if (other == null) return false;
+    return title == other.title &&
+          trackArtist == other.trackArtist &&
+          album == other.album &&
+          albumArtist == other.albumArtist &&
+          year == other.year &&
+          genre == other.genre &&
+          trackNumber == other.trackNumber &&
+          trackTotal == other.trackTotal &&
+          discNumber == other.discNumber &&
+          discTotal == other.discTotal &&
+          lyrics == other.lyrics &&
+          duration == other.duration &&
+          bpm == other.bpm;
   }
 }
