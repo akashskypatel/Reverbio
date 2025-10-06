@@ -302,7 +302,7 @@
   "imagePath": "Đường dẫn hình ảnh",
   "pictureType": "Loại hình ảnh",
   "tagsUpdated": "Đã cập nhật thẻ metadata của tệp",
-  "tagsError": "Đã xảy ra lỗi khi cố gắng cập nhật thẻ metadata",
+  "tagsError": "Đã xảy ra lỗi khi cố gắng cập nhật thẻ metadata. Tệp có thể ở định dạng không được hỗ trợ.",
   "tagsNoChanges": "Không phát hiện thay đổi nào trong thẻ metadata",
   "getMetadata": "Lấy metadata Musicbrainz",
   "enterTitleAndArtist": "Nhập tiêu đề bài hát và nghệ sĩ để tìm kiếm metadata",

@@ -302,7 +302,7 @@
   "imagePath": "Chemin de l'image",
   "pictureType": "Type d'image",
   "tagsUpdated": "Balises de métadonnées du fichier mises à jour",
-  "tagsError": "Une erreur s'est produite lors de la mise à jour des balises de métadonnées",
+  "tagsError": "Une erreur s'est produite lors de la mise à jour des balises de métadonnées. Le fichier peut être dans un format non pris en charge.",
   "tagsNoChanges": "Aucun changement détecté dans les balises de métadonnées",
   "getMetadata": "Obtenir les métadonnées Musicbrainz",
   "enterTitleAndArtist": "Entrez le titre du morceau et l'artiste pour rechercher des métadonnées",

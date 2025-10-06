@@ -302,7 +302,7 @@
   "imagePath": "Resim yolu",
   "pictureType": "Resim türü",
   "tagsUpdated": "Dosya meta veri etiketleri güncellendi",
-  "tagsError": "Meta veri etiketlerini güncellemeye çalışırken bir hata oluştu",
+  "tagsError": "Meta veri etiketlerini güncellemeye çalışırken bir hata oluştu. Dosya desteklenmeyen bir biçimde olabilir.",
   "tagsNoChanges": "Meta veri etiketlerinde değişiklik tespit edilmedi",
   "getMetadata": "Musicbrainz meta verilerini al",
   "enterTitleAndArtist": "Meta veri aramak için parça başlığı ve sanatçıyı girin",

@@ -302,7 +302,7 @@
   "imagePath": "Ruta de imagen",
   "pictureType": "Tipo de imagen",
   "tagsUpdated": "Etiquetas de metadatos del archivo actualizadas",
-  "tagsError": "Ocurrió un error al intentar actualizar las etiquetas de metadatos",
+  "tagsError": "Ocurrió un error al intentar actualizar las etiquetas de metadatos. Es posible que el archivo esté en un formato no compatible.",
   "tagsNoChanges": "No se detectaron cambios en las etiquetas de metadatos",
   "getMetadata": "Obtener metadatos de Musicbrainz",
   "enterTitleAndArtist": "Ingresa el título de la pista y el artista para buscar metadatos",

@@ -302,7 +302,7 @@
   "imagePath": "Njia ya Picha",
   "pictureType": "Aina ya Picha",
   "tagsUpdated": "Vitambulisho vya metadata vya faili vimesasishwa",
-  "tagsError": "Hitilafu ilitokea wakati wa kujaribu kusasisha vitambulisho vya metadata",
+  "tagsError": "Hitilafu ilitokea wakati wa kujaribu kusasisha vitambulisho vya metadata. Faili inaweza kuwa katika muundo usiozungwa mkono.",
   "tagsNoChanges": "Hakuna mabadiliko yaliyogunduliwa kwenye vitambulisho vya metadata",
   "getMetadata": "Pata metadata ya Musicbrainz",
   "enterTitleAndArtist": "Weka kichwa cha wimbo na msanii kutafuta metadata",

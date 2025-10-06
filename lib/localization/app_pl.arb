@@ -302,7 +302,7 @@
   "imagePath": "Ścieżka obrazu",
   "pictureType": "Typ obrazu",
   "tagsUpdated": "Znaczniki metadanych pliku zaktualizowane",
-  "tagsError": "Wystąpił błąd podczas próby aktualizacji znaczników metadanych",
+  "tagsError": "Wystąpił błąd podczas próby aktualizacji znaczników metadanych. Plik może być w nieobsługiwanym formacie.",
   "tagsNoChanges": "Nie wykryto zmian w znacznikach metadanych",
   "getMetadata": "Pobierz metadane Musicbrainz",
   "enterTitleAndArtist": "Wpisz tytuł utworu i wykonawcę, aby wyszukać metadane",

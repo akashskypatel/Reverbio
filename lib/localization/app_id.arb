@@ -302,7 +302,7 @@
   "imagePath": "Jalur gambar",
   "pictureType": "Jenis gambar",
   "tagsUpdated": "Tag metadata file diperbarui",
-  "tagsError": "Terjadi kesalahan saat mencoba memperbarui tag metadata",
+  "tagsError": "Terjadi kesalahan saat mencoba memperbarui tag metadata. File mungkin dalam format yang tidak didukung.",
   "tagsNoChanges": "Tidak ada perubahan yang terdeteksi dalam tag metadata",
   "getMetadata": "Dapatkan metadata Musicbrainz",
   "enterTitleAndArtist": "Masukkan judul lagu dan artis untuk mencari metadata",

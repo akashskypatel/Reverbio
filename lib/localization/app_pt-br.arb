@@ -302,7 +302,7 @@
   "imagePath": "Caminho da imagem",
   "pictureType": "Tipo de imagem",
   "tagsUpdated": "Tags de metadados do arquivo atualizadas",
-  "tagsError": "Ocorreu um erro ao tentar atualizar as tags de metadados",
+  "tagsError": "Ocorreu um erro ao tentar atualizar as tags de metadados. O arquivo pode estar em um formato não suportado.",
   "tagsNoChanges": "Nenhuma alteração detectada nas tags de metadados",
   "getMetadata": "Obter metadados do Musicbrainz",
   "enterTitleAndArtist": "Insira o título da faixa e o artista para pesquisar metadados",

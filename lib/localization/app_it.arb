@@ -302,7 +302,7 @@
   "imagePath": "Percorso immagine",
   "pictureType": "Tipo di immagine",
   "tagsUpdated": "Tag metadati del file aggiornati",
-  "tagsError": "Si è verificato un errore durante il tentativo di aggiornare i tag metadati",
+  "tagsError": "Si è verificato un errore durante il tentativo di aggiornare i tag metadati. Il file potrebbe essere in un formato non supportato.",
   "tagsNoChanges": "Nessuna modifica rilevata nei tag metadati",
   "getMetadata": "Ottieni metadati Musicbrainz",
   "enterTitleAndArtist": "Inserisci titolo del brano e artista per cercare metadati",

@@ -302,7 +302,7 @@
   "imagePath": "Image path",
   "pictureType": "Picture type",
   "tagsUpdated": "File metadata tags updated",
-  "tagsError": "An error occurred trying to update metadata tags",
+  "tagsError": "An error occurred trying to update metadata tags. The file may be in an unsupported format.",
   "tagsNoChanges": "No changes detected in metadata tags",
   "getMetadata": "Get Musicbrainz metadata",
   "enterTitleAndArtist": "Enter track title and artist to search metadata",

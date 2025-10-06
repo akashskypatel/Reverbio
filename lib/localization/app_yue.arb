@@ -302,7 +302,7 @@
   "imagePath": "圖片路徑",
   "pictureType": "圖片類型",
   "tagsUpdated": "檔案元數據標籤已更新",
-  "tagsError": "嘗試更新元數據標籤時發生錯誤",
+  "tagsError": "嘗試更新元數據標籤時發生錯誤。檔案可能為不受支援的格式。",
   "tagsNoChanges": "未檢測到元數據標籤有更改",
   "getMetadata": "獲取 Musicbrainz 元數據",
   "enterTitleAndArtist": "輸入歌曲標題和藝人以搜尋元數據",

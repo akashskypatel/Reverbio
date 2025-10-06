@@ -302,7 +302,7 @@
   "imagePath": "Bildpfad",
   "pictureType": "Bildtyp",
   "tagsUpdated": "Metadaten-Tags der Datei aktualisiert",
-  "tagsError": "Beim Aktualisieren der Metadaten-Tags ist ein Fehler aufgetreten",
+  "tagsError": "Beim Aktualisieren der Metadaten-Tags ist ein Fehler aufgetreten. Die Datei könnte ein nicht unterstütztes Format haben.",
   "tagsNoChanges": "Keine Änderungen in den Metadaten-Tags erkannt",
   "getMetadata": "Musicbrainz-Metadaten abrufen",
   "enterTitleAndArtist": "Titel und Künstler eingeben, um nach Metadaten zu suchen",
