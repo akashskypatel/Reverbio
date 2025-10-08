@@ -1,6 +1,5 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
-import java.io.File
 
 plugins {
     id("com.android.application")
@@ -35,25 +34,25 @@ android {
     }
 
     splits {
-      abi {
-        isEnable = true
-        reset()
-        include("armeabi-v7a", "arm64-v8a", "x86_64")
-        isUniversalApk = true
-      }
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = true
+        }
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.create("release") {
-              val props = Properties()
-              props.load(File(rootDir, "key.properties").inputStream())
+                val props = Properties()
+                props.load(File(rootDir, "key.properties").inputStream())
 
-              storeFile = file(props["storeFile"] as String)
-              storePassword = props["storePassword"] as String
-              keyAlias = props["keyAlias"] as String
-              keyPassword = props["keyPassword"] as String
-          }
+                storeFile = file(props["storeFile"] as String)
+                storePassword = props["storePassword"] as String
+                keyAlias = props["keyAlias"] as String
+                keyPassword = props["keyPassword"] as String
+            }
         }
     }
     applicationVariants.all {
@@ -81,4 +80,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.9.0")
     implementation("com.google.android.gms:play-services-base:18.2.0")
     implementation("com.github.fast-development.android-js-runtimes:fastdev-jsruntimes-jsc:0.3.5")
+    implementation("androidx.core:core:1.17.0")
 }
