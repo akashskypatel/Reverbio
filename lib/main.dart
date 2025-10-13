@@ -271,7 +271,7 @@ void main() async {
 Future<void> initialization() async {
   try {
     await HiveService.ensureInitialize();
-    await MediaUtils.ensureInitialized();
+    if (Platform.isAndroid) await MediaUtils.ensureInitialized();
     L10n.initialize();
 
     audioHandler = await AudioService.init(
