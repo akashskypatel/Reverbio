@@ -28,7 +28,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -347,9 +346,6 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   bool get playing => audioPlayer.playing;
   Stream<Duration> get positionStream => audioPlayer.positionStream;
   bool cachedIsPlaying = false;
-  static const platform = MethodChannel(
-    'com.akashskypatel.reverbio/audio_device_channel',
-  );
 
   Future<void> dispose() async {
     await _playbackEventSubscription.cancel();
@@ -627,7 +623,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       if (Platform.isAndroid) {
         final devices = await getConnectedAudioDevices();
         if (devices.where((e) => e['id'] == device['id']).isNotEmpty)
-          await platform.invokeMethod<dynamic>('setAudioOutputDevice', {
+          await audioChannel.invokeMethod<dynamic>('setAudioOutputDevice', {
             'deviceId': device['id'],
           });
       }
@@ -644,7 +640,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<bool> getAndroidAutoDevMode() async {
     try {
       if (Platform.isAndroid) {
-        final devMode = await platform.invokeMethod<dynamic>(
+        final devMode = await audioChannel.invokeMethod<dynamic>(
           'getAndroidAutoDevMode',
         );
         return devMode;
@@ -663,7 +659,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<dynamic> getCurrentAudioDevice() async {
     try {
       if (Platform.isAndroid) {
-        final device = await platform.invokeMethod<dynamic>(
+        final device = await audioChannel.invokeMethod<dynamic>(
           'getCurrentAudioDevice',
         );
         audioDevice.value = device;
@@ -683,7 +679,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     try {
       if (Platform.isAndroid) {
         final devices =
-            (await platform.invokeMethod<List>('getAudioOutputDevices')) ??
+            (await audioChannel.invokeMethod<List>('getAudioOutputDevices')) ??
             <dynamic>[];
 
         return devices;
@@ -880,7 +876,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
               unawaited(
                 FileTagger().tagOfflineFile(
                   update.task.taskId,
-                  update.task.taskId,
+                  id: update.task.taskId,
                 ),
               );
               break;

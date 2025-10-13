@@ -32,8 +32,10 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/logger_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class FileTagger {
@@ -53,7 +55,6 @@ class FileTagger {
     'WAV': ['wav'],
     'WavPack': ['wv'],
   };
-
   // Public method to read offline file tags (spawns isolate)
   Future<Tag?> getTagFromOfflineFile(dynamic song, {String? filePath}) async {
     final completer = Completer<Tag?>();
@@ -67,23 +68,29 @@ class FileTagger {
         await Isolate.spawn(
           _getOfflineFileTag,
           _IsolateTagReaderMessage(
+            logger: logger,
             sendPort: receivePort.sendPort,
             path: filePath,
             song: song,
           ),
         );
 
-        receivePort.listen((message) {
-          if (message is Exception) {
-            completer.completeError(message);
-          } else if (message != null) {
-            final tag = mapToTag(message);
-            completer.complete(tag);
-          } else {
-            completer.complete(null);
-          }
-          receivePort.close();
-        });
+        receivePort
+            .listen((message) {
+              if (message is Exception) {
+                completer.completeError(message);
+              } else if (message != null) {
+                final tag = mapToTag(message);
+                completer.complete(tag);
+              } else {
+                completer.complete(null);
+              }
+              receivePort.close();
+            })
+            .onError((e) {
+              completer.completeError(e);
+              receivePort.close();
+            });
       } else {
         completer.completeError(L10n.current.cannotOpenFile);
         receivePort.close();
@@ -107,7 +114,9 @@ class FileTagger {
         message.sendPort.send(tagMap);
         return;
       }
-    } catch (_) {}
+    } catch (_) {
+      message.sendPort.send(null);
+    }
     message.sendPort.send(null);
   }
 
@@ -202,13 +211,14 @@ class FileTagger {
     return tag;
   }
 
-  Future<void> tagOfflineFile(
-    dynamic song,
-    String id, {
+  Future<bool> tagOfflineFile(
+    dynamic song, {
+    Tag? tag,
+    String? id,
     String? directory,
     String? filePath,
   }) async {
-    final completer = Completer<void>();
+    final completer = Completer<bool>();
     final receivePort = ReceivePort();
     directory ??= offlineDirectory.value;
 
@@ -217,14 +227,16 @@ class FileTagger {
     await Isolate.spawn(
       _tagOfflineFileIsolate,
       _IsolateTagWriterMessage(
+        logger: logger,
         sendPort: receivePort.sendPort,
         song: song,
+        tag: tag,
         id: id,
         audioFiles:
             filePath == null
                 ? _getRelatedFilesSync(
-                  '$directory${Platform.pathSeparator}tracks',
-                  id,
+                  path.join(directory, 'tracks'),
+                  id ?? song['id'],
                 )
                 : [filePath],
         tagger: this, // Pass reference for static method access
@@ -234,10 +246,12 @@ class FileTagger {
     receivePort.listen((message) {
       if (message is Exception) {
         completer.completeError(message);
-      } else if (message is List<Tag>) {
+      } else if (message is List<Tag> && message.isNotEmpty) {
         song['audioTags'] = tagToMap(message.first);
         addSongToCache(song);
-        completer.complete();
+        completer.complete(true);
+      } else {
+        completer.complete(false);
       }
       receivePort.close();
     });
@@ -254,10 +268,12 @@ class FileTagger {
         message.audioFiles,
         message.song,
         message.id,
+        message.tag,
+        message.logger,
       );
       message.sendPort.send(tags);
     } catch (e, stackTrace) {
-      logger.log(
+      message.logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
@@ -268,8 +284,8 @@ class FileTagger {
 
   // Directory operations
   void _createDirectories(String directory) {
-    final _audioDirPath = '$directory${Platform.pathSeparator}tracks';
-    final _artworkDirPath = '$directory${Platform.pathSeparator}artworks';
+    final _audioDirPath = path.join(directory, 'tracks');
+    final _artworkDirPath = path.join(directory, 'artworks');
     Directory(_audioDirPath).createSync(recursive: true);
     Directory(_artworkDirPath).createSync(recursive: true);
   }
@@ -278,17 +294,19 @@ class FileTagger {
   Future<List<Tag>> _processAudioFiles(
     List<String> audioList,
     dynamic song,
-    String id,
+    String? id,
+    Tag? tag,
+    Logger _logger,
   ) async {
     final tags = <Tag>[];
     for (final filePath in audioList) {
       final file = File(filePath);
       if (file.existsSync()) {
         try {
-          final tag = await tagSingleAudioFile(file, song);
-          if (tag != null) tags.add(tag);
+          final _tag = await tagSingleAudioFile(file, song, _logger, tag: tag);
+          if (_tag != null) tags.add(_tag);
         } catch (e, stackTrace) {
-          logger.log(
+          _logger.log(
             'Error in ${stackTrace.getCurrentMethodName()}:',
             e,
             stackTrace,
@@ -300,66 +318,94 @@ class FileTagger {
     return tags;
   }
 
-  Future<Tag?> tagSingleAudioFile(File file, dynamic song) async {
+  Future<Tag?> tagSingleAudioFile(
+    File file,
+    dynamic song,
+    Logger _logger, {
+    Tag? tag,
+  }) async {
+    Tag? newTag = tag;
     try {
-      final metaTag = await getTagFromMetadata(song);
-      final songTag = mapToTag(song['audioTags']);
-      final fileTag =
-          songTag.equalsWithoutPictures(metaTag)
-              ? metaTag
-              : await AudioTags.read(file.path);
-      final pictures =
-          <Picture>[]
-            ..addAll(fileTag?.pictures ?? [])
-            ..addAll(metaTag?.pictures ?? []);
-      if (fileTag != metaTag && metaTag != null) {
-        final newTag = Tag(
-          title: fileTag?.title?.nullIfEmpty ?? metaTag.title,
-          trackArtist: fileTag?.trackArtist?.nullIfEmpty ?? metaTag.trackArtist,
-          album: fileTag?.album?.nullIfEmpty ?? metaTag.album,
-          albumArtist: fileTag?.albumArtist?.nullIfEmpty ?? metaTag.albumArtist,
-          year: fileTag?.year ?? metaTag.year,
-          genre: fileTag?.genre?.nullIfEmpty ?? metaTag.genre,
-          trackNumber: fileTag?.trackNumber ?? metaTag.trackNumber,
-          trackTotal: fileTag?.trackTotal ?? metaTag.trackTotal,
-          discNumber: fileTag?.discNumber ?? metaTag.discNumber,
-          discTotal: fileTag?.discTotal ?? metaTag.discTotal,
-          lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag.lyrics,
-          duration: fileTag?.duration ?? metaTag.duration,
-          pictures: pictures,
-          bpm: fileTag?.bpm ?? metaTag.bpm,
-        );
-        if (File(file.path).existsSync())
-          await AudioTags.write(file.path, newTag);
-        return newTag;
-      } else {
-        return fileTag;
+      if (tag == null) {
+        final metaTag = await getTagFromMetadata(song);
+        final songTag = mapToTag(song['audioTags']);
+        final fileTag =
+            songTag.equalsWithoutPictures(metaTag)
+                ? metaTag
+                : await AudioTags.read(file.path);
+        final pictures =
+            <Picture>[]
+              ..addAll(fileTag?.pictures ?? [])
+              ..addAll(metaTag?.pictures ?? []);
+        if (fileTag == metaTag || metaTag == null) {
+          return fileTag;
+        } else {
+          newTag = Tag(
+            title: fileTag?.title?.nullIfEmpty ?? metaTag.title,
+            trackArtist:
+                fileTag?.trackArtist?.nullIfEmpty ?? metaTag.trackArtist,
+            album: fileTag?.album?.nullIfEmpty ?? metaTag.album,
+            albumArtist:
+                fileTag?.albumArtist?.nullIfEmpty ?? metaTag.albumArtist,
+            year: fileTag?.year ?? metaTag.year,
+            genre: fileTag?.genre?.nullIfEmpty ?? metaTag.genre,
+            trackNumber: fileTag?.trackNumber ?? metaTag.trackNumber,
+            trackTotal: fileTag?.trackTotal ?? metaTag.trackTotal,
+            discNumber: fileTag?.discNumber ?? metaTag.discNumber,
+            discTotal: fileTag?.discTotal ?? metaTag.discTotal,
+            lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag.lyrics,
+            duration: fileTag?.duration ?? metaTag.duration,
+            pictures: pictures,
+            bpm: fileTag?.bpm ?? metaTag.bpm,
+          );
+        }
       }
+      if (File(file.path).existsSync()) {
+        if (Platform.isAndroid) {
+          final tempDir = path.join(offlineDirectory.value, 'temp');
+          final copy = File(
+            file.path,
+          ).copySync(path.join(tempDir, path.basename(file.path)));
+          await AudioTags.write(copy.path, newTag!);
+          final success = await MediaUtils.copyMediaFileToPathOrUri(
+            file.path,
+            copy.path,
+          );
+          if (success == null) return null;
+        } else
+          await AudioTags.write(file.path, newTag!);
+      }
+      return newTag;
     } catch (e, stackTrace) {
       switch (e) {
         case AudioTagsError_InvalidPath:
-          logger.log(
+          _logger.log(
             'Error in ${stackTrace.getCurrentMethodName()}: ${file.path}',
             e,
             stackTrace,
           );
-          break;
+          return null;
         default:
+          rethrow;
       }
     }
-    return null;
   }
 
-  void _renameFileWithCorrectExtension(File file, String id) {
+  void _renameFileWithCorrectExtension(File file, String? id) {
     final mimeType = getMimeTypeFromFile(file.path);
     final extension = getExtensionFromMime(mimeType);
     final currentBaseName = path.basenameWithoutExtension(file.path);
-
-    if (currentBaseName != id || _getFileExtension(file.path) != extension) {
-      final newFileName = file.path.replaceAll(currentBaseName, id);
-      final newFilePath = _ensureCorrectExtension(newFileName, extension);
-      file.renameSync(newFilePath);
+    String newFileName = currentBaseName;
+    String newFilePath = _ensureCorrectExtension(newFileName, extension);
+    if (id != null && currentBaseName != id) {
+      newFileName = file.path.replaceAll(currentBaseName, id);
+      newFilePath = _ensureCorrectExtension(newFileName, extension);
     }
+    if (_getFileExtension(file.path) != extension ||
+        (id != null && currentBaseName != id))
+      try {
+        file.renameSync(newFilePath);
+      } catch (_) {}
   }
 
   // File search utilities
@@ -507,15 +553,19 @@ class _IsolateTagWriterMessage {
   _IsolateTagWriterMessage({
     required this.sendPort,
     required this.song,
-    required this.id,
     required this.tagger,
     required this.audioFiles,
+    required this.logger,
+    this.tag,
+    this.id,
   });
   final SendPort sendPort;
   final dynamic song;
-  final String id;
+  final String? id;
+  final Tag? tag;
   final FileTagger tagger;
   final List<String> audioFiles;
+  final Logger logger;
 }
 
 class _IsolateTagReaderMessage {
@@ -523,8 +573,10 @@ class _IsolateTagReaderMessage {
     required this.sendPort,
     required this.path,
     required this.song,
+    required this.logger,
   });
   final SendPort sendPort;
   final String path;
   final dynamic song;
+  final Logger logger;
 }

@@ -20,6 +20,7 @@
  */
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:app_links/app_links.dart';
 import 'package:audio_service/audio_service.dart';
@@ -30,7 +31,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
@@ -46,6 +46,7 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:window_manager/window_manager.dart';
@@ -61,6 +62,11 @@ bool isFdroidBuild = false;
 bool isUpdateChecked = false;
 final nowPlayingOpen = ValueNotifier(false);
 Map<String, dynamic> userGeolocation = {};
+const audioChannel = MethodChannel('com.akashskypatel.reverbio/audio');
+const permissionChannel = MethodChannel(
+  'com.akashskypatel.reverbio/media_permissions',
+);
+late final ImageCache imageCache;
 
 class Reverbio extends StatefulWidget {
   const Reverbio({super.key});
@@ -119,13 +125,15 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
   @override
   void initState() {
     super.initState();
-    windowManager.addListener(this);
+    if (Platform.isWindows) windowManager.addListener(this);
     initialize();
   }
 
   void initialize() async {
-    await windowManager.setPreventClose(true);
-    if (mounted) setState(() {});
+    if (Platform.isWindows) {
+      await windowManager.setPreventClose(true);
+      if (mounted) setState(() {});
+    }
     getUserGeolocation();
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
@@ -192,7 +200,7 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
 
   @override
   void dispose() {
-    windowManager.removeListener(this);
+    if (Platform.isWindows) windowManager.removeListener(this);
     unawaited(HiveService.close());
     unawaited(audioHandler.dispose());
     unawaited(clearTempFiles());
@@ -240,27 +248,30 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
+  imageCache = PaintingBinding.instance.imageCache;
+  if (Platform.isWindows) {
+    await windowManager.ensureInitialized();
+    const windowOptions = WindowOptions(
+      center: true,
+      backgroundColor: Colors.transparent,
+      titleBarStyle: TitleBarStyle.normal,
+    );
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
   await initialization();
-  const windowOptions = WindowOptions(
-    center: true,
-    backgroundColor: Colors.transparent,
-    titleBarStyle: TitleBarStyle.normal,
-  );
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
-  runApp(const MaterialApp(home: Reverbio()));
+  // Init router
+  NavigationManager.instance;
+
+  runApp(MaterialApp(builder: (context, child) => const Reverbio()));
 }
 
 Future<void> initialization() async {
   try {
     await HiveService.ensureInitialize();
-
-    // Init router
-    NavigationManager.instance;
-
+    await MediaUtils.ensureInitialized();
     L10n.initialize();
 
     audioHandler = await AudioService.init(
@@ -325,16 +336,4 @@ void handleIncomingLink(Uri? uri) async {
       showToast(context.l10n!.failedToLoadPlaylist);
     }
   }
-}
-
-Future<bool> hasImageAccess() async {
-  return (await Permission.photos.status).isGranted;
-}
-
-Future<bool> hasAudioAccess() async {
-  return (await Permission.audio.status).isGranted;
-}
-
-Future<Map<Permission, PermissionStatus>> requestMediaPermissions() async {
-  return [Permission.photos, Permission.audio].request();
 }

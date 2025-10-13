@@ -533,7 +533,7 @@ class _SongBarState extends State<SongBar> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       );
       if (value != null) {
-        await _popupMenuItemAction(value, song);
+        await _popupMenuItemAction(context, value, song);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -750,7 +750,7 @@ class _SongBarState extends State<SongBar> {
     return data;
   }
 
-  Future<void> _popupMenuItemAction(String value, dynamic song) async {
+  Future<void> _popupMenuItemAction(BuildContext context, String value, dynamic song) async {
     switch (value) {
       case 'like':
         songLikeStatus.value = !songLikeStatus.value;
@@ -820,7 +820,7 @@ class _SongBarState extends State<SongBar> {
       color: _theme.colorScheme.surface,
       icon: Icon(FluentIcons.more_vertical_24_filled, color: primaryColor),
       onSelected: (value) async {
-        await _popupMenuItemAction(value, song);
+        await _popupMenuItemAction(context, value, song);
       },
       itemBuilder: (context) => _buildPopupMenuItems(context, song),
     );

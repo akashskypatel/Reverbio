@@ -25,7 +25,6 @@ import 'package:audiotags/audiotags.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -43,7 +42,7 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
   final theme = Theme.of(context);
   final offlinePath = await getOfflinePath(song);
   if (offlinePath == null || !doesFileExist(offlinePath)) {
-    return showToast(context: context, context.l10n!.cannotOpenFile);
+    return showToast(context: context, L10n.current.cannotOpenFile);
   }
   final fileTagger = FileTagger();
   Tag? tags;
@@ -57,7 +56,7 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
           [],
     );
   } catch (_) {
-    return showToast(context: context, context.l10n!.cannotOpenFile);
+    return showToast(context: context, L10n.current.cannotOpenFile);
   }
   final titleController = TextEditingController(text: tags?.title);
   final trackArtistController = TextEditingController(text: tags?.trackArtist);
@@ -85,363 +84,389 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
   bool metaLoading = false;
   bool showTitleError = false;
   bool showArtistError = false;
-  return showDialog(
-    context: context,
-    builder: (context) {
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: StatefulBuilder(
-          builder: (context, setState) {
-            final maxWidth = MediaQuery.of(context).size.width;
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => GoRouter.of(context).pop(),
-              child: GestureDetector(
-                onTap: () {},
-                child: AlertDialog(
-                  title: Text(context.l10n!.editTags),
-                  content: SizedBox(
-                    width: maxWidth,
-                    child: ScaffoldMessenger(
-                      child: Builder(
-                        builder:
-                            (context) => Scaffold(
-                              persistentFooterButtons: [
-                                TextButton(
-                                  onPressed: () async {
-                                    try {
-                                      final newTags = Tag(
-                                        title: titleController.text.nullIfEmpty,
-                                        trackArtist:
-                                            trackArtistController
-                                                .text
-                                                .nullIfEmpty,
-                                        album: albumController.text.nullIfEmpty,
-                                        albumArtist:
-                                            albumArtistController
-                                                .text
-                                                .nullIfEmpty,
-                                        year: int.tryParse(yearController.text),
-                                        genre: genreController.text.nullIfEmpty,
-                                        trackNumber: int.tryParse(
-                                          trackNumberController.text,
-                                        ),
-                                        trackTotal: int.tryParse(
-                                          trackTotalController.text,
-                                        ),
-                                        discNumber: int.tryParse(
-                                          discNumberController.text,
-                                        ),
-                                        discTotal: int.tryParse(
-                                          discTotalController.text,
-                                        ),
-                                        lyrics:
-                                            lyricsController.text.nullIfEmpty,
-                                        duration: int.tryParse(
-                                          durationController.text,
-                                        ),
-                                        bpm: double.tryParse(
-                                          bpmController.text,
-                                        ),
-                                        pictures: pictures,
-                                      );
-                                      if (tags != newTags) {
-                                        await AudioTags.write(
-                                          offlinePath,
-                                          newTags,
-                                        );
-                                        showToast(context.l10n!.tagsUpdated);
-                                      } else {
-                                        showToast(context.l10n!.tagsNoChanges);
-                                      }
-                                    } catch (e, stackTrace) {
-                                      logger.log(
-                                        'Error in ${stackTrace.getCurrentMethodName()}:',
-                                        e,
-                                        stackTrace,
-                                      );
-                                      showToast(context.l10n!.tagsError);
-                                    }
-                                    GoRouter.of(context).pop();
-                                  },
-                                  child: Text(
-                                    context.l10n!.confirm.toUpperCase(),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () => GoRouter.of(context).pop(),
-                                  child: Text(
-                                    context.l10n!.cancel.toUpperCase(),
-                                  ),
-                                ),
-                              ],
-                              appBar: AppBar(
-                                surfaceTintColor:
-                                    theme.colorScheme.surfaceContainerHigh,
-                                backgroundColor:
-                                    theme.colorScheme.surfaceContainerHigh,
-                                actions: [
-                                  ElevatedButton(
+  if (context.mounted)
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              final maxWidth = MediaQuery.of(context).size.width;
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).pop(),
+                child: GestureDetector(
+                  onTap: () {},
+                  child: AlertDialog(
+                    title: Text(L10n.current.editTags),
+                    content: SizedBox(
+                      width: maxWidth,
+                      child: ScaffoldMessenger(
+                        child: Builder(
+                          builder:
+                              (context) => Scaffold(
+                                persistentFooterButtons: [
+                                  TextButton(
                                     onPressed: () async {
-                                      if (context.mounted)
-                                        setState(() {
-                                          metaLoading = true;
-                                        });
-                                      final title =
-                                          song['mbTitle'] ??
-                                          song['title'] ??
-                                          song['ytTitle'] ??
-                                          tags?.title;
-                                      final artist =
-                                          song['mbArtist'] ??
-                                          song['artist'] ??
-                                          song['ytArtist'] ??
-                                          tags?.trackArtist;
-                                      if (title == null ||
-                                          title.isEmpty ||
-                                          title.toLowerCase() == 'null' ||
-                                          title.toLowerCase() == 'unknown' ||
-                                          artist == null ||
-                                          artist.isEmpty ||
-                                          artist.toLowerCase() == 'unknown' ||
-                                          artist.toLowerCase() == 'null') {
-                                        if (context.mounted)
-                                          setState(() {
-                                            showArtistError = true;
-                                            showTitleError = true;
-                                          });
-                                        showToast(
-                                          context.l10n!.enterTitleAndArtist,
-                                        );
-                                        return;
-                                      }
-                                      song['title'] =
-                                          song['mbTitle'] ??
-                                          song['title'] ??
-                                          song['ytTitle'] ??
-                                          tags?.title;
-                                      song['artist'] =
-                                          song['mbArtist'] ??
-                                          song['artist'] ??
-                                          song['ytArtist'] ??
-                                          tags?.trackArtist;
-                                      final future = queueSongInfoRequest(song);
-                                      final value =
-                                          await future.completerFuture;
-                                      final metaTag =
-                                          await FileTagger.getTagFromMetadata(
-                                            value,
-                                          );
-                                      if (context.mounted)
-                                        setState(() {
-                                          song.addAll(value);
-                                          pictures.addAll(
-                                            metaTag?.pictures ?? [],
-                                          );
-                                          bpmController.text =
-                                              metaTag?.bpm?.toString() ?? '';
-                                          titleController.text =
-                                              metaTag?.title ?? '';
-                                          trackArtistController.text =
-                                              metaTag?.trackArtist ?? '';
-                                          yearController.text =
-                                              metaTag?.year?.toString() ?? '';
-                                          durationController.text =
-                                              metaTag?.duration?.toString() ??
-                                              '';
-                                          genreController.text =
-                                              metaTag?.genre ?? '';
-                                          albumController.text =
-                                              metaTag?.album ?? '';
-                                          albumArtistController.text =
-                                              metaTag?.album ?? '';
-                                          metaLoading = false;
-                                          showToast(
-                                            context.l10n!.fetchedMetadata,
-                                          );
-                                        });
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          theme.colorScheme.surfaceContainer,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      spacing: 10,
-                                      children: [
-                                        if (metaLoading)
-                                          const SizedBox.square(
-                                            dimension: 18,
-                                            child: Spinner(),
-                                          )
-                                        else
-                                          const Icon(
-                                            FluentIcons
-                                                .database_search_24_filled,
+                                      try {
+                                        final newTag = Tag(
+                                          title:
+                                              titleController.text.nullIfEmpty,
+                                          trackArtist:
+                                              trackArtistController
+                                                  .text
+                                                  .nullIfEmpty,
+                                          album:
+                                              albumController.text.nullIfEmpty,
+                                          albumArtist:
+                                              albumArtistController
+                                                  .text
+                                                  .nullIfEmpty,
+                                          year: int.tryParse(
+                                            yearController.text,
                                           ),
-                                        Text(context.l10n!.getMetadata),
-                                      ],
+                                          genre:
+                                              genreController.text.nullIfEmpty,
+                                          trackNumber: int.tryParse(
+                                            trackNumberController.text,
+                                          ),
+                                          trackTotal: int.tryParse(
+                                            trackTotalController.text,
+                                          ),
+                                          discNumber: int.tryParse(
+                                            discNumberController.text,
+                                          ),
+                                          discTotal: int.tryParse(
+                                            discTotalController.text,
+                                          ),
+                                          lyrics:
+                                              lyricsController.text.nullIfEmpty,
+                                          duration: int.tryParse(
+                                            durationController.text,
+                                          ),
+                                          bpm: double.tryParse(
+                                            bpmController.text,
+                                          ),
+                                          pictures: pictures,
+                                        );
+                                        bool mediaAccess =
+                                            await hasManageMediaAccess();
+                                        if (!mediaAccess) {
+                                          await requestManageMedia();
+                                          mediaAccess =
+                                              await hasManageMediaAccess();
+                                        }
+                                        if (tags != newTag && mediaAccess) {
+                                          final success = await fileTagger
+                                              .tagOfflineFile(
+                                                song,
+                                                filePath: offlinePath,
+                                                tag: newTag,
+                                              );
+                                          if (success)
+                                            showToast(L10n.current.tagsUpdated);
+                                          else
+                                            showToast(L10n.current.tagsError);
+                                        }
+                                      } catch (e, stackTrace) {
+                                        logger.log(
+                                          'Error in ${stackTrace.getCurrentMethodName()}:',
+                                          e,
+                                          stackTrace,
+                                        );
+                                        showToast(L10n.current.tagsError);
+                                      }
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text(
+                                      L10n.current.confirm.toUpperCase(),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
+                                    child: Text(
+                                      L10n.current.cancel.toUpperCase(),
                                     ),
                                   ),
                                 ],
-                              ),
-                              backgroundColor:
-                                  theme.colorScheme.surfaceContainerHigh,
-                              body: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // String title,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.title,
-                                      FluentIcons.music_note_2_24_regular,
-                                      titleController,
-                                      borderRadius: commonCustomBarRadiusFirst,
-                                      showErrorIcon: showTitleError,
-                                    ),
-                                    // String trackArtist,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.trackArtist,
-                                      FluentIcons.person_24_regular,
-                                      trackArtistController,
-                                      showErrorIcon: showArtistError,
-                                    ),
-                                    // String album,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.album,
-                                      FluentIcons.album_24_regular,
-                                      albumController,
-                                    ),
-                                    // String albumArtist,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.albumArtist,
-                                      FluentIcons.people_24_regular,
-                                      albumArtistController,
-                                    ),
-                                    // int year,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.year,
-                                      FluentIcons.calendar_24_regular,
-                                      yearController,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                    ),
-                                    // String genre,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.genre,
-                                      FluentIcons.tag_24_regular,
-                                      genreController,
-                                    ),
-                                    // int trackNumber,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.trackNumber,
-                                      FluentIcons.number_row_24_regular,
-                                      trackNumberController,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                    ),
-                                    // int trackTotal,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.trackTotal,
-                                      FluentIcons.number_symbol_24_regular,
-                                      trackTotalController,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                    ),
-                                    // int discNumber,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.discNumber,
-                                      FluentIcons.record_24_filled,
-                                      discNumberController,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                    ),
-                                    // int discTotal,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.discTotal,
-                                      FluentIcons.autosum_24_regular,
-                                      discTotalController,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                    ),
-                                    // String lyrics,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.lyrics,
-                                      FluentIcons.text_t_24_regular,
-                                      lyricsController,
-                                    ),
-                                    // int duration,
-                                    _textInput(
-                                      context,
-                                      context.l10n!.duration,
-                                      FluentIcons.clock_24_regular,
-                                      durationController,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                    ),
-                                    // double bpm
-                                    _textInput(
-                                      context,
-                                      context.l10n!.bpm,
-                                      FluentIcons
-                                          .headphones_sound_wave_24_regular,
-                                      bpmController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d+\.?\d{0,2}'),
-                                        ),
-                                      ],
-                                    ),
-                                    // List<Picture> pictures,
-                                    _imageInput(
-                                      context,
-                                      context.l10n!.pictures,
-                                      FluentIcons.image_24_regular,
-                                      pictures,
-                                      borderRadius: commonCustomBarRadiusLast,
+                                appBar: AppBar(
+                                  surfaceTintColor:
+                                      theme.colorScheme.surfaceContainerHigh,
+                                  backgroundColor:
+                                      theme.colorScheme.surfaceContainerHigh,
+                                  actions: [
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        if (context.mounted)
+                                          setState(() {
+                                            metaLoading = true;
+                                          });
+                                        final title =
+                                            song['mbTitle'] ??
+                                            song['title'] ??
+                                            song['ytTitle'] ??
+                                            tags?.title;
+                                        final artist =
+                                            song['mbArtist'] ??
+                                            song['artist'] ??
+                                            song['ytArtist'] ??
+                                            tags?.trackArtist;
+                                        if (title == null ||
+                                            title.isEmpty ||
+                                            title.toLowerCase() == 'null' ||
+                                            title.toLowerCase() == 'unknown' ||
+                                            artist == null ||
+                                            artist.isEmpty ||
+                                            artist.toLowerCase() == 'unknown' ||
+                                            artist.toLowerCase() == 'null') {
+                                          if (context.mounted)
+                                            setState(() {
+                                              showArtistError = true;
+                                              showTitleError = true;
+                                            });
+                                          showToast(
+                                            L10n.current.enterTitleAndArtist,
+                                          );
+                                          return;
+                                        }
+                                        song['title'] =
+                                            song['mbTitle'] ??
+                                            song['title'] ??
+                                            song['ytTitle'] ??
+                                            tags?.title;
+                                        song['artist'] =
+                                            song['mbArtist'] ??
+                                            song['artist'] ??
+                                            song['ytArtist'] ??
+                                            tags?.trackArtist;
+                                        final future = queueSongInfoRequest(
+                                          song,
+                                        );
+                                        final value =
+                                            await future.completerFuture;
+                                        final metaTag =
+                                            await FileTagger.getTagFromMetadata(
+                                              value,
+                                            );
+                                        if (context.mounted)
+                                          setState(() {
+                                            song.addAll(value);
+                                            pictures.addAll(
+                                              metaTag?.pictures ?? [],
+                                            );
+                                            bpmController.text =
+                                                metaTag?.bpm?.toString() ?? '';
+                                            titleController.text =
+                                                metaTag?.title ?? '';
+                                            trackArtistController.text =
+                                                metaTag?.trackArtist ?? '';
+                                            yearController.text =
+                                                metaTag?.year?.toString() ?? '';
+                                            durationController.text =
+                                                metaTag?.duration?.toString() ??
+                                                '';
+                                            genreController.text =
+                                                metaTag?.genre ?? '';
+                                            albumController.text =
+                                                metaTag?.album ?? '';
+                                            albumArtistController.text =
+                                                metaTag?.albumArtist ?? '';
+                                            metaLoading = false;
+                                            showToast(
+                                              L10n.current.fetchedMetadata,
+                                            );
+                                          });
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            theme.colorScheme.surfaceContainer,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        spacing: 10,
+                                        children: [
+                                          if (metaLoading)
+                                            const SizedBox.square(
+                                              dimension: 18,
+                                              child: Spinner(),
+                                            )
+                                          else
+                                            const Icon(
+                                              FluentIcons
+                                                  .database_search_24_filled,
+                                            ),
+                                          Text(L10n.current.getMetadata),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
+                                backgroundColor:
+                                    theme.colorScheme.surfaceContainerHigh,
+                                body: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // String title,
+                                      _textInput(
+                                        context,
+                                        L10n.current.title,
+                                        FluentIcons.music_note_2_24_regular,
+                                        titleController,
+                                        borderRadius:
+                                            commonCustomBarRadiusFirst,
+                                        showErrorIcon: showTitleError,
+                                      ),
+                                      // String trackArtist,
+                                      _textInput(
+                                        context,
+                                        L10n.current.trackArtist,
+                                        FluentIcons.person_24_regular,
+                                        trackArtistController,
+                                        showErrorIcon: showArtistError,
+                                      ),
+                                      // String album,
+                                      _textInput(
+                                        context,
+                                        L10n.current.album,
+                                        FluentIcons.album_24_regular,
+                                        albumController,
+                                      ),
+                                      // String albumArtist,
+                                      _textInput(
+                                        context,
+                                        L10n.current.albumArtist,
+                                        FluentIcons.people_24_regular,
+                                        albumArtistController,
+                                      ),
+                                      // int year,
+                                      _textInput(
+                                        context,
+                                        L10n.current.year,
+                                        FluentIcons.calendar_24_regular,
+                                        yearController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                      ),
+                                      // String genre,
+                                      _textInput(
+                                        context,
+                                        L10n.current.genre,
+                                        FluentIcons.tag_24_regular,
+                                        genreController,
+                                      ),
+                                      // int trackNumber,
+                                      _textInput(
+                                        context,
+                                        L10n.current.trackNumber,
+                                        FluentIcons.number_row_24_regular,
+                                        trackNumberController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                      ),
+                                      // int trackTotal,
+                                      _textInput(
+                                        context,
+                                        L10n.current.trackTotal,
+                                        FluentIcons.number_symbol_24_regular,
+                                        trackTotalController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                      ),
+                                      // int discNumber,
+                                      _textInput(
+                                        context,
+                                        L10n.current.discNumber,
+                                        FluentIcons.record_24_filled,
+                                        discNumberController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                      ),
+                                      // int discTotal,
+                                      _textInput(
+                                        context,
+                                        L10n.current.discTotal,
+                                        FluentIcons.autosum_24_regular,
+                                        discTotalController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                      ),
+                                      // String lyrics,
+                                      _textInput(
+                                        context,
+                                        L10n.current.lyrics,
+                                        FluentIcons.text_t_24_regular,
+                                        lyricsController,
+                                      ),
+                                      // int duration,
+                                      _textInput(
+                                        context,
+                                        L10n.current.duration,
+                                        FluentIcons.clock_24_regular,
+                                        durationController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                      ),
+                                      // double bpm
+                                      _textInput(
+                                        context,
+                                        L10n.current.bpm,
+                                        FluentIcons
+                                            .headphones_sound_wave_24_regular,
+                                        bpmController,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                            RegExp(r'^\d+\.?\d{0,2}'),
+                                          ),
+                                        ],
+                                      ),
+                                      // List<Picture> pictures,
+                                      _imageInput(
+                                        context,
+                                        L10n.current.pictures,
+                                        FluentIcons.image_24_regular,
+                                        pictures,
+                                        borderRadius: commonCustomBarRadiusLast,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
-      );
-    },
-  );
+              );
+            },
+          ),
+        );
+      },
+    );
 }
 
 Widget _textInput(
@@ -557,7 +582,7 @@ Widget _imageInput(
                 children: [
                   SectionHeader(
                     icon: FluentIcons.image_24_regular,
-                    title: context.l10n!.pictures,
+                    title: L10n.current.pictures,
                     expandedActions: [
                       IconButton(
                         onPressed: () async {
@@ -675,7 +700,7 @@ Future<Picture?> showImagePickerDialog(
                         });
                       }
                     },
-                    label: Text(context.l10n!.pictureType),
+                    label: Text(L10n.current.pictureType),
                     dropdownMenuEntries: List.generate(
                       PictureType.values.length,
                       (index) => DropdownMenuEntry(
@@ -745,7 +770,7 @@ Future<Picture?> showImagePickerDialog(
                           },
                           controller: imagePathController,
                           decoration: InputDecoration(
-                            label: Text(context.l10n!.imagePath),
+                            label: Text(L10n.current.imagePath),
                             labelStyle: TextStyle(color: theme.primary),
                           ),
                         ),
@@ -780,12 +805,12 @@ Future<Picture?> showImagePickerDialog(
         ),
         actions: [
           TextButton(
-            onPressed: () => GoRouter.of(context).pop(picture),
-            child: Text(context.l10n!.confirm.toUpperCase()),
+            onPressed: () => Navigator.of(context).pop(picture),
+            child: Text(L10n.current.confirm.toUpperCase()),
           ),
           TextButton(
-            onPressed: () => GoRouter.of(context).pop(initialValue),
-            child: Text(context.l10n!.cancel.toUpperCase()),
+            onPressed: () => Navigator.of(context).pop(initialValue),
+            child: Text(L10n.current.cancel.toUpperCase()),
           ),
         ],
       );

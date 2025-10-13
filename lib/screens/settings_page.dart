@@ -385,26 +385,27 @@ class _SettingsPageState extends State<SettingsPage> {
           tileIcon: FluentIcons.text_grammar_dismiss_24_filled,
           onTap: () => _showClearRecentlyPlayedDialog(context),
         ),
-        LayoutBuilder(
-          builder:
-              (context, constraints) => ListenableBuilder(
-                listenable: offlineDirectory,
-                builder:
-                    (context, child) => CustomBar(
-                      tileName: context.l10n!.changeOfflineDir,
-                      tileIcon: FluentIcons.folder_swap_24_filled,
-                      onTap: () async {
-                        await _showChangeOfflineDirDialog(context);
-                      },
-                      trailing: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth * .4,
+        if (Platform.isWindows)
+          LayoutBuilder(
+            builder:
+                (context, constraints) => ListenableBuilder(
+                  listenable: offlineDirectory,
+                  builder:
+                      (context, child) => CustomBar(
+                        tileName: context.l10n!.changeOfflineDir,
+                        tileIcon: FluentIcons.folder_swap_24_filled,
+                        onTap: () async {
+                          await _showChangeOfflineDirDialog(context);
+                        },
+                        trailing: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth * .4,
+                          ),
+                          child: Text(offlineDirectory.value, softWrap: true),
                         ),
-                        child: Text(offlineDirectory.value, softWrap: true),
                       ),
-                    ),
-              ),
-        ),
+                ),
+          ),
         CustomBar(
           tileName: context.l10n!.additionalMusicDir,
           tileIcon: FluentIcons.folder_add_24_filled,
@@ -604,27 +605,29 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       IconButton(
                         onPressed: () async {
-                          canCloseOnTapOutside.value = false;
-                          final newDir = await FilePicker.platform
-                              .getDirectoryPath(
-                                dialogTitle: context.l10n!.changeOfflineDir,
-                                initialDirectory: offlineDirectory.value,
+                          if (await checkAllPermissions()) {
+                            canCloseOnTapOutside.value = false;
+                            final newDir = await FilePicker.platform
+                                .getDirectoryPath(
+                                  dialogTitle: context.l10n!.changeOfflineDir,
+                                  initialDirectory: offlineDirectory.value,
+                                );
+                            if (newDir != null &&
+                                Directory(newDir).existsSync() &&
+                                !additionalDirectories.contains(newDir)) {
+                              additionalDirectories.add(newDir);
+                              showToast(
+                                '${context.l10n!.additionalMusicDir}: "$newDir" ${context.l10n!.addedSuccess}',
+                                context: context,
                               );
-                          if (newDir != null &&
-                              Directory(newDir).existsSync() &&
-                              !additionalDirectories.contains(newDir)) {
-                            additionalDirectories.add(newDir);
-                            showToast(
-                              '${context.l10n!.additionalMusicDir}: "$newDir" ${context.l10n!.addedSuccess}',
-                              context: context,
-                            );
-                            logger.log(
-                              'Additional directory added: $newDir',
-                              null,
-                              null,
-                            );
+                              logger.log(
+                                'Additional directory added: $newDir',
+                                null,
+                                null,
+                              );
+                            }
+                            canCloseOnTapOutside.value = true;
                           }
-                          canCloseOnTapOutside.value = true;
                         },
                         icon: const Icon(FluentIcons.add_24_filled),
                         iconSize: listHeaderIconSize,
@@ -656,12 +659,13 @@ class _SettingsPageState extends State<SettingsPage> {
                             actions: [
                               IconButton(
                                 onPressed: () async {
+                                  final dir = additionalDirectories[index];
                                   await showDialog(
                                     context: context,
                                     builder:
                                         (context) => ConfirmationDialog(
                                           message:
-                                              '${context.l10n!.removeDir}: ${additionalDirectories[index]}?\n${context.l10n!.removeDirMessage}',
+                                              '${context.l10n!.removeDir}: $dir?\n${context.l10n!.removeDirMessage}',
                                           confirmText:
                                               context.l10n!.confirm
                                                   .toUpperCase(),

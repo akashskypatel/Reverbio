@@ -23,19 +23,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -47,8 +48,6 @@ import 'package:reverbio/style/reverbio_icons.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-
-final imageCache = PaintingBinding.instance.imageCache;
 
 const androidDeviceTypes = {
   19: {'id': 'TYPE_AUX_LINE', 'name': 'AUX Line', 'include': true},
@@ -733,15 +732,9 @@ Future<Uri?> getValidImage(dynamic obj, {bool cache = true}) async {
           }
         }
     }
+    if (imageUri != null) cacheImage(imageUri.toString());
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
-  }
-  if (imageUri != null) {
-    if (isFilePath(imageUri.toString())) {
-      FileImage(File(imageUri.path)).resolve(ImageConfiguration.empty);
-    } else if (isUrl(imageUri.toString())) {
-      NetworkImage(imageUri.toString()).resolve(ImageConfiguration.empty);
-    }
   }
   return imageUri;
 }
@@ -949,18 +942,18 @@ Future<void> checkInternetConnection() async {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text(context.l10n!.noInternet),
-            content: Text(context.l10n!.noInternetMessage),
+            title: Text(L10n.current.noInternet),
+            content: Text(L10n.current.noInternetMessage),
             actions: [
               TextButton(
-                child: Text(context.l10n!.retry.toUpperCase()),
+                child: Text(L10n.current.retry.toUpperCase()),
                 onPressed: () {
                   unawaited(checkInternetConnection());
                   context.pop();
                 },
               ),
               TextButton(
-                child: Text(context.l10n!.offlineMode.toUpperCase()),
+                child: Text(L10n.current.offlineMode.toUpperCase()),
                 onPressed: () async {
                   await toggleOfflineMode(context, true);
                 },
@@ -1092,11 +1085,11 @@ Future<File?> getImageFile({String? path}) async {
     final filePath = path ?? await pickImageFile(copyToAppDir: false);
     if (filePath == null) return null;
     if (isFilePath(filePath) && doesFileExist(filePath)) {
-      FileImage(File(filePath)).resolve(ImageConfiguration.empty);
+      cacheImage(filePath);
       return File(filePath);
     } else if (isUrl(filePath) && (await checkUrl(filePath)) < 400) {
       final file = await getFileFromUrl(filePath);
-      NetworkImage(filePath).resolve(ImageConfiguration.empty);
+      cacheImage(filePath);
       return file;
     }
   } catch (_) {}
@@ -1119,7 +1112,12 @@ Future<ImageProvider?> getImageProvider({String? path}) async {
 Future<File?> getFileFromUrl(String url) async {
   try {
     final bytes = await getImageBytesFromUrl(url);
-    if (bytes != null) return getFileFromBytes(bytes, getFileNameFromUrl(url));
+    final tempDir =
+        Platform.isWindows
+            ? ensureReverbioPath((await getTemporaryDirectory()).path)
+            : join((await getApplicationSupportDirectory()).path, 'temp');
+    if (bytes != null)
+      return getFileFromBytes(bytes, getFileNameFromUrl(url), tempDir);
   } catch (_) {}
   return null;
 }
@@ -1138,21 +1136,16 @@ String getFileNameFromUrl(String url) {
 
 Future<File?> getFileFromBytes(
   Uint8List data,
-  String fileName, {
-  String? tempDir,
-}) async {
+  String fileName,
+  String tempDir,
+) async {
   try {
     // Get the temporary directory for storing the file
-    final directory =
-        tempDir != null
-            ? Directory(ensureReverbioPath(tempDir))
-            : Directory(
-              ensureReverbioPath((await getTemporaryDirectory()).path),
-            );
+    final directory = Directory(tempDir);
 
     await directory.create(recursive: true);
 
-    String filePath = '${directory.path}${Platform.pathSeparator}$fileName';
+    String filePath = join(directory.path, fileName);
     final mime = getMimeFromBytes(data);
     final extension = getExtensionFromMime(mime);
     filePath = ensureCorrectExtension(filePath, extension: extension);
@@ -1166,7 +1159,7 @@ Future<File?> getFileFromBytes(
       // Write the Uint8List data to the file
       await file.writeAsBytes(data);
 
-      FileImage(file).resolve(ImageConfiguration.empty);
+      cacheImage(file.path);
     }
 
     return file;
@@ -1207,6 +1200,7 @@ Future<Uint8List?> getImageBytesFromUrl(String imageUrl) async {
 
 Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
   try {
+    WidgetsFlutterBinding.ensureInitialized();
     final ImageStream stream = imageProvider.resolve(ImageConfiguration.empty);
     final completer = Completer<Uint8List?>();
     ImageStreamListener? listener;
@@ -1247,7 +1241,7 @@ Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
 Future<void> clearTempFiles() async {
   try {
     // ignore: body_might_complete_normally_catch_error, argument_type_not_assignable_to_error_handler
-    await FilePicker.platform.clearTemporaryFiles().catchError((){});
+    await FilePicker.platform.clearTemporaryFiles().catchError(() {});
     try {
       Directory(
         ensureReverbioPath((await getTemporaryDirectory()).path),
@@ -1262,4 +1256,96 @@ Future<void> clearTempFiles() async {
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
   }
+}
+
+void cacheImage(String path) async {
+  try {
+    if (isFilePath(path)) {
+      FileImage(File(path)).resolve(ImageConfiguration.empty);
+    } else if (isUrl(path)) {
+      NetworkImage(path).resolve(ImageConfiguration.empty);
+    }
+  } catch (_) {}
+}
+
+Future<bool> hasVideoAccess() async {
+  return (await Permission.videos.status).isGranted;
+}
+
+Future<bool> hasImageAccess() async {
+  return (await Permission.photos.status).isGranted;
+}
+
+Future<bool> hasAudioAccess() async {
+  return (await Permission.audio.status).isGranted;
+}
+
+Future<Map<Permission, PermissionStatus>> requestVideoPermissions() async {
+  return [Permission.videos].request();
+}
+
+Future<Map<Permission, PermissionStatus>> requestImagePermissions() async {
+  return [Permission.photos].request();
+}
+
+Future<Map<Permission, PermissionStatus>> requestAudioPermissions() async {
+  return [Permission.audio].request();
+}
+
+Future<Map<Permission, PermissionStatus>> requestMediaPermissions() async {
+  return [Permission.photos, Permission.audio].request();
+}
+
+/// Checks if the app has media management privileges.
+/// Returns `true` if the app can manage media files.
+Future<bool> hasManageMediaAccess() async {
+  try {
+    final bool result = await permissionChannel.invokeMethod('canManageMedia');
+    return result;
+  } on PlatformException catch (e, stackTrace) {
+    logger.log(
+      "Failed to check media management status: '${e.message}'.",
+      e,
+      stackTrace,
+    );
+    return false;
+  }
+}
+
+/// Opens system settings for the user to grant media management access.
+Future<void> requestManageMedia() async {
+  try {
+    await permissionChannel.invokeMethod('requestManageMedia');
+  } on PlatformException catch (e, stackTrace) {
+    logger.log(
+      "Failed to request media management: '${e.message}'.",
+      e,
+      stackTrace,
+    );
+  }
+}
+
+Future<bool> checkAllPermissions() async {
+  if (Platform.isWindows) return true;
+  bool imageAccess = await hasImageAccess();
+  bool audioAccess = await hasAudioAccess();
+  bool videoAccess = await hasVideoAccess();
+  bool mediaAccess = await hasManageMediaAccess();
+  if (!imageAccess) {
+    final response = await requestImagePermissions();
+    imageAccess = response[Permission.photos]?.isGranted ?? false;
+  }
+  if (!audioAccess) {
+    final response = await requestAudioPermissions();
+    audioAccess = response[Permission.audio]?.isGranted ?? false;
+  }
+  if (!videoAccess) {
+    final response = await requestVideoPermissions();
+    videoAccess = response[Permission.videos]?.isGranted ?? false;
+  }
+  if (!mediaAccess) {
+    await requestManageMedia();
+    mediaAccess = await hasManageMediaAccess();
+  }
+  return imageAccess && audioAccess && videoAccess && mediaAccess;
 }

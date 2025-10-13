@@ -25,6 +25,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path/path.dart' as path;
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -35,7 +36,7 @@ class HiveService {
   HiveService._internal();
   // Singleton instance
   static final HiveService _instance = HiveService._internal();
-
+  static final Completer _initCompleter = Completer();
   // Box caching
   static final Map<String, Completer<Box>> _openingBoxes = {};
 
@@ -52,6 +53,7 @@ class HiveService {
       await _openBox(box);
     }
     isInitialized = true;
+    _initCompleter.complete();
   }
 
   static Future<T?> getData<T>(
@@ -59,6 +61,7 @@ class HiveService {
     String category, {
     T? defaultValue,
   }) async {
+    await _initCompleter.future;
     try {
       final _box = await _openBox(boxName);
       final value = _box.get(category, defaultValue: defaultValue);
@@ -195,6 +198,7 @@ class HiveService {
     String category,
     dynamic value,
   ) async {
+    await _initCompleter.future;
     try {
       final box = await _openBox(boxName);
       final _newData = getDataByType<T>(value);
@@ -212,21 +216,25 @@ class HiveService {
   }
 
   static Future<void> deleteData(String boxName, String key) async {
+    await _initCompleter.future;
     final box = await _openBox(boxName);
     await box.delete(key);
   }
 
   static Future<void> clearBox(String boxName) async {
+    await _initCompleter.future;
     final box = await _openBox(boxName);
     await box.clear();
   }
 
   static Future<void> compactBox(String boxName) async {
+    await _initCompleter.future;
     final box = await _openBox(boxName);
     await box.compact();
   }
 
   static Future<void> compactAllBoxes() async {
+    await _initCompleter.future;
     for (final box in _boxNames) {
       if (Hive.isBoxOpen(box)) {
         await Hive.box(box).compact();
@@ -235,6 +243,7 @@ class HiveService {
   }
 
   static Future<void> closeAllBoxes() async {
+    await _initCompleter.future;
     for (final box in _boxNames) {
       if (Hive.isBoxOpen(box)) {
         await Hive.box(box).close();
@@ -253,6 +262,7 @@ class HiveService {
   }
 
   static Future<String> backupData(BuildContext context) async {
+    await _initCompleter.future;
     final boxNames = ['user', 'settings'];
     final dlPath = await FilePicker.platform.getDirectoryPath();
 
@@ -263,9 +273,7 @@ class HiveService {
     try {
       for (final boxName in boxNames) {
         final box = await _openBox(boxName);
-        final backupFile = File(
-          '$dlPath${Platform.pathSeparator}$boxName.hive',
-        );
+        final backupFile = File(path.join(dlPath, '$boxName.hive'));
 
         if (await backupFile.exists()) {
           await backupFile.delete();
@@ -290,6 +298,7 @@ class HiveService {
   }
 
   static Future<String> restoreData(BuildContext context) async {
+    await _initCompleter.future;
     final boxNames = ['user', 'settings'];
     final backupFiles = await FilePicker.platform.pickFiles(
       allowMultiple: true,
