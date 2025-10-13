@@ -6,6 +6,7 @@ import android.app.RecoverableSecurityException
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.media.MediaMetadata
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -35,7 +36,6 @@ class MediaUtils(private val activity: Activity) {
             Environment.DIRECTORY_MOVIES to MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
             Environment.DIRECTORY_DCIM to MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
         )
-
         @RequiresApi(Build.VERSION_CODES.S)
         private val DIRECTORY_COLLECTION_31 = mapOf(
             Environment.DIRECTORY_DOCUMENTS to MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL),
@@ -135,6 +135,7 @@ class MediaUtils(private val activity: Activity) {
     fun isInitialized(): Boolean {
         return true
     }
+
     /**
      * Convert a file or directory path to a MediaStore or FileProvider compatible Uri.
      * Optional [mimeType] can improve accuracy when known.
@@ -509,11 +510,11 @@ class MediaUtils(private val activity: Activity) {
     /**
      * Execute pending write operations after permission granted
      */
-    fun executePendingWriteOperations(): Boolean {
+    fun executePendingWriteOperations(): List<Uri>? {
         val operations = pendingWriteOperations.toList()
         pendingWriteOperations.clear()
         Log.d(TAG, "Execute Pending Write Operations: ${operations.size}")
-        return operations.all { operation ->
+        operations.all { operation ->
             runCatching {
                 when {
                     operation.data != null -> {
@@ -523,7 +524,7 @@ class MediaUtils(private val activity: Activity) {
                                 it.write(operation.data)
                             }
                         operation.onSuccess?.invoke(operation.destinationUri)
-                        true
+                        return operations.map { it.destinationUri }
                     }
 
                     operation.sourceUri != null -> {
@@ -564,7 +565,7 @@ class MediaUtils(private val activity: Activity) {
                                     "Finalized MediaStore entry by removing IS_PENDING flag."
                                 )
                             }
-                            true // Return true on success
+                            return operations.map { it.destinationUri }
                         }.getOrElse { throwable ->
                             Log.e(
                                 TAG,
@@ -575,22 +576,23 @@ class MediaUtils(private val activity: Activity) {
                             val exception = throwable as? Exception ?: Exception(throwable)
                             operation.onFail?.invoke(exception)
 
-                            false
+                            return null
                         }
                     }
 
                     else -> {
                         operation.onFail?.invoke(IOException("No data source provided"))
                         Log.e(TAG, "No data source provided for write operation")
-                        false
+                        return null
                     }
                 }
             }.getOrElse { e ->
                 Log.e(TAG, "Error executing write operation: ${e.message}", e)
                 operation.onFail?.invoke(e as Exception)
-                false
+                return null
             }
         }
+        return null
     }
 
     /**

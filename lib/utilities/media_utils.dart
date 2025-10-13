@@ -22,6 +22,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
@@ -40,8 +41,14 @@ class MediaUtils {
     mediaChannel.setMethodCallHandler((event) async {
       switch (event.method) {
         case 'notifyDeleteComplete':
+          if (_deleteCompleter.value != null &&
+              !_deleteCompleter.value!.isCompleted)
+            _deleteCompleter.value!.complete(true);
           break;
         case 'notifyCreateComplete':
+          if (_createCompleter.value != null &&
+              !_createCompleter.value!.isCompleted)
+            _createCompleter.value!.complete(event.arguments);
           break;
         default:
       }
@@ -52,8 +59,11 @@ class MediaUtils {
     'com.akashskypatel.reverbio/media_utils',
   );
   static bool initialized = false;
-  static Completer<bool>? _deleteCompleter = Completer<bool>();
-  static Completer<String?>? _createCompleter = Completer<String?>();
+  static final ValueNotifier<Completer<bool>?> _deleteCompleter = ValueNotifier(
+    null,
+  );
+  static final ValueNotifier<Completer<String?>?> _createCompleter =
+      ValueNotifier(null);
 
   static Future<void> ensureInitialized() async {
     if (!Platform.isAndroid) return;
@@ -224,25 +234,25 @@ class MediaUtils {
   /// Throws: [MediaUtilsException] if deletion fails or permission is denied
   static Future<bool> deleteMediaFile(String pathOrUri) async {
     try {
-      if (_deleteCompleter != null) await _deleteCompleter!.future;
-      final __deleteCompleter = _deleteCompleter = Completer();
+      if (_deleteCompleter.value != null &&
+          !_deleteCompleter.value!.isCompleted)
+        await _deleteCompleter.value!.future;
+      _deleteCompleter.value = Completer();
       unawaited(
         mediaChannel
             .invokeMethod('deleteMediaFile', {'pathOrUri': pathOrUri})
-            .then((value) {
-              __deleteCompleter.complete(value);
-              _deleteCompleter = null;
-            })
             .onError((error, stackTrace) {
-              __deleteCompleter.completeError(
+              _deleteCompleter.value!.completeError(
                 MediaUtilsException(error.toString(), stackTrace.toString()),
               );
-              _deleteCompleter = null;
             }),
       );
-      return __deleteCompleter.future;
-    } on PlatformException catch (e) {
-      throw MediaUtilsException(e.code, e.message);
+      return _deleteCompleter.value!.future;
+    } catch (e, stackTrace) {
+      _createCompleter.value!.completeError(
+        MediaUtilsException(e.toString(), stackTrace.toString()),
+      );
+      rethrow;
     }
   }
 
@@ -277,8 +287,10 @@ class MediaUtils {
     String? mimeType,
   }) async {
     try {
-      if (_createCompleter != null) await _createCompleter!.future;
-      final __createCompleter = _createCompleter = Completer();
+      if (_createCompleter.value != null &&
+          !_createCompleter.value!.isCompleted)
+        await _createCompleter.value!.future;
+      _createCompleter.value = Completer();
       unawaited(
         mediaChannel
             .invokeMethod('createMediaFileAtRelative', {
@@ -287,20 +299,18 @@ class MediaUtils {
               'data': Uint8List.fromList(data),
               'mimeType': mimeType,
             })
-            .then((value) {
-              __createCompleter.complete(value);
-              _createCompleter = null;
-            })
             .onError((error, stackTrace) {
-              __createCompleter.completeError(
+              _createCompleter.value!.completeError(
                 MediaUtilsException(error.toString(), stackTrace.toString()),
               );
-              _createCompleter = null;
             }),
       );
-      return __createCompleter.future;
-    } on PlatformException catch (e) {
-      throw MediaUtilsException(e.code, e.message);
+      return _createCompleter.value!.future;
+    } catch (e, stackTrace) {
+      _createCompleter.value!.completeError(
+        MediaUtilsException(e.toString(), stackTrace.toString()),
+      );
+      rethrow;
     }
   }
 
@@ -329,8 +339,10 @@ class MediaUtils {
     String? mimeType,
   }) async {
     try {
-      if (_createCompleter != null) await _createCompleter!.future;
-      final __createCompleter = _createCompleter = Completer();
+      if (_createCompleter.value != null &&
+          !_createCompleter.value!.isCompleted)
+        await _createCompleter.value!.future;
+      _createCompleter.value = Completer();
       unawaited(
         mediaChannel
             .invokeMethod('createMediaFile', {
@@ -338,20 +350,18 @@ class MediaUtils {
               'data': Uint8List.fromList(data),
               'mimeType': mimeType,
             })
-            .then((value) {
-              __createCompleter.complete(value);
-              _createCompleter = null;
-            })
             .onError((error, stackTrace) {
-              __createCompleter.completeError(
+              _createCompleter.value!.completeError(
                 MediaUtilsException(error.toString(), stackTrace.toString()),
               );
-              _createCompleter = null;
             }),
       );
-      return __createCompleter.future;
-    } on PlatformException catch (e) {
-      throw MediaUtilsException(e.code, e.message);
+      return _createCompleter.value!.future;
+    } catch (e, stackTrace) {
+      _createCompleter.value!.completeError(
+        MediaUtilsException(e.toString(), stackTrace.toString()),
+      );
+      rethrow;
     }
   }
 
@@ -378,8 +388,10 @@ class MediaUtils {
     required String mimeType,
   }) async {
     try {
-      if (_createCompleter != null) await _createCompleter!.future;
-      final __createCompleter = _createCompleter = Completer();
+      if (_createCompleter.value != null &&
+          !_createCompleter.value!.isCompleted)
+        await _createCompleter.value!.future;
+      _createCompleter.value = Completer();
       unawaited(
         mediaChannel
             .invokeMethod('copyMediaFileToRelative', {
@@ -387,20 +399,18 @@ class MediaUtils {
               'relativePath': relativePath,
               'mimeType': mimeType,
             })
-            .then((value) {
-              __createCompleter.complete(value);
-              _createCompleter = null;
-            })
             .onError((error, stackTrace) {
-              __createCompleter.completeError(
+              _createCompleter.value!.completeError(
                 MediaUtilsException(error.toString(), stackTrace.toString()),
               );
-              _createCompleter = null;
             }),
       );
-      return __createCompleter.future;
-    } on PlatformException catch (e) {
-      throw MediaUtilsException(e.code, e.message);
+      return _createCompleter.value!.future;
+    } catch (e, stackTrace) {
+      _createCompleter.value!.completeError(
+        MediaUtilsException(e.toString(), stackTrace.toString()),
+      );
+      rethrow;
     }
   }
 
@@ -427,8 +437,10 @@ class MediaUtils {
     String? mimeType,
   }) async {
     try {
-      if (_createCompleter != null) await _createCompleter!.future;
-      final __createCompleter = _createCompleter = Completer();
+      if (_createCompleter.value != null &&
+          !_createCompleter.value!.isCompleted)
+        await _createCompleter.value!.future;
+      _createCompleter.value = Completer();
       unawaited(
         mediaChannel
             .invokeMethod('copyMediaFileToPathOrUri', {
@@ -436,20 +448,18 @@ class MediaUtils {
               'fromPathOrUri': fromPathOrUri,
               'mimeType': mimeType,
             })
-            .then((value) {
-              __createCompleter.complete(value);
-              _createCompleter = null;
-            })
             .onError((error, stackTrace) {
-              __createCompleter.completeError(
+              _createCompleter.value!.completeError(
                 MediaUtilsException(error.toString(), stackTrace.toString()),
               );
-              _createCompleter = null;
             }),
       );
-      return __createCompleter.future;
-    } on PlatformException catch (e) {
-      throw MediaUtilsException(e.code, e.message);
+      return _createCompleter.value!.future;
+    } catch (e, stackTrace) {
+      _createCompleter.value!.completeError(
+        MediaUtilsException(e.toString(), stackTrace.toString()),
+      );
+      rethrow;
     }
   }
 }

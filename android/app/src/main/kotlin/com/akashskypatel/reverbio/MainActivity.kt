@@ -278,10 +278,10 @@ class MainActivity : AudioServiceActivity() {
                 runCatching {
                     when (resultCode) {
                         RESULT_OK -> {
-                            mediaUtils.executePendingWriteOperations()
+                            val uris = mediaUtils.executePendingWriteOperations()
                             intentMethodChannel?.invokeMethod(
                                 mediaUtils.WRITE_REQUEST_NOTIFY,
-                                true
+                                uris?.map { it.toString() }
                             )
                         }
 
