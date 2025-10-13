@@ -110,11 +110,6 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
           if (systemColorStatus != null &&
               useSystemColor.value != systemColorStatus) {
             useSystemColor.value = systemColorStatus;
-            /*
-            unawaited(
-              addOrUpdateData('settings', 'useSystemColor', systemColorStatus),
-            );
-            */
           }
           primaryColorSetting.value = newAccentColor.toARGB32();
         }
