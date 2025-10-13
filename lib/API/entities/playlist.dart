@@ -643,7 +643,7 @@ Future<bool> uploadCsvPlaylist(BuildContext context) async {
   int count = 0;
   try {
     final _dir = Directory(offlineDirectory.value!);
-    final _importsDirPath = '${_dir.path}${Platform.pathSeparator}imports';
+    final _importsDirPath = join(_dir.path, 'imports');
     final files =
         (await FilePicker.platform.pickFiles(
           allowMultiple: true,

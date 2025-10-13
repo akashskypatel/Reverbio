@@ -643,7 +643,7 @@ Future<File> copyFileToDir(
 
     final ext = extension(path);
     String fileName = basenameWithoutExtension(path);
-    File targetFile = File('$dir${Platform.pathSeparator}$fileName$ext');
+    File targetFile = File(join(dir, fileName, ext));
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       if (!await targetFile.exists()) {
@@ -651,7 +651,7 @@ Future<File> copyFileToDir(
       }
       // Increment filename and update target path
       fileName = incrementFileName(fileName);
-      targetFile = File('$dir${Platform.pathSeparator}$fileName$ext');
+      targetFile = File(join(dir, fileName, ext));
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -661,7 +661,7 @@ Future<File> copyFileToDir(
 
 Future<String?> pickImageFile({bool copyToAppDir = true}) async {
   final _dir = Directory(offlineDirectory.value!);
-  final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
+  final _artworkDirPath = join(_dir.path, 'artworks');
   await Directory(_artworkDirPath).create(recursive: true);
 
   final file =

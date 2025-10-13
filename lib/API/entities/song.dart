@@ -891,7 +891,7 @@ Future<void> tagAllOfflineFiles() async {
   for (int i = 0; i < offlineSongs.length; i++) {
     final song =
         await queueSongInfoRequest(copyMap(offlineSongs[i])).completerFuture;
-    await fileTagger.tagOfflineFile(song, parseEntityId(song));
+    await fileTagger.tagOfflineFile(song, id: parseEntityId(song));
     final num = (i + 1) / offlineSongs.length;
     progress.value = (num * 100).toInt();
   }
@@ -903,8 +903,8 @@ Future<void> makeSongOffline(dynamic song) async {
     await getUserOfflineSongs();
     if (isSongAlreadyOffline(song)) return;
     final _dir = Directory(offlineDirectory.value!);
-    final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
-    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
+    final _audioDirPath = join(_dir.path, 'tracks');
+    final _artworkDirPath = join(_dir.path, 'artworks');
     await Directory(_audioDirPath).create(recursive: true);
     await Directory(_artworkDirPath).create(recursive: true);
 
@@ -914,8 +914,8 @@ Future<void> makeSongOffline(dynamic song) async {
     }
     if (!isYouTubeSongValid(song)) await findYTSong(song);
     final id = song['id'] = parseEntityId(song);
-    final _audioFile = '$_audioDirPath${Platform.pathSeparator}$id';
-    final _artworkFile = File('$_artworkDirPath${Platform.pathSeparator}$id');
+    final _audioFile = join(_audioDirPath, id);
+    final _artworkFile = File(join(_artworkDirPath, id));
 
     try {
       final context = NavigationManager().context;
@@ -1004,7 +1004,7 @@ String getUserOfflineSong(dynamic song) {
 
 Future<bool> checkOfflineFiles() async {
   final _dir = Directory(offlineDirectory.value!);
-  final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
+  final _audioDirPath = join(_dir.path, 'tracks');
   final fileList =
       Directory(
         _audioDirPath,
@@ -1025,11 +1025,15 @@ Future<bool> checkOfflineFiles() async {
 }
 
 Future<void> getUserDeviceSongs() async {
-  final fileScanner = FileScanner(directories: additionalDirectories.toList());
-  userDeviceSongs.clear();
-  final files = await fileScanner.getUserDeviceSongs();
-  userDeviceSongs.addOrUpdateAllWhere(checkSong, files);
-  unawaited(_getUserDeviceSongMetadata());
+  if (await checkAllPermissions()) {
+    final fileScanner = FileScanner(
+      directories: additionalDirectories.toList(),
+    );
+    userDeviceSongs.clear();
+    final files = await fileScanner.getUserDeviceSongs();
+    userDeviceSongs.addOrUpdateAllWhere(checkSong, files);
+    unawaited(_getUserDeviceSongMetadata());
+  }
 }
 
 Future<void> _getUserDeviceSongMetadata() async {
@@ -1038,7 +1042,11 @@ Future<void> _getUserDeviceSongMetadata() async {
     await queueSongInfoRequest(song).completerFuture?.then((value) {
       song = Map<String, dynamic>.from(song);
       if (value != null) song.addAll(value);
-      fileTagger.tagOfflineFile(song, song['id'], filePath: song['devicePath']);
+      fileTagger.tagOfflineFile(
+        song,
+        id: song['id'],
+        filePath: song['devicePath'],
+      );
     });
   }
   userDeviceSongs.writeToCache();
@@ -1046,7 +1054,7 @@ Future<void> _getUserDeviceSongMetadata() async {
 
 Future<void> getExistingOfflineSongs() async {
   final _dir = Directory(offlineDirectory.value!);
-  final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
+  final _audioDirPath = join(_dir.path, 'tracks');
   await Directory(_audioDirPath).create(recursive: true);
   try {
     final fileList = Directory(_audioDirPath).listSync();
@@ -1060,7 +1068,7 @@ Future<void> getExistingOfflineSongs() async {
         final fileTagger = FileTagger();
         final song =
             await queueSongInfoRequest({'id': filename}).completerFuture;
-        await fileTagger.tagOfflineFile(song, parseEntityId(song));
+        await fileTagger.tagOfflineFile(song, id: parseEntityId(song));
       }
     }
   } catch (e, stackTrace) {
@@ -1071,7 +1079,7 @@ Future<void> getExistingOfflineSongs() async {
 Future<void> _matchFileToSongInfo(File file) async {
   try {
     final _dir = Directory(offlineDirectory.value!);
-    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
+    final _artworkDirPath = join(_dir.path, 'artworks');
     await Directory(_artworkDirPath).create(recursive: true);
     final filename = basenameWithoutExtension(file.path);
     final song = await queueSongInfoRequest(filename).completerFuture;
@@ -1089,8 +1097,8 @@ Future<void> _matchFileToSongInfo(File file) async {
 Future<String?> getOfflinePath(dynamic song) async {
   try {
     final _dir = Directory(offlineDirectory.value!);
-    final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
-    final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
+    final _audioDirPath = join(_dir.path, 'tracks');
+    final _artworkDirPath = join(_dir.path, 'artworks');
     await Directory(_audioDirPath).create(recursive: true);
     await Directory(_artworkDirPath).create(recursive: true);
     song['id'] = parseEntityId(song);
@@ -1153,8 +1161,8 @@ Future<void> _deleteRelatedFiles(String directory, dynamic entity) async {
 Future<void> removeSongFromOffline(dynamic song) async {
   final context = NavigationManager().context;
   final _dir = Directory(offlineDirectory.value!);
-  final _audioDirPath = '${_dir.path}${Platform.pathSeparator}tracks';
-  final _artworkDirPath = '${_dir.path}${Platform.pathSeparator}artworks';
+  final _audioDirPath = join(_dir.path, 'tracks');
+  final _artworkDirPath = join(_dir.path, 'artworks');
   await Directory(_audioDirPath).create(recursive: true);
   await Directory(_artworkDirPath).create(recursive: true);
   song['id'] = parseEntityId(song);
