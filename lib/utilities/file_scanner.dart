@@ -50,12 +50,12 @@ class FileScanner {
     showToast('${L10n.current.scanningEnd} $found', id: 'scanningDeviceFiles');
   }
 
-  Future<List<Map<String, dynamic>>> getUserDeviceSongs() async {
+  Future<List<Map<String, dynamic>>> getUserDeviceSongsIsolate() async {
     _startNotification();
     final completer = Completer<List<Map<String, dynamic>>>();
     final receivePort = ReceivePort();
     await Isolate.spawn(
-      _getUserDeviceSongs,
+      _getUserDeviceSongsIsolate,
       _IsolateMessage(sendPort: receivePort.sendPort, directories: directories),
     );
 
@@ -78,7 +78,7 @@ class FileScanner {
     return completer.future;
   }
 
-  Future<void> _getUserDeviceSongs(_IsolateMessage message) async {
+  Future<void> _getUserDeviceSongsIsolate(_IsolateMessage message) async {
     final List<Map<String, dynamic>> userDeviceSongs = [];
     final List<FileSystemEntity> fileList = [];
     for (final dir in message.directories) {
@@ -105,6 +105,40 @@ class FileScanner {
       }
     }
     message.sendPort.send(userDeviceSongs);
+  }
+
+  Future<List<Map<String, dynamic>>> getUserDeviceSongs(
+    List<String> directories,
+  ) async {
+    final List<Map<String, dynamic>> _userDeviceSongs = [];
+    final List<FileSystemEntity> fileList = [];
+    for (final dir in directories) {
+      fileList.addAll(Directory(dir).listSync(recursive: true));
+    }
+    for (int i = 0; i < fileList.length; i++) {
+      final file = fileList[i];
+      progress.value = (i + 1) ~/ fileList.length;
+      if (file is File && isAudio(file.path)) {
+        try {
+          Tag? tag;
+          try {
+            tag = await AudioTags.read(file.path);
+          } catch (_) {}
+          String title, artist;
+          final fileName = basenameWithoutExtension(file.path).nullIfEmpty;
+          title = tag?.title ?? fileName ?? L10n.current.unknown;
+          artist = tag?.trackArtist ?? tag?.albumArtist ?? L10n.current.unknown;
+          final song = <String, dynamic>{
+            'title': title,
+            'artist': artist,
+            'devicePath': file.path,
+          };
+          if (tag != null) song['audioTags'] = tagToMap(tag);
+          _userDeviceSongs.addOrUpdateWhere(checkSong, song);
+        } catch (_) {}
+      }
+    }
+    return _userDeviceSongs;
   }
 }
 
