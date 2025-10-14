@@ -914,49 +914,63 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   void _updatePlaybackState() {
     cachedIsPlaying = audioPlayer.playing;
     Future.microtask(() {
-      final newMediaItem = songValueNotifier.value?.mediaItem.copyWith(
-        duration: audioHandler.duration,
-      );
-      if (newMediaItem != mediaItem.value) mediaItem.add(newMediaItem);
-      if (mediaItem.value == null)
-        playbackState.add(PlaybackState());
-      else {
-        final newPlaybackState = playbackState.value.copyWith(
-          controls: [
-            if (hasPrevious)
-              MediaControl.skipToPrevious
-            else
-              MediaControl.rewind,
-            if (audioPlayer.playing) MediaControl.pause else MediaControl.play,
-            if (hasNext) MediaControl.skipToNext else MediaControl.fastForward,
-            MediaControl.stop,
-          ],
-          systemActions: const {
-            MediaAction.play,
-            MediaAction.pause,
-            MediaAction.stop,
-            MediaAction.seek,
-            MediaAction.skipToNext,
-            MediaAction.skipToPrevious,
-            MediaAction.skipToQueueItem,
-            MediaAction.seekForward,
-            MediaAction.seekBackward,
-          },
-          androidCompactActionIndices: const [0, 1, 2],
-          processingState: audioPlayer.processingState,
-          repeatMode: settings.repeatNotifier.value,
-          shuffleMode:
-              audioPlayer.shuffleModeEnabled
-                  ? AudioServiceShuffleMode.all
-                  : AudioServiceShuffleMode.none,
-          playing: audioPlayer.playing,
-          updatePosition: audioPlayer.position,
-          bufferedPosition: audioPlayer.bufferedPosition,
-          speed: audioPlayer.speed,
-          queueIndex: audioPlayer.currentIndex,
+      try {
+        final newMediaItem = songValueNotifier.value?.mediaItem.copyWith(
+          duration: audioHandler.duration,
         );
-        if (playbackState.value != newPlaybackState)
-          playbackState.add(newPlaybackState);
+        if (newMediaItem != mediaItem.value) mediaItem.add(newMediaItem);
+        if (mediaItem.value == null)
+          playbackState.add(PlaybackState());
+        else {
+          final newPlaybackState = playbackState.value.copyWith(
+            controls: [
+              if (hasPrevious)
+                MediaControl.skipToPrevious
+              else
+                MediaControl.rewind,
+              if (audioPlayer.playing)
+                MediaControl.pause
+              else
+                MediaControl.play,
+              if (hasNext)
+                MediaControl.skipToNext
+              else
+                MediaControl.fastForward,
+              MediaControl.stop,
+            ],
+            systemActions: const {
+              MediaAction.play,
+              MediaAction.pause,
+              MediaAction.stop,
+              MediaAction.seek,
+              MediaAction.skipToNext,
+              MediaAction.skipToPrevious,
+              MediaAction.skipToQueueItem,
+              MediaAction.seekForward,
+              MediaAction.seekBackward,
+            },
+            androidCompactActionIndices: const [0, 1, 2],
+            processingState: audioPlayer.processingState,
+            repeatMode: settings.repeatNotifier.value,
+            shuffleMode:
+                audioPlayer.shuffleModeEnabled
+                    ? AudioServiceShuffleMode.all
+                    : AudioServiceShuffleMode.none,
+            playing: audioPlayer.playing,
+            updatePosition: audioPlayer.position,
+            bufferedPosition: audioPlayer.bufferedPosition,
+            speed: audioPlayer.speed,
+            queueIndex: audioPlayer.currentIndex,
+          );
+          if (playbackState.value != newPlaybackState)
+            playbackState.add(newPlaybackState);
+        }
+      } catch (e, stackTrace) {
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()} change',
+          e,
+          stackTrace,
+        );
       }
     });
   }
