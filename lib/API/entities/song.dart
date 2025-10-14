@@ -1046,6 +1046,7 @@ Future<void> _getUserDeviceSongMetadata() async {
         song,
         id: song['id'],
         filePath: song['devicePath'],
+        rename: false
       );
     });
   }

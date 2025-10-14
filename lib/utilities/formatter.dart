@@ -145,7 +145,7 @@ Tag mapToTag(dynamic tagMap) {
         (tagMap['pictures'] as List?)
             ?.map(
               (e) => Picture(
-                bytes: Uint8List.fromList(e['bytes'] ?? []),
+                bytes: Uint8List.fromList(List<int>.from(e['bytes'] ?? [])),
                 pictureType: PictureType.values.elementAt(
                   e['pictureType'] ?? 0,
                 ),

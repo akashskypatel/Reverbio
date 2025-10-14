@@ -27,6 +27,7 @@ class MainActivity : AudioServiceActivity() {
     private var intentMethodChannel: MethodChannel? = null
     private lateinit var intentUriProcessor: IntentUriProcessor
     private lateinit var mediaUtils: MediaUtils
+    private var mediaUtilsMethodChannel: MethodChannel? = null
     private lateinit var permissionUtils: PermissionUtils
     private lateinit var audioDeviceUtils: AudioDeviceUtils
 
@@ -127,6 +128,7 @@ class MainActivity : AudioServiceActivity() {
         // ─────────────────────────────
         // MEDIA UTILITIES CHANNEL
         // ─────────────────────────────
+        mediaUtilsMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEDIA_UTILS_CHANNEL)
         mediaUtils = MediaUtils(this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEDIA_UTILS_CHANNEL)
             .setMethodCallHandler { call, result ->
@@ -237,20 +239,21 @@ class MainActivity : AudioServiceActivity() {
                     when (resultCode) {
                         RESULT_OK -> {
                             mediaUtils.executePendingDeleteOperations()
-                            intentMethodChannel?.invokeMethod(
+                            mediaUtilsMethodChannel?.invokeMethod(
                                 mediaUtils.DELETE_REQUEST_NOTIFY,
                                 true
                             )
+                            Log.d(TAG, "Delete operation succeeded, notifying flutter with: true")
                         }
 
                         RESULT_CANCELED -> {
+                            mediaUtilsMethodChannel?.invokeMethod(
+                                mediaUtils.DELETE_REQUEST_NOTIFY,
+                                false
+                            )
                             Log.d(
                                 TAG,
                                 "Delete operation canceled request code: $requestCode for ${data.toString()}"
-                            )
-                            intentMethodChannel?.invokeMethod(
-                                mediaUtils.DELETE_REQUEST_NOTIFY,
-                                false
                             )
                         }
 
@@ -259,7 +262,7 @@ class MainActivity : AudioServiceActivity() {
                                 TAG,
                                 "Delete operation failed request code: $requestCode - $resultCode for ${data.toString()}"
                             )
-                            intentMethodChannel?.invokeMethod(
+                            mediaUtilsMethodChannel?.invokeMethod(
                                 mediaUtils.DELETE_REQUEST_NOTIFY,
                                 false
                             )
@@ -267,7 +270,7 @@ class MainActivity : AudioServiceActivity() {
                     }
                 }.getOrElse { e ->
                     Log.e(TAG, "Error executing delete operation: ${e.message}", e)
-                    intentMethodChannel?.invokeMethod(
+                    mediaUtilsMethodChannel?.invokeMethod(
                         mediaUtils.DELETE_REQUEST_NOTIFY,
                         false
                     )
@@ -279,20 +282,24 @@ class MainActivity : AudioServiceActivity() {
                     when (resultCode) {
                         RESULT_OK -> {
                             val uris = mediaUtils.executePendingWriteOperations()
-                            intentMethodChannel?.invokeMethod(
+                            mediaUtilsMethodChannel?.invokeMethod(
                                 mediaUtils.WRITE_REQUEST_NOTIFY,
                                 uris?.map { it.toString() }
+                            )
+                            Log.d(
+                                TAG,
+                                "Write operation succeeded, notifying flutter with: ${uris.toString()}"
                             )
                         }
 
                         RESULT_CANCELED -> {
+                            mediaUtilsMethodChannel?.invokeMethod(
+                                mediaUtils.WRITE_REQUEST_NOTIFY,
+                                null
+                            )
                             Log.d(
                                 TAG,
                                 "Write operation canceled request code: $requestCode for ${data.toString()}"
-                            )
-                            intentMethodChannel?.invokeMethod(
-                                mediaUtils.WRITE_REQUEST_NOTIFY,
-                                false
                             )
                         }
 
@@ -301,17 +308,17 @@ class MainActivity : AudioServiceActivity() {
                                 TAG,
                                 "Write operation failed request code: $requestCode - $resultCode for ${data.toString()}"
                             )
-                            intentMethodChannel?.invokeMethod(
+                            mediaUtilsMethodChannel?.invokeMethod(
                                 mediaUtils.WRITE_REQUEST_NOTIFY,
-                                false
+                                null
                             )
                         }
                     }
                 }.getOrElse { e ->
                     Log.e(TAG, "Error executing write operation: ${e.message}", e)
-                    intentMethodChannel?.invokeMethod(
+                    mediaUtilsMethodChannel?.invokeMethod(
                         mediaUtils.WRITE_REQUEST_NOTIFY,
-                        false
+                        null
                     )
                 }
             }
@@ -334,25 +341,25 @@ class MainActivity : AudioServiceActivity() {
         }
         //handleInitialIntent()
     }
-    /*
-        override fun onNewIntent(intent: Intent) {
-            super.onNewIntent(intent)
-            handleIncomingIntent(intent)
-        }
+/*
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIncomingIntent(intent)
+    }
 
-        override fun onResume() {
-            super.onResume()
-        }
+    override fun onResume() {
+        super.onResume()
+    }
 
-        private fun handleInitialIntent() {
-            intent?.let { handleIncomingIntent(it) }
-        }
+    private fun handleInitialIntent(intent: Intent?) {
+        intent?.let { handleIncomingIntent(it) }
+    }
 
-        private fun handleIncomingIntent(intent: Intent) {
-            val wasHandled = intentUriProcessor.handleIntent(intent)
-            if (wasHandled) {
-                Log.d("ReverbioMainActivity", "Intent handled successfully")
-            }
+    private fun handleIncomingIntent(intent: Intent) {
+        val wasHandled = intentUriProcessor.handleIntent(intent)
+        if (wasHandled) {
+            Log.d("ReverbioMainActivity", "Intent handled successfully")
         }
-         */
+    }
+ */
 }

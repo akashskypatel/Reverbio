@@ -163,6 +163,7 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                                 song,
                                                 filePath: offlinePath,
                                                 tag: newTag,
+                                                rename: false
                                               );
                                           if (success)
                                             showToast(L10n.current.tagsUpdated);

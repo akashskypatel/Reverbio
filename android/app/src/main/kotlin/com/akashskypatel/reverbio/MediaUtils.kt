@@ -560,10 +560,6 @@ class MediaUtils(private val activity: Activity) {
                                     null,
                                     null
                                 )
-                                Log.d(
-                                    TAG,
-                                    "Finalized MediaStore entry by removing IS_PENDING flag."
-                                )
                             }
                             return operations.map { it.destinationUri }
                         }.getOrElse { throwable ->

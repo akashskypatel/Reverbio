@@ -24,9 +24,11 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:audiotags/audiotags.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -56,7 +58,10 @@ class FileTagger {
     'WavPack': ['wv'],
   };
   // Public method to read offline file tags (spawns isolate)
-  Future<Tag?> getTagFromOfflineFile(dynamic song, {String? filePath}) async {
+  Future<Tag?> getTagFromOfflineFileIsolate(
+    dynamic song, {
+    String? filePath,
+  }) async {
     final completer = Completer<Tag?>();
     final receivePort = ReceivePort();
 
@@ -101,6 +106,24 @@ class FileTagger {
     }
 
     return completer.future;
+  }
+
+  // Public method to read offline file tags (spawns isolate)
+  Future<Tag?> getTagFromOfflineFile(dynamic song, {String? filePath}) async {
+    try {
+      if (song != null && song.isNotEmpty)
+        filePath = await getOfflinePath(song);
+      if (filePath != null && filePath.isNotEmpty) {
+        return await AudioTags.read(filePath);
+      }
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()} at $filePath',
+        e,
+        stackTrace,
+      );
+    }
+    return null;
   }
 
   static Future<void> _getOfflineFileTag(
@@ -211,12 +234,13 @@ class FileTagger {
     return tag;
   }
 
-  Future<bool> tagOfflineFile(
+  Future<bool> tagOfflineFileIsolate(
     dynamic song, {
     Tag? tag,
     String? id,
     String? directory,
     String? filePath,
+    bool rename = true
   }) async {
     final completer = Completer<bool>();
     final receivePort = ReceivePort();
@@ -231,6 +255,10 @@ class FileTagger {
         sendPort: receivePort.sendPort,
         song: song,
         tag: tag,
+        tempDir: path.join(
+          (await getApplicationSupportDirectory()).path,
+          'temp',
+        ),
         id: id,
         audioFiles:
             filePath == null
@@ -240,6 +268,9 @@ class FileTagger {
                 )
                 : [filePath],
         tagger: this, // Pass reference for static method access
+        mediaUtils: MediaUtils.instance,
+        token: RootIsolateToken.instance!,
+        rename: rename
       ),
     );
 
@@ -259,17 +290,68 @@ class FileTagger {
     return completer.future;
   }
 
+  Future<bool> tagOfflineFile(
+    dynamic song, {
+    Tag? tag,
+    String? id,
+    String? directory,
+    String? filePath,
+    bool rename = true
+  }) async {
+    try {
+      directory ??= offlineDirectory.value;
+
+      _createDirectories(directory!);
+      final tempDir = path.join(
+        (await getApplicationSupportDirectory()).path,
+        'temp',
+      );
+      final audioFiles =
+          filePath == null
+              ? _getRelatedFilesSync(
+                path.join(directory, 'tracks'),
+                id ?? song['id'],
+              )
+              : [filePath];
+      final tags = await _processAudioFiles(
+        audioFiles,
+        song,
+        song['id'],
+        tag,
+        tempDir,
+        logger,
+        MediaUtils.instance,
+        rename: rename
+      );
+      if (tags.isNotEmpty) {
+        song['audioTags'] = tagToMap(tags.first);
+        addSongToCache(song);
+      }
+      return tags.isNotEmpty;
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}',
+        e,
+        stackTrace,
+      );
+    }
+    return false;
+  }
+
   // Isolate entry point (static method)
   static Future<void> _tagOfflineFileIsolate(
     _IsolateTagWriterMessage message,
   ) async {
     try {
+      BackgroundIsolateBinaryMessenger.ensureInitialized(message.token);
       final tags = await message.tagger._processAudioFiles(
         message.audioFiles,
         message.song,
         message.id,
         message.tag,
+        message.tempDir,
         message.logger,
+        message.mediaUtils,
       );
       message.sendPort.send(tags);
     } catch (e, stackTrace) {
@@ -296,14 +378,24 @@ class FileTagger {
     dynamic song,
     String? id,
     Tag? tag,
+    String tempDir,
     Logger _logger,
-  ) async {
+    MediaUtils mediaUtils, {
+    bool rename = true,
+  }) async {
     final tags = <Tag>[];
     for (final filePath in audioList) {
       final file = File(filePath);
       if (file.existsSync()) {
         try {
-          final _tag = await tagSingleAudioFile(file, song, _logger, tag: tag);
+          final _tag = await tagSingleAudioFile(
+            file,
+            song,
+            tempDir,
+            _logger,
+            mediaUtils,
+            tag: tag,
+          );
           if (_tag != null) tags.add(_tag);
         } catch (e, stackTrace) {
           _logger.log(
@@ -312,7 +404,7 @@ class FileTagger {
             stackTrace,
           );
         }
-        _renameFileWithCorrectExtension(file, id);
+        if (rename) _renameFileWithCorrectExtension(file, id);
       }
     }
     return tags;
@@ -321,7 +413,9 @@ class FileTagger {
   Future<Tag?> tagSingleAudioFile(
     File file,
     dynamic song,
-    Logger _logger, {
+    String tempDir,
+    Logger _logger,
+    MediaUtils mediaUtils, {
     Tag? tag,
   }) async {
     Tag? newTag = tag;
@@ -362,15 +456,15 @@ class FileTagger {
       }
       if (File(file.path).existsSync()) {
         if (Platform.isAndroid) {
-          final tempDir = path.join(offlineDirectory.value, 'temp');
           final copy = File(
             file.path,
           ).copySync(path.join(tempDir, path.basename(file.path)));
           await AudioTags.write(copy.path, newTag!);
-          final success = await MediaUtils.copyMediaFileToPathOrUri(
+          final success = await mediaUtils.copyMediaFileToPathOrUri(
             file.path,
             copy.path,
           );
+          _logger.log('tagSingleAudioFile ${success ?? ''}', null, null);
           if (success == null) return null;
         } else
           await AudioTags.write(file.path, newTag!);
@@ -556,6 +650,10 @@ class _IsolateTagWriterMessage {
     required this.tagger,
     required this.audioFiles,
     required this.logger,
+    required this.tempDir,
+    required this.mediaUtils,
+    required this.token,
+    this.rename = true,
     this.tag,
     this.id,
   });
@@ -563,9 +661,13 @@ class _IsolateTagWriterMessage {
   final dynamic song;
   final String? id;
   final Tag? tag;
+  final String tempDir;
   final FileTagger tagger;
   final List<String> audioFiles;
   final Logger logger;
+  final MediaUtils mediaUtils;
+  final RootIsolateToken token;
+  final bool rename;
 }
 
 class _IsolateTagReaderMessage {

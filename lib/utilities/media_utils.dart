@@ -37,24 +37,8 @@ class MediaUtilsException implements Exception {
 }
 
 class MediaUtils {
-  MediaUtils._() {
-    mediaChannel.setMethodCallHandler((event) async {
-      switch (event.method) {
-        case 'notifyDeleteComplete':
-          if (_deleteCompleter.value != null &&
-              !_deleteCompleter.value!.isCompleted)
-            _deleteCompleter.value!.complete(true);
-          break;
-        case 'notifyCreateComplete':
-          if (_createCompleter.value != null &&
-              !_createCompleter.value!.isCompleted)
-            _createCompleter.value!.complete(event.arguments);
-          break;
-        default:
-      }
-    });
-  }
-  static final MediaUtils instance = MediaUtils._();
+  MediaUtils();
+  static final MediaUtils instance = MediaUtils();
   static const mediaChannel = MethodChannel(
     'com.akashskypatel.reverbio/media_utils',
   );
@@ -80,6 +64,37 @@ class MediaUtils {
         );
       }
     }
+    mediaChannel.setMethodCallHandler((event) async {
+      switch (event.method) {
+        case 'notifyDeleteComplete':
+          if (_deleteCompleter.value == null)
+            _deleteCompleter.value = Completer();
+          if (!_deleteCompleter.value!.isCompleted) {
+            _deleteCompleter.value!.complete(event.arguments as bool);
+            logger.log(
+              'setMethodCallHandler: notifyDeleteComplete invoked by platform with ${event.arguments}',
+              null,
+              null,
+            );
+          }
+          break;
+        case 'notifyCreateComplete':
+          if (_createCompleter.value == null)
+            _createCompleter.value = Completer();
+          if (!_createCompleter.value!.isCompleted) {
+            _createCompleter.value!.complete(
+              (event.arguments as List).first.toString(),
+            );
+            logger.log(
+              'setMethodCallHandler: notifyCreateComplete invoked by platform with ${event.arguments}',
+              null,
+              null,
+            );
+          }
+          break;
+        default:
+      }
+    });
     initialized = true;
   }
 
@@ -114,7 +129,7 @@ class MediaUtils {
   /// Returns: A content URI string, or `null` if the path cannot be resolved
   ///
   /// Throws: [MediaUtilsException] if the platform operation fails
-  static Future<String?> pathToUri(String path, {String? mimeType}) async {
+  Future<String?> pathToUri(String path, {String? mimeType}) async {
     try {
       return await mediaChannel.invokeMethod('pathToUri', {
         'path': path,
@@ -141,7 +156,7 @@ class MediaUtils {
   /// Returns: The absolute file system path, or `null` if no path exists
   ///
   /// Throws: [MediaUtilsException] if the URI cannot be resolved
-  static Future<String?> uriToPath(String uri) async {
+  Future<String?> uriToPath(String uri) async {
     try {
       return await mediaChannel.invokeMethod('uriToPath', {'uri': uri});
     } on PlatformException catch (e) {
@@ -171,7 +186,7 @@ class MediaUtils {
   /// Returns: `true` if the operation completed successfully
   ///
   /// Throws: [MediaUtilsException] if writing fails or permission is denied
-  static Future<bool> editMediaFile(
+  Future<bool> editMediaFile(
     String pathOrUri,
     List<int> data, {
     String? mimeType,
@@ -203,10 +218,7 @@ class MediaUtils {
   /// Returns: The file content as bytes, or `null` if the file doesn't exist
   ///
   /// Throws: [MediaUtilsException] if reading fails or file is inaccessible
-  static Future<Uint8List?> readMediaFile(
-    String pathOrUri, {
-    String? mimeType,
-  }) async {
+  Future<Uint8List?> readMediaFile(String pathOrUri, {String? mimeType}) async {
     try {
       return await mediaChannel.invokeMethod('readMediaFile', {
         'pathOrUri': pathOrUri,
@@ -232,24 +244,19 @@ class MediaUtils {
   /// Returns: `true` if the delete operation completed successfully
   ///
   /// Throws: [MediaUtilsException] if deletion fails or permission is denied
-  static Future<bool> deleteMediaFile(String pathOrUri) async {
+  Future<bool> deleteMediaFile(String pathOrUri) async {
     try {
       if (_deleteCompleter.value != null &&
           !_deleteCompleter.value!.isCompleted)
         await _deleteCompleter.value!.future;
       _deleteCompleter.value = Completer();
-      unawaited(
-        mediaChannel
-            .invokeMethod('deleteMediaFile', {'pathOrUri': pathOrUri})
-            .onError((error, stackTrace) {
-              _deleteCompleter.value!.completeError(
-                MediaUtilsException(error.toString(), stackTrace.toString()),
-              );
-            }),
-      );
+      if (_deleteCompleter.value != null)
+        await mediaChannel.invokeMethod('deleteMediaFile', {
+          'pathOrUri': pathOrUri,
+        });
       return _deleteCompleter.value!.future;
     } catch (e, stackTrace) {
-      _createCompleter.value!.completeError(
+      _deleteCompleter.value!.completeError(
         MediaUtilsException(e.toString(), stackTrace.toString()),
       );
       rethrow;
@@ -280,7 +287,7 @@ class MediaUtils {
   /// Returns: The content URI of the newly created file
   ///
   /// Throws: [MediaUtilsException] if file creation fails
-  static Future<String?> createMediaFileAtRelative(
+  Future<String?> createMediaFileAtRelative(
     String displayName,
     String relativePath,
     List<int> data, {
@@ -291,20 +298,13 @@ class MediaUtils {
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;
       _createCompleter.value = Completer();
-      unawaited(
-        mediaChannel
-            .invokeMethod('createMediaFileAtRelative', {
-              'displayName': displayName,
-              'relativePath': relativePath,
-              'data': Uint8List.fromList(data),
-              'mimeType': mimeType,
-            })
-            .onError((error, stackTrace) {
-              _createCompleter.value!.completeError(
-                MediaUtilsException(error.toString(), stackTrace.toString()),
-              );
-            }),
-      );
+      if (_createCompleter.value != null)
+        await mediaChannel.invokeMethod('createMediaFileAtRelative', {
+          'displayName': displayName,
+          'relativePath': relativePath,
+          'data': Uint8List.fromList(data),
+          'mimeType': mimeType,
+        });
       return _createCompleter.value!.future;
     } catch (e, stackTrace) {
       _createCompleter.value!.completeError(
@@ -333,7 +333,7 @@ class MediaUtils {
   /// Returns: The content URI of the newly created file
   ///
   /// Throws: [MediaUtilsException] if file creation fails
-  static Future<String?> createMediaFile(
+  Future<String?> createMediaFile(
     String displayName,
     List<int> data, {
     String? mimeType,
@@ -343,19 +343,12 @@ class MediaUtils {
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;
       _createCompleter.value = Completer();
-      unawaited(
-        mediaChannel
-            .invokeMethod('createMediaFile', {
-              'displayName': displayName,
-              'data': Uint8List.fromList(data),
-              'mimeType': mimeType,
-            })
-            .onError((error, stackTrace) {
-              _createCompleter.value!.completeError(
-                MediaUtilsException(error.toString(), stackTrace.toString()),
-              );
-            }),
-      );
+      if (_createCompleter.value != null)
+        await mediaChannel.invokeMethod('createMediaFile', {
+          'displayName': displayName,
+          'data': Uint8List.fromList(data),
+          'mimeType': mimeType,
+        });
       return _createCompleter.value!.future;
     } catch (e, stackTrace) {
       _createCompleter.value!.completeError(
@@ -382,7 +375,7 @@ class MediaUtils {
   /// Returns: Content URI of the newly created copy
   ///
   /// Throws: [MediaUtilsException] if copy operation fails
-  static Future<String?> copyMediaFileToRelative(
+  Future<String?> copyMediaFileToRelative(
     String pathOrUri,
     String relativePath, {
     required String mimeType,
@@ -392,19 +385,12 @@ class MediaUtils {
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;
       _createCompleter.value = Completer();
-      unawaited(
-        mediaChannel
-            .invokeMethod('copyMediaFileToRelative', {
-              'pathOrUri': pathOrUri,
-              'relativePath': relativePath,
-              'mimeType': mimeType,
-            })
-            .onError((error, stackTrace) {
-              _createCompleter.value!.completeError(
-                MediaUtilsException(error.toString(), stackTrace.toString()),
-              );
-            }),
-      );
+      if (_createCompleter.value != null)
+        await mediaChannel.invokeMethod('copyMediaFileToRelative', {
+          'pathOrUri': pathOrUri,
+          'relativePath': relativePath,
+          'mimeType': mimeType,
+        });
       return _createCompleter.value!.future;
     } catch (e, stackTrace) {
       _createCompleter.value!.completeError(
@@ -431,7 +417,7 @@ class MediaUtils {
   /// Returns: Content URI of the newly created copy
   ///
   /// Throws: [MediaUtilsException] if copy operation fails
-  static Future<String?> copyMediaFileToPathOrUri(
+  Future<String?> copyMediaFileToPathOrUri(
     String toPathOrUri,
     String fromPathOrUri, {
     String? mimeType,
@@ -441,19 +427,12 @@ class MediaUtils {
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;
       _createCompleter.value = Completer();
-      unawaited(
-        mediaChannel
-            .invokeMethod('copyMediaFileToPathOrUri', {
-              'toPathOrUri': toPathOrUri,
-              'fromPathOrUri': fromPathOrUri,
-              'mimeType': mimeType,
-            })
-            .onError((error, stackTrace) {
-              _createCompleter.value!.completeError(
-                MediaUtilsException(error.toString(), stackTrace.toString()),
-              );
-            }),
-      );
+      if (_createCompleter.value != null)
+        await mediaChannel.invokeMethod('copyMediaFileToPathOrUri', {
+          'toPathOrUri': toPathOrUri,
+          'fromPathOrUri': fromPathOrUri,
+          'mimeType': mimeType,
+        });
       return _createCompleter.value!.future;
     } catch (e, stackTrace) {
       _createCompleter.value!.completeError(
