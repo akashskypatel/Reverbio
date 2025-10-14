@@ -732,7 +732,7 @@ Future<Uri?> getValidImage(dynamic obj, {bool cache = true}) async {
           }
         }
     }
-    if (imageUri != null) cacheImage(imageUri.toString());
+    //if (imageUri != null) cacheImage(imageUri.toString());
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
   }
@@ -970,7 +970,7 @@ String getFileExtension(String filePath) {
 }
 
 String getExtensionFromMime(String? mimeType) {
-  if (mimeType == null) return 'bin';
+  if (mimeType == null) return '.bin';
 
   final extensions = {
     'image/jpg': 'jpg',
@@ -1018,13 +1018,8 @@ String? getMimeTypeFromFile(String filePath) {
 
 String? getMimeFromBytes(Uint8List bytes) {
   try {
-    const bytesToRead = 128;
-
-    // Use the first 128 bytes or all bytes if less than 128
-    final headerBytes =
-        bytes.length < bytesToRead ? bytes : bytes.sublist(0, bytesToRead);
-
-    return lookupMimeType('', headerBytes: headerBytes);
+    final mime = lookupMimeType('', headerBytes: bytes);
+    return mime;
   } catch (_) {
     return null;
   }
@@ -1116,7 +1111,7 @@ Future<File?> getFileFromUrl(String url) async {
         Platform.isWindows
             ? ensureReverbioPath((await getTemporaryDirectory()).path)
             : join((await getApplicationSupportDirectory()).path, 'temp');
-    if (bytes != null)
+    if (bytes != null && bytes.isNotEmpty)
       return getFileFromBytes(bytes, getFileNameFromUrl(url), tempDir);
   } catch (_) {}
   return null;
@@ -1147,25 +1142,26 @@ Future<File?> getFileFromBytes(
 
     String filePath = join(directory.path, fileName);
     final mime = getMimeFromBytes(data);
-    final extension = getExtensionFromMime(mime);
-    filePath = ensureCorrectExtension(filePath, extension: extension);
+    if (mime != null) {
+      final extension = getExtensionFromMime(mime);
+      filePath = ensureCorrectExtension(filePath, extension: extension);
 
-    // Create a File object
-    final file = File(filePath);
+      // Create a File object
+      final file = File(filePath);
 
-    if (!file.existsSync()) {
-      file.createSync();
+      if (!file.existsSync()) {
+        file.createSync();
 
-      // Write the Uint8List data to the file
-      await file.writeAsBytes(data);
+        // Write the Uint8List data to the file
+        await file.writeAsBytes(data);
 
-      cacheImage(file.path);
+        cacheImage(file.path);
+      }
+
+      return file;
     }
-
-    return file;
-  } catch (_) {
-    return null;
-  }
+  } catch (_) {}
+  return null;
 }
 
 String ensureCorrectExtension(String filePath, {String? extension}) {
@@ -1174,8 +1170,9 @@ String ensureCorrectExtension(String filePath, {String? extension}) {
       final mime = getMimeTypeFromFile(filePath);
       extension = getExtensionFromMime(mime);
     }
-    final _extensionRegex = RegExp(r'\.[^\.]+$');
-    final withoutExtension = filePath.replaceAll(_extensionRegex, '');
+    final baseName = basenameWithoutExtension(filePath);
+    final folderPath = filePath.replaceAll(basename(filePath), '');
+    final withoutExtension = join(folderPath, baseName);
     filePath = '$withoutExtension$extension';
   } catch (_) {}
   return filePath;
@@ -1193,7 +1190,8 @@ Future<Uint8List?> getImageBytesFromUrl(String imageUrl) async {
     } else {
       return null;
     }
-  } catch (e) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
   }
 }
@@ -1209,7 +1207,7 @@ Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
       (ImageInfo image, bool synchronousCall) async {
         if (!completer.isCompleted) {
           final ByteData? byteData = await image.image.toByteData(
-            format: ImageByteFormat.png,
+            format: ImageByteFormat.rawUnmodified,
           ); // Or .rawRgba
           if (byteData != null) {
             completer.complete(byteData.buffer.asUint8List());
@@ -1221,7 +1219,12 @@ Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
           stream.removeListener(listener);
         }
       },
-      onError: (dynamic exception, StackTrace? stackTrace) {
+      onError: (dynamic e, StackTrace? stackTrace) {
+        logger.log(
+          'Error in ${stackTrace?.getCurrentMethodName()}:',
+          e,
+          stackTrace,
+        );
         if (!completer.isCompleted) {
           completer.complete(null);
         }
@@ -1233,7 +1236,8 @@ Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
 
     stream.addListener(listener);
     return completer.future;
-  } catch (_) {
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
   }
 }
@@ -1265,7 +1269,9 @@ void cacheImage(String path) async {
     } else if (isUrl(path)) {
       NetworkImage(path).resolve(ImageConfiguration.empty);
     }
-  } catch (_) {}
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
 }
 
 Future<bool> hasVideoAccess() async {
