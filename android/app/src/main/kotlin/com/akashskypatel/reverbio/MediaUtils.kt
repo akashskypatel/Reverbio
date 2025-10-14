@@ -6,7 +6,6 @@ import android.app.RecoverableSecurityException
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.media.MediaMetadata
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -36,6 +35,7 @@ class MediaUtils(private val activity: Activity) {
             Environment.DIRECTORY_MOVIES to MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
             Environment.DIRECTORY_DCIM to MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
         )
+
         @RequiresApi(Build.VERSION_CODES.S)
         private val DIRECTORY_COLLECTION_31 = mapOf(
             Environment.DIRECTORY_DOCUMENTS to MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL),
@@ -327,7 +327,7 @@ class MediaUtils(private val activity: Activity) {
     fun createMediaFileAtRelative(
         context: Context,
         displayName: String,
-        relativePath: String?,
+        relativePath: String? = null,
         data: ByteArray,
         mimeType: String? = null
     ): Uri? {
@@ -412,14 +412,19 @@ class MediaUtils(private val activity: Activity) {
     fun copyMediaFileToRelative(
         context: Context,
         displayName: String,
-        relativePath: String,
         sourcePathOrUri: String,
+        relativePath: String? = null,
         mimeType: String? = null
     ): Uri? {
         return runCatching {
             val sourceUri = resolveUriFromString(context, sourcePathOrUri)
-            val relative = validateRelativePath(relativePath)
             val mime = mimeType ?: sourceUri?.let { context.contentResolver.getType(it) }
+            val relative = relativePath?.let {
+                validateRelativePath(
+                    relativePath
+                )
+            } ?: mime?.let { getRelativeForMimeType(mime) }
+
             ?: getMimeTypeFromFile(context, File(sourcePathOrUri))
             if (relative == null || sourceUri == null || mime == null) {
                 Log.e(

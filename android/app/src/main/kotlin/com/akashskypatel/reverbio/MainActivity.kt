@@ -196,10 +196,12 @@ class MainActivity : AudioServiceActivity() {
 
                         "copyMediaFileToRelative" -> {
                             val pathOrUri = call.argument<String>("pathOrUri")!!
-                            val relativePath = call.argument<String>("relativePath")!!
-                            val mime = call.argument<String?>("mimeType")!!
+                            val displayName = call.argument<String>("displayName")!!
+                            val relativePath = call.argument<String>("relativePath")
+                            val mime = call.argument<String?>("mimeType")
                             val uri = mediaUtils.copyMediaFileToRelative(
                                 this,
+                                displayName,
                                 pathOrUri,
                                 relativePath,
                                 mime
