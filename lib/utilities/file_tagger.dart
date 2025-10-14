@@ -42,7 +42,6 @@ import 'package:reverbio/utilities/utils.dart';
 
 class FileTagger {
   FileTagger();
-  static final _extensionRegex = RegExp(r'\.[^\.]+$');
   static final supportedFormats = {
     'AAC': ['aac'],
     'Ape': ['ape'],
@@ -114,7 +113,11 @@ class FileTagger {
       if (song != null && song.isNotEmpty)
         filePath = await getOfflinePath(song);
       if (filePath != null && filePath.isNotEmpty) {
-        return await AudioTags.read(filePath);
+        try {
+          return await AudioTags.read(filePath);
+        } catch (_) {
+          return null;
+        }
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -240,7 +243,7 @@ class FileTagger {
     String? id,
     String? directory,
     String? filePath,
-    bool rename = true
+    bool rename = true,
   }) async {
     final completer = Completer<bool>();
     final receivePort = ReceivePort();
@@ -270,7 +273,7 @@ class FileTagger {
         tagger: this, // Pass reference for static method access
         mediaUtils: MediaUtils.instance,
         token: RootIsolateToken.instance!,
-        rename: rename
+        rename: rename,
       ),
     );
 
@@ -296,7 +299,7 @@ class FileTagger {
     String? id,
     String? directory,
     String? filePath,
-    bool rename = true
+    bool rename = true,
   }) async {
     try {
       directory ??= offlineDirectory.value;
@@ -321,7 +324,7 @@ class FileTagger {
         tempDir,
         logger,
         MediaUtils.instance,
-        rename: rename
+        rename: rename,
       );
       if (tags.isNotEmpty) {
         song['audioTags'] = tagToMap(tags.first);
@@ -490,12 +493,15 @@ class FileTagger {
     final extension = getExtensionFromMime(mimeType);
     final currentBaseName = path.basenameWithoutExtension(file.path);
     String newFileName = currentBaseName;
-    String newFilePath = _ensureCorrectExtension(newFileName, extension);
+    String newFilePath = ensureCorrectExtension(
+      newFileName,
+      extension: extension,
+    );
     if (id != null && currentBaseName != id) {
       newFileName = file.path.replaceAll(currentBaseName, id);
-      newFilePath = _ensureCorrectExtension(newFileName, extension);
+      newFilePath = ensureCorrectExtension(newFileName, extension: extension);
     }
-    if (_getFileExtension(file.path) != extension ||
+    if (getFileExtension(file.path) != extension ||
         (id != null && currentBaseName != id))
       try {
         file.renameSync(newFilePath);
@@ -543,7 +549,10 @@ class FileTagger {
         // For local files, detect MIME type from content
         final mimeType = getMimeTypeFromFile(uri.toFilePath());
         final extension = getExtensionFromMime(mimeType);
-        final newFilePath = _ensureCorrectExtension(filePath, extension);
+        final newFilePath = ensureCorrectExtension(
+          filePath,
+          extension: extension,
+        );
 
         return await file.copy(newFilePath);
       } else {
@@ -561,7 +570,10 @@ class FileTagger {
 
           // Get file extension from MIME type
           final extension = getExtensionFromMime(mimeType);
-          final newFilePath = _ensureCorrectExtension(filePath, extension);
+          final newFilePath = ensureCorrectExtension(
+            filePath,
+            extension: extension,
+          );
 
           return await File(newFilePath).writeAsBytes(response.bodyBytes);
         } else {
@@ -580,65 +592,6 @@ class FileTagger {
       );
     }
     return null;
-  }
-
-  // MIME type utilities
-  static String? getMimeTypeFromFile(String filePath) {
-    try {
-      final file = File(filePath);
-      final raf = file.openSync();
-
-      try {
-        const bytesToRead = 128;
-        final buffer = List<int>.filled(bytesToRead, 0);
-        final bytesRead = raf.readIntoSync(buffer, 0, bytesToRead);
-
-        final headerBytes =
-            bytesRead < bytesToRead ? buffer.sublist(0, bytesRead) : buffer;
-
-        return lookupMimeType(file.path, headerBytes: headerBytes);
-      } finally {
-        raf.closeSync();
-      }
-    } catch (e) {
-      return null;
-    }
-  }
-
-  static String getExtensionFromMime(String? mimeType) {
-    if (mimeType == null) return 'bin';
-
-    final extensions = {
-      'image/jpg': 'jpg',
-      'image/png': 'png',
-      'image/gif': 'gif',
-      'image/webp': 'webp',
-      'image/bmp': 'bmp',
-      'image/x-icon': 'ico',
-      'audio/mp3': 'mp3',
-      'audio/weba': 'webm',
-      'video/weba': 'webm',
-      'audio/webm': 'webm',
-      'video/webm': 'webm',
-    };
-
-    final extension =
-        extensionFromMime(mimeType) ??
-        extensions[mimeType.toLowerCase()] ??
-        'bin';
-
-    return '.$extension';
-  }
-
-  // Path utilities
-  static String _ensureCorrectExtension(String filePath, String extension) {
-    final withoutExtension = filePath.replaceAll(_extensionRegex, '');
-    return '$withoutExtension$extension';
-  }
-
-  static String _getFileExtension(String filePath) {
-    final match = _extensionRegex.firstMatch(filePath);
-    return match?.group(0) ?? '';
   }
 }
 
