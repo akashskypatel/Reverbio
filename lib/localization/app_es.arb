@@ -307,5 +307,8 @@
   "getMetadata": "Obtener metadatos de Musicbrainz",
   "enterTitleAndArtist": "Ingresa el título de la pista y el artista para buscar metadatos",
   "fetchedMetadata": "Metadatos obtenidos exitosamente",
-  "quitApp": "¿Estás seguro de que quieres salir de la aplicación?"
+  "quitApp": "¿Estás seguro de que quieres salir de la aplicación?",
+  "moveToLibrary": "Mover a la biblioteca del dispositivo",
+  "notMoved": "No se pudieron mover los archivos. Es posible que los archivos no existan o no sean accesibles.",
+  "movedFiles": "Archivos movidos a la biblioteca del dispositivo exitosamente. Archivos movidos:"
 }

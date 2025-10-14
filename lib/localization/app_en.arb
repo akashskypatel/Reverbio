@@ -307,5 +307,8 @@
   "getMetadata": "Get Musicbrainz metadata",
   "enterTitleAndArtist": "Enter track title and artist to search metadata",
   "fetchedMetadata": "Fetched metadata successfully",
-  "quitApp": "Are you sure you want to exit the app?"
+  "quitApp": "Are you sure you want to exit the app?",
+  "moveToLibrary": "Move to device library",
+  "notMoved": "Unable to move files. The files may be missing or inaccessible.",
+  "movedFiles": "Files moved to device library successfully. Files moved:"
 }

@@ -307,5 +307,8 @@
   "getMetadata": "Musicbrainz meta verilerini al",
   "enterTitleAndArtist": "Meta veri aramak için parça başlığı ve sanatçıyı girin",
   "fetchedMetadata": "Meta veri başarıyla alındı",
-  "quitApp": "Uygulamadan çıkmak istediğinizden emin misiniz?"
+  "quitApp": "Uygulamadan çıkmak istediğinizden emin misiniz?",
+  "moveToLibrary": "Cihaz kitaplığına taşı",
+  "notMoved": "Dosyalar taşınamadı. Dosyalar eksik olabilir veya erişilemez durumda olabilir.",
+  "movedFiles": "Dosyalar cihaz kitaplığına başarıyla taşındı. Taşınan dosyalar:"
 }

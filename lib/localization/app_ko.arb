@@ -307,5 +307,8 @@
   "getMetadata": "Musicbrainz 메타데이터 가져오기",
   "enterTitleAndArtist": "메타데이터를 검색하려면 트랙 제목과 아티스트를 입력하세요",
   "fetchedMetadata": "메타데이터를 성공적으로 가져왔습니다",
-  "quitApp": "앱을 종료하시겠습니까?"
+  "quitApp": "앱을 종료하시겠습니까?",
+  "moveToLibrary": "기기 라이브러리로 이동",
+  "notMoved": "파일을 이동할 수 없습니다. 파일이 없거나 접근 불가능할 수 있습니다.",
+  "movedFiles": "파일이 기기 라이브러리로 성공적으로 이동되었습니다. 이동된 파일:"
 }

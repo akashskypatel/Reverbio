@@ -307,5 +307,8 @@
   "getMetadata": "Musicbrainz-Metadaten abrufen",
   "enterTitleAndArtist": "Titel und Künstler eingeben, um nach Metadaten zu suchen",
   "fetchedMetadata": "Metadaten erfolgreich abgerufen",
-  "quitApp": "Sind Sie sicher, dass Sie die App beenden möchten?"
+  "quitApp": "Sind Sie sicher, dass Sie die App beenden möchten?",
+  "moveToLibrary": "In Gerätebibliothek verschieben",
+  "notMoved": "Dateien konnten nicht verschoben werden. Die Dateien sind möglicherweise nicht vorhanden oder nicht zugänglich.",
+  "movedFiles": "Dateien erfolgreich in die Gerätebibliothek verschoben. Verschobene Dateien:"
 }

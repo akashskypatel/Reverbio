@@ -307,5 +307,8 @@
   "getMetadata": "Obtenir les métadonnées Musicbrainz",
   "enterTitleAndArtist": "Entrez le titre du morceau et l'artiste pour rechercher des métadonnées",
   "fetchedMetadata": "Métadonnées récupérées avec succès",
-  "quitApp": "Êtes-vous sûr de vouloir quitter l'application ?"
+  "quitApp": "Êtes-vous sûr de vouloir quitter l'application ?",
+  "moveToLibrary": "Déplacer vers la bibliothèque de l'appareil",
+  "notMoved": "Impossible de déplacer les fichiers. Les fichiers peuvent être manquants ou inaccessibles.",
+  "movedFiles": "Fichiers déplacés vers la bibliothèque de l'appareil avec succès. Fichiers déplacés :"
 }

@@ -307,5 +307,8 @@
   "getMetadata": "Pobierz metadane Musicbrainz",
   "enterTitleAndArtist": "Wpisz tytuł utworu i wykonawcę, aby wyszukać metadane",
   "fetchedMetadata": "Pomyślnie pobrano metadane",
-  "quitApp": "Czy na pewno chcesz zamknąć aplikację?"
+  "quitApp": "Czy na pewno chcesz zamknąć aplikację?",
+  "moveToLibrary": "Przenieś do biblioteki urządzenia",
+  "notMoved": "Nie można przenieść plików. Pliki mogą być brakujące lub niedostępne.",
+  "movedFiles": "Pliki pomyślnie przeniesione do biblioteki urządzenia. Przeniesione pliki:"
 }

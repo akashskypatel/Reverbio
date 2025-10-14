@@ -307,5 +307,8 @@
   "getMetadata": "Lấy metadata Musicbrainz",
   "enterTitleAndArtist": "Nhập tiêu đề bài hát và nghệ sĩ để tìm kiếm metadata",
   "fetchedMetadata": "Đã lấy metadata thành công",
-  "quitApp": "Bạn có chắc chắn muốn thoát ứng dụng không?"
+  "quitApp": "Bạn có chắc chắn muốn thoát ứng dụng không?",
+  "moveToLibrary": "Di chuyển đến thư viện thiết bị",
+  "notMoved": "Không thể di chuyển tệp. Các tệp có thể bị thiếu hoặc không thể truy cập.",
+  "movedFiles": "Đã di chuyển tệp đến thư viện thiết bị thành công. Tệp đã di chuyển:"
 }

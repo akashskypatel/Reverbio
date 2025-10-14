@@ -307,5 +307,8 @@
   "getMetadata": "Pata metadata ya Musicbrainz",
   "enterTitleAndArtist": "Weka kichwa cha wimbo na msanii kutafuta metadata",
   "fetchedMetadata": "Imepatikana metadata kwa mafanikio",
-  "quitApp": "Je, una uhakika unataka kutoka kwenye programu?"
+  "quitApp": "Je, una uhakika unataka kutoka kwenye programu?",
+  "moveToLibrary": "Hamisha kwenye maktaba ya kifaa",
+  "notMoved": "Hawezi kuhamisha faili. Faili zinaweza kukosekana au hazipatikani.",
+  "movedFiles": "Faili zilihamishiwa kwa mafanikio kwenye maktaba ya kifaa. Faili zilizohamishwa:"
 }
