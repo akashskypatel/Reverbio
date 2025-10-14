@@ -337,7 +337,10 @@ class _BaseCardState extends State<BaseCard> {
           cacheWidth: (widget.size * 1.1).toInt(),
           File(path),
           fit: BoxFit.cover,
-          errorBuilder: (context, __, ___) => _buildNoArtworkCard(context),
+          errorBuilder: (context, error, stackTrace) {
+            logger.log('BaseCard Image.file _buildFileArtworkCard', error, null);
+            return _buildNoArtworkCard(context);
+          },
           color:
               (widget.duration != null && widget.duration! > 0)
                   ? _theme.colorScheme.primaryContainer
@@ -365,7 +368,10 @@ class _BaseCardState extends State<BaseCard> {
       memCacheWidth: (widget.size * 1.1).toInt(),
       fit: BoxFit.cover,
       placeholder: (context, url) => const Spinner(),
-      errorWidget: (context, url, error) => _buildNoArtworkCard(context),
+      errorWidget: (context, url, error) {
+        logger.log(url, error, null);
+        return _buildNoArtworkCard(context);
+      },
       color:
           (widget.duration != null && widget.duration! > 0)
               ? _theme.colorScheme.primaryContainer

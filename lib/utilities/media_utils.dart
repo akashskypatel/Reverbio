@@ -24,7 +24,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
 
 class MediaUtilsException implements Exception {
@@ -56,13 +55,7 @@ class MediaUtils {
     while (channelInitialized == null) {
       try {
         channelInitialized = await isChannelInitialized();
-      } catch (e, stackTrace) {
-        logger.log(
-          'Error in ${stackTrace.getCurrentMethodName()}',
-          e,
-          stackTrace,
-        );
-      }
+      } catch (_) {}
     }
     mediaChannel.setMethodCallHandler((event) async {
       switch (event.method) {
@@ -124,13 +117,14 @@ class MediaUtils {
   /// ```
   /// Parameters:
   /// - [path] : The absolute file system path to convert
-  /// - [mimeType] : Optional MIME type to improve URI resolution accuracy
+  /// - [mimeType] : Optional MIME type to improve URI resolution accuracy. Will be determined from source file if not provided
   ///
   /// Returns: A content URI string, or `null` if the path cannot be resolved
   ///
   /// Throws: [MediaUtilsException] if the platform operation fails
   Future<String?> pathToUri(String path, {String? mimeType}) async {
     try {
+      await ensureInitialized();
       return await mediaChannel.invokeMethod('pathToUri', {
         'path': path,
         'mimeType': mimeType,
@@ -158,6 +152,7 @@ class MediaUtils {
   /// Throws: [MediaUtilsException] if the URI cannot be resolved
   Future<String?> uriToPath(String uri) async {
     try {
+      await ensureInitialized();
       return await mediaChannel.invokeMethod('uriToPath', {'uri': uri});
     } on PlatformException catch (e) {
       throw MediaUtilsException(e.code, e.message);
@@ -181,7 +176,7 @@ class MediaUtils {
   /// Parameters:
   /// - [pathOrUri] : Either a content URI or file path of the media file
   /// - [data] : The new binary content to write
-  /// - [mimeType] : Optional MIME type for path-based operations
+  /// - [mimeType] : Optional MIME type for path-based operations. Will be determined from source file if not provided
   ///
   /// Returns: `true` if the operation completed successfully
   ///
@@ -192,6 +187,7 @@ class MediaUtils {
     String? mimeType,
   }) async {
     try {
+      await ensureInitialized();
       return await mediaChannel.invokeMethod('editMediaFile', {
         'pathOrUri': pathOrUri,
         'data': Uint8List.fromList(data),
@@ -213,13 +209,14 @@ class MediaUtils {
   ///
   /// Parameters:
   /// - [pathOrUri] : Either a content URI or file path of the media file
-  /// - [mimeType] : Optional MIME type for path-based operations
+  /// - [mimeType] : Optional MIME type for path-based operations. Will be determined from source file if not provided
   ///
   /// Returns: The file content as bytes, or `null` if the file doesn't exist
   ///
   /// Throws: [MediaUtilsException] if reading fails or file is inaccessible
   Future<Uint8List?> readMediaFile(String pathOrUri, {String? mimeType}) async {
     try {
+      await ensureInitialized();
       return await mediaChannel.invokeMethod('readMediaFile', {
         'pathOrUri': pathOrUri,
         'mimeType': mimeType,
@@ -246,6 +243,7 @@ class MediaUtils {
   /// Throws: [MediaUtilsException] if deletion fails or permission is denied
   Future<bool> deleteMediaFile(String pathOrUri) async {
     try {
+      await ensureInitialized();
       if (_deleteCompleter.value != null &&
           !_deleteCompleter.value!.isCompleted)
         await _deleteCompleter.value!.future;
@@ -282,7 +280,7 @@ class MediaUtils {
   /// - [displayName] : The filename including extension (e.g., "song.mp3")
   /// - [relativePath] : The target MediaStore directory (e.g., "Music/")
   /// - [data] : The binary content of the new file
-  /// - [mimeType] : The MIME type of the file content
+  /// - [mimeType] : Optional MIME type of the file content. Will be determined from source file if not provided
   ///
   /// Returns: The content URI of the newly created file
   ///
@@ -294,6 +292,7 @@ class MediaUtils {
     String? mimeType,
   }) async {
     try {
+      await ensureInitialized();
       if (_createCompleter.value != null &&
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;
@@ -328,7 +327,7 @@ class MediaUtils {
   /// Parameters:
   /// - [displayName] : The filename including extension (e.g., "photo.jpg")
   /// - [data] : The binary content of the new file
-  /// - [mimeType] : The MIME type used for directory selection
+  /// - [mimeType] : Optional MIME type used for directory selection. Will be determined from source file if not provided
   ///
   /// Returns: The content URI of the newly created file
   ///
@@ -339,6 +338,7 @@ class MediaUtils {
     String? mimeType,
   }) async {
     try {
+      await ensureInitialized();
       if (_createCompleter.value != null &&
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;
@@ -369,18 +369,21 @@ class MediaUtils {
   ///
   /// Parameters:
   /// - [pathOrUri] : Source file URI or path
-  /// - [relativePath] : Target MediaStore directory (e.g., "Music/")
-  /// - [mimeType] : MIME type of the file being copied
+  /// - [displayName] : Destination file name
+  /// - [relativePath] : Optional Target MediaStore directory (e.g., "Music/"). Will be determined from mime-type if not provided
+  /// - [mimeType] : Optional MIME type of the file being copied. Will be determined from source file if not provided
   ///
   /// Returns: Content URI of the newly created copy
   ///
   /// Throws: [MediaUtilsException] if copy operation fails
   Future<String?> copyMediaFileToRelative(
     String pathOrUri,
-    String relativePath, {
-    required String mimeType,
+    String displayName, {
+    String? relativePath,
+    String? mimeType,
   }) async {
     try {
+      await ensureInitialized();
       if (_createCompleter.value != null &&
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;
@@ -388,6 +391,7 @@ class MediaUtils {
       if (_createCompleter.value != null)
         await mediaChannel.invokeMethod('copyMediaFileToRelative', {
           'pathOrUri': pathOrUri,
+          'displayName': displayName,
           'relativePath': relativePath,
           'mimeType': mimeType,
         });
@@ -412,7 +416,7 @@ class MediaUtils {
   /// Parameters:
   /// - [toPathOrUri] : Source file URI or path
   /// - [fromPathOrUri] : Destination file path or URI
-  /// - [mimeType] : Optional MIME type for path-based operations
+  /// - [mimeType] : Optional MIME type for path-based operations. Will be determined from source file if not provided
   ///
   /// Returns: Content URI of the newly created copy
   ///
@@ -423,6 +427,7 @@ class MediaUtils {
     String? mimeType,
   }) async {
     try {
+      await ensureInitialized();
       if (_createCompleter.value != null &&
           !_createCompleter.value!.isCompleted)
         await _createCompleter.value!.future;

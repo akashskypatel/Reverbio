@@ -49,6 +49,8 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
   final pictures = <Picture>[];
   try {
     tags = await fileTagger.getTagFromOfflineFile(song);
+    if(tags == null)
+      showToast(context: context, L10n.current.cannotOpenFile);
     pictures.addAll(
       tags?.pictures.map(
             (e) => Picture(bytes: e.bytes, pictureType: e.pictureType),

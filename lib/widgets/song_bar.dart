@@ -726,6 +726,20 @@ class _SongBarState extends State<SongBar> {
               ],
             ),
           ),
+        if (isSongAppOfflineOnly(song) && !isSongInDeviceLibrary(song))
+          PopupMenuItem<String>(
+            value: 'move_to_library',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.folder_arrow_right_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.moveToLibrary),
+              ],
+            ),
+          ),
         if (enablePlugins.value)
           ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((
             e,
@@ -750,7 +764,11 @@ class _SongBarState extends State<SongBar> {
     return data;
   }
 
-  Future<void> _popupMenuItemAction(BuildContext context, String value, dynamic song) async {
+  Future<void> _popupMenuItemAction(
+    BuildContext context,
+    String value,
+    dynamic song,
+  ) async {
     switch (value) {
       case 'like':
         songLikeStatus.value = !songLikeStatus.value;
@@ -807,6 +825,8 @@ class _SongBarState extends State<SongBar> {
         break;
       case 'tag':
         await showEditMetadataDialog(context, song);
+      case 'move_to_library':
+        await moveSongToDeviceLibrary(context, song);
     }
   }
 
