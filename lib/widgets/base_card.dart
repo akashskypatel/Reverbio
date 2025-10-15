@@ -337,10 +337,7 @@ class _BaseCardState extends State<BaseCard> {
           cacheWidth: (widget.size * 1.1).toInt(),
           File(path),
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            logger.log('BaseCard Image.file _buildFileArtworkCard', error, null);
-            return _buildNoArtworkCard(context);
-          },
+          errorBuilder: (context, _, __) => _buildNoArtworkCard(context),
           color:
               (widget.duration != null && widget.duration! > 0)
                   ? _theme.colorScheme.primaryContainer
