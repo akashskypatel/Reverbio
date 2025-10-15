@@ -1,9 +1,9 @@
-import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    id("kotlin-parcelize")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -22,24 +22,15 @@ android {
     }
 
     defaultConfig {
+        manifestPlaceholders += mapOf(
+            "carTemplateEnabled" to "true",
+            "appAuthRedirectScheme" to "com.your.package"
+        )
         applicationId = "com.akashskypatel.reverbio"
         minSdk = flutter.minSdkVersion // flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders += mapOf(
-            "carTemplateEnabled" to "true",
-            "appAuthRedirectScheme" to "com.your.package"
-        )
-    }
-
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86_64")
-            isUniversalApk = true
-        }
     }
 
     buildTypes {
@@ -55,6 +46,12 @@ android {
             }
         }
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     applicationVariants.all {
         outputs.all {
             val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl

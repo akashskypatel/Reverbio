@@ -39,7 +39,6 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true"
-        android:extractNativeLibs="true"
         tools:replace="android:extractNativeLibs"
         android:appCategory="audio">
         <activity
