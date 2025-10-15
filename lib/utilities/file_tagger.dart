@@ -466,8 +466,10 @@ class FileTagger {
           final success = await mediaUtils.copyMediaFileToPathOrUri(
             file.path,
             copy.path,
+            onComplete: () {
+              copy.deleteSync();
+            },
           );
-          _logger.log('tagSingleAudioFile ${success ?? ''}', null, null);
           if (success == null) return null;
         } else
           await AudioTags.write(file.path, newTag!);
