@@ -31,6 +31,7 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class FileScanner {
@@ -96,7 +97,7 @@ class FileScanner {
             final song = <String, dynamic>{
               'title': title,
               'artist': artist,
-              'devicePath': file.path,
+              'devicePath': Platform.isAndroid ? await MediaUtils.instance.pathToUri(file.path) : file.path,
             };
             if (tag != null) song['audioTags'] = tagToMap(tag);
             userDeviceSongs.addOrUpdateWhere(checkSong, song);
@@ -131,7 +132,7 @@ class FileScanner {
           final song = <String, dynamic>{
             'title': title,
             'artist': artist,
-            'devicePath': file.path,
+            'devicePath': Platform.isAndroid ? await MediaUtils.instance.pathToUri(file.path) : file.path,
           };
           if (tag != null) song['audioTags'] = tagToMap(tag);
           _userDeviceSongs.addOrUpdateWhere(checkSong, song);
