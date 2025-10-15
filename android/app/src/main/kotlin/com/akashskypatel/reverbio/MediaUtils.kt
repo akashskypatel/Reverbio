@@ -257,29 +257,29 @@ class MediaUtils(private val activity: Activity) {
         context: Context,
         pathOrUri: String,
         data: ByteArray,
-    ): Boolean {
+    ): Uri? {
         return runCatching {
             val uri = resolveUriFromString(context, pathOrUri)
             return uri?.let {
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         createWriteRequest(context, uri, data = data)
-                        true
+                        uri
                     } else {
                         // Immediate execution for older versions
                         context.contentResolver.openOutputStream(uri, "w")?.use {
                             it.write(data)
                         } ?: throw IOException("Failed to open output stream")
-                        true
+                        uri
                     }
                 } catch (e: Exception) {
                     File(pathOrUri).writeBytes(data)
-                    true
+                    uri
                 }
-            } == true
+            }
         }.getOrElse { e ->
             Log.e(TAG, "Failed to edit media file at $pathOrUri: ${e.message}", e)
-            false
+            null
         }
     }
 
