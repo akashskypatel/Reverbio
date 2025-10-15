@@ -728,17 +728,17 @@ extension AudioTagEqualsExtension on Tag {
   bool equalsWithoutPictures(Tag? other) {
     if (other == null) return false;
     return title == other.title &&
-          trackArtist == other.trackArtist &&
-          album == other.album &&
-          albumArtist == other.albumArtist &&
-          year == other.year &&
-          genre == other.genre &&
-          trackNumber == other.trackNumber &&
-          trackTotal == other.trackTotal &&
-          discNumber == other.discNumber &&
-          discTotal == other.discTotal &&
-          lyrics == other.lyrics &&
-          duration == other.duration &&
-          bpm == other.bpm;
+        trackArtist == other.trackArtist &&
+        album == other.album &&
+        albumArtist == other.albumArtist &&
+        year == other.year &&
+        genre == other.genre &&
+        trackNumber == other.trackNumber &&
+        trackTotal == other.trackTotal &&
+        discNumber == other.discNumber &&
+        discTotal == other.discTotal &&
+        lyrics == other.lyrics &&
+        duration == other.duration &&
+        bpm == other.bpm;
   }
 }

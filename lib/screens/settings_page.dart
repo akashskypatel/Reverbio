@@ -226,7 +226,8 @@ class _SettingsPageState extends State<SettingsPage> {
               tileIcon: FluentIcons.data_bar_vertical_arrow_down_24_filled,
               trailing: Switch(
                 value: autoCacheOffline.value,
-                onChanged: (value) => _showAutoCacheOfflineDialog(context, value),
+                onChanged:
+                    (value) => _showAutoCacheOfflineDialog(context, value),
               ),
             );
           },

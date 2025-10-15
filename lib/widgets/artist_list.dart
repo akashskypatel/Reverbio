@@ -70,7 +70,11 @@ class _ArtistListState extends State<ArtistList> {
                 //Drawer slide
                 _buildDrawerSlide(),
                 widget.child,
-                LimitedBox(maxWidth: remWidth, maxHeight: maxHeight, child: widget.child,),
+                LimitedBox(
+                  maxWidth: remWidth,
+                  maxHeight: maxHeight,
+                  child: widget.child,
+                ),
               ],
             ),
           ],
