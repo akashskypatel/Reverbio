@@ -30,6 +30,7 @@ import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
@@ -558,9 +559,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         children: [
                           if (value != null)
                             Text(
-                              song?['mbTitle'] ??
-                                  song?['title'] ??
-                                  song?['ytTitle'] ??
+                              songTitle(song).nullIfEmpty ??
                                   context.l10n!.unknown,
                               style: TextStyle(
                                 color: _theme.colorScheme.primary,
@@ -570,9 +569,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                             ),
                           if (value != null)
                             Text(
-                              song?['mbArtist'] ??
-                                  song?['artist'] ??
-                                  song?['ytArtist'] ??
+                              songArtist(song).nullIfEmpty ??
                                   context.l10n!.unknown,
                               style: TextStyle(
                                 color: _theme.colorScheme.secondary,
@@ -617,6 +614,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                 ..add(getExistingOfflineSongs())
                 ..add(getUserDeviceSongs());
           await Future.wait(futures);
+          if (mounted) setState(() {});
         }
         final songBars = getSongsList(widget.page);
         for (final songBar in songBars) {

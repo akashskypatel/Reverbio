@@ -25,6 +25,7 @@ import 'package:audiotags/audiotags.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -49,8 +50,7 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
   final pictures = <Picture>[];
   try {
     tags = await fileTagger.getTagFromOfflineFile(song);
-    if(tags == null)
-      showToast(context: context, L10n.current.cannotOpenFile);
+    if (tags == null) showToast(context: context, L10n.current.cannotOpenFile);
     pictures.addAll(
       tags?.pictures.map(
             (e) => Picture(bytes: e.bytes, pictureType: e.pictureType),
@@ -60,7 +60,9 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
   } catch (_) {
     return showToast(context: context, L10n.current.cannotOpenFile);
   }
-  final titleController = TextEditingController(text: tags?.title);
+  final titleController = TextEditingController(
+    text: tags?.title ?? basenameWithoutExtension(offlinePath),
+  );
   final trackArtistController = TextEditingController(text: tags?.trackArtist);
   final albumController = TextEditingController(text: tags?.album);
   final albumArtistController = TextEditingController(text: tags?.albumArtist);
@@ -165,7 +167,7 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                                 song,
                                                 filePath: offlinePath,
                                                 tag: newTag,
-                                                rename: false
+                                                rename: false,
                                               );
                                           if (success)
                                             showToast(L10n.current.tagsUpdated);
@@ -207,14 +209,10 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                             metaLoading = true;
                                           });
                                         final title =
-                                            song['mbTitle'] ??
-                                            song['title'] ??
-                                            song['ytTitle'] ??
+                                            songTitle(song).nullIfEmpty ??
                                             tags?.title;
                                         final artist =
-                                            song['mbArtist'] ??
-                                            song['artist'] ??
-                                            song['ytArtist'] ??
+                                            songArtist(song).nullIfEmpty ??
                                             tags?.trackArtist;
                                         if (title == null ||
                                             title.isEmpty ||
@@ -235,14 +233,10 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                           return;
                                         }
                                         song['title'] =
-                                            song['mbTitle'] ??
-                                            song['title'] ??
-                                            song['ytTitle'] ??
+                                            songTitle(song).nullIfEmpty ??
                                             tags?.title;
                                         song['artist'] =
-                                            song['mbArtist'] ??
-                                            song['artist'] ??
-                                            song['ytArtist'] ??
+                                            songArtist(song).nullIfEmpty ??
                                             tags?.trackArtist;
                                         final future = queueSongInfoRequest(
                                           song,

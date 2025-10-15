@@ -320,7 +320,7 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
           song.addAll(<String, dynamic>{
             'rgid': (song['id'] as String).mbid,
             'rid': (recording['id'] as String).mbid,
-            'album': song['mbTitle'] ?? song['title'] ?? song['ytTitle'],
+            'album': songTitle(song),
             'albumArtist': albumArtist,
             'mbidType': 'release-group',
             'list': [recording],

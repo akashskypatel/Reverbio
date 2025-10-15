@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:http/http.dart' as http;
@@ -111,7 +112,7 @@ Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
     if (song['id']?.isEmpty) throw Exception('ID is null or empty');
     if (add && song != null) {
       userLikedSongsList.addOrUpdate(song, checkSong);
-      song['song'] = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
+      song['song'] = songTitle(song);
       await PM.triggerHook(song, 'onEntityLiked');
     } else {
       userLikedSongsList.removeWhere((s) => checkSong(s, song));
@@ -194,11 +195,8 @@ Future<List<dynamic>> _findYTSong(dynamic song) async {
         song['id'] = parseEntityId(song);
       }
     } else {
-      final lcSongName =
-          (song['mbTitle'] ?? song['title'] ?? song['ytTitle'] ?? '') as String;
-      final lcArtist =
-          (song['mbArtist'] ?? song['artist'] ?? song['ytArtist'] ?? '')
-              as String;
+      final lcSongName = songTitle(song);
+      final lcArtist = songArtist(song);
       if (lcSongName.collapsed.isEmpty && lcArtist.collapsed.isEmpty)
         throw Exception('Cannot find YouTubeSong. Invalid song: $song');
       final qry = '$lcArtist $lcSongName';
@@ -253,8 +251,8 @@ Map<String, dynamic> minimizeSongData(dynamic song) {
   return {
     'id': parseEntityId(song),
     'primary-type': song['primary-type'] ?? 'song',
-    'title': song['mbTitle'] ?? song['title'] ?? song['ytTitle'],
-    'artist': song['mbArtist'] ?? song['artist'] ?? song['ytArtist'],
+    'title': songTitle(song),
+    'artist': songArtist(song),
     'artist-credit': song['artist-credit'],
     'devicePath': song['devicePath'],
     'songUrl': song['songUrl'],
@@ -449,14 +447,8 @@ Future<dynamic> _findMBSong(dynamic song) async {
           }
         }
         final String iArtist =
-            combineArtists(song) ??
-            song['mbArtist'] ??
-            song['artist'] ??
-            song['ytArtist'] ??
-            '';
-        final String iTitle = sanitizeSongTitle(
-          song['mbTitle'] ?? song['title'] ?? song['ytTitle'] ?? '',
-        );
+            combineArtists(song) ?? songArtist(song).nullIfEmpty ?? '';
+        final String iTitle = sanitizeSongTitle(songTitle(song));
         final artists = splitArtists(iArtist);
         final artistList = [];
         for (final artist in artists) {
@@ -631,8 +623,8 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-  song['title'] = song['mbTitle'] ?? song['title'] ?? song['ytTitle'] ?? '';
-  song['artist'] = song['mbArtist'] ?? song['artist'] ?? song['ytArtist'] ?? '';
+  song['title'] = songTitle(song);
+  song['artist'] = songArtist(song);
   song['id'] = parseEntityId(song);
   song = Map<String, dynamic>.from(song);
   addSongToCache(song as Map<String, dynamic>);
@@ -645,11 +637,21 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
 }
 
 String songTitle(dynamic song) {
-  return song['mbTitle'] ?? song['title'] ?? song['ytTitle'] ?? '';
+  if (song == null) return '';
+  return song['mbTitle'] ??
+      song['title'] ??
+      song['ytTitle'] ??
+      song['song'] ??
+      '';
 }
 
 String songArtist(dynamic song) {
-  return song['mbArtist'] ?? song['artist'] ?? song['ytArtist'] ?? '';
+  if (song == null) return '';
+  return combineArtists(song) ??
+      song['mbArtist'] ??
+      song['artist'] ??
+      song['ytArtist'] ??
+      '';
 }
 
 bool isYouTubeSongValid(dynamic song) {
@@ -733,25 +735,24 @@ bool isSongIdKeyValid(dynamic song, {String idKey = 'mbid'}) {
 
 bool isSongTitleValid(dynamic song) {
   if (song == null || !(song is Map)) return false;
-  final title =
-      song['mbTitle'] ?? song['title'] ?? song['ytTitle'] ?? song['song'];
+  final title = songTitle(song);
   final isValid =
       song.isNotEmpty &&
-      (title != null && title.isNotEmpty && title.toLowerCase() != 'unknown');
+      (title.isNotEmpty &&
+          title.toLowerCase() != 'unknown' &&
+          title.toLowerCase() != L10n.current.unknown.toLowerCase());
   return isValid;
 }
 
 bool isSongArtistValid(dynamic song) {
   if (song == null || !(song is Map)) return false;
-  final artist =
-      ((song['mbArtist'] ?? song['artist'] ?? song['ytArtist']) is String
-          ? song['artist']
-          : null);
+  final artist = songArtist(song).nullIfEmpty;
   final isValid =
       song.isNotEmpty &&
       (artist != null &&
           artist.isNotEmpty &&
-          artist.toLowerCase() != 'unknown');
+          artist.toLowerCase() != 'unknown' &&
+          artist.toLowerCase() != L10n.current.unknown.toLowerCase());
   return isValid;
 }
 
@@ -897,17 +898,36 @@ Future<bool> moveSongToDeviceLibrary(BuildContext context, dynamic song) async {
       final _dir = Directory(offlineDirectory.value!);
       final _audioDirPath = join(_dir.path, 'tracks');
       final files = await _getRelatedFiles(_audioDirPath, song);
+      String? dest =
+          Platform.isWindows
+              ? await FilePicker.platform.getDirectoryPath()
+              : null;
       int count = 0;
       for (final file in files) {
         if (songArtist(song).isNotEmpty && songTitle(song).isNotEmpty) {
           final newName =
-              '${songArtist(song)} - ${songTitle(song)}${extension(file.path)}';
-          final copy = file.copySync(
-            file.path.replaceAll(basename(file.path), newName),
-          );
-          await MediaUtils.instance.copyMediaFileToRelative(copy.path, newName);
-          copy.deleteSync();
-          count++;
+              '${songArtist(song)} - ${songTitle(song)}${extension(file.path)}'
+                  .replaceAll(RegExp('[\\/:*?"<>|]'), '');
+          String? copyPath;
+          if (Platform.isAndroid) {
+            final copy = file.copySync(
+              file.path.replaceAll(basename(file.path), newName),
+            );
+            copyPath =
+                dest = await MediaUtils.instance.copyMediaFileToRelative(
+                  copy.path,
+                  newName,
+                );
+            copy.deleteSync();
+          } else if (dest != null && dest.isNotEmpty) {
+            copyPath = join(dest, newName);
+            file.copySync(copyPath);
+          }
+          if (dest != null && dest.isNotEmpty) {
+            song['devicePath'] = copyPath;
+            file.deleteSync();
+            count++;
+          }
         }
       }
       if (count > 0) {
@@ -978,18 +998,17 @@ Future<void> makeSongOffline(dynamic song) async {
         directory: 'tracks',
         baseDirectory: BaseDirectory.applicationSupport,
         updates: Updates.statusAndProgress,
-        displayName:
-            '${song['mbTitle'] ?? song['title'] ?? song['ytTitle']} - ${song['mbArtist'] ?? song['artist'] ?? song['ytArtist']}',
+        displayName: '${songTitle(song)} - ${songArtist(song)}',
         metaData: jsonEncode({
           'id': song['id'],
-          'title': song['mbTitle'] ?? song['title'] ?? song['ytTitle'],
-          'artist': song['mbArtist'] ?? song['artist'] ?? song['ytArtist'],
+          'title': songTitle(song),
+          'artist': songArtist(song),
         }),
       );
       final result = await FileDownloader().enqueue(task);
       if (!result)
         showToast(
-          '${context.l10n!.unableToDownload}: ${song['title']} - ${song['artist']}',
+          '${context.l10n!.unableToDownload}: ${songTitle(song)} - ${songArtist(song)}',
         );
     } catch (e, stackTrace) {
       logger.log(
@@ -1029,7 +1048,6 @@ Future<void> makeSongOffline(dynamic song) async {
 
 Future<List<dynamic>> getUserOfflineSongs() async {
   if (!(await checkOfflineFiles())) {
-    userOfflineSongs.clear();
     await getExistingOfflineSongs();
   }
   final offline =
@@ -1077,9 +1095,18 @@ Future<void> getUserDeviceSongs() async {
     final fileScanner = FileScanner(
       directories: additionalDirectories.toList(),
     );
-    userDeviceSongs.clear();
-    final files = await fileScanner.getUserDeviceSongs(additionalDirectories);
-    userDeviceSongs.addOrUpdateAllWhere(checkSong, files);
+    final _userDeviceSongs = await fileScanner.getUserDeviceSongs(
+      additionalDirectories,
+    );
+    userDeviceSongs
+      ..removeWhere(
+        (e) =>
+            !_userDeviceSongs.any(
+              (s) => checkSong(e, s) || e['devicePath'] == s['devicePath'],
+            ),
+      )
+      ..addOrUpdateWhere(checkSong, _userDeviceSongs);
+
     unawaited(_getUserDeviceSongMetadata());
   }
 }
@@ -1107,6 +1134,7 @@ Future<void> _getUserDeviceSongMetadata() async {
 Future<void> getExistingOfflineSongs() async {
   final _dir = Directory(offlineDirectory.value!);
   final _audioDirPath = join(_dir.path, 'tracks');
+  final List<String> _userOfflineSongs = [];
   await Directory(_audioDirPath).create(recursive: true);
   try {
     final fileList = Directory(_audioDirPath).listSync();
@@ -1120,7 +1148,7 @@ Future<void> getExistingOfflineSongs() async {
         if (isAudio(newPath)) {
           final ids = filename.toIds;
           if (ids.isNotEmpty)
-            userOfflineSongs.addOrUpdate(filename, checkEntityId);
+            _userOfflineSongs.addOrUpdateWhere(checkEntityId, filename);
         } else {
           final fileTagger = FileTagger();
           final song =
@@ -1129,9 +1157,11 @@ Future<void> getExistingOfflineSongs() async {
         }
       } catch (_) {}
     }
+    userOfflineSongs.removeWhere((e) => !_userOfflineSongs.contains(e));
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
+  userOfflineSongs.writeToCache();
 }
 
 Future<void> _matchFileToSongInfo(File file) async {
@@ -1154,9 +1184,13 @@ Future<void> _matchFileToSongInfo(File file) async {
 
 Future<String?> getOfflinePath(dynamic song) async {
   try {
-    final offlinePath = song['devicePath'] ?? song['offlineAudioPath'];
+    String? offlinePath =
+        (song['devicePath'] ?? song['offlineAudioPath']) as String?;
     if (offlinePath != null) {
-      if (isFilePath(offlinePath) &&
+      if (offlinePath.startsWith('content') && Platform.isAndroid)
+        offlinePath = await MediaUtils.instance.uriToPath(offlinePath);
+      if (offlinePath != null &&
+          isFilePath(offlinePath) &&
           doesFileExist(offlinePath))
         return offlinePath;
     }
@@ -1180,7 +1214,7 @@ Future<String?> getOfflinePath(dynamic song) async {
 }
 
 Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
-  final files = <File>[];
+  final files = <File>{};
   try {
     final ids = parseEntityId(entity).toIds;
     await for (final file in Directory(directory).list()) {
@@ -1195,14 +1229,15 @@ Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
       if (checkSong(file, entity) &&
           file['devicePath'] != null &&
           file['devicePath'].isNotEmpty) {
-        if (File(file['devicePath']).existsSync())
+        if (File(file['devicePath']).existsSync() &&
+            !files.any((e) => checkSong(entity, e)))
           files.add(File(file['devicePath']));
       }
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-  return files;
+  return files.toList();
 }
 
 Future<void> _deleteRelatedFiles(String directory, dynamic entity) async {
@@ -1375,11 +1410,8 @@ bool checkSong(dynamic songA, dynamic songB) {
 int? getSongHashCode(dynamic song) {
   if (!(song is Map)) return null;
   if (!isSongTitleValid(song) || !isSongArtistValid(song)) return null;
-  final title =
-      (song['mbTitle'] ?? song['title'] ?? song['ytTitle'] ?? song['song'])
-          as String?;
-  final artist =
-      (song['mbArtist'] ?? song['artist'] ?? song['ytArtist']) as String?;
+  final title = songTitle(song).nullIfEmpty;
+  final artist = songArtist(song).nullIfEmpty;
   return title!.cleansed.toLowerCase().hashCode ^
       artist!.cleansed.toLowerCase().hashCode;
 }

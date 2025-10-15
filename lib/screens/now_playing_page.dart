@@ -28,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
@@ -884,11 +885,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
               child: Column(
                 children: [
                   MarqueeTextWidget(
-                    text:
-                        song['mbTitle'] ??
-                        song['title'] ??
-                        song['ytTitle'] ??
-                        context.l10n!.unknown,
+                    text: songTitle(song).nullIfEmpty ?? context.l10n!.unknown,
                     fontColor: Theme.of(context).colorScheme.primary,
                     fontSize: screenHeight * 0.028,
                     fontWeight: FontWeight.w600,

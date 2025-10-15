@@ -162,10 +162,9 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
         suggestionsBuilder: (context, controller) {
           return List<Widget>.generate(widget.songBars.length, (index) {
             final song = widget.songBars[index].song;
-            final title = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
-            final artist =
-                song['mbArtist'] ?? song['artist'] ?? song['ytArtist'];
-            if (title == null) return const SizedBox.shrink();
+            final title = songTitle(song);
+            final artist = songArtist(song);
+            if (title.nullIfEmpty == null) return const SizedBox.shrink();
             return ListTile(
               dense: true,
               title: Text(title),

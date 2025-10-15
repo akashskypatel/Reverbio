@@ -26,6 +26,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
@@ -389,10 +390,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          song['mbTitle'] ??
-                              song['title'] ??
-                              song['ytTitle'] ??
-                              context.l10n!.unknown,
+                          songTitle(song).nullIfEmpty ?? context.l10n!.unknown,
                           style: TextStyle(
                             color: titleColor,
                             fontSize: 16,

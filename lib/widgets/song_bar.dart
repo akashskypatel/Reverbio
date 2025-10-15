@@ -81,8 +81,8 @@ class SongBar extends StatefulWidget {
   final ValueNotifier<BorderRadius> _borderRadiusNotifier;
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
   Map<String, dynamic> get song => songMetadataNotifier.value;
-  String? get title => song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
-  String? get artist => song['mbArtist'] ?? song['artist'] ?? song['ytArtist'];
+  String? get title => songTitle(song);
+  String? get artist => songArtist(song);
   bool get isError => _isErrorNotifier.value;
   bool get isLoading => _isLoadingNotifier.value;
   bool get isPrepared => _isPreparedNotifier.value;
@@ -306,12 +306,8 @@ class _SongBarState extends State<SongBar> {
       builder: (context, song, child) {
         song = widget.songMetadataNotifier.value;
         final isLoading = widget.songFuture.isLoading;
-        final title = song['mbTitle'] ?? song['title'] ?? song['ytTitle'];
-        final artist =
-            combineArtists(song) ??
-            song['mbArtist'] ??
-            song['artist'] ??
-            song['ytArtist'];
+        final title = songTitle(song).nullIfEmpty;
+        final artist = (combineArtists(song) ?? songArtist(song)).nullIfEmpty;
         return Stack(
           children: [
             Padding(
@@ -356,7 +352,7 @@ class _SongBarState extends State<SongBar> {
                                           Text(
                                             title ??
                                                 (isLoading
-                                                    ? 'Loading...'
+                                                    ? context.l10n!.loading
                                                     : kDebugMode
                                                     ? 'unknown ${song['id']}'
                                                     : context.l10n!.unknown),
@@ -390,7 +386,7 @@ class _SongBarState extends State<SongBar> {
                                 child: Text(
                                   artist ??
                                       (isLoading
-                                          ? 'Loading...'
+                                          ? context.l10n!.loading
                                           : context.l10n!.unknown),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
