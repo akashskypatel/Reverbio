@@ -580,6 +580,8 @@ bool isAudio(String path) {
     '.wsaud',
     '.webm',
     '.weba',
+    '.mka',
+    '.opus',
   ];
   return audioExtensions.contains(extension(path));
 }
@@ -980,9 +982,9 @@ String getExtensionFromMime(String? mimeType) {
     'image/bmp': 'bmp',
     'image/x-icon': 'ico',
     'audio/mp3': 'mp3',
-    'audio/weba': 'webm',
+    'audio/weba': 'mka',
     'video/weba': 'webm',
-    'audio/webm': 'webm',
+    'audio/webm': 'mka',
     'video/webm': 'webm',
   };
 
