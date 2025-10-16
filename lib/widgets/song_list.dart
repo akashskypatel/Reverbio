@@ -295,7 +295,7 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: _theme.colorScheme.secondaryContainer,
       icon: Icon(
-        FluentIcons.filter_16_filled,
+        FluentIcons.arrow_sort_24_filled,
         color: _theme.colorScheme.primary,
         size: listHeaderIconSize,
       ),
