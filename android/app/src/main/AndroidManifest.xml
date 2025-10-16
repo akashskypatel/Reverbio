@@ -39,6 +39,7 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true"
+        android:extractNativeLibs="true"
         tools:replace="android:extractNativeLibs"
         android:appCategory="audio">
         <activity
@@ -57,7 +58,6 @@
             <meta-data
                 android:name="flutter_deeplinking_enabled"
                 android:value="false" />
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -3,6 +3,12 @@ allprojects {
         google()
         mavenCentral()
     }
+    configurations.all {
+        resolutionStrategy {
+            force("net.bytebuddy:byte-buddy:1.14.12")
+            force("net.bytebuddy:byte-buddy-agent:1.14.12")
+        }
+    }
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()

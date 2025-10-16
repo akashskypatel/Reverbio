@@ -13,24 +13,33 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
         manifestPlaceholders += mapOf(
             "carTemplateEnabled" to "true",
-            "appAuthRedirectScheme" to "com.your.package"
+            "appAuthRedirectScheme" to "com.akashskypatel.reverbio"
         )
         applicationId = "com.akashskypatel.reverbio"
         minSdk = flutter.minSdkVersion // flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    splits {
+      abi {
+        isEnable = true
+        reset()
+        include("armeabi-v7a", "arm64-v8a", "x86_64")
+        isUniversalApk = true
+      }
     }
 
     buildTypes {
@@ -56,9 +65,7 @@ android {
         outputs.all {
             val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
             val appName = "reverbio"
-            val buildType = name
             val versionNameStr = versionName
-            val versionCodeInt = versionCode
             val abi = outputImpl.filters.find { it.filterType == "ABI" }?.identifier
                 ?: if (outputImpl.filters.isEmpty()) "universal" else "multi"
             outputImpl.outputFileName =
@@ -74,8 +81,8 @@ flutter {
 dependencies {
     implementation("androidx.car.app:app:1.2.0")
     implementation("androidx.media:media:1.6.0")
-    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.core:core-ktx:1.13.1")
     implementation("com.google.android.gms:play-services-base:18.2.0")
     implementation("com.github.fast-development.android-js-runtimes:fastdev-jsruntimes-jsc:0.3.5")
-    implementation("androidx.core:core:1.17.0")
+    implementation("androidx.annotation:annotation:1.7.1")
 }
