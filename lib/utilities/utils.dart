@@ -37,6 +37,7 @@ import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -200,7 +201,41 @@ List<String> splitArtists(String input) {
       .toList();
 }
 
-Map<String, dynamic> tryParseTitleAndArtist(Video song) {
+Map<String, dynamic> tryParseTitleAndArtist(dynamic song) {
+  final result = <String, dynamic>{};
+  if (song == null) return result;
+  if (!(song is Map)) return result;
+  final title = songTitle(song).isUnknown ? '' : songTitle(song);
+  final artist = songArtist(song).isUnknown ? '' : songArtist(song);
+  if (title.isNotEmpty && artist.isEmpty) {
+    final sdRx = RegExp(r'(^(?:\s*-\s*-*))|((?:\s*\-*)*\-\s*$)');
+    final strings =
+        sanitizeSongTitle(title)
+            .replaceAll(sdRx, '')
+            .collapsed
+            .split(' - ')
+            .map((s) => s.sanitized)
+            .toList()
+          ..removeWhere((e) => e.isEmpty);
+    if (strings.length > 1) {
+      result['artist'] =
+          strings.length > 2 ? strings.take(strings.length - 1) : strings.first;
+      result['title'] = strings.last;
+    } else {
+      result['title'] = title;
+    }
+  } else {
+    result['artist'] = artist;
+    result['title'] = title;
+  }
+  song.removeWhere(
+    (key, value) => ['title', 'artist'].contains(key.toString().toLowerCase()),
+  );
+  result.addAll(Map<String, dynamic>.from(song));
+  return result;
+}
+
+Map<String, dynamic> tryParseVideoTitleAndArtist(Video song) {
   final sdRx = RegExp(r'(^(?:\s*-\s*-*))|((?:\s*\-*)*\-\s*$)');
   //final mdRx = RegExp(r'(-(?:\s*-)+)');
   final musicData = song.musicData;
