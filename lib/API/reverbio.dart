@@ -149,7 +149,7 @@ String parseEntityId(dynamic entity) {
       entityId = 'dc=$entityId';
     } else if (entityId.startsWith('UC-')) {
       entityId = 'uc=$entityId';
-    } else if (entityId.isNotEmpty) {
+    } else if (entityId.isNotEmpty && !entityId.contains(' ')) {
       entityId = 'yt=$entityId';
     }
     ids = Uri.parse('?$entityId').queryParameters;

@@ -25,6 +25,7 @@ import 'dart:ui';
 import 'package:audiotags/audiotags.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 
@@ -366,7 +367,7 @@ extension StringToIdsExtension on String {
   ///
   /// Valid format is anything that doesn't match mbid, isrc, dcid, and ucid
   String get ytid {
-    if (this.isEmpty) return '';
+    if (this.isEmpty || this.contains(' ')) return '';
     if (this.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
       final ids = Map<String, String>.from(
         Uri.parse('?${parseEntityId(this)}').queryParameters,
@@ -741,4 +742,18 @@ extension AudioTagEqualsExtension on Tag {
         duration == other.duration &&
         bpm == other.bpm;
   }
+}
+
+extension StringIsUnknown on String {
+  bool get isUnknown => [
+    'unknown',
+    L10n.current.unknown.toLowerCase(),
+  ].contains(this.toLowerCase());
+}
+
+extension NullableStringIsUnknown on String? {
+  bool get isUnknown => [
+    'unknown',
+    L10n.current.unknown.toLowerCase(),
+  ].contains(this?.toLowerCase());
 }
