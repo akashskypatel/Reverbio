@@ -165,7 +165,14 @@ class _SectionHeaderState extends State<SectionHeader>
           ),
         if (widget.expandedActions != null &&
             widget.expandedActions!.isNotEmpty)
-          Row(children: widget.expandedActions!),
+          AnimatedSize(
+            duration: _expandDuration,
+            curve: Curves.easeInOut,
+            child:
+                !_toolsExpanded && !_searchExpanded
+                    ? Row(children: widget.expandedActions!)
+                    : const SizedBox.shrink(),
+          ),
       ],
     );
   }
