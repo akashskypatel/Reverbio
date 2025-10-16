@@ -449,66 +449,74 @@ Future<dynamic> _findMBSong(dynamic song) async {
         final String iArtist =
             combineArtists(song) ?? songArtist(song).nullIfEmpty ?? '';
         final String iTitle = sanitizeSongTitle(songTitle(song));
-        final artists = splitArtists(iArtist);
-        final artistList = [];
-        for (final artist in artists) {
-          final splits = splitLatinNonLatin(artist.toLowerCase());
-          final qry =
-              'sortname:(${splits.map((e) => '"${e.trim()}"').join('OR')})'
-                  .collapsed
-                  .toLowerCase();
-          final artistSearch =
-              (((await mb.artists.search(qry, limit: 5))?['artists'] ?? [])
-                    as List)
-                ..sort((a, b) => a['name'].compareTo(b['name']));
-          for (final artistResult in artistSearch) {
-            artistResult['mbid'] = (artistResult['id'] as String).mbid;
-            if (splits.any(
-                  (e) => e.trim().contains(
-                    artistResult['name'].trim().toLowerCase(),
-                  ),
-                ) ||
-                splits.any(
-                  (e) => e.trim().contains(
-                    artistResult['sort-name'].trim().toLowerCase(),
-                  ),
-                )) {
-              artistList.add(artistResult);
+        if (!(iArtist.isUnknown && iTitle.isUnknown)) {
+          final artists =
+              splitArtists(
+                iArtist,
+              ).where((artist) => !artist.toLowerCase().isUnknown).toList();
+          final artistList = [];
+          for (final artist in artists) {
+            final splits = splitLatinNonLatin(artist.toLowerCase());
+            final qry =
+                'sortname:(${splits.map((e) => '"${e.trim()}"').join('OR')})'
+                    .collapsed
+                    .toLowerCase();
+            final artistSearch =
+                (((await mb.artists.search(qry, limit: 5))?['artists'] ?? [])
+                      as List)
+                  ..sort((a, b) => a['name'].compareTo(b['name']));
+            for (final artistResult in artistSearch) {
+              artistResult['mbid'] = (artistResult['id'] as String).mbid;
+              if (splits.any(
+                    (e) => e.trim().contains(
+                      artistResult['name'].trim().toLowerCase(),
+                    ),
+                  ) ||
+                  splits.any(
+                    (e) => e.trim().contains(
+                      artistResult['sort-name'].trim().toLowerCase(),
+                    ),
+                  )) {
+                artistList.add(artistResult);
+              }
             }
           }
-        }
-        final artistQry =
-            'artistname:(${artists.map((a) => splitLatinNonLatin(a.toLowerCase()).map((e) => '"${e.trim()}"').join('OR')).join('OR')})';
-        final sTitle = removeDuplicates(
-          splitLatinNonLatin(
-            sanitizeSongTitle(iTitle).sanitized.toLowerCase(),
-          ).map((e) => e.trim()).join('|'),
-        ).replaceAll(' ', '|');
-        final sArtist =
-            removeDuplicates(
-              sanitizeSongTitle(iArtist).cleansed.toLowerCase(),
-            ).replaceAll(' ', '|').replaceAll(sTitle, '').collapsed;
-        final phrase = '$sTitle|$sArtist';
-        final qry =
-            '((recording:$sTitle) AND ($artistQry)) OR (recording:($phrase) OR artistname:($phrase))';
-        final qryResult =
-            (await mb.recordings.search(qry, limit: 10))?['recordings'] ?? [];
-        final recordings = List<Map<String, dynamic>>.from(qryResult);
-        for (dynamic recording in recordings) {
-          recording['rid'] = recording['id'];
-          recording['artist'] = combineArtists(recording);
-          if (song['ytid'] != null && song['ytid'].isNotEmpty)
-            recording['ytid'] = song['ytid'];
-          if (checkTitleAndArtist(song, recording)) {
-            song['rid'] = recording['id'];
-            song['mbid'] = recording['id'];
-            song['mbidType'] = 'recording';
-            song['id'] = parseEntityId(song);
-            recording = await _getSongByRecordingDetails(song);
-            recording['id'] = parseEntityId(recording);
-            recording = Map<String, dynamic>.from(recording);
-            song.addAll(recording);
-            break;
+          final artistQry =
+              artists.isNotEmpty
+                  ? 'AND (artistname:(${artists.map((a) => splitLatinNonLatin(a.toLowerCase()).map((e) => '"${e.trim()}"').join('OR')).join('OR')}))'
+                  : '';
+          final sTitle = removeDuplicates(
+            splitLatinNonLatin(
+              sanitizeSongTitle(iTitle).cleansed.toLowerCase(),
+            ).map((e) => e.trim()).join('|'),
+          ).replaceAll(' ', '|');
+          final sArtist =
+              removeDuplicates(
+                sanitizeSongTitle(iArtist).cleansed.toLowerCase(),
+              ).replaceAll(' ', '|').replaceAll(sTitle, '').collapsed;
+          final phrase =
+              sArtist.toLowerCase().isUnknown ? sTitle : '$sTitle|$sArtist';
+          final qry =
+              '((recording:$sTitle) $artistQry) OR (recording:($phrase) OR artistname:($phrase))';
+          final qryResult =
+              (await mb.recordings.search(qry, limit: 10))?['recordings'] ?? [];
+          final recordings = List<Map<String, dynamic>>.from(qryResult);
+          for (dynamic recording in recordings) {
+            recording['rid'] = recording['id'];
+            recording['artist'] = combineArtists(recording);
+            if (song['ytid'] != null && song['ytid'].isNotEmpty)
+              recording['ytid'] = song['ytid'];
+            if (checkTitleAndArtist(song, recording)) {
+              song['rid'] = recording['id'];
+              song['mbid'] = recording['id'];
+              song['mbidType'] = 'recording';
+              song['id'] = parseEntityId(song);
+              recording = await _getSongByRecordingDetails(song);
+              recording['id'] = parseEntityId(recording);
+              recording = Map<String, dynamic>.from(recording);
+              song.addAll(recording);
+              break;
+            }
           }
         }
       }
@@ -638,6 +646,7 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
 
 String songTitle(dynamic song) {
   if (song == null) return '';
+  if (!(song is Map)) return '';
   return song['mbTitle'] ??
       song['title'] ??
       song['ytTitle'] ??
@@ -647,6 +656,7 @@ String songTitle(dynamic song) {
 
 String songArtist(dynamic song) {
   if (song == null) return '';
+  if (!(song is Map)) return '';
   return combineArtists(song) ??
       song['mbArtist'] ??
       song['artist'] ??
@@ -737,10 +747,7 @@ bool isSongTitleValid(dynamic song) {
   if (song == null || !(song is Map)) return false;
   final title = songTitle(song);
   final isValid =
-      song.isNotEmpty &&
-      (title.isNotEmpty &&
-          title.toLowerCase() != 'unknown' &&
-          title.toLowerCase() != L10n.current.unknown.toLowerCase());
+      song.isNotEmpty && (title.isNotEmpty && !title.toLowerCase().isUnknown);
   return isValid;
 }
 
@@ -749,10 +756,7 @@ bool isSongArtistValid(dynamic song) {
   final artist = songArtist(song).nullIfEmpty;
   final isValid =
       song.isNotEmpty &&
-      (artist != null &&
-          artist.isNotEmpty &&
-          artist.toLowerCase() != 'unknown' &&
-          artist.toLowerCase() != L10n.current.unknown.toLowerCase());
+      (artist != null && artist.isNotEmpty && !artist.toLowerCase().isUnknown);
   return isValid;
 }
 
@@ -894,6 +898,7 @@ bool isSongInDeviceLibrary(songToCheck) => userDeviceSongs.any((song) {
 
 Future<bool> moveSongToDeviceLibrary(BuildContext context, dynamic song) async {
   try {
+    if (!(await checkAllPermissions())) return false;
     if (isSongAppOfflineOnly(song) && !isSongInDeviceLibrary(song)) {
       final _dir = Directory(offlineDirectory.value!);
       final _audioDirPath = join(_dir.path, 'tracks');
@@ -1098,15 +1103,22 @@ Future<void> getUserDeviceSongs() async {
     final _userDeviceSongs = await fileScanner.getUserDeviceSongs(
       additionalDirectories,
     );
+    for (dynamic _song in _userDeviceSongs) {
+      _song = await queueSongInfoRequest(_song).completerFuture;
+    }
     userDeviceSongs
       ..removeWhere(
         (e) =>
+            e['id'] == null ||
+            e['id'].isEmpty ||
             !_userDeviceSongs.any(
-              (s) => checkSong(e, s) || e['devicePath'] == s['devicePath'],
+              (s) =>
+                  checkSong(e, s) ||
+                  e['devicePath'] == s['devicePath'] ||
+                  e['fileName'] == s['fileName'],
             ),
       )
-      ..addOrUpdateWhere(checkSong, _userDeviceSongs);
-
+      ..addOrUpdateAllWhere(checkSong, _userDeviceSongs);
     unawaited(_getUserDeviceSongMetadata());
   }
 }
@@ -1114,8 +1126,7 @@ Future<void> getUserDeviceSongs() async {
 Future<void> _getUserDeviceSongMetadata() async {
   final fileTagger = FileTagger();
   for (dynamic song in userDeviceSongs) {
-    if (songTitle(song) != L10n.current.unknown &&
-        songArtist(song) != L10n.current.unknown) {
+    if (!(songTitle(song).isUnknown && songArtist(song).isUnknown)) {
       await queueSongInfoRequest(song).completerFuture?.then((value) {
         song = Map<String, dynamic>.from(song);
         if (value != null) song.addAll(value);
@@ -1417,16 +1428,25 @@ int? getSongHashCode(dynamic song) {
 }
 
 bool checkTitleAndArtist(dynamic songA, dynamic songB) {
-  songA['artist'] = songA['artist'] ?? combineArtists(songA) ?? '';
-  songB['artist'] = songB['artist'] ?? combineArtists(songB) ?? '';
+  String artistA =
+      songA['artist'] = songA['artist'] ?? combineArtists(songA) ?? '';
+  artistA = artistA.isUnknown ? '' : artistA;
+  final titleA = songTitle(songA).isUnknown ? '' : songTitle(songA);
+  String artistB =
+      songB['artist'] = songB['artist'] ?? combineArtists(songB) ?? '';
+  artistB = artistB.isUnknown ? '' : artistA;
+  final titleB = songTitle(songB).isUnknown ? '' : songTitle(songB);
+  if (titleA.isNotEmpty &&
+      titleB.isNotEmpty &&
+      ((artistA.isEmpty && artistB.isEmpty) ||
+          artistA.toLowerCase() == artistB.toLowerCase()) &&
+      titleB.toLowerCase() == titleA.toLowerCase())
+    return true;
   if (!isSongTitleValid(songA) ||
       !isSongTitleValid(songB) ||
       !isSongArtistValid(songA) ||
       !isSongArtistValid(songB))
     return false;
-  if (songA['artist'].toLowerCase() == songB['artist'].toLowerCase() &&
-      songB['title'].toLowerCase() == songA['title'].toLowerCase())
-    return true;
   final artistListA =
       Set<String>()
         ..addAll(
@@ -1439,7 +1459,7 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
                     ''),
           ),
         )
-        ..addAll(splitArtists(songA['artist']))
+        ..addAll(splitArtists(artistA))
         ..removeWhere((e) => e.isEmpty);
   final artistListB =
       Set<String>()
@@ -1453,10 +1473,10 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
                     ''),
           ),
         )
-        ..addAll(splitArtists(songB['artist']))
+        ..addAll(splitArtists(artistB))
         ..removeWhere((e) => e.isEmpty);
   if (artistListA.containsAll(artistListB) &&
-      songB['title'].toLowerCase() == songA['title'].toLowerCase())
+      titleB.toLowerCase() == titleA.toLowerCase())
     return true;
   final artistInATitleReplaced =
       ((songB['artist-credit'] ?? []) as List)
@@ -1465,7 +1485,7 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
                 e['name'] ?? (e['artist'] is String ? e['artist'] : null) ?? '',
           )
           .fold(
-            ((songA['title'] ?? '') as String)
+            titleA
                 .replaceFirstSubsequence(songA['channelName'] ?? '')
                 .collapsed,
             (v, c) {
@@ -1485,7 +1505,7 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
                 e['name'] ?? (e['artist'] is String ? e['artist'] : null) ?? '',
           )
           .fold(
-            ((songB['title'] ?? '') as String)
+            titleB
                 .replaceFirstSubsequence(songB['channelName'] ?? '')
                 .collapsed,
             (v, c) {
@@ -1500,23 +1520,19 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
           .collapsed;
   final aTitle = removeDuplicates(
     sanitizeSongTitle(
-      artistInATitleReplaced.isNotEmpty
-          ? artistInATitleReplaced
-          : (songA['title'] ?? ''),
+      artistInATitleReplaced.isNotEmpty ? artistInATitleReplaced : titleA,
     ).toLowerCase(),
   );
   final aArtist = removeDuplicates(
-    [(songA['artist'] ?? ''), ...artistListA].join(', ').toLowerCase(),
+    [artistA, ...artistListA].join(', ').toLowerCase(),
   );
   final bTitle = removeDuplicates(
     sanitizeSongTitle(
-      artistInBTitleReplaced.isNotEmpty
-          ? artistInBTitleReplaced
-          : (songB['title'] ?? ''),
+      artistInBTitleReplaced.isNotEmpty ? artistInBTitleReplaced : titleB,
     ).toLowerCase(),
   );
   final bArtist = removeDuplicates(
-    [(songB['artist'] ?? ''), ...artistListB].join(', ').toLowerCase(),
+    [artistB, ...artistListB].join(', ').toLowerCase(),
   );
   final artistCheck =
       (aArtist.length >= bArtist.length
@@ -1555,15 +1571,9 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
       ) >=
       75;
   final aExtras =
-      boundExtrasRegex
-          .firstMatch(songA['title'] ?? '')?[0]
-          ?.sanitized
-          .toLowerCase();
+      boundExtrasRegex.firstMatch(titleA)?[0]?.sanitized.toLowerCase();
   final bExtras =
-      boundExtrasRegex
-          .firstMatch(songB['title'] ?? '')?[0]
-          ?.sanitized
-          .toLowerCase();
+      boundExtrasRegex.firstMatch(titleB)?[0]?.sanitized.toLowerCase();
   final extraCheck =
       (aExtras == null && bExtras == null) ||
       (aExtras != null &&

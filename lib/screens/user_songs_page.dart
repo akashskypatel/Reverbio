@@ -62,6 +62,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
   final _isEditEnabled = ValueNotifier(false);
   late final String _title;
   late NotifiableList<SongBar> notifiableSongsList = getSongsList(widget.page);
+  Future? _syncFuture;
 
   @override
   void initState() {
@@ -71,6 +72,8 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   @override
   void dispose() {
+    _syncFuture?.ignore();
+    notifiableSongsList.completer.future.ignore();
     super.dispose();
   }
 
@@ -495,6 +498,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   Future<Iterable<SongBar>> _getOfflineSongs() async {
     return Future.microtask(() async {
+      if (!context.mounted) return <SongBar>[];
       final offline = userOfflineSongs.map((e) {
         final cached = getCachedSong(e);
         final song =
@@ -503,6 +507,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                 : <String, dynamic>{'id': e, 'title': null, 'artist': null};
         return initializeSongBar(song, context);
       });
+      if (!context.mounted) return <SongBar>[];
       final device = userDeviceSongs.map((e) => initializeSongBar(e, context));
       return [...offline, ...device];
     });
@@ -510,12 +515,14 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   Future<Iterable<SongBar>> _getUserLikedSongs() async {
     return Future.microtask(() async {
+      if (!context.mounted) return <SongBar>[];
       return userLikedSongsList.map((e) => initializeSongBar(e, context));
     });
   }
 
   Future<Iterable<SongBar>> _getUserRecentSongs() async {
     return Future.microtask(() async {
+      if (!context.mounted) return <SongBar>[];
       return userLikedSongsList.map((e) => initializeSongBar(e, context));
     });
   }
@@ -602,28 +609,38 @@ class _UserSongsPageState extends State<UserSongsPage> {
   }
 
   Widget _buildSyncButton() {
-    return IconButton(
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      icon: const Icon(FluentIcons.arrow_sync_24_filled),
-      iconSize: pageHeaderIconSize,
-      onPressed: () async {
-        if (widget.page == 'offline') {
-          final futures =
-              <Future>[]
-                ..add(getExistingOfflineSongs())
-                ..add(getUserDeviceSongs());
-          await Future.wait(futures);
-          if (mounted) setState(() {});
-        }
-        final songBars = getSongsList(widget.page);
-        for (final songBar in songBars) {
-          notifiableSongsList.addOrUpdate(
-            songBar,
-            (a, b) => checkSong(a.song, b.song),
-          );
-        }
-      },
+    final isSyncLoading = ValueNotifier(false);
+    return ValueListenableBuilder(
+      valueListenable: isSyncLoading,
+      builder:
+          (context, value, child) => IconButton(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            icon:
+                value
+                    ? const SizedBox.square(dimension: 20, child: Spinner())
+                    : const Icon(FluentIcons.arrow_sync_24_filled),
+            iconSize: pageHeaderIconSize,
+            onPressed: () async {
+              if (widget.page == 'offline') {
+                notifiableSongsList.clear();
+                isSyncLoading.value = true;
+                final futures =
+                    <Future>[]
+                      ..add(getExistingOfflineSongs())
+                      ..add(getUserDeviceSongs());
+                await Future.wait(futures);
+                if (context.mounted) {
+                  _syncFuture = _getOfflineSongs();
+                  final _songBars = await _syncFuture;
+                  notifiableSongsList
+                    ..clear()
+                    ..addAll(_songBars);
+                  isSyncLoading.value = false;
+                }
+              }
+            },
+          ),
     );
   }
 

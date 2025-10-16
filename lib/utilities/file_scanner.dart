@@ -97,7 +97,10 @@ class FileScanner {
             final song = <String, dynamic>{
               'title': title,
               'artist': artist,
-              'devicePath': Platform.isAndroid ? await MediaUtils.instance.pathToUri(file.path) : file.path,
+              'devicePath':
+                  Platform.isAndroid
+                      ? await MediaUtils.instance.pathToUri(file.path)
+                      : file.path,
             };
             if (tag != null) song['audioTags'] = tagToMap(tag);
             userDeviceSongs.addOrUpdateWhere(checkSong, song);
@@ -111,6 +114,7 @@ class FileScanner {
   Future<List<Map<String, dynamic>>> getUserDeviceSongs(
     List<String> directories,
   ) async {
+    _startNotification();
     final List<Map<String, dynamic>> _userDeviceSongs = [];
     final List<FileSystemEntity> fileList = [];
     for (final dir in directories) {
@@ -129,16 +133,25 @@ class FileScanner {
           final fileName = basenameWithoutExtension(file.path).nullIfEmpty;
           title = tag?.title ?? fileName ?? L10n.current.unknown;
           artist = tag?.trackArtist ?? tag?.albumArtist ?? L10n.current.unknown;
-          final song = <String, dynamic>{
+          Map<String, dynamic> song = <String, dynamic>{
+            'id': 'fn=$fileName',
             'title': title,
             'artist': artist,
-            'devicePath': Platform.isAndroid ? await MediaUtils.instance.pathToUri(file.path) : file.path,
+            'fileName': fileName,
+            'devicePath':
+                Platform.isAndroid
+                    ? await MediaUtils.instance.pathToUri(file.path)
+                    : file.path,
           };
+          if (artist.isUnknown && !title.isUnknown) {
+            song = tryParseTitleAndArtist(song);
+          }
           if (tag != null) song['audioTags'] = tagToMap(tag);
           _userDeviceSongs.addOrUpdateWhere(checkSong, song);
         } catch (_) {}
       }
     }
+    _endNotification(_userDeviceSongs.length);
     return _userDeviceSongs;
   }
 }

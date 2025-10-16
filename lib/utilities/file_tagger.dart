@@ -316,10 +316,12 @@ class FileTagger {
                 id ?? song['id'],
               )
               : [filePath];
+      if (song == String)
+        song = await queueSongInfoRequest(song).completerFuture;
       final tags = await _processAudioFiles(
         audioFiles,
         song,
-        song['id'],
+        song is String ? song : song['id'],
         tag,
         tempDir,
         logger,
@@ -421,13 +423,14 @@ class FileTagger {
     MediaUtils mediaUtils, {
     Tag? tag,
   }) async {
+    if (!(await checkAllPermissions())) return null;
     Tag? newTag = tag;
     try {
       if (tag == null) {
         final metaTag = await getTagFromMetadata(song);
-        final songTag = mapToTag(song['audioTags']);
+        final songTag = song is String ? null : mapToTag(song['audioTags']);
         final fileTag =
-            songTag.equalsWithoutPictures(metaTag)
+            songTag != null && songTag.equalsWithoutPictures(metaTag)
                 ? metaTag
                 : await AudioTags.read(file.path);
         final pictures =
@@ -466,10 +469,8 @@ class FileTagger {
           final success = await mediaUtils.copyMediaFileToPathOrUri(
             file.path,
             copy.path,
-            onComplete: () {
-              copy.deleteSync();
-            },
           );
+          copy.deleteSync();
           if (success == null) return null;
         } else
           await AudioTags.write(file.path, newTag!);
