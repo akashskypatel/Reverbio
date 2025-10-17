@@ -46,8 +46,8 @@ class MediaOperation<T> {
     _onComplete = null;
     resetTimer?.cancel();
     resetTimer = null;
-    if(error != null) {
-      completer?.completeError(TimeoutException(error));
+    if(error != null && !(completer?.isCompleted ?? true)) {
+      completer?.completeError(error);
     }
   }
 
