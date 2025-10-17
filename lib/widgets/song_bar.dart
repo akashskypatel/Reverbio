@@ -822,7 +822,15 @@ class _SongBarState extends State<SongBar> {
       case 'tag':
         await showEditMetadataDialog(context, song);
       case 'move_to_library':
-        await moveSongToDeviceLibrary(context, song);
+        {
+          final count = await moveSongToDeviceLibrary(song);
+          if(count > 0) {
+            userOfflineSongs.removeWhere((e) => checkEntityId(song['id'], e));
+            showToast('${context.l10n!.movedFiles} $count', context: context);
+          } else {
+            showToast(context.l10n!.notMoved, context: context);
+          }
+        }
     }
   }
 

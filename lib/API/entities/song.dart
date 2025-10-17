@@ -532,12 +532,17 @@ Future<dynamic> _findMBSong(dynamic song) async {
 Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   song['isError'] = false;
   song?.remove('error');
-  final offlinePath = await getOfflinePath(song);
+  final offlinePath =
+      !(await FileDownloader().allTaskIds()).contains(song['id'])
+          ? await getOfflinePath(song)
+          : null;
   if (offlinePath != null) {
     song['songUrl'] = offlinePath;
   }
-  if (offlinePath == null || offlinePath.isEmpty)
-    await PM.getSongUrl(song, getSongYoutubeUrl);
+  if (offlinePath == null || offlinePath.isEmpty) {
+    final _songUrl = await PM.getSongUrl(song, getSongYoutubeUrl);
+    song['songUrl'] = _songUrl;
+  }
 
   if (((song['autoCacheOffline'] ?? false) || autoCacheOffline.value) &&
       (song['songUrl'] != null && offlinePath == null) &&
@@ -740,6 +745,14 @@ bool isSongIdKeyValid(dynamic song, {String idKey = 'mbid'}) {
         ids['yt'] != null &&
         ids['yt']!.isNotEmpty &&
         (ids['yt'] as String).ytid.isNotEmpty;
+  if (idKey == 'flnm' || idKey == 'fn')
+    return song.isNotEmpty &&
+        song['flnm'] != null &&
+        song['flnm'].isNotEmpty &&
+        (song['flnm'] as String).flnm.isNotEmpty &&
+        ids['fn'] != null &&
+        ids['fn']!.isNotEmpty &&
+        (ids['fn'] as String).flnm.isNotEmpty;
   return false;
 }
 
@@ -762,6 +775,7 @@ bool isSongArtistValid(dynamic song) {
 
 Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
   final context = NavigationManager().context;
+  String songUrl = '';
   try {
     if (song == null) return '';
     if (!isYouTubeSongValid(song)) await findYTSong(song);
@@ -781,14 +795,16 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         if (expires > (now + 5))
           if (await checkUrl(cachedUrl) < 400) return cachedUrl;
       } else {
-        song['songUrl'] = await px.getYouTubeAudioUrl(
-          song['ytid'],
-          streamRequestTimeout.value,
-          audioQualitySetting.value,
-          useProxies.value,
-        );
-        if (song['songUrl'] != null && song['songUrl'].isNotEmpty) {
-          final uri = Uri.parse(song['songUrl']);
+        songUrl =
+            song['songUrl'] = await px.getYouTubeAudioUrl(
+              song['ytid'],
+              streamRequestTimeout.value,
+              audioQualitySetting.value,
+              useProxies.value,
+            );
+        if (songUrl.isNotEmpty) {
+          await HiveService.addOrUpdateData<String>('cache', cacheKey, songUrl);
+          final uri = Uri.parse(songUrl);
           final expires =
               int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
           song['songUrlExpire'] = expires;
@@ -796,40 +812,30 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
           song['source'] = 'youtube';
         }
       }
-      if (song['songUrl'] == null || song['songUrl'].isEmpty) {
+      if (songUrl.isEmpty) {
         logger.log(
           'Could not find YouTube stream for this song. ${song['artist']} - ${song['title']}',
           null,
           null,
         );
+        songUrl = song['songUrl'] = '';
         song['error'] = context.l10n!.errorCouldNotFindAStream;
         song['isError'] = true;
-        return '';
       }
       //check if url resolves
-      if (await checkUrl(song['songUrl']) >= 400) {
-        logger.log(
-          'Song url could not be resolved. ${song['songUrl']}',
-          null,
-          null,
-        );
+      if (await checkUrl(songUrl) >= 400) {
+        logger.log('Song url could not be resolved. $songUrl', null, null);
+        songUrl = song['songUrl'] = '';
         song['error'] = context.l10n!.urlError;
         song['isError'] = true;
-        return '';
       }
-      await HiveService.addOrUpdateData<String>(
-        'cache',
-        cacheKey,
-        song['songUrl'],
-      );
-      return song['songUrl'];
     }
   } catch (e, stackTrace) {
     song['error'] = context.l10n!.urlError;
     song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-  return '';
+  return songUrl;
 }
 
 Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
@@ -896,9 +902,31 @@ bool isSongInDeviceLibrary(songToCheck) => userDeviceSongs.any((song) {
   return false;
 });
 
-Future<bool> moveSongToDeviceLibrary(BuildContext context, dynamic song) async {
+Future<int> moveAllSongToDeviceLibrary() async {
+  int count = 0;
   try {
-    if (!(await checkAllPermissions())) return false;
+    await getUserOfflineSongs();
+    final moved = [];
+    for (final song in userOfflineSongs) {
+      try {
+        final _song = await queueSongInfoRequest(song).completerFuture;
+        count += await moveSongToDeviceLibrary(_song);
+        moved.add(song);
+      } catch (_) {}
+    }
+    for (final song in moved)
+      userOfflineSongs.removeWhere((e) => checkEntityId(song, e));
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+  return count;
+}
+
+Future<int> moveSongToDeviceLibrary(dynamic song) async {
+  int count = 0;
+  try {
+    if (!(await checkAllPermissions())) return count;
+    if (song is String) song = await queueSongInfoRequest(song).completerFuture;
     if (isSongAppOfflineOnly(song) && !isSongInDeviceLibrary(song)) {
       final _dir = Directory(offlineDirectory.value!);
       final _audioDirPath = join(_dir.path, 'tracks');
@@ -907,7 +935,6 @@ Future<bool> moveSongToDeviceLibrary(BuildContext context, dynamic song) async {
           Platform.isWindows
               ? await FilePicker.platform.getDirectoryPath()
               : null;
-      int count = 0;
       for (final file in files) {
         if (songArtist(song).isNotEmpty && songTitle(song).isNotEmpty) {
           final newName =
@@ -936,18 +963,13 @@ Future<bool> moveSongToDeviceLibrary(BuildContext context, dynamic song) async {
         }
       }
       if (count > 0) {
-        userOfflineSongs.removeWhere((e) => checkEntityId(song['id'], e));
         userDeviceSongs.addOrUpdate(song, checkSong);
-        showToast('${context.l10n!.movedFiles} $count', context: context);
-        return true;
-      } else {
-        showToast(context.l10n!.notMoved, context: context);
       }
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-  return false;
+  return count;
 }
 
 Future<void> tagAllOfflineFiles() async {
@@ -1096,30 +1118,34 @@ Future<bool> checkOfflineFiles() async {
 }
 
 Future<void> getUserDeviceSongs() async {
-  if (await checkAllPermissions()) {
-    final fileScanner = FileScanner(
-      directories: additionalDirectories.toList(),
-    );
-    final _userDeviceSongs = await fileScanner.getUserDeviceSongs(
-      additionalDirectories,
-    );
-    for (dynamic _song in _userDeviceSongs) {
-      _song = await queueSongInfoRequest(_song).completerFuture;
+  try {
+    if (await checkAllPermissions()) {
+      final fileScanner = FileScanner(
+        directories: additionalDirectories.toList(),
+      );
+      final _userDeviceSongs = await fileScanner.getUserDeviceSongs(
+        additionalDirectories,
+      );
+      for (dynamic _song in _userDeviceSongs) {
+        _song = await queueSongInfoRequest(_song).completerFuture;
+      }
+      userDeviceSongs
+        ..removeWhere(
+          (e) =>
+              e['id'] == null ||
+              e['id'].isEmpty ||
+              !_userDeviceSongs.any(
+                (s) =>
+                    checkSong(e, s) ||
+                    e['devicePath'] == s['devicePath'] ||
+                    e['fileName'] == s['fileName'],
+              ),
+        )
+        ..addOrUpdateAllWhere(checkSong, _userDeviceSongs);
+      unawaited(_getUserDeviceSongMetadata());
     }
-    userDeviceSongs
-      ..removeWhere(
-        (e) =>
-            e['id'] == null ||
-            e['id'].isEmpty ||
-            !_userDeviceSongs.any(
-              (s) =>
-                  checkSong(e, s) ||
-                  e['devicePath'] == s['devicePath'] ||
-                  e['fileName'] == s['fileName'],
-            ),
-      )
-      ..addOrUpdateAllWhere(checkSong, _userDeviceSongs);
-    unawaited(_getUserDeviceSongMetadata());
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
 }
 
