@@ -351,18 +351,18 @@ packages:
     dependency: "direct dev"
     description:
       name: flutter_native_splash
-      sha256: "8321a6d11a8d13977fa780c89de8d257cce3d841eecfb7a4cadffcc4f12d82dc"
+      sha256: "4fb9f4113350d3a80841ce05ebf1976a36de622af7d19aca0ca9a9911c7ff002"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.6"
+    version: "2.4.7"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
       name: flutter_plugin_android_lifecycle
-      sha256: b0694b7fb1689b0e6cc193b3f1fcac6423c4f93c74fb20b806c6b6f196db0c31
+      sha256: "306f0596590e077338312f38837f595c04f28d6cdeeac392d3d74df2f0003687"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.30"
+    version: "2.0.32"
   flutter_rust_bridge:
     dependency: transitive
     description:
@@ -417,10 +417,10 @@ packages:
     dependency: "direct main"
     description:
       name: go_router
-      sha256: c752e2d08d088bf83742cb05bf83003f3e9d276ff1519b5c92f9d5e60e5ddd23
+      sha256: e1d7ffb0db475e6e845eb58b44768f50b830e23960e3df6908924acd8f7f70ea
       url: "https://pub.dev"
     source: hosted
-    version: "16.2.4"
+    version: "16.2.5"
   gtk:
     dependency: transitive
     description:
@@ -665,10 +665,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_android
-      sha256: "993381400e94d18469750e5b9dcb8206f15bc09f9da86b9e44a9b0092a0066db"
+      sha256: e122c5ea805bb6773bb12ce667611265980940145be920cd09a4b0ec0285cb16
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.18"
+    version: "2.2.20"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -1030,10 +1030,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: "199bc33e746088546a39cc5f36bac5a278c5e53b40cb3196f99e7345fdcfae6b"
+      sha256: "5c8b6c2d89a78f5a1cca70a73d9d5f86c701b36b42f9c9dac7bad592113c28e9"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.22"
+    version: "6.3.24"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -1118,10 +1118,10 @@ packages:
     dependency: transitive
     description:
       name: win32
-      sha256: "66814138c3562338d05613a6e368ed8cfb237ad6d64a9e9334be3f309acfca03"
+      sha256: d7cb55e04cd34096cd3a79b3330245f54cb96a370a1c27adb3c84b917de8b08e
       url: "https://pub.dev"
     source: hosted
-    version: "5.14.0"
+    version: "5.15.0"
   window_manager:
     dependency: "direct main"
     description:
@@ -1157,10 +1157,11 @@ packages:
   youtube_explode_dart:
     dependency: "direct main"
     description:
-      name: youtube_explode_dart
-      sha256: "9ff345caf8351c59eb1b7560837f761e08d2beaea3b4187637942715a31a6f58"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: caa3023386dbc10e69c99f49f491148094874671
+      url: "https://github.com/Coronon/youtube_explode_dart"
+    source: git
     version: "2.5.2"
 sdks:
   dart: ">=3.9.0 <4.0.0"
