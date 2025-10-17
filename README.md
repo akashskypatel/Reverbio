@@ -52,9 +52,17 @@ Best way to improve your ad-free streaming experience in Reverbio is to use Java
 - Custom plugin support
 - Track your favorite Songs, Albums, Artists and Playlists
 - Android Auto Support
-- (New) Import playlists from any music service using CSV files!
-- (New) Select Android output device 
-- (New) Select YouTube stream resolution timeout in case it takes longer than usual for YouTube-Explode API to get YouTube stream
+- Import playlists from any music service using CSV files!
+- Select Android output device 
+- Select YouTube stream resolution timeout in case it takes longer than usual for YouTube-Explode API to get YouTube stream
+- YouTube stream proxy support
+- App level volume control
+- (NEW) Automatically download songs as you play them
+- (NEW) Make specific playlists automatically download songs as you play them
+- (NEW) Catalog and play existing music files on device
+- (NEW) Move Reverbio offline files to Device library
+- (NEW) Add meta data tags to offline/device music files and auto-tag from MusicBrainz database
+
 
 <details>
 <summary>30 Supported Languages</summary>
