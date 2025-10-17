@@ -316,7 +316,7 @@ class FileTagger {
                 id ?? song['id'],
               )
               : [filePath];
-      if (song == String)
+      if (song is String)
         song = await queueSongInfoRequest(song).completerFuture;
       final tags = await _processAudioFiles(
         audioFiles,
@@ -477,17 +477,12 @@ class FileTagger {
       }
       return newTag;
     } catch (e, stackTrace) {
-      switch (e) {
-        case AudioTagsError_InvalidPath:
-          _logger.log(
-            'Error in ${stackTrace.getCurrentMethodName()}: ${file.path}',
-            e,
-            stackTrace,
-          );
-          return null;
-        default:
-          rethrow;
-      }
+      _logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}: ${file.path}',
+        e,
+        stackTrace,
+      );
+      return null;
     }
   }
 
