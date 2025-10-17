@@ -114,6 +114,7 @@ class FileScanner {
   Future<List<Map<String, dynamic>>> getUserDeviceSongs(
     List<String> directories,
   ) async {
+    Map<String, dynamic> song = {};
     _startNotification();
     final List<Map<String, dynamic>> _userDeviceSongs = [];
     final List<FileSystemEntity> fileList = [];
@@ -133,18 +134,38 @@ class FileScanner {
           final fileName = basenameWithoutExtension(file.path).nullIfEmpty;
           title = tag?.title ?? fileName ?? L10n.current.unknown;
           artist = tag?.trackArtist ?? tag?.albumArtist ?? L10n.current.unknown;
-          Map<String, dynamic> song = <String, dynamic>{
-            'id': 'fn=$fileName',
-            'title': title,
-            'artist': artist,
-            'fileName': fileName,
-            'devicePath':
-                Platform.isAndroid
-                    ? await MediaUtils.instance.pathToUri(file.path)
-                    : file.path,
-          };
-          if (artist.isUnknown && !title.isUnknown) {
-            song = tryParseTitleAndArtist(song);
+          if (fileName != null &&
+              fileName.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+            final _song = await queueSongInfoRequest(fileName).completerFuture;
+            if (_song != null && _song.isNotEmpty)
+              song = {
+                ..._song,
+                'fileName': fileName,
+                'devicePath':
+                    Platform.isAndroid
+                        ? await MediaUtils.instance.pathToUri(file.path)
+                        : file.path,
+              };
+          } else if (artist.isUnknown && !title.isUnknown) {
+            song = {
+              ...tryParseTitleAndArtist(song),
+              'fileName': fileName,
+              'devicePath':
+                  Platform.isAndroid
+                      ? await MediaUtils.instance.pathToUri(file.path)
+                      : file.path,
+            };
+          } else {
+            song = {
+              'id': 'fn=$fileName',
+              'title': title,
+              'artist': artist,
+              'fileName': fileName,
+              'devicePath':
+                  Platform.isAndroid
+                      ? await MediaUtils.instance.pathToUri(file.path)
+                      : file.path,
+            };
           }
           if (tag != null) song['audioTags'] = tagToMap(tag);
           _userDeviceSongs.addOrUpdateWhere(checkSong, song);
