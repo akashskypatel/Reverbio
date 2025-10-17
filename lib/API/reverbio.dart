@@ -117,6 +117,17 @@ String? getCombinedId(dynamic entity) {
               ? 'is=$isrc'
               : joinIfNotEmpty([combinedId, 'is=$isrc'], '&');
     }
+    if ((entity['flnm'] != null && entity['flnm'].isNotEmpty) ||
+        (ids['fn'] != null && ids['fn']!.isNotEmpty)) {
+      final flnm = ((entity['flnm'] ?? ids['fn'] ?? '') as String).replaceAll(
+        RegExp('fn=|fn%3d', caseSensitive: false),
+        '',
+      );
+      combinedId =
+          combinedId == null || combinedId.isEmpty
+              ? 'fn=$flnm'
+              : joinIfNotEmpty([combinedId, 'fn=$flnm'], '&');
+    }
   }
   return combinedId;
 }
@@ -149,8 +160,11 @@ String parseEntityId(dynamic entity) {
       entityId = 'dc=$entityId';
     } else if (entityId.startsWith('UC-')) {
       entityId = 'uc=$entityId';
-    } else if (entityId.isNotEmpty && !entityId.contains(' ')) {
+    } else if (entityId.isNotEmpty &&
+        !(entityId.contains(' ') || entityId.contains('+'))) {
       entityId = 'yt=$entityId';
+    } else {
+      entityId = 'fn=$entityId';
     }
     ids = Uri.parse('?$entityId').queryParameters;
   }
@@ -161,6 +175,7 @@ String parseEntityId(dynamic entity) {
     if (ids?['is'] != null && ids?['is'].isNotEmpty) entity['isrc'] = ids['is'];
     if (ids?['dc'] != null && ids?['dc'].isNotEmpty) entity['dcid'] = ids['dc'];
     if (ids?['uc'] != null && ids?['uc'].isNotEmpty) entity['ucid'] = ids['uc'];
+    if (ids?['fn'] != null && ids?['fn'].isNotEmpty) entity['flnm'] = ids['fn'];
   }
   entityId = getCombinedId(entity is Map ? entity : entityId) ?? entityId;
   return entityId;

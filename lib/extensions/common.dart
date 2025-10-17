@@ -367,7 +367,7 @@ extension StringToIdsExtension on String {
   ///
   /// Valid format is anything that doesn't match mbid, isrc, dcid, and ucid
   String get ytid {
-    if (this.isEmpty || this.contains(' ')) return '';
+    if (this.isEmpty || this.contains(' ') || this.contains('+')) return '';
     if (this.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
       final ids = Map<String, String>.from(
         Uri.parse('?${parseEntityId(this)}').queryParameters,
@@ -381,6 +381,29 @@ extension StringToIdsExtension on String {
         Uri.parse('?${parseEntityId(this)}').queryParameters,
       );
       return ids['yt'] ?? '';
+    }
+    return '';
+  }
+
+  /// Extract FileName from a string
+  ///
+  /// Valid format is anything that doesn't match mbid, isrc, dcid, ucid, ytid
+  String get flnm {
+    if (this.isEmpty) return '';
+    if (this.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+      final ids = Map<String, String>.from(
+        Uri.parse('?${parseEntityId(this)}').queryParameters,
+      );
+      return ids['fn'] ?? '';
+    } else if (this.mbid.isEmpty &&
+        this.isrc.isEmpty &&
+        this.dcid.isEmpty &&
+        this.ucid.isEmpty &&
+        this.ytid.isEmpty) {
+      final ids = Map<String, String>.from(
+        Uri.parse('?${parseEntityId(this)}').queryParameters,
+      );
+      return ids['fn'] ?? '';
     }
     return '';
   }
