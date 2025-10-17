@@ -310,5 +310,7 @@
   "quitApp": "¿Estás seguro de que quieres salir de la aplicación?",
   "moveToLibrary": "Mover a la biblioteca del dispositivo",
   "notMoved": "No se pudieron mover los archivos. Es posible que los archivos no existan o no sean accesibles.",
-  "movedFiles": "Archivos movidos a la biblioteca del dispositivo exitosamente. Archivos movidos:"
+  "movedFiles": "Archivos movidos a la biblioteca del dispositivo exitosamente. Archivos movidos:",
+  "moveAllToLibrary": "Mover todas las pistas sin conexión a la biblioteca del dispositivo",
+  "moveAllToLibraryMessage": "Esto moverá tus pistas sin conexión de Reverbio a la carpeta principal de Música de tu dispositivo. Los archivos serán accesibles para otras aplicaciones de música y no usarán espacio de almacenamiento adicional."
 }

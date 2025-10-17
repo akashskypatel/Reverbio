@@ -310,5 +310,7 @@
   "quitApp": "Apakah Anda yakin ingin keluar dari aplikasi?",
   "moveToLibrary": "Pindahkan ke perpustakaan perangkat",
   "notMoved": "Tidak dapat memindahkan file. File mungkin hilang atau tidak dapat diakses.",
-  "movedFiles": "File berhasil dipindahkan ke perpustakaan perangkat. File yang dipindahkan:"
+  "movedFiles": "File berhasil dipindahkan ke perpustakaan perangkat. File yang dipindahkan:",
+  "moveAllToLibrary": "Pindahkan semua trek offline ke perpustakaan perangkat",
+  "moveAllToLibraryMessage": "Ini akan memindahkan trek offline Reverbio Anda ke folder Musik utama perangkat Anda. File akan dapat diakses oleh aplikasi musik lain dan tidak akan menggunakan ruang penyimpanan tambahan."
 }

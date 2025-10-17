@@ -310,5 +310,7 @@
   "quitApp": "Je, una uhakika unataka kutoka kwenye programu?",
   "moveToLibrary": "Hamisha kwenye maktaba ya kifaa",
   "notMoved": "Hawezi kuhamisha faili. Faili zinaweza kukosekana au hazipatikani.",
-  "movedFiles": "Faili zilihamishiwa kwa mafanikio kwenye maktaba ya kifaa. Faili zilizohamishwa:"
+  "movedFiles": "Faili zilihamishiwa kwa mafanikio kwenye maktaba ya kifaa. Faili zilizohamishwa:",
+  "moveAllToLibrary": "Hamisha nyimbo zote za nje ya mtandao kwenye maktaba ya kifaa",
+  "moveAllToLibraryMessage": "Hii itahamisha nyimbo zako za nje ya mtandao za Reverbio kwenye folda kuu ya Muziki ya kifaa chako. Faili zitapatikana kwa programu zingine za muziki na hazitatumia nafasi ya ziada ya kuhifadhi."
 }

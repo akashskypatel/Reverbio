@@ -310,5 +310,7 @@
   "quitApp": "Uygulamadan çıkmak istediğinizden emin misiniz?",
   "moveToLibrary": "Cihaz kitaplığına taşı",
   "notMoved": "Dosyalar taşınamadı. Dosyalar eksik olabilir veya erişilemez durumda olabilir.",
-  "movedFiles": "Dosyalar cihaz kitaplığına başarıyla taşındı. Taşınan dosyalar:"
+  "movedFiles": "Dosyalar cihaz kitaplığına başarıyla taşındı. Taşınan dosyalar:",
+  "moveAllToLibrary": "Tüm çevrimdışı parçaları cihaz kitaplığına taşı",
+  "moveAllToLibraryMessage": "Bu, Reverbio çevrimdışı parçalarınızı cihazınızın ana Müzik klasörüne taşıyacaktır. Dosyalar diğer müzik uygulamaları tarafından erişilebilir olacak ve ek depolama alanı kullanmayacaktır."
 }

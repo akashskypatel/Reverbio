@@ -310,5 +310,7 @@
   "quitApp": "Tem a certeza de que pretende sair da aplicação?",
   "moveToLibrary": "Mover para a biblioteca do dispositivo",
   "notMoved": "Não foi possível mover os ficheiros. Os ficheiros podem estar em falta ou inacessíveis.",
-  "movedFiles": "Ficheiros movidos para a biblioteca do dispositivo com sucesso. Ficheiros movidos:"
+  "movedFiles": "Ficheiros movidos para a biblioteca do dispositivo com sucesso. Ficheiros movidos:",
+  "moveAllToLibrary": "Mover todas as faixas offline para a biblioteca do dispositivo",
+  "moveAllToLibraryMessage": "Isto irá mover as suas faixas offline do Reverbio para a pasta principal de Música do seu dispositivo. Os ficheiros ficarão acessíveis a outras aplicações de música e não usarão espaço de armazenamento adicional."
 }

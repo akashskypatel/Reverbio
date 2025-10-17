@@ -310,5 +310,7 @@
   "quitApp": "Are you sure you want to exit the app?",
   "moveToLibrary": "Move to device library",
   "notMoved": "Unable to move files. The files may be missing or inaccessible.",
-  "movedFiles": "Files moved to device library successfully. Files moved:"
+  "movedFiles": "Files moved to device library successfully. Files moved:",
+  "moveAllToLibrary": "Move all offline tracks to device library",
+  "moveAllToLibraryMessage": "This will move your Reverbio offline tracks to your device's main Music folder. The files will be accessible to other music apps and won't use additional storage space."
 }

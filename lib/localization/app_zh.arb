@@ -310,5 +310,7 @@
   "quitApp": "你确定要退出应用吗？",
   "moveToLibrary": "移至设备媒体库",
   "notMoved": "无法移动文件。文件可能丢失或无法访问。",
-  "movedFiles": "文件已成功移至设备媒体库。已移动文件："
+  "movedFiles": "文件已成功移至设备媒体库。已移动文件：",
+  "moveAllToLibrary": "将所有离线歌曲移至设备媒体库",
+  "moveAllToLibraryMessage": "这会将你的 Reverbio 离线歌曲移至设备的主要音乐文件夹。文件将可供其他音乐应用访问，且不会使用额外存储空间。"
 }

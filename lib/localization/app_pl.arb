@@ -310,5 +310,7 @@
   "quitApp": "Czy na pewno chcesz zamknąć aplikację?",
   "moveToLibrary": "Przenieś do biblioteki urządzenia",
   "notMoved": "Nie można przenieść plików. Pliki mogą być brakujące lub niedostępne.",
-  "movedFiles": "Pliki pomyślnie przeniesione do biblioteki urządzenia. Przeniesione pliki:"
+  "movedFiles": "Pliki pomyślnie przeniesione do biblioteki urządzenia. Przeniesione pliki:",
+  "moveAllToLibrary": "Przenieś wszystkie utwory offline do biblioteki urządzenia",
+  "moveAllToLibraryMessage": "Spowoduje to przeniesienie Twoich utworów offline z Reverbio do głównego folderu Muzyka na Twoim urządzeniu. Pliki będą dostępne dla innych aplikacji muzycznych i nie zajmą dodatkowego miejsca w pamięci."
 }

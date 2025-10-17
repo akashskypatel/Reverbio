@@ -310,5 +310,7 @@
   "quitApp": "Sind Sie sicher, dass Sie die App beenden möchten?",
   "moveToLibrary": "In Gerätebibliothek verschieben",
   "notMoved": "Dateien konnten nicht verschoben werden. Die Dateien sind möglicherweise nicht vorhanden oder nicht zugänglich.",
-  "movedFiles": "Dateien erfolgreich in die Gerätebibliothek verschoben. Verschobene Dateien:"
+  "movedFiles": "Dateien erfolgreich in die Gerätebibliothek verschoben. Verschobene Dateien:",
+  "moveAllToLibrary": "Alle Offline-Titel in die Gerätebibliothek verschieben",
+  "moveAllToLibraryMessage": "Dadurch werden Ihre Reverbio-Offline-Titel in den Hauptmusikordner Ihres Geräts verschoben. Die Dateien sind für andere Musik-Apps zugänglich und belegen keinen zusätzlichen Speicherplatz."
 }

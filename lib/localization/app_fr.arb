@@ -310,5 +310,7 @@
   "quitApp": "Êtes-vous sûr de vouloir quitter l'application ?",
   "moveToLibrary": "Déplacer vers la bibliothèque de l'appareil",
   "notMoved": "Impossible de déplacer les fichiers. Les fichiers peuvent être manquants ou inaccessibles.",
-  "movedFiles": "Fichiers déplacés vers la bibliothèque de l'appareil avec succès. Fichiers déplacés :"
+  "movedFiles": "Fichiers déplacés vers la bibliothèque de l'appareil avec succès. Fichiers déplacés :",
+  "moveAllToLibrary": "Déplacer tous les morceaux hors ligne vers la bibliothèque de l'appareil",
+  "moveAllToLibraryMessage": "Cela déplacera vos morceaux Reverbio hors ligne vers le dossier Musique principal de votre appareil. Les fichiers seront accessibles par d'autres applications musicales et n'utiliseront pas d'espace de stockage supplémentaire."
 }
