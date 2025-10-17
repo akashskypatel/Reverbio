@@ -392,9 +392,9 @@ class ProxyManager {
     String songId,
     int? timeout,
   ) async {
+    StreamManifest? manifest;
     try {
       if (kDebugMode) logger.log('Validating direct connection...', null, null);
-      StreamManifest? manifest;
       if (timeout != null)
         manifest = await _localYTClient.videos.streams
             .getManifest(songId, ytClients: [YoutubeApiClient.androidVr])
@@ -410,11 +410,11 @@ class ProxyManager {
           null,
           null,
         );
-      return manifest;
     } catch (e) {
       logger.log('Direct connection failed', e, null);
       return null;
     }
+    return manifest;
   }
 
   static Future<StreamManifest?> _validateProxy(
@@ -538,7 +538,7 @@ class ProxyManager {
     final completer = Completer<String>();
     final receivePort = ReceivePort();
     try {
-      await Isolate.spawn(
+      final isolate = await Isolate.spawn(
         _getYouTubeAudioUrl,
         _IsolateMessage(
           sendPort: receivePort.sendPort,
@@ -558,6 +558,7 @@ class ProxyManager {
           completer.complete('');
         }
         receivePort.close();
+        isolate.kill();
       });
 
       return completer.future;
@@ -579,19 +580,13 @@ class ProxyManager {
     int timeout,
     bool useProxy,
   ) async {
+    StreamManifest? manifest;
     try {
-      StreamManifest? manifest = await _validateDirect(
-        songId,
-        useProxy ? timeout : null,
-      );
-      if (manifest != null) {
-        return manifest;
-      }
-      if (useProxy) {
+      manifest = await _validateDirect(songId, useProxy ? timeout : null);
+      if (manifest == null && useProxy) {
         if (DateTime.now().difference(_lastFetched).inMinutes >= 60)
           await _fetchProxies();
         manifest = await _cycleProxies(songId, timeout);
-        return manifest;
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -600,10 +595,11 @@ class ProxyManager {
         stackTrace,
       );
     }
-    return null;
+    return manifest;
   }
 
   static Future<void> _getYouTubeAudioUrl(_IsolateMessage message) async {
+    String audioUrl = '';
     try {
       final manifest = await _getSongManifest(
         message.songId,
@@ -615,8 +611,7 @@ class ProxyManager {
           manifest.audioOnly.sortByBitrate(),
           message.qualitySetting,
         );
-        final audioUrl = audioQuality.url.toString();
-        return message.sendPort.send(audioUrl);
+        audioUrl = audioQuality.url.toString();
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -624,8 +619,8 @@ class ProxyManager {
         e,
         stackTrace,
       );
-      return message.sendPort.send('');
     }
+    message.sendPort.send(audioUrl);
   }
 
   static AudioStreamInfo selectAudioQuality(
@@ -647,8 +642,8 @@ class ProxyManager {
     String songId,
     int timeout,
   ) async {
+    StreamManifest? manifest;
     try {
-      StreamManifest? manifest;
       Proxy? proxy;
       final client =
           HttpClient()
@@ -670,15 +665,14 @@ class ProxyManager {
           };
         manifest = await _validateProxy(proxy, songId, timeout, ytExplode);
       } while (manifest == null);
-      return manifest;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
-      return null;
     }
+    return manifest;
   }
 
   static IOClient _randomProxyClient() {
