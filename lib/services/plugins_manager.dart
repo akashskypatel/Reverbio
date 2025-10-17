@@ -1252,11 +1252,16 @@ class PluginsManager {
     }
   }
 
-  static Future<void> getSongUrl(Map song, Function fallback) async {
-    if (!enablePlugins.value || plugins.isEmpty) return await fallback(song);
+  static Future<String?> getSongUrl(
+    Map song,
+    Future<String> Function(dynamic) fallback,
+  ) async {
+    if (!enablePlugins.value || plugins.isEmpty) {
+      return fallback(song);
+    }
     const timeout = Duration(seconds: 10);
     final allFutures = <Future>[];
-    void onSuccess(dynamic result) {
+    String onSuccess(dynamic result) {
       var songUrl = '';
       //if (result['stream'] != null && result['stream']['error'] == null && result['stream']['liveMP4'] != null) {
       //songUrl = result['stream']['liveMP4']['full'];
@@ -1273,6 +1278,7 @@ class PluginsManager {
       for (final f in allFutures) {
         f.ignore();
       }
+      return songUrl;
     }
 
     try {
@@ -1292,7 +1298,7 @@ class PluginsManager {
                       .timeout(
                         timeout,
                         onTimeout: () {
-                          fallback(song);
+                          return fallback(song);
                         },
                       )
                       .then((e) {
@@ -1300,7 +1306,7 @@ class PluginsManager {
                             e['songUrl'] is String &&
                             e['songUrl'].isNotEmpty) {
                           e['source'] = _plugin['name'];
-                          onSuccess(e);
+                          return onSuccess(e);
                         }
                       })
                       .catchError((e, stackTrace) {
@@ -1312,11 +1318,15 @@ class PluginsManager {
               return returnValue;
             }).toList();
         allFutures.addAll([...pluginFutures]);
-        await Future.wait(allFutures).whenComplete(() async {
+        final _futures = await Future.wait(allFutures);
+        if (_futures.isNotEmpty) return _futures.first;
+        /*
+        .then((value) async {
           if (song['songUrl'] == null || song['songUrl'].isEmpty) {
-            await fallback(song);
+            return [fallback(song)];
           }
         });
+        */
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -1324,8 +1334,8 @@ class PluginsManager {
         e,
         stackTrace,
       );
-      await fallback(song);
     }
+    return fallback(song);
   }
 
   /// Executes a JavaScript method in various contexts with flexible input options.
