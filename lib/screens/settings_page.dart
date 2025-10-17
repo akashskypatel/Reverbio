@@ -418,6 +418,11 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
         ),
         CustomBar(
+          tileName: context.l10n!.moveAllToLibrary,
+          tileIcon: FluentIcons.folder_arrow_left_24_filled,
+          onTap: () => _showMoveAllOfflineTracksDialog(context),
+        ),
+        CustomBar(
           tileName: context.l10n!.backupUserData,
           tileIcon: FluentIcons.cloud_sync_24_filled,
           onTap: () => _backupUserData(context),
@@ -535,6 +540,31 @@ class _SettingsPageState extends State<SettingsPage> {
           onTap: () => NavigationManager.router.go('/settings/about'),
         ),
       ],
+    );
+  }
+
+  Future<void> _showMoveAllOfflineTracksDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder:
+          (context) => ConfirmationDialog(
+            title: context.l10n!.moveAllToLibrary,
+            message: context.l10n!.moveAllToLibraryMessage,
+            confirmText: context.l10n!.confirm.toUpperCase(),
+            cancelText: context.l10n!.cancel.toUpperCase(),
+            onCancel: () => GoRouter.of(context).pop(),
+            onSubmit: () {
+              Future.microtask(() async {
+                final count = await moveAllSongToDeviceLibrary();
+                if (count > 0) {
+                  showToast('${L10n.current.movedFiles} $count');
+                } else {
+                  showToast(L10n.current.notMoved);
+                }
+              });
+              GoRouter.of(context).pop();
+            },
+          ),
     );
   }
 
