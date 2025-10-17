@@ -904,13 +904,17 @@ bool isSongInDeviceLibrary(songToCheck) => userDeviceSongs.any((song) {
 
 Future<int> moveAllSongToDeviceLibrary() async {
   int count = 0;
+  final destination =
+      Platform.isWindows ? await FilePicker.platform.getDirectoryPath() : null;
   try {
+    if (Platform.isWindows && (destination == null || destination.isEmpty))
+      throw PathException('Invalid destination directory selected');
     await getUserOfflineSongs();
     final moved = [];
     for (final song in userOfflineSongs) {
       try {
         final _song = await queueSongInfoRequest(song).completerFuture;
-        count += await moveSongToDeviceLibrary(_song);
+        count += await moveSongToDeviceLibrary(_song, destination: destination);
         moved.add(song);
       } catch (_) {}
     }
@@ -922,7 +926,7 @@ Future<int> moveAllSongToDeviceLibrary() async {
   return count;
 }
 
-Future<int> moveSongToDeviceLibrary(dynamic song) async {
+Future<int> moveSongToDeviceLibrary(dynamic song, {String? destination}) async {
   int count = 0;
   try {
     if (!(await checkAllPermissions())) return count;
@@ -931,10 +935,7 @@ Future<int> moveSongToDeviceLibrary(dynamic song) async {
       final _dir = Directory(offlineDirectory.value!);
       final _audioDirPath = join(_dir.path, 'tracks');
       final files = await _getRelatedFiles(_audioDirPath, song);
-      String? dest =
-          Platform.isWindows
-              ? await FilePicker.platform.getDirectoryPath()
-              : null;
+      String? dest = Platform.isWindows ? destination : null;
       for (final file in files) {
         if (songArtist(song).isNotEmpty && songTitle(song).isNotEmpty) {
           final newName =
