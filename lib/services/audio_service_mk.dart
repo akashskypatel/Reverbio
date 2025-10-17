@@ -274,7 +274,7 @@ class AudioPlayerService {
 
   Future<void> queue(Media media) async {
     await open(media);
-    await player.seek(Duration.zero);
+    await seek(Duration.zero);
     _updateProcessingState(AudioProcessingState.ready);
     return pause();
   }
