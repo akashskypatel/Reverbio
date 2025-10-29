@@ -31,6 +31,7 @@ import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/genre_list.dart';
 import 'package:reverbio/widgets/section_header.dart';
 
@@ -83,13 +84,16 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
-          _clearFiltersButton(),
-          ...PM.getWidgetsByType(
-            _getEntityListData,
-            dataMap[widget.page]?['widgetContext'] as String,
-            context,
+          ExpandingToolbar(
+            actions: [
+              _clearFiltersButton(),
+              ...PM.getWidgetsByType(
+                _getEntityListData,
+                dataMap[widget.page]?['widgetContext'] as String,
+                context,
+              ),
+            ],
           ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: _buildBody(context),

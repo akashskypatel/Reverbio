@@ -36,6 +36,7 @@ import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/artist_header.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/genre_list.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/song_bar.dart';
@@ -96,26 +97,33 @@ class _ArtistPageState extends State<ArtistPage> {
           iconSize: pageHeaderIconSize,
         ),
         actions: [
-          _buildLikeButton(),
-          if (widget.artistData['mbid'] != null)
-            IconButton(
-              iconSize: pageHeaderIconSize,
-              onPressed: () {
-                if (widget.artistData['mbid'] != null) {
-                  final uri = Uri.parse(
-                    'https://musicbrainz.org/artist/${widget.artistData['mbid']}',
-                  );
-                  launchURL(uri);
-                }
-              },
-              icon: Icon(
-                FluentIcons.database_link_24_filled,
-                color: _theme.colorScheme.primary,
+          ExpandingToolbar(
+            actions: [
+              _buildLikeButton(),
+              if (widget.artistData['mbid'] != null)
+                IconButton(
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () {
+                    if (widget.artistData['mbid'] != null) {
+                      final uri = Uri.parse(
+                        'https://musicbrainz.org/artist/${widget.artistData['mbid']}',
+                      );
+                      launchURL(uri);
+                    }
+                  },
+                  icon: Icon(
+                    FluentIcons.database_link_24_filled,
+                    color: _theme.colorScheme.primary,
+                  ),
+                ),
+              _buildSyncButton(),
+              ...PM.getWidgetsByType(
+                _getArtistData,
+                'ArtistPageHeader',
+                context,
               ),
-            ),
-          _buildSyncButton(),
-          ...PM.getWidgetsByType(_getArtistData, 'ArtistPageHeader', context),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
+            ],
+          ),
         ],
       ),
       body: _buildBody(),

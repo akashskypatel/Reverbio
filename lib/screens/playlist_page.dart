@@ -44,6 +44,7 @@ import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
@@ -197,98 +198,104 @@ class _PlaylistPageState extends State<PlaylistPage> {
         onPressed: () => GoRouter.of(context).pop(),
       ),
       actions: [
-        _buildAutoCacheOfflineButton(),
-        if (widget.playlistData['source'] != 'user-created') _buildLikeButton(),
-        if (widget.playlistData.isNotEmpty) ...[
-          _buildSyncButton(),
-          if (widget.playlistData['source'] == 'user-created')
-            IconButton(
-              icon: const Icon(FluentIcons.share_24_regular),
-              iconSize: pageHeaderIconSize,
-              onPressed: () async {
-                final encodedPlaylist = PlaylistSharingService.encodePlaylist(
-                  widget.playlistData,
-                );
-                final url = 'Reverbio://playlist/custom/$encodedPlaylist';
-                await Clipboard.setData(ClipboardData(text: url));
-              },
-            ),
-          ...PM.getWidgetsByType(
-            _getPlaylistData,
-            [
-                  'album',
-                  'single',
-                  'ep',
-                  'broadcast',
-                  'other',
-                ].contains(widget.page)
-                ? 'AlbumPageHeader'
-                : 'PlaylistPageHeader',
-            context,
-          ),
-          if ([
-                'album',
-                'single',
-                'ep',
-                'broadcast',
-                'other',
-              ].contains(widget.page) &&
-              widget.playlistData['mbid'] != null)
-            IconButton(
-              iconSize: pageHeaderIconSize,
-              onPressed: () {
-                if (widget.playlistData['mbid'] != null) {
-                  final uri = Uri.parse(
-                    'https://musicbrainz.org/release-group/${widget.playlistData['mbid']}',
-                  );
-                  launchURL(uri);
-                }
-              },
-              icon: Icon(
-                FluentIcons.database_link_24_filled,
-                color: _theme.colorScheme.primary,
-              ),
-            ),
-          if (widget.page == 'playlist' && widget.playlistData['ytid'] != null)
-            IconButton(
-              iconSize: pageHeaderIconSize,
-              onPressed: () {
-                if (widget.playlistData['ytid'] != null) {
-                  final uri = Uri.parse(
-                    'https://www.youtube.com/playlist?list=${widget.playlistData['ytid']}',
-                  );
-                  launchURL(uri);
-                }
-              },
-              icon: Icon(
-                FluentIcons.link_24_regular,
-                color: _theme.colorScheme.primary,
-              ),
-            ),
-          if (widget.playlistData.isNotEmpty &&
-              widget.playlistData['source'] == 'user-created')
-            _buildEditButton(),
-          StatefulBuilder(
-            builder: (context, setState) {
-              return IconButton(
-                iconSize: pageHeaderIconSize,
-                onPressed: () {
-                  if (mounted)
-                    setState(() {
-                      _isEditEnabled.value = !_isEditEnabled.value;
-                    });
-                },
-                icon: Icon(
-                  _isEditEnabled.value
-                      ? FluentIcons.edit_off_24_filled
-                      : FluentIcons.edit_line_horizontal_3_24_filled,
-                  color: _theme.colorScheme.primary,
+        ExpandingToolbar(
+          actions: [
+            _buildAutoCacheOfflineButton(),
+            if (widget.playlistData['source'] != 'user-created')
+              _buildLikeButton(),
+            if (widget.playlistData.isNotEmpty) ...[
+              _buildSyncButton(),
+              if (widget.playlistData['source'] == 'user-created')
+                IconButton(
+                  icon: const Icon(FluentIcons.share_24_regular),
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () async {
+                    final encodedPlaylist =
+                        PlaylistSharingService.encodePlaylist(
+                          widget.playlistData,
+                        );
+                    final url = 'Reverbio://playlist/custom/$encodedPlaylist';
+                    await Clipboard.setData(ClipboardData(text: url));
+                  },
                 ),
-              );
-            },
-          ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
-        ],
+              ...PM.getWidgetsByType(
+                _getPlaylistData,
+                [
+                      'album',
+                      'single',
+                      'ep',
+                      'broadcast',
+                      'other',
+                    ].contains(widget.page)
+                    ? 'AlbumPageHeader'
+                    : 'PlaylistPageHeader',
+                context,
+              ),
+              if ([
+                    'album',
+                    'single',
+                    'ep',
+                    'broadcast',
+                    'other',
+                  ].contains(widget.page) &&
+                  widget.playlistData['mbid'] != null)
+                IconButton(
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () {
+                    if (widget.playlistData['mbid'] != null) {
+                      final uri = Uri.parse(
+                        'https://musicbrainz.org/release-group/${widget.playlistData['mbid']}',
+                      );
+                      launchURL(uri);
+                    }
+                  },
+                  icon: Icon(
+                    FluentIcons.database_link_24_filled,
+                    color: _theme.colorScheme.primary,
+                  ),
+                ),
+              if (widget.page == 'playlist' &&
+                  widget.playlistData['ytid'] != null)
+                IconButton(
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () {
+                    if (widget.playlistData['ytid'] != null) {
+                      final uri = Uri.parse(
+                        'https://www.youtube.com/playlist?list=${widget.playlistData['ytid']}',
+                      );
+                      launchURL(uri);
+                    }
+                  },
+                  icon: Icon(
+                    FluentIcons.link_24_regular,
+                    color: _theme.colorScheme.primary,
+                  ),
+                ),
+              if (widget.playlistData.isNotEmpty &&
+                  widget.playlistData['source'] == 'user-created')
+                _buildEditButton(),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return IconButton(
+                    iconSize: pageHeaderIconSize,
+                    onPressed: () {
+                      if (mounted)
+                        setState(() {
+                          _isEditEnabled.value = !_isEditEnabled.value;
+                        });
+                    },
+                    icon: Icon(
+                      _isEditEnabled.value
+                          ? FluentIcons.edit_off_24_filled
+                          : FluentIcons.edit_line_horizontal_3_24_filled,
+                      color: _theme.colorScheme.primary,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }

@@ -21,7 +21,6 @@
 
 import 'package:background_downloader/background_downloader.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/entities.dart';
@@ -34,6 +33,7 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/paginated_list.dart';
 import 'package:reverbio/widgets/announcement_box.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/notification_log.dart';
 import 'package:reverbio/widgets/song_list.dart';
@@ -77,9 +77,12 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('Reverbio'),
         actions: [
-          _buildAlertButton(context),
-          _buildSyncButton(),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
+          ExpandingToolbar(
+            actions: [
+              _buildAlertButton(context),
+              _buildSyncButton()
+            ],
+          ),
         ],
       ),
       body: CustomScrollView(

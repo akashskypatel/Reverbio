@@ -40,6 +40,7 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
 import 'package:reverbio/widgets/song_bar.dart';
@@ -95,14 +96,17 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           },
         ),
         actions: [
-          _buildSyncButton(),
-          if (_isLargeScreen)
-            ..._buildActionList(
-              songLikeStatus,
-              songOfflineStatus,
-              adjustedMiniIconSize,
-            ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
+          ExpandingToolbar(
+            actions: [
+              _buildSyncButton(),
+              if (_isLargeScreen)
+                ..._buildActionList(
+                  songLikeStatus,
+                  songOfflineStatus,
+                  adjustedMiniIconSize,
+                ),
+            ],
+          ),
         ],
       ),
       body: StreamBuilder<MediaItem?>(

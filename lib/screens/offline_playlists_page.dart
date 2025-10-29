@@ -27,6 +27,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
 
 class OfflinePlaylistsPage extends StatefulWidget {
@@ -59,7 +60,9 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n!.offlinePlaylists),
-        actions: [_clearFiltersButton()],
+        actions: [
+          ExpandingToolbar(actions: [_clearFiltersButton()]),
+        ],
       ),
       body: SingleChildScrollView(
         padding: commonSingleChildScrollViewPadding,

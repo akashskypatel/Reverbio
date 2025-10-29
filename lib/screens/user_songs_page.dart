@@ -40,6 +40,7 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
@@ -84,29 +85,32 @@ class _UserSongsPageState extends State<UserSongsPage> {
       appBar: AppBar(
         title: Text(_title),
         actions: [
-          _buildSyncButton(),
-          if (_title == context.l10n!.queue)
-            Row(children: [_buildQueueActionsList()]),
-          StatefulBuilder(
-            builder: (context, setState) {
-              return IconButton(
-                iconSize: pageHeaderIconSize,
-                onPressed: () {
-                  if (mounted)
-                    setState(() {
-                      _isEditEnabled.value = !_isEditEnabled.value;
-                    });
+          ExpandingToolbar(
+            actions: [
+              _buildSyncButton(),
+              if (_title == context.l10n!.queue)
+                Row(children: [_buildQueueActionsList()]),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return IconButton(
+                    iconSize: pageHeaderIconSize,
+                    onPressed: () {
+                      if (mounted)
+                        setState(() {
+                          _isEditEnabled.value = !_isEditEnabled.value;
+                        });
+                    },
+                    icon: Icon(
+                      _isEditEnabled.value
+                          ? FluentIcons.edit_off_24_filled
+                          : FluentIcons.edit_line_horizontal_3_24_filled,
+                      color: _theme.colorScheme.primary,
+                    ),
+                  );
                 },
-                icon: Icon(
-                  _isEditEnabled.value
-                      ? FluentIcons.edit_off_24_filled
-                      : FluentIcons.edit_line_horizontal_3_24_filled,
-                  color: _theme.colorScheme.primary,
-                ),
-              );
-            },
+              ),
+            ],
           ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: CustomScrollView(

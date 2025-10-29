@@ -34,6 +34,7 @@ import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
 import 'package:reverbio/widgets/playlist_import.dart';
 import 'package:reverbio/widgets/section_header.dart';
@@ -75,14 +76,17 @@ class _LibraryPageState extends State<LibraryPage> {
       appBar: AppBar(
         title: Text(context.l10n!.library),
         actions: [
-          if (!offlineMode.value)
-            IconButton(
-              onPressed: _showAddPlaylistDialog,
-              icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
-              iconSize: pageHeaderIconSize,
-            ),
-          if (!offlineMode.value) _clearFiltersButton(),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
+          ExpandingToolbar(
+            actions: [
+              if (!offlineMode.value)
+                IconButton(
+                  onPressed: _showAddPlaylistDialog,
+                  icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+                  iconSize: pageHeaderIconSize,
+                ),
+              if (!offlineMode.value) _clearFiltersButton(),
+            ],
+          ),
         ],
       ),
       body: Column(

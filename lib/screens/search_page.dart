@@ -41,6 +41,7 @@ import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
@@ -177,21 +178,24 @@ class _SearchPageState extends State<SearchPage> {
       appBar: AppBar(
         title: Text(context.l10n!.search),
         actions: [
-          SizedBox.square(
-            dimension: pageHeaderIconSize + 16,
-            child: ValueListenableBuilder(
-              valueListenable: _fetching,
-              builder:
-                  (context, value, __) =>
-                      value
-                          ? const Padding(
-                            padding: EdgeInsetsGeometry.all(8),
-                            child: Spinner(),
-                          )
-                          : const SizedBox.shrink(),
-            ),
+          ExpandingToolbar(
+            actions: [
+              SizedBox.square(
+                dimension: pageHeaderIconSize + 16,
+                child: ValueListenableBuilder(
+                  valueListenable: _fetching,
+                  builder:
+                      (context, value, __) =>
+                          value
+                              ? const Padding(
+                                padding: EdgeInsetsGeometry.all(8),
+                                child: Spinner(),
+                              )
+                              : const SizedBox.shrink(),
+                ),
+              ),
+            ],
           ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: SingleChildScrollView(
