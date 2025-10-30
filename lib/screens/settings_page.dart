@@ -185,7 +185,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 tileIcon: FluentIcons.paint_bucket_brush_24_filled,
                 trailing: Switch(
                   value: useSystemColor.value,
-                  onChanged: (value) => useSystemColor.value = value,
+                  onChanged: (value) async {
+                    useSystemColor.value = value;
+                    await Reverbio.updateAppState(
+                      context,
+                      useSystemColor: useSystemColor.value,
+                    );
+                  },
                 ),
               );
             },
@@ -199,7 +205,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 tileIcon: FluentIcons.color_background_24_filled,
                 trailing: Switch(
                   value: usePureBlackColor.value,
-                  onChanged: (value) => usePureBlackColor.value = value,
+                  onChanged: (value) async {
+                    usePureBlackColor.value = value;
+                    await Reverbio.updateAppState(context);
+                  },
                 ),
               );
             },
@@ -213,7 +222,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 tileIcon: FluentIcons.position_backward_24_filled,
                 trailing: Switch(
                   value: predictiveBack.value,
-                  onChanged: (value) => predictiveBack.value = value,
+                  onChanged: (value) async {
+                    predictiveBack.value = value;
+                    await Reverbio.updateAppState(context);
+                  },
                 ),
               );
             },
