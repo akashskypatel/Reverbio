@@ -25,6 +25,8 @@ import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/common.dart';
+import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/yt_caption_extractor.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class LyricsManager {
@@ -46,6 +48,8 @@ class LyricsManager {
             ..add(_fetchLyricsFromLyricsMania1(artistName, title))
             ..add(_fetchLyricsFromLrclibGet(artistName, title))
             ..add(_fetchLyricsFromLrclibSearch(artistName, title));
+          if (song['ytid'] != null)
+            futures.add(_fetchYoutubeCaptions(artistName, title, song['ytid']));
         }
         lyrics = await futures.firstSuccessful();
       }
@@ -108,7 +112,7 @@ class LyricsManager {
 
             final finalLyrics = addCopyright(
               lyricsLines.join('\n'),
-              'www.paroles.net',
+              '$artistName - $title\nwww.paroles.net',
             );
             return _removeSpaces(finalLyrics);
           }
@@ -137,7 +141,7 @@ class LyricsManager {
         if (lyricsBodyElements.isNotEmpty) {
           return addCopyright(
             lyricsBodyElements.first.text,
-            'www.lyricsmania.com',
+            '$artistName - $title\nwww.lyricsmania.com',
           );
         }
       }
@@ -161,7 +165,7 @@ class LyricsManager {
         final data = jsonDecode(response.body);
         if (data['plainLyrics'] != null) {
           lyrics = data['plainLyrics'];
-          return addCopyright(lyrics!, 'www.lrclib.net');
+          return addCopyright(lyrics!, '$artistName - $title\nwww.lrclib.net');
         }
       }
       throw Exception('Could not fetch lyrics from Lrclib.');
@@ -190,7 +194,10 @@ class LyricsManager {
             )) {
               if (item['plainLyrics'] != null) {
                 lyrics = item['plainLyrics'];
-                return addCopyright(lyrics!, 'www.lrclib.net');
+                return addCopyright(
+                  lyrics!,
+                  '$artistName - $title\nwww.lrclib.net',
+                );
               }
             }
           }
@@ -199,6 +206,26 @@ class LyricsManager {
       throw Exception('Could not fetch lyrics from Lrclib.');
     } catch (_) {
       throw Exception('Could not fetch lyrics from Lrclib.');
+    }
+  }
+
+  Future<String> _fetchYoutubeCaptions(
+    String artistName,
+    String title,
+    String ytid,
+  ) async {
+    try {
+      final ytCap = YouTubeTranscriptFetcher();
+      final languageCode = languageSetting.value;
+      final captions = await ytCap.fetchCaptions(
+        ytid,
+        languageCode: languageCode,
+      );
+      final lyrics = captions.map((e) => e.text).join('\n');
+      ytCap.dispose();
+      return addCopyright(lyrics, '$artistName - $title\nwww.youtube.com');
+    } catch (e) {
+      throw Exception('Could not fetch lyrics from Youtube.');
     }
   }
 
