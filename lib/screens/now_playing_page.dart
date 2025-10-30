@@ -23,7 +23,6 @@ import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:go_router/go_router.dart';
@@ -728,7 +727,7 @@ class NowPlayingArtwork extends StatelessWidget {
           borderRadius: BorderRadius.circular(_radius),
         ),
         child: FutureBuilder<String?>(
-          future: getSongLyrics(mediaItem.artist ?? '', mediaItem.title),
+          future: getSongLyrics(audioHandler.songValueNotifier.value?.song),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Spinner();

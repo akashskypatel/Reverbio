@@ -862,16 +862,20 @@ Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
   return ytSong;
 }
 
-Future<String?> getSongLyrics(String artist, String title) async {
-  if (lastFetchedLyrics != '$artist - $title') {
+Future<String?> getSongLyrics(dynamic song) async {
+  final artist = songArtist(song);
+  final title = songTitle(song);
+  if (lastFetchedLyrics != '$artist - $title' ||
+      lyrics.value == null ||
+      lyrics.value == L10n.current.lyricsNotAvailable) {
     lyrics.value = null;
-    var _lyrics = await LyricsManager().fetchLyrics(artist, title);
+    var _lyrics = await LyricsManager().fetchLyrics(song);
     if (_lyrics != null) {
       _lyrics = _lyrics.replaceAll(RegExp(r'\n{2}'), '\n');
       _lyrics = _lyrics.replaceAll(RegExp(r'\n{4}'), '\n\n');
       lyrics.value = _lyrics;
     } else {
-      lyrics.value = 'not found';
+      lyrics.value = L10n.current.lyricsNotAvailable;
     }
 
     lastFetchedLyrics = '$artist - $title';

@@ -19,6 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -779,4 +780,38 @@ extension NullableStringIsUnknown on String? {
     'unknown',
     L10n.current.unknown.toLowerCase(),
   ].contains(this?.toLowerCase());
+}
+
+extension FirstSuccessfulFutureExtension on List<Future> {
+  Future<T> firstSuccessful<T>() {
+    final completer = Completer<T>();
+    int errorCount = 0;
+    final allErrors = <Object>[];
+    if (this.isEmpty) {
+      completer.completeError(Exception('The list of futures was empty.'));
+      return completer.future;
+    }
+    for (final future in this) {
+      future.then(
+        (value) {
+          if (!completer.isCompleted) {
+            completer.complete(value);
+            for (final _future in this) {
+              if (_future != future) _future.ignore();
+            }
+          }
+        },
+        onError: (error) {
+          errorCount++;
+          allErrors.add(error);
+          if (errorCount == this.length && !completer.isCompleted) {
+            completer.completeError(
+              Exception('All futures failed. Errors: $allErrors'),
+            );
+          }
+        },
+      );
+    }
+    return completer.future;
+  }
 }
