@@ -158,7 +158,10 @@ class FileTagger {
             break;
           }
         }
-        if (album.isEmpty && song['releases']?[0]['release-group'] != null)
+        if (album.isEmpty &&
+            song['releases'] != null &&
+            song['releases'].isNotEmpty &&
+            song['releases']?[0]['release-group'] != null)
           album.addAll(
             Map<String, dynamic>.from(song['releases'][0]['release-group']),
           );
