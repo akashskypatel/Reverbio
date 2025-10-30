@@ -112,6 +112,13 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                               (context) => Scaffold(
                                 persistentFooterButtons: [
                                   TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
+                                    child: Text(
+                                      L10n.current.cancel.toUpperCase(),
+                                    ),
+                                  ),
+                                  TextButton(
                                     onPressed: () async {
                                       try {
                                         final newTag = Tag(
@@ -186,13 +193,6 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                     },
                                     child: Text(
                                       L10n.current.confirm.toUpperCase(),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(),
-                                    child: Text(
-                                      L10n.current.cancel.toUpperCase(),
                                     ),
                                   ),
                                 ],
@@ -823,12 +823,12 @@ Future<Picture?> showImagePickerDialog(
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(picture),
-            child: Text(L10n.current.confirm.toUpperCase()),
-          ),
-          TextButton(
             onPressed: () => Navigator.of(context).pop(initialValue),
             child: Text(L10n.current.cancel.toUpperCase()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(picture),
+            child: Text(L10n.current.confirm.toUpperCase()),
           ),
         ],
       );
