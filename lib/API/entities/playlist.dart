@@ -70,6 +70,7 @@ void updateOfflinePlaylist(dynamic playlist, bool add) {
 Future<void> addOfflinePlaylist(dynamic playlist) async {
   final ids = Uri.parse('?${parseEntityId(playlist)}').queryParameters;
   if ((ids['yt'] ?? ids['mb'] ?? ids['uc']) != null) {
+    playlist['autoCacheOffline'] = true;
     userOfflinePlaylists.addOrUpdate(<String, dynamic>{
       'id': playlist['id'],
       'title': playlist['title'],
@@ -84,6 +85,7 @@ Future<void> removeOfflinePlaylist(dynamic playlist) async {
   final ids = Uri.parse('?${parseEntityId(playlist)}').queryParameters;
   if ((ids['yt'] ?? ids['mb'] ?? ids['uc']) != null) {
     userOfflinePlaylists.removeWhere((e) => playlist['id'] == e['id']);
+    playlist['autoCacheOffline'] = false;
   }
 }
 

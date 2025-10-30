@@ -359,7 +359,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     );
   }
 
-  Future<bool> _confirmAutoCacheOfflineButton(BuildContext context) async {
+  Future<bool> _confirmAutoCacheOffline(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
           builder:
@@ -389,7 +389,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
             if (!mounted) return;
 
             final bool newValue =
-                !value && await _confirmAutoCacheOfflineButton(context);
+                !value && await _confirmAutoCacheOffline(context);
 
             if (newValue != value) {
               setState(() {
@@ -400,7 +400,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
             }
           },
           icon:
-              value
+              !value
                   ? const Icon(FluentIcons.arrow_download_24_filled)
                   : const Icon(FluentIcons.arrow_download_off_24_filled),
         );

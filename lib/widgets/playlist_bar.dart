@@ -30,6 +30,7 @@ import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/confirmation_dialog.dart';
 
 class PlaylistBar extends StatelessWidget {
   PlaylistBar(
@@ -187,10 +188,13 @@ class PlaylistBar extends StatelessWidget {
                 },
           );
         else {
+          playlistData?.addAll(snapshot.data!);
           final image =
               snapshot.data!['image'] != null
                   ? (snapshot.data!['image'] is List<int>
-                      ? Image.memory(Uint8List.fromList(playlistData!['image']))
+                      ? Image.memory(
+                        Uint8List.fromList(snapshot.data!['image']),
+                      )
                       : snapshot.data!['image'] is String &&
                           isUrl(snapshot.data!['image'])
                       ? Image.network(snapshot.data!['image'])
@@ -211,17 +215,18 @@ class PlaylistBar extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, Color primaryColor) {
+    isOffline.value = isPlaylistAlreadyOffline(playlistData);
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).colorScheme.surface,
       icon: Icon(FluentIcons.more_horizontal_24_filled, color: primaryColor),
-      onSelected: (String value) {
+      onSelected: (String value) async {
         switch (value) {
           case 'like':
             if ((playlistId ?? playlistData?['id']) != null) {
               final newValue = !playlistLikeStatus.value;
               playlistLikeStatus.value = newValue;
-              updatePlaylistLikeStatus(
+              await updatePlaylistLikeStatus(
                 playlistData ??
                     {
                       'ytid': playlistId,
@@ -237,10 +242,12 @@ class PlaylistBar extends StatelessWidget {
             if (onDelete != null) onDelete!();
             break;
           case 'offline':
-            if (!isOffline.value)
-              addOfflinePlaylist(playlistData);
-            else
-              removeOfflinePlaylist(playlistData);
+            if (!isOffline.value) {
+              final addToOffline = await _confirmAutoCacheOffline(context);
+              if (!addToOffline) return;
+              await addOfflinePlaylist(playlistData);
+            } else
+              await removeOfflinePlaylist(playlistData);
             isOffline.value = !isOffline.value;
             break;
         }
@@ -297,5 +304,21 @@ class PlaylistBar extends StatelessWidget {
         ];
       },
     );
+  }
+
+  Future<bool> _confirmAutoCacheOffline(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => ConfirmationDialog(
+                confirmText: context.l10n!.confirm,
+                cancelText: context.l10n!.cancel,
+                title: context.l10n!.autoCacheOfflinePlaylist,
+                message: context.l10n!.storageWarning,
+                onCancel: () => Navigator.pop(context, false),
+                onSubmit: () => Navigator.pop(context, true),
+              ),
+        ) ??
+        false;
   }
 }
