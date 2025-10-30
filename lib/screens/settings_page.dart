@@ -933,7 +933,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   itemCount: devices.length,
                   itemBuilder: (context, index) {
                     final isSelected =
-                        audioDevice.value['id'] == devices[index]['id'];
+                        audioDevice.value?['id'] == devices[index]['id'];
                     final borderRadius = getItemBorderRadius(
                       index,
                       devices.length,
