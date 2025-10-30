@@ -22,6 +22,7 @@
 //import 'dart:math';
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
@@ -42,6 +43,7 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
@@ -316,7 +318,17 @@ class _PlaylistPageState extends State<PlaylistPage> {
   Widget _buildPlaylistImage() {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isLandscape = screenWidth > MediaQuery.sizeOf(context).height;
+    final image =
+        widget.playlistData['image'] is List<int>
+            ? Image.memory(Uint8List.fromList(widget.playlistData['image']))
+            : widget.playlistData['image'] is String &&
+                isUrl(widget.playlistData['image'])
+            ? Image.network(widget.playlistData['image'])
+            : isFilePath(widget.playlistData['image'])
+            ? Image.file(File(widget.playlistData['image']))
+            : null;
     return BaseCard(
+      image: image,
       inputData: widget.playlistData,
       size: isLandscape ? 300 : screenWidth / 2.5,
       icon: widget.cardIcon,

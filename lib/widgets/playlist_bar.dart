@@ -19,12 +19,16 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 
 class PlaylistBar extends StatelessWidget {
@@ -47,7 +51,7 @@ class PlaylistBar extends StatelessWidget {
   final Map? playlistData;
   final String? playlistId;
   final String playlistTitle;
-  final String? playlistArtwork;
+  final dynamic playlistArtwork;
   final VoidCallback? onPressed;
   final VoidCallback? onDelete;
   final IconData cardIcon;
@@ -121,7 +125,7 @@ class PlaylistBar extends StatelessWidget {
                   padding: commonBarContentPadding,
                   child: Row(
                     children: [
-                      _buildAlbumArt(),
+                      _buildArtwork(),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -150,7 +154,7 @@ class PlaylistBar extends StatelessWidget {
     );
   }
 
-  Widget _buildAlbumArt() {
+  Widget _buildArtwork() {
     return FutureBuilder(
       future: getPlaylistInfo(
         playlistData ??
@@ -180,13 +184,26 @@ class PlaylistBar extends StatelessWidget {
                   'primary-type': 'playlist',
                 },
           );
-        else
+        else {
+          final image =
+              snapshot.data!['image'] != null
+                  ? (snapshot.data!['image'] is List<int>
+                      ? Image.memory(Uint8List.fromList(playlistData!['image']))
+                      : snapshot.data!['image'] is String &&
+                          isUrl(snapshot.data!['image'])
+                      ? Image.network(snapshot.data!['image'])
+                      : isFilePath(snapshot.data!['image'])
+                      ? Image.file(File(snapshot.data!['image']))
+                      : null)
+                  : null;
           return BaseCard(
+            image: image,
             icon: cardIcon,
             size: artworkSize,
             showIconLabel: false,
             inputData: snapshot.data,
           );
+        }
       },
     );
   }

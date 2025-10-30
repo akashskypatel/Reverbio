@@ -205,7 +205,7 @@ Future<void> updateCustomPlaylist(
 String createCustomPlaylist(
   String playlistName,
   BuildContext context, {
-  String? image,
+  dynamic image,
   List<dynamic>? songList,
 }) {
   final id = generatePlaylistId(playlistName);

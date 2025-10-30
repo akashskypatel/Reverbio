@@ -19,19 +19,20 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:io';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
-import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
@@ -374,7 +375,7 @@ class _LibraryPageState extends State<LibraryPage> {
       var customPlaylistName = '';
       var isYouTubeMode = true;
       String? imageUrl;
-
+      File? imageFile;
       return StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
@@ -495,7 +496,9 @@ class _LibraryPageState extends State<LibraryPage> {
                           IconButton(
                             onPressed: () async {
                               imageUrl =
-                                  await pickImageFile(); //TODO: save image data to playlist directly
+                                  await pickImageFile();
+                              if (imageUrl != null && isFilePath(imageUrl!))
+                                imageFile = await getImageFile(path: imageUrl);
                               if (imageUrl != null)
                                 imagePathController.text = imageUrl!;
                             },
@@ -533,11 +536,16 @@ class _LibraryPageState extends State<LibraryPage> {
                                   () => GoRouter.of(
                                     savecontext,
                                   ).pop(confirmcontext),
-                              onSubmit: () {
+                              onSubmit: () async {
                                 showToast(
                                   createCustomPlaylist(
                                     customPlaylistName,
-                                    image: imageUrl,
+                                    image:
+                                        imageFile != null
+                                            ? imageFile!
+                                                .readAsBytesSync()
+                                                .toList()
+                                            : imageUrl,
                                     context,
                                   ),
                                 );
@@ -549,7 +557,10 @@ class _LibraryPageState extends State<LibraryPage> {
                       showToast(
                         createCustomPlaylist(
                           customPlaylistName,
-                          image: imageUrl,
+                          image:
+                              imageFile != null
+                                  ? imageFile!.readAsBytesSync().toList()
+                                  : imageUrl,
                           context,
                         ),
                       );

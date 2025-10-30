@@ -19,10 +19,10 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:io';
+
 import 'package:audio_service/audio_service.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +38,7 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
@@ -323,7 +324,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
     builder: (savecontext) {
       var customPlaylistName = '';
       String? imageUrl;
-
+      File? imageFile;
       return StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
@@ -367,19 +368,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         ),
                         IconButton(
                           onPressed: () async {
-                            final path =
-                                (await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: [
-                                    'jpeg',
-                                    'jpg',
-                                    'png',
-                                    'gif',
-                                    'webp',
-                                    'bmp',
-                                  ],
-                                ))?.paths.first;
-                            imageUrl = path;
+                            imageUrl =
+                                await pickImageFile();
+                            if (imageUrl != null && isFilePath(imageUrl!))
+                              imageFile = await getImageFile(path: imageUrl);
                             if (imageUrl != null)
                               imagePathController.text = imageUrl!;
                           },
@@ -417,7 +409,12 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                 showToast(
                                   createCustomPlaylist(
                                     customPlaylistName,
-                                    image: imageUrl,
+                                    image:
+                                        imageFile != null
+                                            ? imageFile!
+                                                .readAsBytesSync()
+                                                .toList()
+                                            : imageUrl,
                                     context,
                                     songList: activeQueue['list'],
                                   ),
@@ -430,7 +427,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       showToast(
                         createCustomPlaylist(
                           customPlaylistName,
-                          image: imageUrl,
+                          image:
+                              imageFile != null
+                                  ? imageFile!.readAsBytesSync().toList()
+                                  : imageUrl,
                           context,
                           songList: activeQueue['list'],
                         ),

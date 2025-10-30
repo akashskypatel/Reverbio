@@ -1114,7 +1114,7 @@ String ensureReverbioPath(String filePath) {
 
 Future<File?> getImageFile({String? path}) async {
   try {
-    final filePath = path ?? await pickImageFile(copyToAppDir: false);
+    final filePath = path ?? await pickImageFile();
     if (filePath == null) return null;
     if (isFilePath(filePath) && doesFileExist(filePath)) {
       cacheImage(filePath);
@@ -1128,9 +1128,23 @@ Future<File?> getImageFile({String? path}) async {
   return null;
 }
 
+Future<String?> pickImageFile() async {
+  final _dir = Directory(offlineDirectory.value!);
+  final _artworkDirPath = join(_dir.path, 'artworks');
+  await Directory(_artworkDirPath).create(recursive: true);
+
+  final file =
+      (await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp'],
+      ))?.files.first;
+  if (file == null || file.path == null) return null;
+  return file.path;
+}
+
 Future<ImageProvider?> getImageProvider({String? path}) async {
   try {
-    final filePath = path ?? await pickImageFile(copyToAppDir: false);
+    final filePath = path ?? await pickImageFile();
     if (filePath == null) return null;
     if (isFilePath(filePath) && doesFileExist(filePath)) {
       return FileImage(File(filePath));

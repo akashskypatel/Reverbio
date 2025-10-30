@@ -25,7 +25,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:path/path.dart';
@@ -672,25 +671,6 @@ Future<File> copyFileToDir(
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
   return File(path);
-}
-
-Future<String?> pickImageFile({bool copyToAppDir = true}) async {
-  final _dir = Directory(offlineDirectory.value!);
-  final _artworkDirPath = join(_dir.path, 'artworks');
-  await Directory(_artworkDirPath).create(recursive: true);
-
-  final file =
-      (await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp'],
-      ))?.files.first;
-  if (file == null || file.path == null) return null;
-  if (copyToAppDir) {
-    final copy = await copyFileToDir(file.path!, _artworkDirPath);
-    return copy.path;
-  } else {
-    return file.path;
-  }
 }
 
 Future<void> cacheEntity(dynamic entity) async {
