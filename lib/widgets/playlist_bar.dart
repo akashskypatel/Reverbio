@@ -46,7 +46,9 @@ class PlaylistBar extends StatelessWidget {
     this.borderRadius = BorderRadius.zero,
   }) : playlistLikeStatus = ValueNotifier<bool>(
          isPlaylistAlreadyLiked(playlistData),
-       );
+       ),
+       isOffline = ValueNotifier<bool>(isPlaylistAlreadyOffline(playlistData)),
+       hideNotifier = ValueNotifier<bool>(true);
 
   final Map? playlistData;
   final String? playlistId;
@@ -63,8 +65,8 @@ class PlaylistBar extends StatelessWidget {
   static const double iconSize = 27;
 
   final ValueNotifier<bool> playlistLikeStatus;
-  final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
-
+  final ValueNotifier<bool> hideNotifier;
+  final ValueNotifier<bool> isOffline;
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
     false: FluentIcons.heart_24_regular,
@@ -234,6 +236,13 @@ class PlaylistBar extends StatelessWidget {
           case 'remove':
             if (onDelete != null) onDelete!();
             break;
+          case 'offline':
+            if (!isOffline.value)
+              addOfflinePlaylist(playlistData);
+            else
+              removeOfflinePlaylist(playlistData);
+            isOffline.value = !isOffline.value;
+            break;
         }
       },
       itemBuilder: (BuildContext context) {
@@ -267,6 +276,24 @@ class PlaylistBar extends StatelessWidget {
                 ],
               ),
             ),
+          PopupMenuItem<String>(
+            value: 'offline',
+            child: Row(
+              children: [
+                Icon(
+                  !isOffline.value
+                      ? FluentIcons.arrow_download_24_regular
+                      : FluentIcons.arrow_download_off_24_filled,
+                  color: primaryColor,
+                ),
+                const SizedBox(width: 8),
+                if (!isOffline.value)
+                  Text(context.l10n!.makeOffline)
+                else
+                  Text(context.l10n!.removeOffline),
+              ],
+            ),
+          ),
         ];
       },
     );

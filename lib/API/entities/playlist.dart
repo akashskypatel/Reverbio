@@ -48,6 +48,7 @@ List onlinePlaylists = [];
 dynamic nextRecommendedSong;
 
 bool isPlaylistAlreadyOffline(dynamic playlist) {
+  if (playlist == null) return false;
   final isOffline =
       userOfflinePlaylists.where((e) => e['id'] == playlist['id']).isNotEmpty;
   playlist['autoCacheOffline'] = isOffline;
