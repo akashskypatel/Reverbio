@@ -201,104 +201,6 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                       theme.colorScheme.surfaceContainerHigh,
                                   backgroundColor:
                                       theme.colorScheme.surfaceContainerHigh,
-                                  actions: [
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        if (context.mounted)
-                                          setState(() {
-                                            metaLoading = true;
-                                          });
-                                        final title =
-                                            songTitle(song).nullIfEmpty ??
-                                            tags?.title;
-                                        final artist =
-                                            songArtist(song).nullIfEmpty ??
-                                            tags?.trackArtist;
-                                        if (title == null ||
-                                            title.isEmpty ||
-                                            title.toLowerCase() == 'null' ||
-                                            title.toLowerCase() == 'unknown' ||
-                                            artist == null ||
-                                            artist.isEmpty ||
-                                            artist.toLowerCase() == 'unknown' ||
-                                            artist.toLowerCase() == 'null') {
-                                          if (context.mounted)
-                                            setState(() {
-                                              showArtistError = true;
-                                              showTitleError = true;
-                                            });
-                                          showToast(
-                                            L10n.current.enterTitleAndArtist,
-                                          );
-                                          return;
-                                        }
-                                        song['title'] =
-                                            songTitle(song).nullIfEmpty ??
-                                            tags?.title;
-                                        song['artist'] =
-                                            songArtist(song).nullIfEmpty ??
-                                            tags?.trackArtist;
-                                        final future = queueSongInfoRequest(
-                                          song,
-                                        );
-                                        final value =
-                                            await future.completerFuture;
-                                        final metaTag =
-                                            await FileTagger.getTagFromMetadata(
-                                              value,
-                                            );
-                                        if (context.mounted)
-                                          setState(() {
-                                            song.addAll(value);
-                                            pictures.addAll(
-                                              metaTag?.pictures ?? [],
-                                            );
-                                            bpmController.text =
-                                                metaTag?.bpm?.toString() ?? '';
-                                            titleController.text =
-                                                metaTag?.title ?? '';
-                                            trackArtistController.text =
-                                                metaTag?.trackArtist ?? '';
-                                            yearController.text =
-                                                metaTag?.year?.toString() ?? '';
-                                            durationController.text =
-                                                metaTag?.duration?.toString() ??
-                                                '';
-                                            genreController.text =
-                                                metaTag?.genre ?? '';
-                                            albumController.text =
-                                                metaTag?.album ?? '';
-                                            albumArtistController.text =
-                                                metaTag?.albumArtist ?? '';
-                                            metaLoading = false;
-                                            showToast(
-                                              L10n.current.fetchedMetadata,
-                                            );
-                                          });
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            theme.colorScheme.surfaceContainer,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        spacing: 10,
-                                        children: [
-                                          if (metaLoading)
-                                            const SizedBox.square(
-                                              dimension: 18,
-                                              child: Spinner(),
-                                            )
-                                          else
-                                            const Icon(
-                                              FluentIcons
-                                                  .database_search_24_filled,
-                                            ),
-                                          Text(L10n.current.getMetadata),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
                                 ),
                                 backgroundColor:
                                     theme.colorScheme.surfaceContainerHigh,
@@ -306,14 +208,127 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      CustomBar(
+                                        borderRadius:
+                                            commonCustomBarRadiusFirst,
+                                        leading: ElevatedButton(
+                                          onPressed: () async {
+                                            if (context.mounted)
+                                              setState(() {
+                                                metaLoading = true;
+                                              });
+                                            final title =
+                                                songTitle(song).nullIfEmpty ??
+                                                tags?.title;
+                                            final artist =
+                                                songArtist(song).nullIfEmpty ??
+                                                tags?.trackArtist;
+                                            if (title == null ||
+                                                title.isEmpty ||
+                                                title.toLowerCase() == 'null' ||
+                                                title.toLowerCase() ==
+                                                    'unknown' ||
+                                                artist == null ||
+                                                artist.isEmpty ||
+                                                artist.toLowerCase() ==
+                                                    'unknown' ||
+                                                artist.toLowerCase() ==
+                                                    'null') {
+                                              if (context.mounted)
+                                                setState(() {
+                                                  showArtistError = true;
+                                                  showTitleError = true;
+                                                });
+                                              showToast(
+                                                L10n
+                                                    .current
+                                                    .enterTitleAndArtist,
+                                              );
+                                              return;
+                                            }
+                                            song['title'] =
+                                                songTitle(song).nullIfEmpty ??
+                                                tags?.title;
+                                            song['artist'] =
+                                                songArtist(song).nullIfEmpty ??
+                                                tags?.trackArtist;
+                                            final future = queueSongInfoRequest(
+                                              song,
+                                            );
+                                            final value =
+                                                await future.completerFuture;
+                                            final metaTag =
+                                                await FileTagger.getTagFromMetadata(
+                                                  value,
+                                                );
+                                            if (context.mounted)
+                                              setState(() {
+                                                song.addAll(value);
+                                                pictures.addAll(
+                                                  metaTag?.pictures ?? [],
+                                                );
+                                                bpmController.text =
+                                                    metaTag?.bpm?.toString() ??
+                                                    '';
+                                                titleController.text =
+                                                    metaTag?.title ?? '';
+                                                trackArtistController.text =
+                                                    metaTag?.trackArtist ?? '';
+                                                yearController.text =
+                                                    metaTag?.year?.toString() ??
+                                                    '';
+                                                durationController.text =
+                                                    metaTag?.duration
+                                                        ?.toString() ??
+                                                    '';
+                                                genreController.text =
+                                                    metaTag?.genre ?? '';
+                                                albumController.text =
+                                                    metaTag?.album ?? '';
+                                                albumArtistController.text =
+                                                    metaTag?.albumArtist ?? '';
+                                                metaLoading = false;
+                                                showToast(
+                                                  L10n.current.fetchedMetadata,
+                                                );
+                                              });
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                theme
+                                                    .colorScheme
+                                                    .surfaceContainerHigh,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            spacing: 10,
+                                            children: [
+                                              if (metaLoading)
+                                                const SizedBox.square(
+                                                  dimension: 18,
+                                                  child: Spinner(),
+                                                )
+                                              else
+                                                const Icon(
+                                                  FluentIcons
+                                                      .database_search_24_filled,
+                                                ),
+                                              Text(
+                                                L10n.current.getMetadata,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                       // String title,
                                       _textInput(
                                         context,
                                         L10n.current.title,
                                         FluentIcons.music_note_2_24_regular,
                                         titleController,
-                                        borderRadius:
-                                            commonCustomBarRadiusFirst,
                                         showErrorIcon: showTitleError,
                                       ),
                                       // String trackArtist,
@@ -411,6 +426,8 @@ Future<void> showEditMetadataDialog(BuildContext context, dynamic song) async {
                                         L10n.current.lyrics,
                                         FluentIcons.text_t_24_regular,
                                         lyricsController,
+                                        keyboardType: TextInputType.multiline,
+                                        multiLine: true,
                                       ),
                                       // int duration,
                                       _textInput(
@@ -475,6 +492,7 @@ Widget _textInput(
   BorderRadius borderRadius = BorderRadius.zero,
   TextInputType keyboardType = TextInputType.text,
   bool showErrorIcon = false,
+  bool multiLine = false,
 }) {
   Widget _getTextField() {
     final _theme = Theme.of(context).colorScheme;
@@ -487,6 +505,9 @@ Widget _textInput(
             alignment:
                 isLargeScreen() ? Alignment.centerLeft : Alignment.centerRight,
             child: TextFormField(
+              maxLines: multiLine ? null : 1,
+              minLines: multiLine ? null : 1,
+              expands: multiLine,
               controller: controller,
               keyboardType: keyboardType,
               inputFormatters: inputFormatters,
