@@ -65,6 +65,8 @@ Complete or verify all features on Song list component functions.
 - [ ] Song can be liked, added to playlist, added to queue, and added to offline successfully.
 - [ ] Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
 - [ ] Double tapping a song likes/dislikes a song.
+- [ ] Click on search icon to confirm search box opens
+- [ ] Confirm typing in search bar filters the list
 
 ## Android Auto (Android Only)
 
