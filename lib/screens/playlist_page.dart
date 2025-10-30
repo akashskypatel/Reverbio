@@ -319,13 +319,15 @@ class _PlaylistPageState extends State<PlaylistPage> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isLandscape = screenWidth > MediaQuery.sizeOf(context).height;
     final image =
-        widget.playlistData['image'] is List<int>
-            ? Image.memory(Uint8List.fromList(widget.playlistData['image']))
-            : widget.playlistData['image'] is String &&
-                isUrl(widget.playlistData['image'])
-            ? Image.network(widget.playlistData['image'])
-            : isFilePath(widget.playlistData['image'])
-            ? Image.file(File(widget.playlistData['image']))
+        widget.playlistData['image'] != null
+            ? (widget.playlistData['image'] is List<int>
+                ? Image.memory(Uint8List.fromList(widget.playlistData['image']))
+                : widget.playlistData['image'] is String &&
+                    isUrl(widget.playlistData['image'])
+                ? Image.network(widget.playlistData['image'])
+                : isFilePath(widget.playlistData['image'])
+                ? Image.file(File(widget.playlistData['image']))
+                : null)
             : null;
     return BaseCard(
       image: image,
