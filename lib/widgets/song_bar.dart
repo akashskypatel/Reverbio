@@ -34,6 +34,7 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/screens/edit_metadata_page.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -47,7 +48,6 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/bottom_sheet_bar.dart';
-import 'package:reverbio/widgets/edit_metadata_dialog.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -820,11 +820,11 @@ class _SongBarState extends State<SongBar> {
         await launchURL(uri);
         break;
       case 'tag':
-        await showEditMetadataDialog(context, song);
+        openMetadataForm(context, song);
       case 'move_to_library':
         {
           final count = await moveSongToDeviceLibrary(song);
-          if(count > 0) {
+          if (count > 0) {
             userOfflineSongs.removeWhere((e) => checkEntityId(song['id'], e));
             showToast('${context.l10n!.movedFiles} $count', context: context);
           } else {
@@ -832,6 +832,18 @@ class _SongBarState extends State<SongBar> {
           }
         }
     }
+  }
+
+  void openMetadataForm(BuildContext context, dynamic song) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: RouteSettings(name: 'editMetadata?${song['id']}'),
+        builder: (context) {
+          return EditMetadataPage(context: context, song: song);
+        },
+      ),
+    );
   }
 
   Widget _buildActionButtons(

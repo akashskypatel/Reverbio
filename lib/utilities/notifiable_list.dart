@@ -164,16 +164,14 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
 
     // Start new debounce timer
     _debounceTimer = Timer(_debounceDuration, () {
-      if (_items.isNotEmpty) {
-        if (_minimize != null)
-          HiveService.addOrUpdateData<List<T>>(
-            _boxName,
-            _category,
-            _items.map(_minimize!).toList(),
-          );
-        else
-          HiveService.addOrUpdateData<List<T>>(_boxName, _category, _items);
-      }
+      if (_minimize != null)
+        HiveService.addOrUpdateData<List<T>>(
+          _boxName,
+          _category,
+          _items.map(_minimize!).toList(),
+        );
+      else
+        HiveService.addOrUpdateData<List<T>>(_boxName, _category, _items);
     });
   }
 
@@ -287,6 +285,13 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       _items[index] = item;
     } else {
       _items.add(item);
+    }
+    notifyListeners();
+  }
+
+  void addOrUpdateAll(List<T> items, bool Function(T, T) predicate) {
+    for (final item in items) {
+      addOrUpdate(item, predicate);
     }
     notifyListeners();
   }

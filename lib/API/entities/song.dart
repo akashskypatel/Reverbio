@@ -649,6 +649,18 @@ Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   return song;
 }
 
+String? youtubeUrl(dynamic song) {
+  final ytid = song['ytid'];
+  if (ytid == null || ytid.isEmpty) return null;
+  return 'https://www.youtube.com/watch?v=$ytid';
+}
+
+String? musicbrainzUrl(dynamic song) {
+  final mbid = song['rid'] ?? song['mbid'];
+  if (mbid == null || mbid.isEmpty) return null;
+  return 'https://musicbrainz.org/recording/$mbid';
+}
+
 String songTitle(dynamic song) {
   if (song == null) return '';
   if (!(song is Map)) return '';
@@ -1188,10 +1200,9 @@ Future<void> getExistingOfflineSongs() async {
         final newPath = ensureCorrectExtension(file.path, extension: ext);
         File(file.path).renameSync(newPath);
         if (isAudio(newPath)) {
-          final ids = filename.toIds;
-          if (ids.isNotEmpty)
-            _userOfflineSongs.addOrUpdateWhere(checkEntityId, filename);
-        } else {
+          _userOfflineSongs.addOrUpdateWhere(checkEntityId, 'fn=$filename');
+        }
+        if (filename.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
           final fileTagger = FileTagger();
           final song =
               await queueSongInfoRequest({'id': filename}).completerFuture;
@@ -1199,7 +1210,9 @@ Future<void> getExistingOfflineSongs() async {
         }
       } catch (_) {}
     }
-    userOfflineSongs.removeWhere((e) => !_userOfflineSongs.contains(e));
+    userOfflineSongs
+      ..removeWhere((e) => !_userOfflineSongs.contains(e))
+      ..addOrUpdateAll(_userOfflineSongs, checkEntityId);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -1248,7 +1261,11 @@ Future<String?> getOfflinePath(dynamic song) async {
     if (audioFiles.isNotEmpty) song['offlineAudioPath'] = audioFiles.first.path;
     if (artworkFiles.isNotEmpty)
       song['offlineArtworkPath'] = artworkFiles.first.path;
-    return song['offlineAudioPath'];
+    offlinePath = song['offlineAudioPath'];
+    if (offlinePath != null &&
+        isFilePath(offlinePath) &&
+        doesFileExist(offlinePath))
+      return offlinePath;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }

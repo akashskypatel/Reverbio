@@ -617,6 +617,7 @@ bool isAudio(String path) {
     '.weba',
     '.mka',
     '.opus',
+    '.mpga',
   ];
   return audioExtensions.contains(extension(path));
 }
@@ -1017,6 +1018,8 @@ String getExtensionFromMime(String? mimeType) {
     'image/bmp': 'bmp',
     'image/x-icon': 'ico',
     'audio/mp3': 'mp3',
+    'audio/mpga': 'mp3',
+    'audio/mpeg': 'mp3',
     'audio/weba': 'mka',
     'video/weba': 'webm',
     'audio/webm': 'mka',
@@ -1024,8 +1027,8 @@ String getExtensionFromMime(String? mimeType) {
   };
 
   final extension =
-      extensionFromMime(mimeType) ??
       extensions[mimeType.toLowerCase()] ??
+      extensionFromMime(mimeType) ??
       'bin';
 
   return '.$extension';
@@ -1217,10 +1220,8 @@ Future<File?> getFileFromBytes(
 
 String ensureCorrectExtension(String filePath, {String? extension}) {
   try {
-    if (extension == null) {
-      final mime = getMimeTypeFromFile(filePath);
-      extension = getExtensionFromMime(mime);
-    }
+    final mime = getMimeTypeFromFile(filePath);
+    extension = extension ?? getExtensionFromMime(mime);
     final baseName = basenameWithoutExtension(filePath);
     final folderPath = filePath.replaceAll(basename(filePath), '');
     final withoutExtension = join(folderPath, baseName);

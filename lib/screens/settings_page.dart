@@ -658,7 +658,9 @@ class _SettingsPageState extends State<SettingsPage> {
                             if (newDir != null &&
                                 Directory(newDir).existsSync() &&
                                 !additionalDirectories.contains(newDir)) {
-                              additionalDirectories.add(newDir);
+                              additionalDirectories
+                                ..add(newDir)
+                                ..writeToCache();
                               showToast(
                                 '${context.l10n!.additionalMusicDir}: "$newDir" ${context.l10n!.addedSuccess}',
                                 context: context,
@@ -718,9 +720,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                           onCancel:
                                               () => GoRouter.of(context).pop(),
                                           onSubmit: () {
-                                            additionalDirectories.remove(
-                                              additionalDirectories[index],
-                                            );
+                                            additionalDirectories
+                                              ..remove(
+                                                additionalDirectories[index],
+                                              )
+                                              ..writeToCache();
                                             GoRouter.of(context).pop();
                                           },
                                         ),

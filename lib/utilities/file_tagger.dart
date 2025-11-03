@@ -23,7 +23,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:audiotags/audiotags.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
@@ -36,7 +35,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/logger_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
-import 'package:reverbio/utilities/formatter.dart';
+import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 
@@ -84,7 +83,7 @@ class FileTagger {
               if (message is Exception) {
                 completer.completeError(message);
               } else if (message != null) {
-                final tag = mapToTag(message);
+                final tag = Tag.fromJson(message);
                 completer.complete(tag);
               } else {
                 completer.complete(null);
@@ -136,7 +135,7 @@ class FileTagger {
     try {
       final tags = await AudioTags.read(message.path);
       if (tags != null) {
-        tagMap = tagToMap(tags);
+        tagMap = tags.toJson();
         message.sendPort.send(tagMap);
         return;
       }
@@ -153,7 +152,8 @@ class FileTagger {
         for (final release in (song['releases'] ?? [])) {
           if (album.isEmpty &&
               release['release-group'] != null &&
-              release['country'] == 'XW') {
+              release['country'] == 'XW' &&
+              release['title'].toLowerCase() != song['title'].toLowerCase()) {
             album.addAll(Map<String, dynamic>.from(release['release-group']));
             break;
           }
@@ -161,7 +161,9 @@ class FileTagger {
         if (album.isEmpty &&
             song['releases'] != null &&
             song['releases'].isNotEmpty &&
-            song['releases']?[0]['release-group'] != null)
+            song['releases']?[0]['release-group'] != null &&
+            song['releases']?[0]['release-group']?['title']?.toLowerCase() !=
+                song['title'].toLowerCase())
           album.addAll(
             Map<String, dynamic>.from(song['releases'][0]['release-group']),
           );
@@ -175,8 +177,10 @@ class FileTagger {
           }
         });
         final tag = Tag(
+          youtube: youtubeUrl(song),
+          musicbrainz: musicbrainzUrl(song),
           title: song['title'],
-          trackArtist: combineArtists(song),
+          artist: combineArtists(song),
           album: album['title'],
           albumArtist: combineArtists(album),
           year:
@@ -210,7 +214,7 @@ class FileTagger {
 
   Future<Tag> getTagFromFileOrMetadata(dynamic song) async {
     final metaTag = await getTagFromMetadata(song);
-    final songTag = mapToTag(song['audioTags']);
+    final songTag = Tag.fromJson(song['audioTags']);
     final fileTag =
         songTag.equalsWithoutPictures(metaTag)
             ? metaTag
@@ -220,22 +224,42 @@ class FileTagger {
           ..addAll(fileTag?.pictures ?? [])
           ..addAll(metaTag?.pictures ?? []);
     final tag = Tag(
-      title: fileTag?.title?.nullIfEmpty ?? metaTag?.title,
-      trackArtist: fileTag?.trackArtist?.nullIfEmpty ?? metaTag?.trackArtist,
-      album: fileTag?.album?.nullIfEmpty ?? metaTag?.album,
-      albumArtist: fileTag?.albumArtist?.nullIfEmpty ?? metaTag?.albumArtist,
+      title: fileTag?.title?.nullIfEmpty ?? metaTag?.title?.nullIfEmpty,
+      artist: fileTag?.artist?.nullIfEmpty ?? metaTag?.artist?.nullIfEmpty,
+      album: fileTag?.album?.nullIfEmpty ?? metaTag?.album?.nullIfEmpty,
+      albumArtist:
+          fileTag?.albumArtist?.nullIfEmpty ??
+          metaTag?.albumArtist?.nullIfEmpty,
+      genre: fileTag?.genre?.nullIfEmpty ?? metaTag?.genre?.nullIfEmpty,
       year: fileTag?.year ?? metaTag?.year,
-      genre: fileTag?.genre?.nullIfEmpty ?? metaTag?.genre,
-      trackNumber: fileTag?.trackNumber ?? metaTag?.trackNumber,
+      comment: fileTag?.comment?.nullIfEmpty ?? metaTag?.comment?.nullIfEmpty,
+      track: fileTag?.track ?? metaTag?.track,
       trackTotal: fileTag?.trackTotal ?? metaTag?.trackTotal,
-      discNumber: fileTag?.discNumber ?? metaTag?.discNumber,
+      disc: fileTag?.disc ?? metaTag?.disc,
       discTotal: fileTag?.discTotal ?? metaTag?.discTotal,
-      lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag?.lyrics,
       duration: fileTag?.duration ?? metaTag?.duration,
-      pictures: pictures,
+      lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag?.lyrics?.nullIfEmpty,
       bpm: fileTag?.bpm ?? metaTag?.bpm,
+      composer:
+          fileTag?.composer?.nullIfEmpty ?? metaTag?.composer?.nullIfEmpty,
+      copyright:
+          fileTag?.copyright?.nullIfEmpty ?? metaTag?.copyright?.nullIfEmpty,
+      encoder: fileTag?.encoder?.nullIfEmpty ?? metaTag?.encoder?.nullIfEmpty,
+      encodedBy:
+          fileTag?.encodedBy?.nullIfEmpty ?? metaTag?.encodedBy?.nullIfEmpty,
+      description:
+          fileTag?.description?.nullIfEmpty ??
+          metaTag?.description?.nullIfEmpty,
+      synopsis:
+          fileTag?.synopsis?.nullIfEmpty ?? metaTag?.synopsis?.nullIfEmpty,
+      grouping:
+          fileTag?.grouping?.nullIfEmpty ?? metaTag?.grouping?.nullIfEmpty,
+      customTags: fileTag?.customTags ?? metaTag?.customTags,
+      youtube: fileTag?.youtube?.nullIfEmpty ?? youtubeUrl(song),
+      musicbrainz: fileTag?.musicbrainz?.nullIfEmpty ?? musicbrainzUrl(song),
+      pictures: pictures,
     );
-    song['audioTags'] = tagToMap(tag);
+    song['audioTags'] = tag.toJson();
     addSongToCache(song);
     return tag;
   }
@@ -284,7 +308,7 @@ class FileTagger {
       if (message is Exception) {
         completer.completeError(message);
       } else if (message is List<Tag> && message.isNotEmpty) {
-        song['audioTags'] = tagToMap(message.first);
+        song['audioTags'] = message.first.toJson();
         addSongToCache(song);
         completer.complete(true);
       } else {
@@ -332,7 +356,7 @@ class FileTagger {
         rename: rename,
       );
       if (tags.isNotEmpty) {
-        song['audioTags'] = tagToMap(tags.first);
+        song['audioTags'] = tags.first.toJson();
         addSongToCache(song);
       }
       return tags.isNotEmpty;
@@ -431,7 +455,7 @@ class FileTagger {
     try {
       if (tag == null) {
         final metaTag = await getTagFromMetadata(song);
-        final songTag = song is String ? null : mapToTag(song['audioTags']);
+        final songTag = song is String ? null : Tag.fromJson(song['audioTags']);
         final fileTag =
             songTag != null && songTag.equalsWithoutPictures(metaTag)
                 ? metaTag
@@ -444,39 +468,50 @@ class FileTagger {
           return fileTag;
         } else {
           newTag = Tag(
-            title: fileTag?.title?.nullIfEmpty ?? metaTag.title,
-            trackArtist:
-                fileTag?.trackArtist?.nullIfEmpty ?? metaTag.trackArtist,
-            album: fileTag?.album?.nullIfEmpty ?? metaTag.album,
+            title: fileTag?.title?.nullIfEmpty ?? metaTag.title?.nullIfEmpty,
+            artist: fileTag?.artist?.nullIfEmpty ?? metaTag.artist?.nullIfEmpty,
+            album: fileTag?.album?.nullIfEmpty ?? metaTag.album?.nullIfEmpty,
             albumArtist:
-                fileTag?.albumArtist?.nullIfEmpty ?? metaTag.albumArtist,
+                fileTag?.albumArtist?.nullIfEmpty ??
+                metaTag.albumArtist?.nullIfEmpty,
+            genre: fileTag?.genre?.nullIfEmpty ?? metaTag.genre?.nullIfEmpty,
             year: fileTag?.year ?? metaTag.year,
-            genre: fileTag?.genre?.nullIfEmpty ?? metaTag.genre,
-            trackNumber: fileTag?.trackNumber ?? metaTag.trackNumber,
+            comment:
+                fileTag?.comment?.nullIfEmpty ?? metaTag.comment?.nullIfEmpty,
+            track: fileTag?.track ?? metaTag.track,
             trackTotal: fileTag?.trackTotal ?? metaTag.trackTotal,
-            discNumber: fileTag?.discNumber ?? metaTag.discNumber,
+            disc: fileTag?.disc ?? metaTag.disc,
             discTotal: fileTag?.discTotal ?? metaTag.discTotal,
-            lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag.lyrics,
             duration: fileTag?.duration ?? metaTag.duration,
-            pictures: pictures,
+            lyrics: fileTag?.lyrics?.nullIfEmpty ?? metaTag.lyrics?.nullIfEmpty,
             bpm: fileTag?.bpm ?? metaTag.bpm,
+            composer:
+                fileTag?.composer?.nullIfEmpty ?? metaTag.composer?.nullIfEmpty,
+            copyright:
+                fileTag?.copyright?.nullIfEmpty ??
+                metaTag.copyright?.nullIfEmpty,
+            encoder:
+                fileTag?.encoder?.nullIfEmpty ?? metaTag.encoder?.nullIfEmpty,
+            encodedBy:
+                fileTag?.encodedBy?.nullIfEmpty ??
+                metaTag.encodedBy?.nullIfEmpty,
+            description:
+                fileTag?.description?.nullIfEmpty ??
+                metaTag.description?.nullIfEmpty,
+            synopsis:
+                fileTag?.synopsis?.nullIfEmpty ?? metaTag.synopsis?.nullIfEmpty,
+            grouping:
+                fileTag?.grouping?.nullIfEmpty ?? metaTag.grouping?.nullIfEmpty,
+            customTags: fileTag?.customTags ?? metaTag.customTags,
+            youtube: fileTag?.youtube?.nullIfEmpty ?? youtubeUrl(song),
+            musicbrainz:
+                fileTag?.musicbrainz?.nullIfEmpty ?? musicbrainzUrl(song),
+            pictures: pictures,
           );
         }
       }
       if (File(file.path).existsSync()) {
-        if (Platform.isAndroid) {
-          final copy = File(
-            file.path,
-          ).copySync(path.join(tempDir, path.basename(file.path)));
-          await AudioTags.write(copy.path, newTag!);
-          final success = await mediaUtils.copyMediaFileToPathOrUri(
-            file.path,
-            copy.path,
-          );
-          copy.deleteSync();
-          if (success == null) return null;
-        } else
-          await AudioTags.write(file.path, newTag!);
+        await AudioTags.write(file.path, newTag!);
       }
       return newTag;
     } catch (e, stackTrace) {

@@ -23,11 +23,11 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:audiotags/audiotags.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 
 extension DoubleExtensions on double {
@@ -753,14 +753,14 @@ extension AudioTagEqualsExtension on Tag {
   bool equalsWithoutPictures(Tag? other) {
     if (other == null) return false;
     return title == other.title &&
-        trackArtist == other.trackArtist &&
+        artist == other.artist &&
         album == other.album &&
         albumArtist == other.albumArtist &&
         year == other.year &&
         genre == other.genre &&
-        trackNumber == other.trackNumber &&
+        track == other.track &&
         trackTotal == other.trackTotal &&
-        discNumber == other.discNumber &&
+        disc == other.disc &&
         discTotal == other.discTotal &&
         lyrics == other.lyrics &&
         duration == other.duration &&

@@ -55,9 +55,14 @@ android {
             }
         }
     }
+    
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            pickFirsts.add("lib/arm64-v8a/libc++_shared.so")
+            pickFirsts.add("lib/armeabi-v7a/libc++_shared.so")
+            pickFirsts.add("lib/x86/libc++_shared.so")
+            pickFirsts.add("lib/x86_64/libc++_shared.so")
         }
     }
 

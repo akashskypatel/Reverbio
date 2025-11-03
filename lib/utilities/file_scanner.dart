@@ -23,14 +23,13 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:audiotags/audiotags.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
+import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 
@@ -92,7 +91,7 @@ class FileScanner {
         try {
           final tag = await AudioTags.read(file.path);
           final title = tag?.title ?? basenameWithoutExtension(file.path);
-          final artist = tag?.trackArtist ?? tag?.albumArtist;
+          final artist = tag?.artist ?? tag?.albumArtist;
           if (artist != null && title.isNotEmpty) {
             final song = <String, dynamic>{
               'title': title,
@@ -102,7 +101,7 @@ class FileScanner {
                       ? await MediaUtils.instance.pathToUri(file.path)
                       : file.path,
             };
-            if (tag != null) song['audioTags'] = tagToMap(tag);
+            if (tag != null) song['audioTags'] = tag.toJson();
             userDeviceSongs.addOrUpdateWhere(checkSong, song);
           }
         } catch (_) {}
@@ -133,7 +132,7 @@ class FileScanner {
           String title, artist;
           final fileName = basenameWithoutExtension(file.path).nullIfEmpty;
           title = tag?.title ?? fileName ?? L10n.current.unknown;
-          artist = tag?.trackArtist ?? tag?.albumArtist ?? L10n.current.unknown;
+          artist = tag?.artist ?? tag?.albumArtist ?? L10n.current.unknown;
           if (fileName != null &&
               fileName.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
             final _song = await queueSongInfoRequest(fileName).completerFuture;
@@ -149,6 +148,7 @@ class FileScanner {
           } else if (artist.isUnknown && !title.isUnknown) {
             song = {
               ...tryParseTitleAndArtist(song),
+              'id': 'fn=$fileName',
               'fileName': fileName,
               'devicePath':
                   Platform.isAndroid
@@ -167,7 +167,7 @@ class FileScanner {
                       : file.path,
             };
           }
-          if (tag != null) song['audioTags'] = tagToMap(tag);
+          if (tag != null) song['audioTags'] = tag.toJson();
           _userDeviceSongs.addOrUpdateWhere(checkSong, song);
         } catch (_) {}
       }

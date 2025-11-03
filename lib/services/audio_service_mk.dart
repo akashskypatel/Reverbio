@@ -977,11 +977,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   Future<Media> buildAudioSource(SongBar songBar) async {
     final extras = songToMediaExtras(songBar.song);
-
-    if (songBar.song['offlineAudioPath'] != null &&
-        isFilePath(songBar.song['offlineAudioPath']) &&
-        doesFileExist(songBar.song['offlineAudioPath'])) {
-      final uri = Uri.file(songBar.song['offlineAudioPath']);
+    final offlinePath = await getOfflinePath(songBar.song);
+    if (offlinePath != null &&
+        isFilePath(offlinePath) &&
+        doesFileExist(offlinePath)) {
+      final uri = Uri.file(offlinePath);
       final media = Media(uri.toString(), extras: extras);
       return media;
     }
