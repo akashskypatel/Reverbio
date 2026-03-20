@@ -128,7 +128,6 @@ class IntentUriProcessor(
             targetFile.delete()
         }
     }
-    }
 
     private fun copyUriContentToFile(dataUri: Uri, targetFile: File) {
         context.contentResolver.openInputStream(dataUri)?.use { inputStream ->
