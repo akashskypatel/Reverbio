@@ -12,6 +12,7 @@ environment:
   flutter: ^3.35.3
 
 dependencies:
+  android_media_store: ^0.0.3
   app_links: ^6.4.1
   audio_service: ^0.18.18
   audio_session: ^0.2.2

@@ -1482,7 +1482,7 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
   final titleA = songTitle(songA).isUnknown ? '' : songTitle(songA);
   String artistB =
       songB['artist'] = songB['artist'] ?? combineArtists(songB) ?? '';
-  artistB = artistB.isUnknown ? '' : artistA;
+  artistB = artistB.isUnknown ? '' : artistB;
   final titleB = songTitle(songB).isUnknown ? '' : songTitle(songB);
   if (titleA.isNotEmpty &&
       titleB.isNotEmpty &&

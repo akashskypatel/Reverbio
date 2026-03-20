@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:android_media_store/android_media_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -30,7 +31,6 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class FileScanner {
@@ -98,7 +98,7 @@ class FileScanner {
               'artist': artist,
               'devicePath':
                   Platform.isAndroid
-                      ? await MediaUtils.instance.pathToUri(file.path)
+                      ? await AndroidMediaStore.instance.pathToUri(file.path)
                       : file.path,
             };
             if (tag != null) song['audioTags'] = tag.toJson();
@@ -142,7 +142,7 @@ class FileScanner {
                 'fileName': fileName,
                 'devicePath':
                     Platform.isAndroid
-                        ? await MediaUtils.instance.pathToUri(file.path)
+                        ? await AndroidMediaStore.instance.pathToUri(file.path)
                         : file.path,
               };
           } else if (artist.isUnknown && !title.isUnknown) {
@@ -152,7 +152,7 @@ class FileScanner {
               'fileName': fileName,
               'devicePath':
                   Platform.isAndroid
-                      ? await MediaUtils.instance.pathToUri(file.path)
+                      ? await AndroidMediaStore.instance.pathToUri(file.path)
                       : file.path,
             };
           } else {
@@ -163,7 +163,7 @@ class FileScanner {
               'fileName': fileName,
               'devicePath':
                   Platform.isAndroid
-                      ? await MediaUtils.instance.pathToUri(file.path)
+                      ? await AndroidMediaStore.instance.pathToUri(file.path)
                       : file.path,
             };
           }

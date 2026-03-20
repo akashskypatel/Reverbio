@@ -17,8 +17,6 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : AudioServiceActivity() {
     companion object {
         private val AUDIO_CHANNEL = "com.akashskypatel.reverbio/audio"
-        private val MEDIA_PERMISSIONS_CHANNEL = "com.akashskypatel.reverbio/media_permissions"
-        private val MEDIA_UTILS_CHANNEL = "com.akashskypatel.reverbio/media_utils"
         private val INTENT_CHANNEL = "com.akashskypatel.reverbio/intent"
         private val TAG = "ReverbioMainActivity"
         private val NOTIFY_INTENT_METHOD_NAME = "onNewIntentUri"
@@ -26,9 +24,6 @@ class MainActivity : AudioServiceActivity() {
 
     private var intentMethodChannel: MethodChannel? = null
     private lateinit var intentUriProcessor: IntentUriProcessor
-    private lateinit var mediaUtils: MediaUtils
-    private var mediaUtilsMethodChannel: MethodChannel? = null
-    private lateinit var permissionUtils: PermissionUtils
     private lateinit var audioDeviceUtils: AudioDeviceUtils
 
     @RequiresApi(VERSION_CODES.M)
@@ -99,232 +94,12 @@ class MainActivity : AudioServiceActivity() {
                 result.error("AUDIO_ERROR", e.localizedMessage, null)
             }
         }
-        // ─────────────────────────────
-        // MEDIA PERMISSIONS CHANNEL
-        // ─────────────────────────────
-        permissionUtils = PermissionUtils(this)
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            MEDIA_PERMISSIONS_CHANNEL
-        ).setMethodCallHandler { call, result ->
-            try {
-                when (call.method) {
-                    "canManageMedia" -> {
-                        result.success(permissionUtils.canManageMedia())
-                    }
-
-                    "requestManageMedia" -> {
-                        permissionUtils.requestManageMedia(result)
-                    }
-
-                    else -> result.notImplemented()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "MEDIA_PERMISSIONS_CHANNEL: ${call.method} failed", e)
-                result.error("MEDIA_PERMISSIONS_ERROR", e.localizedMessage, null)
-            }
-        }
-
-        // ─────────────────────────────
-        // MEDIA UTILITIES CHANNEL
-        // ─────────────────────────────
-        mediaUtilsMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEDIA_UTILS_CHANNEL)
-        mediaUtils = MediaUtils(this)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEDIA_UTILS_CHANNEL)
-            .setMethodCallHandler { call, result ->
-                try {
-                    when (call.method) {
-                        "isInitialized" -> {
-                            result.success(mediaUtils.isInitialized())
-                        }
-
-                        "pathToUri" -> {
-                            val path = call.argument<String>("path")!!
-                            val mime = call.argument<String?>("mimeType")
-                            val uri = mediaUtils.pathToUri(this, path, mime)?.toString()
-                            result.success(uri)
-                        }
-
-                        "uriToPath" -> {
-                            val uri = call.argument<String>("uri")!!
-                            val path = mediaUtils.uriToPath(this, Uri.parse(uri))
-                            result.success(path)
-                        }
-
-                        "editMediaFile" -> {
-                            val pathOrUri = call.argument<String>("pathOrUri")!!
-                            val data = call.argument<ByteArray>("data")!!
-                            val success = mediaUtils.editMediaFile(this, pathOrUri, data)
-                            result.success(success)
-                        }
-
-                        "readMediaFile" -> {
-                            val pathOrUri = call.argument<String>("pathOrUri")!!
-                            val data = mediaUtils.readMediaFile(this, pathOrUri)
-                            result.success(data)
-                        }
-
-                        "deleteMediaFile" -> {
-                            val pathOrUri = call.argument<String>("pathOrUri")!!
-                            val success = mediaUtils.deleteMediaFile(this, pathOrUri)
-                            result.success(success)
-                        }
-
-                        "createMediaFileAtRelative" -> {
-                            val displayName = call.argument<String>("displayName")!!
-                            val relativePath = call.argument<String?>("relativePath")
-                            val data = call.argument<ByteArray>("data")!!
-                            val mime = call.argument<String?>("mimeType")
-                            val uri = mediaUtils.createMediaFileAtRelative(
-                                this,
-                                displayName,
-                                relativePath,
-                                data,
-                                mime
-                            )?.toString()
-                            result.success(uri)
-                        }
-
-                        "createMediaFile" -> {
-                            val displayName = call.argument<String>("displayName")!!
-                            val data = call.argument<ByteArray>("data")!!
-                            val mime = call.argument<String?>("mimeType")
-                            val uri = mediaUtils.createMediaFile(this, displayName, data, mime)
-                                ?.toString()
-                            result.success(uri)
-                        }
-
-                        "copyMediaFileToRelative" -> {
-                            val pathOrUri = call.argument<String>("pathOrUri")!!
-                            val displayName = call.argument<String>("displayName")!!
-                            val relativePath = call.argument<String>("relativePath")
-                            val mime = call.argument<String?>("mimeType")
-                            val uri = mediaUtils.copyMediaFileToRelative(
-                                this,
-                                displayName,
-                                pathOrUri,
-                                relativePath,
-                                mime
-                            )?.toString()
-                            result.success(uri)
-                        }
-
-                        "copyMediaFileToPathOrUri" -> {
-                            val toPathOrUri = call.argument<String>("toPathOrUri")!!
-                            val fromPathOrUri = call.argument<String>("fromPathOrUri")!!
-                            val mime = call.argument<String?>("mimeType")
-                            val uri = mediaUtils.copyMediaFileToPathOrUri(
-                                this,
-                                toPathOrUri,
-                                fromPathOrUri,
-                                mime
-                            )?.toString()
-                            result.success(uri)
-                        }
-
-                        else -> result.notImplemented()
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "MEDIA_UTILS_CHANNEL: ${call.method} failed", e)
-                    result.error("MEDIA_UTILS_ERROR", e.localizedMessage, null)
-                }
-            }
         Log.d(TAG, "All native channels registered successfully.")
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            mediaUtils.DELETE_REQUEST_CODE -> {
-                runCatching {
-                    when (resultCode) {
-                        RESULT_OK -> {
-                            mediaUtils.executePendingDeleteOperations()
-                            mediaUtilsMethodChannel?.invokeMethod(
-                                mediaUtils.DELETE_REQUEST_NOTIFY,
-                                true
-                            )
-                            Log.d(TAG, "Delete operation succeeded, notifying flutter with: true")
-                        }
-
-                        RESULT_CANCELED -> {
-                            mediaUtilsMethodChannel?.invokeMethod(
-                                mediaUtils.DELETE_REQUEST_NOTIFY,
-                                false
-                            )
-                            Log.d(
-                                TAG,
-                                "Delete operation canceled request code: $requestCode for ${data.toString()}"
-                            )
-                        }
-
-                        else -> {
-                            Log.e(
-                                TAG,
-                                "Delete operation failed request code: $requestCode - $resultCode for ${data.toString()}"
-                            )
-                            mediaUtilsMethodChannel?.invokeMethod(
-                                mediaUtils.DELETE_REQUEST_NOTIFY,
-                                false
-                            )
-                        }
-                    }
-                }.getOrElse { e ->
-                    Log.e(TAG, "Error executing delete operation: ${e.message}", e)
-                    mediaUtilsMethodChannel?.invokeMethod(
-                        mediaUtils.DELETE_REQUEST_NOTIFY,
-                        false
-                    )
-                }
-            }
-
-            mediaUtils.WRITE_REQUEST_CODE -> {
-                runCatching {
-                    when (resultCode) {
-                        RESULT_OK -> {
-                            val uris = mediaUtils.executePendingWriteOperations()
-                            mediaUtilsMethodChannel?.invokeMethod(
-                                mediaUtils.WRITE_REQUEST_NOTIFY,
-                                uris?.map { it.toString() }
-                            )
-                            Log.d(
-                                TAG,
-                                "Write operation succeeded, notifying flutter with: ${uris.toString()}"
-                            )
-                        }
-
-                        RESULT_CANCELED -> {
-                            mediaUtilsMethodChannel?.invokeMethod(
-                                mediaUtils.WRITE_REQUEST_NOTIFY,
-                                null
-                            )
-                            Log.d(
-                                TAG,
-                                "Write operation canceled request code: $requestCode for ${data.toString()}"
-                            )
-                        }
-
-                        else -> {
-                            Log.e(
-                                TAG,
-                                "Write operation failed request code: $requestCode - $resultCode for ${data.toString()}"
-                            )
-                            mediaUtilsMethodChannel?.invokeMethod(
-                                mediaUtils.WRITE_REQUEST_NOTIFY,
-                                null
-                            )
-                        }
-                    }
-                }.getOrElse { e ->
-                    Log.e(TAG, "Error executing write operation: ${e.message}", e)
-                    mediaUtilsMethodChannel?.invokeMethod(
-                        mediaUtils.WRITE_REQUEST_NOTIFY,
-                        null
-                    )
-                }
-            }
-        }
     }
 
     @RequiresApi(VERSION_CODES.M)

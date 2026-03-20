@@ -581,7 +581,7 @@ Future<dynamic> getPlaylistInfoForWidget(
   if (playlist.isEmpty) return playlistData;
   if (playlistData['isAlbum'] != null && playlistData['isAlbum'])
     playlist['album'] = playlist['title'];
-  if ((playlist['list'].isEmpty || playlist['list'] == null) &&
+  if ((playlist['list'] == null || playlist['list'].isEmpty) &&
       ytid.isNotEmpty) {
     playlist['list'] = await getSongsFromPlaylist(playlist['id']);
     playlistData.addAll(Map<String, dynamic>.from(playlist));

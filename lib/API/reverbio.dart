@@ -657,7 +657,7 @@ Future<File> copyFileToDir(
 
     final ext = extension(path);
     String fileName = basenameWithoutExtension(path);
-    File targetFile = File(join(dir, fileName, ext));
+    File targetFile = File(join(dir, '$fileName$ext'));
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       if (!await targetFile.exists()) {
@@ -665,7 +665,7 @@ Future<File> copyFileToDir(
       }
       // Increment filename and update target path
       fileName = incrementFileName(fileName);
-      targetFile = File(join(dir, fileName, ext));
+      targetFile = File(join(dir, '$fileName$ext'));
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

@@ -22,6 +22,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:android_media_store/android_media_store.dart';
 import 'package:app_links/app_links.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:background_downloader/background_downloader.dart' as downloader;
@@ -46,7 +47,6 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/update_manager.dart';
 import 'package:reverbio/style/app_themes.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:window_manager/window_manager.dart';
@@ -266,7 +266,7 @@ void main() async {
 Future<void> initialization() async {
   try {
     await HiveService.ensureInitialize();
-    if (Platform.isAndroid) await MediaUtils.ensureInitialized();
+    if (Platform.isAndroid) await AndroidMediaStore.ensureInitialized();
     L10n.initialize();
 
     audioHandler = await AudioService.init(

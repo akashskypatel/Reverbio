@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:android_media_store/android_media_store.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
@@ -36,7 +37,6 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/logger_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/audio_tags.dart';
-import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 class FileTagger {
@@ -298,7 +298,7 @@ class FileTagger {
                 )
                 : [filePath],
         tagger: this, // Pass reference for static method access
-        mediaUtils: MediaUtils.instance,
+        mediaUtils: AndroidMediaStore.instance,
         token: RootIsolateToken.instance!,
         rename: rename,
       ),
@@ -352,7 +352,7 @@ class FileTagger {
         tag,
         tempDir,
         logger,
-        MediaUtils.instance,
+        AndroidMediaStore.instance,
         rename: rename,
       );
       if (tags.isNotEmpty) {
@@ -412,7 +412,7 @@ class FileTagger {
     Tag? tag,
     String tempDir,
     Logger _logger,
-    MediaUtils mediaUtils, {
+    AndroidMediaStore mediaUtils, {
     bool rename = true,
   }) async {
     final tags = <Tag>[];
@@ -447,7 +447,7 @@ class FileTagger {
     dynamic song,
     String tempDir,
     Logger _logger,
-    MediaUtils mediaUtils, {
+    AndroidMediaStore mediaUtils, {
     Tag? tag,
   }) async {
     if (!(await checkAllPermissions())) return null;
@@ -654,7 +654,7 @@ class _IsolateTagWriterMessage {
   final FileTagger tagger;
   final List<String> audioFiles;
   final Logger logger;
-  final MediaUtils mediaUtils;
+  final AndroidMediaStore mediaUtils;
   final RootIsolateToken token;
   final bool rename;
 }

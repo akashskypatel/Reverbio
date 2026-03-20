@@ -37,6 +37,7 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/screens/edit_metadata_page.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
@@ -221,6 +222,7 @@ class _SongBarState extends State<SongBar> {
     isSongAlreadyOffline(widget.song),
   );
   final ValueNotifier<bool> isLikedAnimationPlaying = ValueNotifier(false);
+  Future<Tag?>? _songTagFuture;
 
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
@@ -230,6 +232,7 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
+    _songTagFuture = _fetchSongTag();
     widget.songFuture.addListener(_listener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -250,6 +253,16 @@ class _SongBarState extends State<SongBar> {
   void dispose() {
     widget.songFuture.removeListener(_listener);
     super.dispose();
+  }
+
+  Future<Tag?> _fetchSongTag() {
+    return FileTagger().getTagFromFileOrMetadata(widget.song);
+  }
+
+  void invalidateSongTag() {
+    setState(() {
+      _songTagFuture = _fetchSongTag();
+    });
   }
 
   void _listener() {
@@ -460,9 +473,8 @@ class _SongBarState extends State<SongBar> {
 
   Widget _buildArtwork(dynamic song) {
     const size = 45.0;
-    final fileTagger = FileTagger();
-    return FutureBuilder(
-      future: fileTagger.getTagFromFileOrMetadata(song),
+    return FutureBuilder<Tag?>(
+      future: _songTagFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting ||
             !snapshot.hasData ||

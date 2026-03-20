@@ -22,6 +22,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:android_media_store/android_media_store.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
@@ -30,7 +31,6 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 /// The MIME type of the picture.
@@ -564,7 +564,7 @@ class AudioTags {
 
       if (ReturnCode.isSuccess(returnCode)) {
         if (Platform.isAndroid && await checkAllPermissions())
-          await MediaUtils.instance.copyMediaFileToPathOrUri(
+          await AndroidMediaStore.instance.copyMediaFileToPathOrUri(
             filePath,
             tempFilePath,
           );
@@ -625,7 +625,7 @@ class AudioTags {
 
       if (ReturnCode.isSuccess(returnCode)) {
         if (Platform.isAndroid && await checkAllPermissions())
-          await MediaUtils.instance.copyMediaFileToPathOrUri(
+          await AndroidMediaStore.instance.copyMediaFileToPathOrUri(
             filePath,
             tempFilePath,
           );
