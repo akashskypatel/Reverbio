@@ -153,7 +153,7 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
           e['album'] = cached['title'];
           e['albumArtist'] = albumArtist;
           return e;
-        });
+        }).toList();
       }
       if (album is Map && cached is Map) {
         for (final key in album.keys) {
