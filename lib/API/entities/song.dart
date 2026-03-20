@@ -1145,8 +1145,10 @@ Future<void> getUserDeviceSongs() async {
       final _userDeviceSongs = await fileScanner.getUserDeviceSongs(
         additionalDirectories,
       );
-      for (dynamic _song in _userDeviceSongs) {
-        _song = await queueSongInfoRequest(_song).completerFuture;
+      for (int i = 0; i < _userDeviceSongs.length; i++) {
+        final result = await queueSongInfoRequest(_userDeviceSongs[i]).completerFuture;
+        if (result != null) _userDeviceSongs[i] = result;
+      }
       }
       userDeviceSongs
         ..removeWhere(
