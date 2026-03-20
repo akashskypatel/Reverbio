@@ -123,10 +123,11 @@ class IntentUriProcessor(
     }
 
     private fun prepareTargetDirectory(targetFile: File) {
-        targetFile.parentFile?.run {
-            deleteRecursively()
-            mkdirs()
+        targetFile.parentFile?.mkdirs()
+        if (targetFile.exists()) {
+            targetFile.delete()
         }
+    }
     }
 
     private fun copyUriContentToFile(dataUri: Uri, targetFile: File) {
