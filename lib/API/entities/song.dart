@@ -1149,7 +1149,6 @@ Future<void> getUserDeviceSongs() async {
         final result = await queueSongInfoRequest(_userDeviceSongs[i]).completerFuture;
         if (result != null) _userDeviceSongs[i] = result;
       }
-      }
       userDeviceSongs
         ..removeWhere(
           (e) =>
