@@ -527,7 +527,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Future<Iterable<SongBar>> _getUserRecentSongs() async {
     return Future.microtask(() async {
       if (!context.mounted) return <SongBar>[];
-      return userLikedSongsList.map((e) => initializeSongBar(e, context));
+      return userRecentlyPlayed.map((e) => initializeSongBar(e, context));
     });
   }
 

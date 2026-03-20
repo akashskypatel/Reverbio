@@ -37,7 +37,7 @@ class LyricsManager {
       final artistList =
           (song['artist-credit'] ?? []).isNotEmpty
               ? song['artist-credit'].map((e) => e['name'])
-              : splitArtists(songArtist(song['artist']));
+              : splitArtists(songArtist(song));
       final title = songTitle(song);
       if (artistList.isNotEmpty) {
         final futures = <Future<String?>>[];

@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:android_media_store/android_media_store.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
@@ -46,7 +47,6 @@ import 'package:reverbio/utilities/file_scanner.dart';
 import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
-import 'package:reverbio/utilities/media_utils.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/song_bar.dart';
@@ -926,10 +926,12 @@ Future<int> moveAllSongToDeviceLibrary() async {
     if (Platform.isWindows && (destination == null || destination.isEmpty))
       throw PathException('Invalid destination directory selected');
     await getUserOfflineSongs();
-    final moved = [];
-    for (final song in userOfflineSongs) {
+    final snapshot = userOfflineSongs.toList();
+    final moved = <String>[];
+    for (final song in snapshot) {
       try {
         final _song = await queueSongInfoRequest(song).completerFuture;
+        if (_song == null || _song.isEmpty) continue;
         count += await moveSongToDeviceLibrary(_song, destination: destination);
         moved.add(song);
       } catch (_) {}
@@ -963,7 +965,7 @@ Future<int> moveSongToDeviceLibrary(dynamic song, {String? destination}) async {
               file.path.replaceAll(basename(file.path), newName),
             );
             copyPath =
-                dest = await MediaUtils.instance.copyMediaFileToRelative(
+                dest = await AndroidMediaStore.instance.copyMediaFileToRelative(
                   copy.path,
                   newName,
                 );
@@ -1168,18 +1170,18 @@ Future<void> getUserDeviceSongs() async {
 
 Future<void> _getUserDeviceSongMetadata() async {
   final fileTagger = FileTagger();
-  for (dynamic song in userDeviceSongs) {
+  for (int i = 0; i < userDeviceSongs.length; i++) {
+    final song = Map<String, dynamic>.from(userDeviceSongs[i]);
     if (!(songTitle(song).isUnknown && songArtist(song).isUnknown)) {
-      await queueSongInfoRequest(song).completerFuture?.then((value) {
-        song = Map<String, dynamic>.from(song);
-        if (value != null) song.addAll(value);
-        fileTagger.tagOfflineFile(
-          song,
-          id: song['id'],
-          filePath: song['devicePath'],
-          rename: false,
-        );
-      });
+      final value = await queueSongInfoRequest(song).completerFuture;
+      if (value != null) song.addAll(value);
+      userDeviceSongs[i] = song;
+      await fileTagger.tagOfflineFile(
+        song,
+        id: song['id'],
+        filePath: song['devicePath'],
+        rename: false,
+      );
     }
   }
   userDeviceSongs.writeToCache();
@@ -1243,7 +1245,7 @@ Future<String?> getOfflinePath(dynamic song) async {
         (song['devicePath'] ?? song['offlineAudioPath']) as String?;
     if (offlinePath != null) {
       if (offlinePath.startsWith('content') && Platform.isAndroid)
-        offlinePath = await MediaUtils.instance.uriToPath(offlinePath);
+        offlinePath = await AndroidMediaStore.instance.uriToPath(offlinePath);
       if (offlinePath != null &&
           isFilePath(offlinePath) &&
           doesFileExist(offlinePath))

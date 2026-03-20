@@ -99,9 +99,9 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
           await HiveService.getData<List<T>>(
             _boxName,
             _category,
-            defaultValue: _items,
+            defaultValue: <T>[],
           ) ??
-          _items;
+          <T>[];
       if (test != null)
         for (final item in value) {
           final index = _items.indexWhere((e) => test(e, item));

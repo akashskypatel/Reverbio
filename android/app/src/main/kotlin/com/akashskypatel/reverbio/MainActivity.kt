@@ -113,7 +113,7 @@ class MainActivity : AudioServiceActivity() {
             // a flicker before the similar frame is drawn in Flutter.
             splashScreen.setOnExitAnimationListener { splashScreenView -> splashScreenView.remove() }
         }
-        if (audioDeviceUtils.isAndroidAutoConnected()) {
+        if (::audioDeviceUtils.isInitialized && audioDeviceUtils.isAndroidAutoConnected()) {
             // Initialize Android Auto-specific components
         }
         //handleInitialIntent()
