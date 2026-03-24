@@ -72,6 +72,7 @@ class HiveService {
           // Schedule deletion but don't wait for it
           unawaited(deleteData(boxName, category));
           unawaited(deleteData(boxName, '${category}_date'));
+          return null;
         }
       }
       return returnValue;

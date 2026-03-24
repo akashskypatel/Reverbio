@@ -43,8 +43,10 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     if (initialItems != null) {
       _items.addAll(initialItems);
     }
-    if (_boxName == null || _category == null)
+    if (_boxName == null || _category == null) {
+      _isInitialized = true;
       _initializationCompleter.complete(_items);
+    }
     _initializeFromHive(test);
   }
   NotifiableList._internalAsync(Future<Iterable<T>> itemsFuture)

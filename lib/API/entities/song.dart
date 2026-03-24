@@ -840,6 +840,7 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         songUrl = song['songUrl'] = '';
         song['error'] = context.l10n!.urlError;
         song['isError'] = true;
+        return '';
       }
     }
   } catch (e, stackTrace) {
@@ -1146,7 +1147,8 @@ Future<void> getUserDeviceSongs() async {
         additionalDirectories,
       );
       for (int i = 0; i < _userDeviceSongs.length; i++) {
-        final result = await queueSongInfoRequest(_userDeviceSongs[i]).completerFuture;
+        final result =
+            await queueSongInfoRequest(_userDeviceSongs[i]).completerFuture;
         if (result != null) _userDeviceSongs[i] = result;
       }
       userDeviceSongs

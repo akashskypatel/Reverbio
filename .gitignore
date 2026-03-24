@@ -57,3 +57,4 @@ l10nupdate.json
 /android/build/reports/problems/problems-report.html
 /android/app/build
 /android/build/reports/problems
+.reviews/*

@@ -256,6 +256,10 @@ class _SongBarState extends State<SongBar> {
   }
 
   Future<Tag?> _fetchSongTag() {
+    if (!isSongAlreadyOffline(widget.song) &&
+        widget.song['audioTags'] == null) {
+      return Future.value();
+    }
     return FileTagger().getTagFromFileOrMetadata(widget.song);
   }
 
