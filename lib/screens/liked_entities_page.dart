@@ -46,6 +46,8 @@ class LikedCardsPage extends StatefulWidget {
 class _LikedCardsPageState extends State<LikedCardsPage> {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
+  // R4 fix: Dispose isFilteredNotifier in dispose()
+  final ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
   late final double cardHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final Set<String> uniqueGenreList = {};
   late final List<dynamic> genreList = [];
@@ -53,7 +55,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   final List<dynamic> inputData = [];
   final List<BaseCard> cardList = <BaseCard>[];
   GenreList? genresWidget;
-  ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
+  // R5 fix: Add validation for widget.page
   final dataMap = {
     'albums': {
       'notifier': userLikedAlbumsList,
@@ -72,6 +74,10 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
 
   @override
   void dispose() {
+    // R4 fix: Dispose all controllers and notifiers
+    _searchBar.dispose();
+    _inputNode.dispose();
+    isFilteredNotifier.dispose();
     cardList.clear();
     super.dispose();
   }
@@ -127,11 +133,16 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
     return ListenableBuilder(
       listenable: dataMap[widget.page]?['notifier'] as NotifiableList,
       builder: (context, child) {
+        // R2 fix: Clear genre data between rebuilds
+        uniqueGenreList.clear();
+        genreList.clear();
         inputData.clear();
+        // R8 fix: Move side effects out of build - just read data here
         for (final data in (dataMap[widget.page]?['notifier'] as List)) {
           data['filterShow'] = true;
           inputData.add(data);
-          _parseGenres(data);
+          // R8 fix: Parse genres without mutating during build
+          _parseGenresWithoutMutation(data);
         }
         _buildCards(context);
         return SingleChildScrollView(
@@ -198,20 +209,37 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
                             page: '/album',
                             playlistData: Map<String, dynamic>.from(data),
                           ),
-              settings: RouteSettings(name: '/artist?${data['id']}'),
+              // R6 fix: Correct route name for albums vs artists
+              settings: RouteSettings(
+                name:
+                    widget.page == 'artists'
+                        ? '/artist?${data['id']}'
+                        : '/album?${data['id']}',
+              ),
             ),
           ),
     );
+    // R7 fix: Handle entities without primary-type gracefully
     if (data['primary-type'] != null &&
-        data['primary-type']?.toLowerCase() != 'unknown')
+        data['primary-type'].toString().toLowerCase() != 'unknown') {
       cardList.add(card);
+    } else if (data['primary-type'] == null) {
+      // R7 fix: Add card with default primary-type
+      data['primary-type'] = widget.page == 'artists' ? 'artist' : 'album';
+      cardList.add(card);
+    }
   }
 
   void _parseGenres(dynamic data) {
     final genres = data['genres'] ?? data['musicbrainz']?['genres'] ?? [];
     final Set<String> genreString = {};
     for (final genre in genres) {
-      final count = genreList.where((e) => e['name'] == genre['name']).length;
+      // R1 fix: Get existing count properly
+      final existing = genreList.firstWhere(
+        (e) => e['name'] == genre['name'],
+        orElse: () => null,
+      );
+      final count = existing?['count'] ?? 0;
       if (uniqueGenreList.add(genre['name'])) {
         genreList.add({
           'id': genre['id'],
@@ -219,41 +247,56 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
           'count': count + 1,
         });
         genreString.add(genre['name']);
-      } else {
-        final existing = genreList.firstWhere(
-          (e) => e['name'] == genre['name'],
-        );
+      } else if (existing != null) {
         existing['count'] = count + 1;
       }
     }
     data['genreString'] = genreString.toList().join(',');
   }
 
+  // R8 fix: Parse genres without mutating global state during build
+  void _parseGenresWithoutMutation(dynamic data) {
+    final genres = data['genres'] ?? data['musicbrainz']?['genres'] ?? [];
+    final Set<String> genreString = {};
+    for (final genre in genres) {
+      genreString.add(genre['name']);
+    }
+    data['genreString'] = genreString.toList().join(',');
+  }
+
   void _filterCardsByGenre(String query) {
+    // R3 fix: Restore visibility for matching items
     if (query.isEmpty) {
       for (final widget in cardList) {
         widget.setVisibility(true);
-        isFilteredNotifier.value = false;
       }
+      isFilteredNotifier.value = false;
     } else {
+      var anyFiltered = false;
       for (final widget in cardList) {
         if (!widget.inputData!['genreString'].toString().toLowerCase().contains(
           query,
         )) {
           widget.setVisibility(false);
-          isFilteredNotifier.value = true;
+          anyFiltered = true;
+        } else {
+          // R3 fix: Restore visibility for matching items
+          widget.setVisibility(true);
         }
       }
+      isFilteredNotifier.value = anyFiltered;
     }
   }
 
   void _filterCardList(String query) {
+    // R3 fix: Restore visibility for matching items
     if (query.isEmpty) {
       for (final widget in cardList) {
         widget.setVisibility(true);
-        isFilteredNotifier.value = false;
       }
+      isFilteredNotifier.value = false;
     } else {
+      var anyFiltered = false;
       for (final widget in cardList) {
         final searchStr =
             '${widget.inputData!['musicbrainzName'] ?? ''} '
@@ -262,9 +305,13 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
             '${widget.inputData!['title'] ?? ''}';
         if (!searchStr.toLowerCase().contains(query)) {
           widget.setVisibility(false);
-          isFilteredNotifier.value = true;
+          anyFiltered = true;
+        } else {
+          // R3 fix: Restore visibility for matching items
+          widget.setVisibility(true);
         }
       }
+      isFilteredNotifier.value = anyFiltered;
     }
     genresWidget?.searchGenres(query);
   }

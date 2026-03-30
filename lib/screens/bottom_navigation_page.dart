@@ -40,28 +40,33 @@ class BottomNavigationPage extends StatefulWidget {
 }
 
 class _BottomNavigationPageState extends State<BottomNavigationPage> {
-  final _selectedIndex = ValueNotifier<int>(0);
-  late ThemeData _theme;
+  // R2 fix: Remove _selectedIndex - use widget.child.currentIndex instead
+  // R8 fix: Remove ValueNotifier that was never disposed
+  // R6 fix: Removed _theme - use Theme.of(context) directly
+  // R5 fix: Cache navigation destinations to avoid recomputing
+  Map<String, NavigationDestination>? _cachedDestinations;
+
   @override
   void initState() {
     super.initState();
-    audioHandler.songValueNotifier.addListener(_songListener);
+    // R4 fix: Remove redundant _songListener - ValueListenableBuilder handles this
   }
 
   @override
   void dispose() {
-    audioHandler.songValueNotifier.removeListener(_songListener);
+    // R4 fix: _songListener removed - nothing to remove
+    // R8 fix: _selectedIndex removed - nothing to dispose
     super.dispose();
   }
 
-  void _songListener() {
-    if (mounted) setState(() {});
-  }
+  // R4 fix: _songListener removed - ValueListenableBuilder handles updates
 
+  // R5 fix: Cache navigation destinations to avoid recomputing on every build
   Map<String, NavigationDestination> _getNavigationDestinations(
     BuildContext context,
   ) {
-    return !offlineMode.value
+    if (_cachedDestinations != null) return _cachedDestinations!;
+    _cachedDestinations = !offlineMode.value
         ? {
           'home': NavigationDestination(
             key: const Key('/home'),
@@ -120,11 +125,13 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
             label: context.l10n?.settings ?? 'Settings',
           ),
         };
+    return _cachedDestinations!;
   }
 
   @override
   Widget build(BuildContext context) {
-    _theme = Theme.of(context);
+    // R2/R3 fix: Use widget.child.currentIndex instead of _selectedIndex
+    final currentIndex = widget.child.currentIndex;
     final destinations =
         _getNavigationDestinations(context).values
             .map(
@@ -135,10 +142,11 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
               ),
             )
             .toList();
+    // R3 fix: Clamp index to valid range
     final selectedIndex =
-        _selectedIndex.value >= destinations.length || _selectedIndex.value < 0
+        currentIndex >= destinations.length || currentIndex < 0
             ? 0
-            : _selectedIndex.value;
+            : currentIndex;
     try {
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -151,13 +159,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                     minWidth: navigationRailWidth,
                     labelType: NavigationRailLabelType.selected,
                     destinations: destinations,
-                    selectedIndex: _selectedIndex.value,
+                    selectedIndex: selectedIndex,
                     onDestinationSelected: (index) {
-                      _onDestinationSelected(index, context);
-                      if (mounted)
-                        setState(() {
-                          _selectedIndex.value = index;
-                        });
+                      // R1 fix: Use widget.child.goBranch instead of GoRouter.go
+                      widget.child.goBranch(index);
                     },
                   ),
                 Flexible(
@@ -193,11 +198,8 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                                   .onlyShowSelected
                               : NavigationDestinationLabelBehavior.alwaysHide,
                       onDestinationSelected: (index) {
-                        _onDestinationSelected(index, context);
-                        if (mounted)
-                          setState(() {
-                            _selectedIndex.value = index;
-                          });
+                        // R1 fix: Use widget.child.goBranch instead of GoRouter.go
+                        widget.child.goBranch(index);
                       },
                       destinations:
                           _getNavigationDestinations(context).values.toList(),
@@ -212,27 +214,30 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
         e,
         stackTrace,
       );
-      throw ErrorDescription('There was an error');
+      // R7 fix: Return ErrorWidget instead of throwing ErrorDescription
+      return ErrorWidget.builder(
+        FlutterErrorDetails(
+          exception: e,
+          stack: stackTrace,
+        ),
+      );
     }
   }
 
-  void _onDestinationSelected(int index, BuildContext context) {
-    GoRouter.of(
-      context,
-    ).go('/${_getNavigationDestinations(context).keys.elementAt(index)}');
-  }
+  // R1 fix: _onDestinationRemoved - use widget.child.goBranch directly in onDestinationSelected
 
   Widget _buildMiniPlayerCloseButton(BuildContext context) {
+    final theme = Theme.of(context);
     return IconButton(
       onPressed: () {
         audioHandler.close();
       },
       icon: Icon(
         FluentIcons.dismiss_24_filled,
-        color: _theme.colorScheme.primary,
+        color: theme.colorScheme.primary,
         size: 30,
       ),
-      disabledColor: _theme.colorScheme.secondaryContainer,
+      disabledColor: theme.colorScheme.secondaryContainer,
     );
   }
 }
