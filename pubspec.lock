@@ -437,6 +437,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  hive_test:
+    dependency: "direct dev"
+    description:
+      name: hive_test
+      sha256: dd7a5cf0be7af288566a96180b5d07574023777aa947ef252b69046ec36d8eb2
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   html:
     dependency: "direct main"
     description:
@@ -613,6 +621,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mocktail:
+    dependency: "direct dev"
+    description:
+      name: mocktail
+      sha256: "890df3f9688106f25755f26b1c60589a92b3ab91a22b8b224947ad041bf172d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
   musicbrainz_api_client:
     dependency: "direct main"
     description:
