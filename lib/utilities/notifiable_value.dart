@@ -46,13 +46,14 @@ class NotifiableValue<T> extends ValueNotifier<T> {
   // R6 fix: Static list to track all instances for shutdown flush
   static final Set<NotifiableValue> _instances = {};
 
+  // R73 fix: Don't create a new Completer - reuse the one from ensureInitialized
   Future<void> _initializeFromHive() async {
     _instances.add(this);
     if (_boxName == null || _category == null) {
       _isInitialized = true;
+      _initializationCompleter?.complete();
       return;
     }
-    _initializationCompleter = Completer<void>();
     try {
       final storedValue = await HiveService.getData<T?>(
         _boxName,
@@ -63,10 +64,10 @@ class NotifiableValue<T> extends ValueNotifier<T> {
       value = storedValue ?? value;
       addListener(_addOrUpdateListener);
       _isInitialized = true;
-      _initializationCompleter!.complete();
+      _initializationCompleter?.complete();
     } catch (e) {
       _isInitialized = true;
-      _initializationCompleter!.completeError(e);
+      _initializationCompleter?.completeError(e);
     }
   }
 

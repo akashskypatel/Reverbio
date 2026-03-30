@@ -591,7 +591,7 @@ Future<String> getLiveStreamUrl(String songId) async {
 
 Future<Map<String, dynamic>> getIPGeolocation() async {
   try {
-    final uri = Uri.https('ip-api.com', 'json');
+    final uri = Uri.http('ip-api.com', 'json');
     final response = await http.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {
@@ -622,10 +622,11 @@ bool checkEntityId(dynamic entity, dynamic other) {
     result = ids.any((i) => i.contains(id));
     if (result) return result;
   }
+  // id is simple, otherId is composite - split otherId and check if any component contains id
   if (!(id.contains('=') || id.contains('&')) &&
       (otherId.contains('=') || otherId.contains('&'))) {
-    final ids = id.split('&');
-    result = ids.any((i) => i.contains(otherId));
+    final ids = otherId.split('&');
+    result = ids.any((i) => i.contains(id));
     if (result) return result;
   }
   if (id.contains('=') ||

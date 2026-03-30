@@ -801,15 +801,24 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
       final cacheKey = 'song_${songId}_${qualitySetting}_url';
 
       final cachedUrl = await HiveService.getData('cache', cacheKey);
+      bool cachedUrlValid = false;
 
+      // Validate cached URL if it exists
       if (cachedUrl != null) {
         final uri = Uri.parse(cachedUrl);
         final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        //add 5 second grace
-        if (expires > (now + 5))
-          if (await checkUrl(cachedUrl) < 400) return cachedUrl;
-      } else {
+        // Add 5 second grace period
+        if (expires > (now + 5)) {
+          if (await checkUrl(cachedUrl) < 400) {
+            cachedUrlValid = true;
+            songUrl = cachedUrl;
+          }
+        }
+      }
+
+      // Fetch fresh URL if no valid cache
+      if (!cachedUrlValid) {
         songUrl =
             song['songUrl'] = await px.getYouTubeAudioUrl(
               song['ytid'],

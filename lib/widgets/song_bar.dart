@@ -61,7 +61,7 @@ class SongBar extends StatefulWidget {
     this.onRemove,
     this.borderRadius = BorderRadius.zero,
     super.key,
-  }) : songFuture = initializeSongBarFuture(songData),
+  }) : songFuture = NotifiableFuture<Map<String, dynamic>>(songData),
        songMetadataNotifier = ValueNotifier(copyMap(songData)),
        _borderRadiusNotifier = ValueNotifier(borderRadius);
   final BuildContext context;
@@ -232,6 +232,8 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
+    // R258 fix: Initialize song future in initState instead of constructor
+    widget.songFuture.runFuture(getSongInfo(widget.song));
     _songTagFuture = _fetchSongTag();
     widget.songFuture.addListener(_listener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -256,11 +258,21 @@ class _SongBarState extends State<SongBar> {
     super.dispose();
   }
 
+  // R259 fix: Only fetch song tag when necessary - avoid unnecessary FFprobe I/O
   Future<Tag?> _fetchSongTag() {
-    if (!isSongAlreadyOffline(widget.song) &&
-        widget.song['audioTags'] == null) {
+    // Skip tag fetch if:
+    // 1. Song is not offline (online YouTube song)
+    // 2. Song already has cached audioTags
+    // 3. Song metadata is already complete
+    if (!isSongAlreadyOffline(widget.song)) {
       return Future.value();
     }
+    if (widget.song['audioTags'] != null &&
+        widget.song['audioTags'] is Map &&
+        (widget.song['audioTags'] as Map).isNotEmpty) {
+      return Future.value();
+    }
+    // Only fetch from file for offline songs missing metadata
     return FileTagger().getTagFromFileOrMetadata(widget.song);
   }
 
