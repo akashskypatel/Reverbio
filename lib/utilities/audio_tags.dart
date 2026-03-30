@@ -23,9 +23,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:android_media_store/android_media_store.dart';
-import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_audio/ffprobe_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
+import 'package:ffmpeg_kit_extended_flutter/ffmpeg_kit_extended_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -351,14 +349,11 @@ class AudioTags {
   ///
   /// Returns an [Tag] object on success, or null on failure.
   static Future<Tag?> read(String filePath) async {
-    final command =
-        '-v quiet -print_format json -show_format -show_streams "$filePath"';
+    final session = MediaInformationSession.fromPath(filePath);
+    await session.executeAsync();
+    final output = session.getOutput();
 
-    final session = await FFprobeKit.execute(command);
-    final output = await session.getOutput();
-
-    if (!ReturnCode.isSuccess(await session.getReturnCode()) ||
-        output == null) {
+    if (!ReturnCode.isSuccess(session.getReturnCode()) || output == null) {
       debugPrint('FFprobe failed to read metadata for $filePath');
       return null;
     }
@@ -559,8 +554,9 @@ class AudioTags {
 
       arguments.add('"$tempFilePath"');
 
-      final session = await FFmpegKit.execute(arguments.join(' '));
-      final returnCode = await session.getReturnCode();
+      final session = FFmpegKit.createSession(arguments.join(' '));
+      await session.executeAsync();
+      final returnCode = session.getReturnCode();
 
       if (ReturnCode.isSuccess(returnCode)) {
         if (Platform.isAndroid && await checkAllPermissions())
@@ -581,7 +577,7 @@ class AudioTags {
             null,
             null,
           ) // Helpful for debugging
-          ..log('Logs: ${await session.getLogsAsString()}', null, null);
+          ..log('Logs: ${session.getLogsAsString()}', null, null);
         success = false;
       }
     } catch (e, stackTrace) {
@@ -620,8 +616,9 @@ class AudioTags {
       final command =
           '-i "$filePath" -map 0:a -c:a copy -map_metadata -1 "$tempFilePath"';
 
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
+      final session = FFmpegKit.createSession(command);
+      await session.executeAsync();
+      final returnCode = session.getReturnCode();
 
       if (ReturnCode.isSuccess(returnCode)) {
         if (Platform.isAndroid && await checkAllPermissions())
@@ -637,7 +634,7 @@ class AudioTags {
         logger
           ..log('FFmpeg clear failed. Return code: $returnCode', null, null)
           ..log('Command: $command', null, null)
-          ..log('Logs: ${await session.getLogsAsString()}', null, null);
+          ..log('Logs: ${session.getLogsAsString()}', null, null);
         success = false;
       }
     } catch (e, stackTrace) {
@@ -710,15 +707,16 @@ class AudioTags {
 
     // Command to extract the first attached picture
     final command = '-i "$filePath" -an -vcodec copy "$tempArtworkPath"';
-    final session = await FFmpegKit.execute(command);
-    final success = ReturnCode.isSuccess(await session.getReturnCode());
-    if (success) {
+    final session = FFmpegKit.createSession(command);
+    await session.executeAsync();
+    final returnCode = session.getReturnCode();
+    if (ReturnCode.isSuccess(returnCode)) {
       final file = File(tempArtworkPath);
       if (await file.exists()) {
         bytes = await file.readAsBytes();
       }
     } else {
-      logger.log(await session.getLogsAsString(), null, null);
+      logger.log(session.getLogsAsString() ?? '', null, null);
     }
     tempDir.deleteSync(recursive: true);
     return bytes;

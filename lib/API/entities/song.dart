@@ -40,7 +40,6 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/lyrics_manager.dart';
-import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/file_scanner.dart';
@@ -247,7 +246,12 @@ void addSongToCache(Map<String, dynamic> song) {
 }
 
 Map<String, dynamic> minimizeSongData(dynamic song) {
-  song['audioTags']?.remove('pictures');
+  // R3 fix: Create a copy of audioTags before removing 'pictures' to avoid mutating input
+  Map<String, dynamic>? audioTags;
+  if (song['audioTags'] != null) {
+    audioTags = Map<String, dynamic>.from(song['audioTags']);
+    audioTags.remove('pictures');
+  }
   return {
     'id': parseEntityId(song),
     'primary-type': song['primary-type'] ?? 'song',
@@ -259,7 +263,7 @@ Map<String, dynamic> minimizeSongData(dynamic song) {
     'offlineAudioPath': song['offlineAudioPath'],
     'duration': song['duration'],
     'cachedAt': DateTime.now().toString(),
-    'audioTags': song['audioTags'],
+    'audioTags': audioTags,
     'image':
         song['validImage'] ??
         song['highResImage'] ??
@@ -786,7 +790,6 @@ bool isSongArtistValid(dynamic song) {
 }
 
 Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
-  final context = NavigationManager().context;
   String songUrl = '';
   try {
     if (song == null) return '';
@@ -831,20 +834,20 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
           null,
         );
         songUrl = song['songUrl'] = '';
-        song['error'] = context.l10n!.errorCouldNotFindAStream;
+        song['error'] = L10n.current.errorCouldNotFindAStream;
         song['isError'] = true;
       }
       //check if url resolves
       if (await checkUrl(songUrl) >= 400) {
         logger.log('Song url could not be resolved. $songUrl', null, null);
         songUrl = song['songUrl'] = '';
-        song['error'] = context.l10n!.urlError;
+        song['error'] = L10n.current.urlError;
         song['isError'] = true;
         return '';
       }
     }
   } catch (e, stackTrace) {
-    song['error'] = context.l10n!.urlError;
+    song['error'] = L10n.current.urlError;
     song['isError'] = true;
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
@@ -1031,7 +1034,6 @@ Future<void> makeSongOffline(dynamic song) async {
     final _artworkFile = File(join(_artworkDirPath, id));
 
     try {
-      final context = NavigationManager().context;
       song = await getSongUrl(song, skipDownload: true);
       if (song['songUrl'] == null)
         throw Exception('Could not find a download source.');
@@ -1055,7 +1057,7 @@ Future<void> makeSongOffline(dynamic song) async {
       final result = await FileDownloader().enqueue(task);
       if (!result)
         showToast(
-          '${context.l10n!.unableToDownload}: ${songTitle(song)} - ${songArtist(song)}',
+          '${L10n.current.unableToDownload}: ${songTitle(song)} - ${songArtist(song)}',
         );
     } catch (e, stackTrace) {
       logger.log(
@@ -1322,7 +1324,6 @@ Future<void> _deleteRelatedFiles(String directory, dynamic entity) async {
 }
 
 Future<void> removeSongFromOffline(dynamic song) async {
-  final context = NavigationManager().context;
   final _dir = Directory(offlineDirectory.value!);
   final _audioDirPath = join(_dir.path, 'tracks');
   final _artworkDirPath = join(_dir.path, 'artworks');
@@ -1336,7 +1337,7 @@ Future<void> removeSongFromOffline(dynamic song) async {
   song?.remove('songUrl');
   song['isOffline'] = false;
   userOfflineSongs.removeWhere((s) => checkEntityId(song['id'], s));
-  showToast(context.l10n!.songRemovedFromOffline);
+  showToast(L10n.current.songRemovedFromOffline);
 }
 
 Future<File?> _downloadAndSaveArtworkFile(Uri uri, String filePath) async {

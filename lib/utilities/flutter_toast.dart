@@ -30,7 +30,7 @@ final Map<String, dynamic> notificationLog = {};
 ValueNotifier<int> notificationLogLength = ValueNotifier(0);
 
 void showToast(String text, {BuildContext? context, String? id, dynamic data}) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   final newId = id ?? stableHash('[${DateTime.now()}] $text');
   notificationLog[newId] = {
     'index':
@@ -73,7 +73,7 @@ void showToastWithButton(
   VoidCallback onPressedToast, {
   BuildContext? context,
 }) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,

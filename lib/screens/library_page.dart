@@ -118,7 +118,7 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.recentlyPlayed,
                 onPressed:
-                    () => NavigationManager.router.push(
+                    () => NavigationManager.router!.push(
                       '/library/userSongs/recents',
                     ),
                 cardIcon: FluentIcons.history_24_filled,

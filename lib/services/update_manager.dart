@@ -29,7 +29,6 @@ import 'package:reverbio/API/version.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
@@ -45,7 +44,6 @@ const String downloadLatest = 'latest';
 const String downloadObtainium = 'obtainium';
 
 Future<Map<String, dynamic>> getLatestAppVersion() async {
-  final context = NavigationManager().context;
   try {
     final response = await http.get(Uri.parse(checkUrl));
 
@@ -55,7 +53,7 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
         null,
         null,
       );
-      return {'error': context.l10n!.errorLatestVersion, 'canUpdate': false};
+      return {'error': L10n.current.errorLatestVersion, 'canUpdate': false};
     }
 
     final map = json.decode(response.body) as Map<String, dynamic>;
@@ -64,17 +62,17 @@ Future<Map<String, dynamic>> getLatestAppVersion() async {
     if (isLatestVersionHigher(appVersion, latestVersion)) {
       return {
         'message':
-            '${context.l10n!.currentVersion}: $appVersion ${context.l10n!.latestVersion}: $latestVersion',
+            '${L10n.current.currentVersion}: $appVersion ${L10n.current.latestVersion}: $latestVersion',
         'canUpdate': true,
       };
     }
     return {
-      'message': '${context.l10n!.latestVersionUsed}: $appVersion',
+      'message': '${L10n.current.latestVersionUsed}: $appVersion',
       'canUpdate': false,
     };
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
-    return {'error': context.l10n!.errorLatestVersion, 'canUpdate': false};
+    return {'error': L10n.current.errorLatestVersion, 'canUpdate': false};
   }
 }
 
@@ -114,14 +112,14 @@ Future<void> checkAppUpdates() async {
         json.decode(releasesRequest.body) as Map<String, dynamic>;
 
     await showDialog(
-      context: NavigationManager().context,
+      context: NavigationManager().context!,
       builder: (BuildContext context) {
         return AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                context.l10n!.appUpdateIsAvailable,
+                L10n.current.appUpdateIsAvailable,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
@@ -152,7 +150,7 @@ Future<void> checkAppUpdates() async {
               onPressed: () {
                 GoRouter.of(context).pop(context);
               },
-              child: Text(context.l10n!.cancel.toUpperCase()),
+              child: Text(L10n.current.cancel.toUpperCase()),
             ),
             FilledButton(
               onPressed: () {
@@ -163,7 +161,7 @@ Future<void> checkAppUpdates() async {
                   },
                 );
               },
-              child: Text(context.l10n!.download.toUpperCase()),
+              child: Text(L10n.current.download.toUpperCase()),
             ),
           ],
         );
@@ -211,10 +209,6 @@ void postUpdate() async {
     //await clearCache();
     //to here
   }
-  postUpdateRun.value[appVersion] = true;
-  await HiveService.addOrUpdateData<bool>(
-    'settings',
-    'postUpdateRun',
-    postUpdateRun.value,
-  );
+  // R2 fix: Reassign value to trigger NotifiableValue persistence
+  postUpdateRun.value = Map.from(postUpdateRun.value)..[appVersion] = true;
 }

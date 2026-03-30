@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   dynamic_color
+  ffmpeg_kit_extended_flutter
   flutter_js
   media_kit_libs_windows_audio
   permission_handler_windows

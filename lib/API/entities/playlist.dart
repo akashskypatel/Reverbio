@@ -30,8 +30,6 @@ import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
-import 'package:reverbio/DB/albums.db.dart';
-import 'package:reverbio/DB/playlists.db.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
@@ -42,10 +40,9 @@ import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-List dbPlaylists = [...playlistsDB, ...albumsDB];
+// A2 fix: dbPlaylists and nextRecommendedSong moved to entities.dart
 List suggestedPlaylists = [];
 List onlinePlaylists = [];
-dynamic nextRecommendedSong;
 
 bool isPlaylistAlreadyOffline(dynamic playlist) {
   if (playlist == null) return false;

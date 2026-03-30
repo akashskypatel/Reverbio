@@ -82,6 +82,7 @@ class _ArtistPageState extends State<ArtistPage> {
 
   @override
   void dispose() {
+    dataFuture.dispose();
     super.dispose();
   }
 

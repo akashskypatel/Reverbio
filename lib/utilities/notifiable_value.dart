@@ -24,7 +24,9 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:reverbio/services/hive_service.dart';
 
-class NotifiableValue<T> extends ValueNotifier {
+class NotifiableValue<T> extends ValueNotifier<T> {
+  // R5 fix: Add non-Hive constructor for non-nullable fields
+  NotifiableValue(super.value) : _boxName = null, _category = null;
   NotifiableValue._internal(this._boxName, this._category, super.value);
   factory NotifiableValue.fromHive(
     String boxName,
@@ -33,13 +35,19 @@ class NotifiableValue<T> extends ValueNotifier {
   }) {
     return NotifiableValue._internal(boxName, category, defaultValue);
   }
-  final String? _boxName, _category;
+  final String? _boxName;
+  final String? _category;
   bool _isInitialized = false;
+  bool _disposed = false;
   Completer<void>? _initializationCompleter;
   Timer? _debounceTimer;
   static const Duration _debounceDuration = Duration(milliseconds: 500);
 
+  // R6 fix: Static list to track all instances for shutdown flush
+  static final Set<NotifiableValue> _instances = {};
+
   Future<void> _initializeFromHive() async {
+    _instances.add(this);
     if (_boxName == null || _category == null) {
       _isInitialized = true;
       return;
@@ -51,8 +59,9 @@ class NotifiableValue<T> extends ValueNotifier {
         _category,
         defaultValue: value,
       );
-      addListener(_addOrUpdateListener);
+      // R2 fix: Assign value before adding listener to prevent spurious write-back
       value = storedValue ?? value;
+      addListener(_addOrUpdateListener);
       _isInitialized = true;
       _initializationCompleter!.complete();
     } catch (e) {
@@ -63,14 +72,17 @@ class NotifiableValue<T> extends ValueNotifier {
 
   Future<void> ensureInitialized(T defaultValue) async {
     if (_isInitialized) return;
+    // R4 fix: Create completer before calling _initializeFromHive to prevent race condition
     if (_initializationCompleter != null) {
       return _initializationCompleter!.future;
     }
+    _initializationCompleter = Completer<void>();
     value = defaultValue;
     await _initializeFromHive();
   }
 
   void _addOrUpdateListener() {
+    if (_disposed) return;
     if (_boxName == null || _category == null) return;
 
     // Cancel previous timer if it exists
@@ -78,7 +90,33 @@ class NotifiableValue<T> extends ValueNotifier {
 
     // Start new debounce timer
     _debounceTimer = Timer(_debounceDuration, () {
-      HiveService.addOrUpdateData<T>(_boxName, _category, value);
+      if (!_disposed) {
+        HiveService.addOrUpdateData<T>(_boxName, _category, value);
+      }
     });
+  }
+
+  // R6 fix: Instance method to flush pending write immediately
+  Future<void> flush() async {
+    if (_disposed || _boxName == null || _category == null) return;
+    _debounceTimer?.cancel();
+    await HiveService.addOrUpdateData<T>(_boxName, _category, value);
+  }
+
+  // R6 fix: Static method to flush all pending writes before shutdown
+  static Future<void> flushAll() async {
+    for (final instance in _instances) {
+      await instance.flush();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _instances.remove(this);
+    _debounceTimer?.cancel();
+    // Remove listener before disposing
+    removeListener(_addOrUpdateListener);
+    super.dispose();
   }
 }

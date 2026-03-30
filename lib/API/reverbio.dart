@@ -39,7 +39,7 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final px = ProxyManager();
-YoutubeExplode yt =
+YoutubeExplode get yt =>
     useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
 DiscogsApiClient dc = DiscogsApiClient(); // px.discogsClient;
 MusicBrainzApiClient mb = MusicBrainzApiClient(); // px.musicbrainzClient;
@@ -64,16 +64,20 @@ String? getCombinedId(dynamic entity) {
   if (entity is Map) {
     if (entity['id'] == null) return null;
     final ids = Uri.parse('?${entity['id']}').queryParameters;
-    if ((entity['ytid'] != null && entity['ytid'].isNotEmpty) ||
-        (ids['yt'] != null && ids['yt']!.isNotEmpty)) {
+    if ((entity['ytid'] != null &&
+            entity['ytid'] is String &&
+            entity['ytid'].isNotEmpty) ||
+        (ids['yt'] != null && ids['yt'] is String && ids['yt']!.isNotEmpty)) {
       final ytid = ((entity['ytid'] ?? ids['yt'] ?? '') as String).replaceAll(
         RegExp('yt=|yt%3d', caseSensitive: false),
         '',
       );
       combinedId = 'yt=$ytid';
     }
-    if ((entity['mbid'] != null && entity['mbid'].isNotEmpty) ||
-        (ids['mb'] != null && ids['mb']!.isNotEmpty)) {
+    if ((entity['mbid'] != null &&
+            entity['mbid'] is String &&
+            entity['mbid'].isNotEmpty) ||
+        (ids['mb'] != null && ids['mb'] is String && ids['mb']!.isNotEmpty)) {
       final mbid = ((entity['mbid'] ?? ids['mb'] ?? '') as String).replaceAll(
         RegExp('mb=|mb%3d', caseSensitive: false),
         '',
@@ -83,8 +87,10 @@ String? getCombinedId(dynamic entity) {
               ? 'mb=$mbid'
               : joinIfNotEmpty([combinedId, 'mb=$mbid'], '&');
     }
-    if ((entity['dcid'] != null && entity['dcid'].isNotEmpty) ||
-        (ids['dc'] != null && ids['dc']!.isNotEmpty)) {
+    if ((entity['dcid'] != null &&
+            entity['dcid'] is String &&
+            entity['dcid'].isNotEmpty) ||
+        (ids['dc'] != null && ids['dc'] is String && ids['dc']!.isNotEmpty)) {
       final dcid = ((entity['dcid'] ?? ids['dc'] ?? '') as String).replaceAll(
         RegExp('dc=|dc%3d', caseSensitive: false),
         '',
@@ -94,8 +100,10 @@ String? getCombinedId(dynamic entity) {
               ? 'dc=$dcid'
               : joinIfNotEmpty([combinedId, 'dc=$dcid'], '&');
     }
-    if ((entity['ucid'] != null && entity['ucid'].isNotEmpty) ||
-        (ids['uc'] != null && ids['uc']!.isNotEmpty)) {
+    if ((entity['ucid'] != null &&
+            entity['ucid'] is String &&
+            entity['ucid'].isNotEmpty) ||
+        (ids['uc'] != null && ids['uc'] is String && ids['uc']!.isNotEmpty)) {
       final ucid = ((entity['ucid'] ?? ids['uc'] ?? '') as String).replaceAll(
         RegExp('uc=|uc%3d', caseSensitive: false),
         '',
@@ -105,8 +113,10 @@ String? getCombinedId(dynamic entity) {
               ? 'uc=$ucid'
               : joinIfNotEmpty([combinedId, 'uc=$ucid'], '&');
     }
-    if ((entity['isrc'] != null && entity['isrc'].isNotEmpty) ||
-        (ids['is'] != null && ids['is']!.isNotEmpty)) {
+    if ((entity['isrc'] != null &&
+            entity['isrc'] is String &&
+            entity['isrc'].isNotEmpty) ||
+        (ids['is'] != null && ids['is'] is String && ids['is']!.isNotEmpty)) {
       final isrc = ((entity['isrc'] ?? ids['is'] ?? '') as String).replaceAll(
         RegExp('is=|is%3d', caseSensitive: false),
         '',
@@ -116,8 +126,10 @@ String? getCombinedId(dynamic entity) {
               ? 'is=$isrc'
               : joinIfNotEmpty([combinedId, 'is=$isrc'], '&');
     }
-    if ((entity['flnm'] != null && entity['flnm'].isNotEmpty) ||
-        (ids['fn'] != null && ids['fn']!.isNotEmpty)) {
+    if ((entity['flnm'] != null &&
+            entity['flnm'] is String &&
+            entity['flnm'].isNotEmpty) ||
+        (ids['fn'] != null && ids['fn'] is String && ids['fn']!.isNotEmpty)) {
       final flnm = ((entity['flnm'] ?? ids['fn'] ?? '') as String).replaceAll(
         RegExp('fn=|fn%3d', caseSensitive: false),
         '',
@@ -132,7 +144,8 @@ String? getCombinedId(dynamic entity) {
 }
 
 String parseEntityId(dynamic entity) {
-  if (entity == null || entity.isEmpty) return getCombinedId(entity) ?? '';
+  if (entity == null) return '';
+  if (entity is String && entity.isEmpty) return getCombinedId(entity) ?? '';
   dynamic ids;
   String entityId =
       entity is String ? entity : entity['id'] ?? getCombinedId(entity) ?? '';
@@ -199,7 +212,8 @@ String? combineArtists(dynamic value) {
     artistList.addAll(splitArtists(value['channelName']));
   if (value['artist'] is String && value['mbid'] == null)
     artistList.addAll(splitArtists(value['artist']));
-  final artists = artistList.toList()..sort((a, b) => a.compareTo(b));
+  final artists = artistList.toList();
+  artists.sort((a, b) => a.compareTo(b));
   final result = artists
       .fold<Set<String>>(<String>{}, (result, str) {
         final names = str.split(RegExp(r'\s*[&,]\s*')).map((n) => n.trim());
@@ -309,7 +323,7 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
             'id': '${e['id']}',
             'rid': e['id'],
             'duration': (e['length'] ?? 0) ~/ 1000,
-            'mbidType': 'recording',
+            'mbidType': entityName[entity]?['type'] ?? 'recording',
             'releases': e['releases'],
             'score': e['score'],
           },
@@ -371,27 +385,29 @@ Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
 Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
   String query, {
   int offset = 0,
-  List<SearchList> resultList = const [],
+  List<SearchList>? resultList,
 }) async {
+  final actualResultList = resultList ?? [];
   try {
-    final index = resultList.isNotEmpty ? (offset ~/ 20) : 0;
+    final index = actualResultList.isNotEmpty ? (offset ~/ 20) : 0;
     final results =
-        offset != 0 && offset >= (20 * resultList.length)
-            ? await resultList.last
+        offset != 0 && offset >= (20 * actualResultList.length)
+            ? await actualResultList.last
                 .nextPage() //if offset is greater than list length * 20 get next page from last item
-            : resultList.isNotEmpty
-            ? resultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
+            : actualResultList.isNotEmpty
+            ? actualResultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
             : await px.localYoutubeClient.search.searchContent(
               query,
               filter: TypeFilters.playlist,
             ); //if result list is empty then make a new search
-    if ((offset == 0 || offset >= (20 * resultList.length)) && results != null)
-      resultList.add(results);
+    if ((offset == 0 || offset >= (20 * actualResultList.length)) &&
+        results != null)
+      actualResultList.add(results);
     return {
       'playlist': {
         'count': results?.length ?? 0,
         'offset': offset,
-        'resultList': resultList,
+        'resultList': actualResultList,
         'data':
             results
                 ?.whereType<SearchPlaylist>()
@@ -518,6 +534,7 @@ Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
         },
       ),
     );
+    if (res.statusCode != 200) return [];
     if (res.body != 'Not Found') {
       final data = List.from(jsonDecode(res.body));
       final segments =
@@ -561,29 +578,20 @@ final clients = {
 };
 
 Future<String> getLiveStreamUrl(String songId) async {
-  final streamInfo = await yt.videos.streamsClient.getHttpLiveStreamUrl(
-    VideoId(songId),
-  );
-  return streamInfo;
-}
-
-AudioStreamInfo selectAudioQuality(List<AudioStreamInfo> availableSources) {
-  final qualitySetting = audioQualitySetting.value;
-
-  if (qualitySetting == 'low') {
-    return availableSources.last;
-  } else if (qualitySetting == 'medium') {
-    return availableSources[availableSources.length ~/ 2];
-  } else if (qualitySetting == 'high') {
-    return availableSources.first;
-  } else {
-    return availableSources.withHighestBitrate();
+  try {
+    final streamInfo = await yt.videos.streamsClient.getHttpLiveStreamUrl(
+      VideoId(songId),
+    );
+    return streamInfo;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return '';
   }
 }
 
 Future<Map<String, dynamic>> getIPGeolocation() async {
   try {
-    final uri = Uri.http('ip-api.com', 'json');
+    final uri = Uri.https('ip-api.com', 'json');
     final response = await http.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {
@@ -608,14 +616,14 @@ bool checkEntityId(dynamic entity, dynamic other) {
   id = parseEntityId(id);
   otherId = parseEntityId(otherId);
   var result = false;
-  if ((otherId.contains('=') || otherId.contains('&')) &&
-      !(id.contains('=') || id.contains('&'))) {
+  if ((id.contains('=') || id.contains('&')) &&
+      (otherId.contains('=') || otherId.contains('&'))) {
     final ids = otherId.split('&');
     result = ids.any((i) => i.contains(id));
     if (result) return result;
   }
-  if (!(otherId.contains('=') || otherId.contains('&')) &&
-      (id.contains('=') || id.contains('&'))) {
+  if (!(id.contains('=') || id.contains('&')) &&
+      (otherId.contains('=') || otherId.contains('&'))) {
     final ids = id.split('&');
     result = ids.any((i) => i.contains(otherId));
     if (result) return result;
@@ -675,7 +683,10 @@ Future<File> copyFileToDir(
 
 Future<void> cacheEntity(dynamic entity) async {
   if (entity['primary-type'] == null) return;
-  if (['song', 'recording'].contains(entity['primary-type']))
+  if ([
+    'song',
+    'recording',
+  ].contains(entity['primary-type']?.toString().toLowerCase()))
     return addSongToCache(Map<String, dynamic>.from(entity));
   if ([
     'album',
@@ -683,8 +694,16 @@ Future<void> cacheEntity(dynamic entity) async {
     'ep',
     'broadcast',
     'other',
-  ].contains(entity['primary-type']))
+  ].contains(entity['primary-type']?.toString().toLowerCase()))
     return addAlbumToCache(Map<String, dynamic>.from(entity));
-  if (entity['primary-type'] == 'artist')
+  if (entity['primary-type']?.toString().toLowerCase() == 'playlist')
+    return addSongToCache(Map<String, dynamic>.from(entity));
+  if (entity['primary-type']?.toString().toLowerCase() == 'artist')
     return addArtistToCache(Map<String, dynamic>.from(entity));
+  // Log warning for unknown types
+  logger.log(
+    'Unknown entity type: ${entity['primary-type']?.toString().toLowerCase()}',
+    null,
+    null,
+  );
 }

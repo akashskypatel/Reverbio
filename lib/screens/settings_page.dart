@@ -414,7 +414,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           constraints: BoxConstraints(
                             maxWidth: constraints.maxWidth * .4,
                           ),
-                          child: Text(offlineDirectory.value, softWrap: true),
+                          child: Text(offlineDirectory.value ?? '', softWrap: true),
                         ),
                       ),
                 ),
@@ -538,7 +538,7 @@ class _SettingsPageState extends State<SettingsPage> {
           tileName: context.l10n!.licenses,
           tileIcon: FluentIcons.document_24_filled,
           borderRadius: commonCustomBarRadiusFirst,
-          onTap: () => NavigationManager.router.go('/settings/license'),
+          onTap: () => NavigationManager.router!.go('/settings/license'),
         ),
         CustomBar(
           tileName: '${context.l10n!.copyLogs} (${logger.getLogCount()})',
@@ -549,7 +549,7 @@ class _SettingsPageState extends State<SettingsPage> {
           tileName: context.l10n!.about,
           tileIcon: FluentIcons.book_information_24_filled,
           borderRadius: commonCustomBarRadiusLast,
-          onTap: () => NavigationManager.router.go('/settings/about'),
+          onTap: () => NavigationManager.router!.go('/settings/about'),
         ),
       ],
     );
@@ -599,7 +599,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onSubmit: () {
                 if (newDir != offlineDirectory.value) {
                   offlineDirectory.value = ensureReverbioPath(newDir);
-                  Directory(offlineDirectory.value).create(recursive: true);
+                  Directory(offlineDirectory.value!).create(recursive: true);
                   showToast(
                     '${context.l10n!.newDir}: "$newDir" ${context.l10n!.settingChangedMsg}',
                     context: context,

@@ -91,6 +91,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   @override
   void dispose() {
+    _infoRequestFuture.dispose();
     super.dispose();
   }
 

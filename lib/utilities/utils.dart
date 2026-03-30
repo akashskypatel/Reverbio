@@ -106,71 +106,71 @@ const androidDeviceTypes = {
 };
 
 Map getAudioDeviceCategory(String category, {BuildContext? context}) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   final categoryOrder = <String, dynamic>{
     'Android Auto': {
       'order': 1,
-      'localization': context.l10n!.androidAuto,
+      'localization': context.l10n?.androidAuto ?? 'Android Auto',
       'icon': ReverbioIcons.android_auto_monochrome,
     },
     'Car Audio': {
       'order': 2,
-      'localization': context.l10n!.carAudio,
+      'localization': context.l10n?.carAudio ?? 'Car Audio',
       'icon': FluentIcons.vehicle_car_24_filled,
     },
     'Bluetooth': {
       'order': 3,
-      'localization': context.l10n!.bluetooth,
+      'localization': context.l10n?.bluetooth ?? 'Bluetooth',
       'icon': FluentIcons.bluetooth_24_filled,
     },
     'AUX': {
       'order': 4,
-      'localization': context.l10n!.aux,
+      'localization': context.l10n?.aux ?? 'AUX',
       'icon': FluentIcons.connector_24_filled,
     },
     'Radio': {
       'order': 5,
-      'localization': context.l10n!.radio,
+      'localization': context.l10n?.radio ?? 'Radio',
       'icon': Icons.radio,
     },
     'Hearing Aid': {
       'order': 6,
-      'localization': context.l10n!.hearingAid,
+      'localization': context.l10n?.hearingAid ?? 'Hearing Aid',
       'icon': Icons.hearing,
     },
     'Wired Headphones': {
       'order': 7,
-      'localization': context.l10n!.wiredHeadphones,
+      'localization': context.l10n?.wiredHeadphones ?? 'Wired Headphones',
       'icon': FluentIcons.headphones_24_filled,
     },
     'USB Audio': {
       'order': 8,
-      'localization': context.l10n!.usbAudio,
+      'localization': context.l10n?.usbAudio ?? 'USB Audio',
       'icon': FluentIcons.speaker_usb_24_filled,
     },
     'Docking Station': {
       'order': 9,
-      'localization': context.l10n!.dockingStation,
+      'localization': context.l10n?.dockingStation ?? 'Docking Station',
       'icon': FluentIcons.dock_24_filled,
     },
     'Phone Speaker': {
       'order': 10,
-      'localization': context.l10n!.phoneSpeaker,
+      'localization': context.l10n?.phoneSpeaker ?? 'Phone Speaker',
       'icon': FluentIcons.speaker_2_24_filled,
     },
     'Phone Earpiece': {
       'order': 11,
-      'localization': context.l10n!.phoneEarpiece,
+      'localization': context.l10n?.phoneEarpiece ?? 'Phone Earpiece',
       'icon': FluentIcons.call_24_filled,
     },
     'HDMI': {
       'order': 12,
-      'localization': context.l10n!.hdmi,
+      'localization': context.l10n?.hdmi ?? 'HDMI',
       'icon': FluentIcons.tv_usb_24_filled,
     },
     'Other': {
       'order': 13,
-      'localization': context.l10n!.other,
+      'localization': context.l10n?.other ?? 'Other',
       'icon': FluentIcons.speaker_box_24_filled,
     },
   };
@@ -429,7 +429,7 @@ List<Map<String, dynamic>> safeConvert(dynamic input) {
 }
 
 bool isLargeScreen({BuildContext? context}) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   return MediaQuery.of(context).size.height <
           MediaQuery.of(context).size.width ||
       MediaQuery.of(context).size.width > 540;
@@ -492,7 +492,7 @@ Future<int> checkUrl(String url) async {
     if (isFilePath(url)) return (doesFileExist(url)) ? 200 : 400;
     final response = await http.head(Uri.parse(url));
     if (response.statusCode == 403 && Uri.parse(url).host == 'youtube.com') {
-      showToast(NavigationManager().context.l10n!.youtubeInaccessible);
+      showToast(NavigationManager().context?.l10n?.youtubeInaccessible ?? 'YouTube is inaccessible');
       logger.log('Forbidden error trying to play YouTube Stream', {
         'message': response.body,
         'status': response.statusCode,
@@ -955,7 +955,7 @@ dynamic _deepCopyValue(dynamic value) {
 }
 
 Future<void> checkInternetConnection() async {
-  final context = NavigationManager().context;
+  final context = NavigationManager().context!;
   try {
     Future<bool> testConnection() async {
       try {
@@ -1296,18 +1296,26 @@ Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
 
 Future<void> clearTempFiles() async {
   try {
-    // ignore: body_might_complete_normally_catch_error, argument_type_not_assignable_to_error_handler
-    await FilePicker.platform.clearTemporaryFiles().catchError(() {});
+    await FilePicker.platform.clearTemporaryFiles().catchError((e) {
+      // Ignore errors from clearTemporaryFiles
+      return false;
+    });
     try {
-      Directory(
+      final tempDir = Directory(
         ensureReverbioPath((await getTemporaryDirectory()).path),
-      ).deleteSync(recursive: true);
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}',
-        e,
-        stackTrace,
       );
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (e, stackTrace) {
+      // Ignore errors if temp directory doesn't exist
+      if (e is! FileSystemException) {
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()}',
+          e,
+          stackTrace,
+        );
+      }
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);

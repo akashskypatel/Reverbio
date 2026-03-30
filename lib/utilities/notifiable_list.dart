@@ -25,11 +25,9 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
-import 'package:reverbio/main.dart';
 import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/utilities/notifiable_future.dart'
     show FutureTrackerState;
-import 'package:reverbio/widgets/spinner.dart';
 
 class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
   NotifiableList() : _boxName = null, _category = null, _isInitialized = true;
@@ -46,8 +44,9 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     if (_boxName == null || _category == null) {
       _isInitialized = true;
       _initializationCompleter.complete(_items);
+    } else {
+      _initializeFromHive(test);
     }
-    _initializeFromHive(test);
   }
   NotifiableList._internalAsync(Future<Iterable<T>> itemsFuture)
     : _boxName = null,
@@ -70,6 +69,9 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       minimizeFunction: minimizeFunction,
     );
   }
+  // R7 fix: Note intentional asymmetry - _initializeFromAsync does not add writeToCache listener
+  // because it's used for non-Hive async data sources that shouldn't be persisted.
+  // Only _initializeFromHive adds the writeToCache listener for Hive-backed lists.
   Future<void> _initializeFromAsync(Future<Iterable<T>> itemsFuture) async {
     notifyListeners();
     try {
@@ -81,11 +83,7 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       _isInitialized = true;
       _initializationCompleter.completeError(e);
       _hasError = true;
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
+      debugPrint('Error in ${stackTrace.getCurrentMethodName()}: $e');
     }
     notifyListeners();
   }
@@ -114,7 +112,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
           }
         }
       else
-        _items.addAll(value.map((e) => _minimize == null ? e : _minimize!(e)));
+        // R8 fix: Don't apply minimize on load - data is already minimized on write
+        _items.addAll(value);
       addListener(writeToCache);
       _isInitialized = true;
       _initializationCompleter.complete(_items);
@@ -124,11 +123,7 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       _isInitialized = true;
       _initializationCompleter.completeError(e);
       _hasError = true;
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
+      debugPrint('Error in ${stackTrace.getCurrentMethodName()}: $e');
     }
     notifyListeners();
   }
@@ -151,6 +146,10 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
 
   Future<Iterable<T>> ensureInitialized() async {
     if (_isInitialized) return _items;
+    // R5 fix: Guard against re-triggering Hive init on error path
+    if (_initializationCompleter.isCompleted) {
+      return _items;
+    }
     if (!_initializationCompleter.isCompleted) {
       return _initializationCompleter.future;
     }
@@ -184,6 +183,33 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     }
     _debounceTimer?.cancel(); // Cancel timer on dispose
     super.dispose();
+  }
+
+  // R4 fix: Evict items older than the specified TTL
+  // Used for cache eviction based on cachedAt timestamp
+  void evictOlderThan(Duration ttl) {
+    final cutoff = DateTime.now().subtract(ttl);
+    final toRemove = <int>[];
+    for (int i = 0; i < _items.length; i++) {
+      final item = _items[i];
+      if (item is Map && item['cachedAt'] is String) {
+        try {
+          final cachedAt = DateTime.parse(item['cachedAt'] as String);
+          if (cachedAt.isBefore(cutoff)) {
+            toRemove.add(i);
+          }
+        } catch (_) {
+          // Skip items with invalid cachedAt
+        }
+      }
+    }
+    // Remove in reverse order to maintain correct indices
+    for (final index in toRemove.reversed) {
+      _items.removeAt(index);
+    }
+    if (toRemove.isNotEmpty) {
+      notifyListeners();
+    }
   }
 
   @override
@@ -267,18 +293,21 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
 
   @override
   void retainWhere(bool Function(T element) test) {
+    final beforeLength = _items.length;
     _items.retainWhere(test);
-    notifyListeners();
+    // R6 fix: Only notify if length changed (something was removed)
+    if (_items.length != beforeLength) {
+      notifyListeners();
+    }
   }
 
   @override
-  bool removeWhere(bool Function(T) test) {
+  void removeWhere(bool Function(T) test) {
     final removed = _items.any(test);
     _items.removeWhere(test);
     if (removed) {
       notifyListeners();
     }
-    return removed;
   }
 
   void addOrUpdate(T item, bool Function(T, T) predicate) {
@@ -291,10 +320,17 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     notifyListeners();
   }
 
+  // R3 fix: Inline addOrUpdate logic to avoid O(n²) notifications
   void addOrUpdateAll(List<T> items, bool Function(T, T) predicate) {
     for (final item in items) {
-      addOrUpdate(item, predicate);
+      final index = _items.indexWhere((e) => predicate(e, item));
+      if (index != -1) {
+        _items[index] = item;
+      } else {
+        _items.add(item);
+      }
     }
+    // Single notification at end instead of per-item
     notifyListeners();
   }
 
@@ -365,6 +401,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
   FutureTrackerState get state {
     if (isLoading) return FutureTrackerState.loading;
     if (hasError) return FutureTrackerState.error;
+    // R8 fix: Distinguish "loaded but empty" from "never loaded"
+    if (_isInitialized) return FutureTrackerState.success;
     if (hasData) return FutureTrackerState.success;
     return FutureTrackerState.idle;
   }
@@ -376,22 +414,23 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     Widget Function(dynamic error, StackTrace? stackTrace)? error,
     Widget Function()? idle,
   }) {
-    switch (state) {
-      case FutureTrackerState.loading:
-        return loading?.call() ?? const Spinner();
-      case FutureTrackerState.success:
-        return data(_items);
-      case FutureTrackerState.error:
-        logger.log(
-          'Error in ${_stackTrace?.getCurrentMethodName()}:',
-          _error,
-          _stackTrace,
-        );
-        return error?.call(_error, _stackTrace) ??
-            Text(L10n.current.runtimeError);
-      case FutureTrackerState.idle:
-      default:
-        return idle?.call() ?? const SizedBox.shrink();
-    }
+    return ListenableBuilder(
+      listenable: this,
+      builder: (context, child) {
+        switch (state) {
+          case FutureTrackerState.loading:
+            return loading?.call() ?? const CircularProgressIndicator.adaptive();
+          case FutureTrackerState.success:
+            return data(_items);
+          case FutureTrackerState.error:
+            debugPrint('Error: $_error');
+            return error?.call(_error, _stackTrace) ??
+                Text(L10n.current.runtimeError);
+          case FutureTrackerState.idle:
+          default:
+            return idle?.call() ?? const SizedBox.shrink();
+        }
+      },
+    );
   }
 }

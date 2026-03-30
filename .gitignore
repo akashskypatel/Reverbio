@@ -58,3 +58,6 @@ l10nupdate.json
 /android/app/build
 /android/build/reports/problems
 .reviews/*
+.windsurf/*
+.claude/*
+*qwen/*

@@ -36,7 +36,6 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/services/hive_service.dart';
-import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/widget_factory.dart';
 import 'package:reverbio/utilities/common_variables.dart';
@@ -47,6 +46,7 @@ import 'package:reverbio/widgets/section_header.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 typedef WF = WidgetFactory;
+typedef PM = PluginsManager;
 
 class PluginsManager {
   PluginsManager._();
@@ -88,10 +88,9 @@ class PluginsManager {
   }
 
   static Future<bool> syncPlugin(Map<String, dynamic> plugin) async {
-    final context = NavigationManager().context;
     if (_isProcessingNotifiers[plugin['name']]!.value) {
       showToast(
-        '${plugin['name']}: ${context.l10n!.cannotSyncPlugin}. ${context.l10n!.waitForJob}.',
+        '${plugin['name']}: ${L10n.current.cannotSyncPlugin}. ${L10n.current.waitForJob}.',
       );
       return false;
     }
@@ -106,7 +105,7 @@ class PluginsManager {
         if (isFilePath(source)) {
           if (Platform.isAndroid || Platform.isIOS) {
             showToast(
-              '${context.l10n!.cannotReloadLocalPlugin}: ${plugin['name']}',
+              '${L10n.current.cannotReloadLocalPlugin}: ${plugin['name']}',
             );
             return false;
           }
@@ -281,7 +280,6 @@ class PluginsManager {
 
   static Future<void> _executeBackground(String pluginName) async {
     try {
-      final context = NavigationManager().context;
       if (_futures[pluginName].isEmpty) {
         _activeJob[pluginName] = null;
         _isProcessingNotifiers[pluginName]!.value = false;
@@ -310,7 +308,7 @@ class PluginsManager {
           asyncResult = await jsRuntime.handlePromise(promise);
         } catch (e, stackTrace) {
           _activeJob[pluginName]['result'] = {
-            'message': context.l10n!.runtimeError,
+            'message': L10n.current.runtimeError,
           };
           _activeJob[pluginName]['error'] = true;
           _activeJob[pluginName]['completed'] = DateTime.now();
@@ -333,8 +331,7 @@ class PluginsManager {
               '${asyncResult.stringResult} ${_activeJob[pluginName]['code']}',
               null,
             );
-            final context = NavigationManager().context;
-            showToast('${context.l10n!.jobError}: ${asyncResult.stringResult}');
+            showToast('${L10n.current.jobError}: ${asyncResult.stringResult}');
           }
         }
         jsRuntime.dispose();
@@ -515,9 +512,8 @@ class PluginsManager {
   static void removePlugin(String pluginName) {
     try {
       if (_isProcessingNotifiers[pluginName]?.value ?? false) {
-        final context = NavigationManager().context;
         showToast(
-          '${context.l10n!.cannotRemovePlugin} ${context.l10n!.waitForJob}',
+          '${L10n.current.cannotRemovePlugin} ${L10n.current.waitForJob}',
         );
         return;
       }
@@ -585,7 +581,7 @@ class PluginsManager {
     try {
       if (result == null) {
         showToast(
-          '$pluginName: $message ${context.l10n!.failed}.',
+          '$pluginName: $message ${L10n.current.failed}.',
           context: context,
         );
         return;
@@ -596,7 +592,7 @@ class PluginsManager {
               : result is String
               ? result
               : result['message'] == null
-              ? message ?? '$pluginName ${context.l10n!.operationPerformed}'
+              ? message ?? '$pluginName ${L10n.current.operationPerformed}'
               : '$pluginName: ${result['message']}';
       showToast(text, context: context);
     } catch (e, stackTrace) {
@@ -711,7 +707,7 @@ class PluginsManager {
         builder:
             (context, constraints) => Column(
               children: [
-                SectionHeader(title: context.l10n!.settings),
+                SectionHeader(title: L10n.current.settings),
                 Flexible(
                   flex: 3,
                   child: SingleChildScrollView(
@@ -723,7 +719,7 @@ class PluginsManager {
                     ),
                   ),
                 ),
-                SectionHeader(title: context.l10n!.backgroundJobs),
+                SectionHeader(title: L10n.current.backgroundJobs),
                 if (_isProcessingNotifiers[pluginName] != null &&
                     _backgroundJobNotifiers[pluginName] != null)
                   Flexible(
@@ -745,7 +741,7 @@ class PluginsManager {
                   )
                 else
                   Card(
-                    child: ListTile(title: Text(context.l10n!.nothingInQueue)),
+                    child: ListTile(title: Text(L10n.current.nothingInQueue)),
                   ),
               ],
             ),
@@ -853,7 +849,7 @@ class PluginsManager {
                     ? [
                       Card(
                         child: ListTile(
-                          title: Text(context.l10n!.nothingInQueue),
+                          title: Text(L10n.current.nothingInQueue),
                         ),
                       ),
                     ]

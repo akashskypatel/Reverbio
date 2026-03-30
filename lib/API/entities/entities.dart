@@ -22,94 +22,153 @@
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/DB/albums.db.dart';
+import 'package:reverbio/DB/playlists.db.dart';
+import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 
+// A2 fix: Moved from playlist.dart to break song.dart <-> playlist.dart cycle
+List dbPlaylists = [...playlistsDB, ...albumsDB];
+dynamic nextRecommendedSong;
+
 Future<void> initializeData() async {
-  await userLikedSongsList.ensureInitialized();
-  await cachedSongsList.ensureInitialized();
-  await userOfflineSongs.ensureInitialized();
-  await userLikedAlbumsList.ensureInitialized();
-  await cachedAlbumsList.ensureInitialized();
-  await userLikedArtistsList.ensureInitialized();
-  await cachedArtistsList.ensureInitialized();
-  await userPlaylists.ensureInitialized();
-  await userCustomPlaylists.ensureInitialized();
-  await userOfflinePlaylists.ensureInitialized();
-  await userLikedPlaylists.ensureInitialized();
-  await userRecentlyPlayed.ensureInitialized();
-  await searchHistory.ensureInitialized();
-  await userDeviceSongs.ensureInitialized();
+  // R7 fix: Use Future.wait for parallel initialization of independent lists
+  await Future.wait([
+    userLikedSongsList.ensureInitialized(),
+    cachedSongsList.ensureInitialized(),
+    userOfflineSongs.ensureInitialized(),
+    userLikedAlbumsList.ensureInitialized(),
+    cachedAlbumsList.ensureInitialized(),
+    userLikedArtistsList.ensureInitialized(),
+    cachedArtistsList.ensureInitialized(),
+    userPlaylists.ensureInitialized(),
+    userCustomPlaylists.ensureInitialized(),
+    userOfflinePlaylists.ensureInitialized(),
+    userLikedPlaylists.ensureInitialized(),
+    userRecentlyPlayed.ensureInitialized(),
+    searchHistory.ensureInitialized(),
+    userDeviceSongs.ensureInitialized(),
+  ]);
+  
+  // R4 fix: Evict cached items older than 30 days
+  evictOldCachedItems();
+}
+
+// R4 fix: Evict cached items older than 30 days
+void evictOldCachedItems() {
+  const cacheTTL = Duration(days: 30);
+  cachedSongsList.evictOlderThan(cacheTTL);
+  cachedAlbumsList.evictOlderThan(cacheTTL);
+  cachedArtistsList.evictOlderThan(cacheTTL);
+}
+
+void disposeData() {
+  userLikedSongsList.dispose();
+  cachedSongsList.dispose();
+  userOfflineSongs.dispose();
+  userLikedAlbumsList.dispose();
+  cachedAlbumsList.dispose();
+  userLikedArtistsList.dispose();
+  cachedArtistsList.dispose();
+  userPlaylists.dispose();
+  userCustomPlaylists.dispose();
+  userOfflinePlaylists.dispose();
+  userLikedPlaylists.dispose();
+  userRecentlyPlayed.dispose();
+  searchHistory.dispose();
+  userDeviceSongs.dispose();
+}
+
+// R5/R6 fix: Minimize function for playlists - strips 'list' field to save space
+Map<String, dynamic> _minimizePlaylistData(dynamic playlist) {
+  return {
+    'id': playlist['id'],
+    'primary-type': playlist['primary-type'] ?? 'playlist',
+    'title': playlist['title'] ?? playlist['name'],
+    'artist': playlist['artist'],
+    'source': playlist['source'],
+    'entity': playlist['entity'],
+    'videoCount': playlist['videoCount'],
+    'cachedAt': DateTime.now().toString(),
+    'image': playlist['image'] ?? playlist['thumbnail'],
+  };
 }
 
 final NotifiableList<Map<String, dynamic>> userLikedSongsList =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'user',
+      HiveBoxNames.user,
       'likedSongs',
       minimizeFunction: minimizeSongData,
-    ); // convert to List<String>
+    );
 final NotifiableList<Map<String, dynamic>> cachedSongsList =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'cache',
+      HiveBoxNames.cache,
       'cachedSongs',
       minimizeFunction: minimizeSongData,
     );
 final NotifiableList<String> userOfflineSongs = NotifiableList<String>.fromHive(
-  'userNoBackup',
+  HiveBoxNames.userNoBackup,
   'offlineSongs',
 );
 final NotifiableList<Map<String, dynamic>> userLikedAlbumsList =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'user',
+      HiveBoxNames.user,
       'likedAlbums',
       minimizeFunction: minimizeAlbumData,
-    ); // convert to List<String>
+    );
 final NotifiableList<Map<String, dynamic>> cachedAlbumsList =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'cache',
+      HiveBoxNames.cache,
       'cachedAlbums',
       minimizeFunction: minimizeAlbumData,
     );
 final NotifiableList<Map<String, dynamic>> userLikedArtistsList =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'user',
+      HiveBoxNames.user,
       'likedArtists',
       minimizeFunction: minimizeArtistData,
-    ); // convert to List<String>
+    );
 final NotifiableList<Map<String, dynamic>> cachedArtistsList =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'cache',
+      HiveBoxNames.cache,
       'cachedArtists',
       minimizeFunction: minimizeArtistData,
     );
 final NotifiableList<String> userPlaylists = NotifiableList<String>.fromHive(
-  'user',
+  HiveBoxNames.user,
   'playlists',
 );
 final NotifiableList<Map<String, dynamic>> userCustomPlaylists =
-    NotifiableList<Map<String, dynamic>>.fromHive('user', 'customPlaylists');
+    NotifiableList<Map<String, dynamic>>.fromHive(
+      HiveBoxNames.user,
+      'customPlaylists',
+      minimizeFunction: _minimizePlaylistData,
+    );
 final NotifiableList<Map<String, dynamic>> userOfflinePlaylists =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'user',
+      HiveBoxNames.user,
       'offlinePlaylists',
-    ); // convert to List<String>
+      minimizeFunction: _minimizePlaylistData,
+    );
 final NotifiableList<Map<String, dynamic>> userLikedPlaylists =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'user',
+      HiveBoxNames.user,
       'likedPlaylists',
-    ); // convert to List<String>
+      minimizeFunction: _minimizePlaylistData,
+    );
 final NotifiableList<Map<String, dynamic>> userRecentlyPlayed =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'user',
+      HiveBoxNames.user,
       'recentlyPlayedSongs',
       minimizeFunction: minimizeSongData,
-    ); // convert to List<String>
+    );
 final NotifiableList<String> searchHistory = NotifiableList<String>.fromHive(
-  'user',
+  HiveBoxNames.user,
   'searchHistory',
 );
 final NotifiableList<Map<String, dynamic>> userDeviceSongs =
     NotifiableList<Map<String, dynamic>>.fromHive(
-      'userNoBackup',
+      HiveBoxNames.userNoBackup,
       'userDeviceSongs',
       minimizeFunction: minimizeSongData,
     );

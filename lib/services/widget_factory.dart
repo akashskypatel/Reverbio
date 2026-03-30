@@ -28,8 +28,6 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 
-typedef PM = PluginsManager;
-
 class WidgetFactory {
   WidgetFactory._();
 

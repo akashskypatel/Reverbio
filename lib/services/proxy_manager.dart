@@ -54,7 +54,7 @@ class Proxy {
   }
 
   @override
-  int get hashCode => address.hashCode ^ country.hashCode;
+  int get hashCode => Object.hash(address, country);
 }
 
 class ProxyManager {
@@ -66,9 +66,12 @@ class ProxyManager {
   static Future<void>? _fetchingList;
   static bool _fetched = false;
   static final Map<String, Set<Proxy>> _proxies = {};
-  static final Set<Proxy> _workingProxies = {};
+  // R4 fix: Track working proxies with timestamps for TTL-based expiration
+  static final Map<Proxy, DateTime> _workingProxies = {};
+  // R4 fix: TTL for working proxies (10 minutes)
+  static const Duration _workingProxyTTL = Duration(minutes: 10);
   static final _random = Random();
-  static DateTime _lastFetched = DateTime.now();
+  static DateTime _lastFetched = DateTime.fromMillisecondsSinceEpoch(0);
   static IOClient _proxyClient = IOClient();
   static final YoutubeExplode _localYTClient = YoutubeExplode();
   static YoutubeExplode _proxyYTClient = YoutubeExplode();
@@ -77,42 +80,45 @@ class ProxyManager {
   YoutubeExplode get proxyYoutubeClient => _proxyYTClient;
 
   static Future<void> ensureInitialized() async {
-    if (_fetchingList != null)
-      await _fetchingList!.then((_) {
-        _proxyClient = _randomProxyClient();
-        _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
-      });
-    else if (_proxies.isEmpty ||
+    final fetchingList = _fetchingList;
+    if (fetchingList != null) {
+      await fetchingList;
+    } else if (_proxies.isEmpty ||
         DateTime.now().difference(_lastFetched).inMinutes >= 60 ||
-        !_fetched)
-      await _fetchProxies().then((_) {
-        _proxyClient = _randomProxyClient();
-        _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
-      });
+        !_fetched) {
+      await _fetchProxies();
+    }
+
+    // Reinitialize clients after fetch is complete
+    _proxyClient.close();
+    _proxyYTClient.close();
+    _proxyClient = _randomProxyClient();
+    _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
   }
 
   static Future<void> _fetchProxies() async {
     try {
       if (kDebugMode) logger.log('Fetching proxies...', null, null);
-      if (_fetchingList == null ||
-          DateTime.now().difference(_lastFetched).inMinutes >= 60) {
-        final futures =
-            <Future>[]
-              //..add(_fetchSpysMe())
-              //..add(_fetchOpenProxyListXyz())
-              ..add(_fetchProxyScrape())
-              ..add(_fetchOpenProxyList())
-              ..add(_fetchJetkaiProxyList());
-        _fetchingList = Future.wait(futures);
-        await _fetchingList?.whenComplete(() {
-          _fetched = true;
-          if (kDebugMode) logger.log('Done fetching Proxies.', null, null);
-          _lastFetched = DateTime.now();
-          _fetchingList = null;
-        });
-      } else {
-        await _fetchingList;
+      _proxies.clear();
+      // Clear working proxies on refresh to prevent stale entries
+      _workingProxies.clear();
+
+      final futures =
+          <Future>[]
+            ..add(_fetchJetkaiProxyList())
+            ..add(_fetchOpenProxyList())
+            ..add(_fetchProxyScrape());
+
+      final results = await Future.wait(futures);
+      for (final result in results) {
+        if (result != null) {
+          for (final proxy in result) {
+            _proxies[proxy.address] = proxy;
+          }
+        }
       }
+      _lastFetched = DateTime.now();
+      _fetched = true;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -180,6 +186,36 @@ class ProxyManager {
     }
   }
 
+  ///
+  /// Fetches proxies from jetkai/proxy-list
+  ///
+  /// Example Schema:
+  ///
+  /// [ {
+  ///  "ip" : "1.0.136.16",
+  ///  "port" : 4153,
+  ///  "protocols" : [ {
+  ///    "type" : "socks4",
+  ///    "port" : 4153,
+  ///    "tls" : false
+  ///  } ],
+  ///  "location" : {
+  ///    "continent" : "Asia",
+  ///    "country" : "Thailand",
+  ///    "isocode" : "TH",
+  ///    "region" : "Nakhon Pathom",
+  ///    "regioncode" : "73",
+  ///    "city" : "Nakhon Pathom",
+  ///    "latitude" : 13.8667,
+  ///    "longitude" : 100.1917,
+  ///    "provider" : "TOT Public Company Limited",
+  ///    "organisation" : "TOT Public Company Limited",
+  ///    "asn" : "AS23969"
+  ///  },
+  ///  "dateAdded" : "2023-04-10 23:34:13.0",
+  ///  "lastTested" : "2023-04-15 02:35:46.0",
+  ///  "lastSuccess" : "2023-04-15 02:35:45.0"
+  ///}]
   static Future<void> _fetchJetkaiProxyList() async {
     try {
       if (kDebugMode)
@@ -193,32 +229,65 @@ class ProxyManager {
         return;
       }
       final result = jsonDecode(response.body);
-      (result as List).fold(_proxies, (v, e) {
-        final isSSL = (e['protocols'] as List).any(
-          (e) =>
-              [
-                //'https',
-                'socks4', 'socks5',
-              ].contains(e['type']) &&
-              e['tls'] == true,
-        );
-        if (e['ip'] != null &&
-            e['port'] != null &&
-            e['location']['isocode'] != null &&
-            isSSL) {
+      // Handle both array and object with 'proxies' key
+      final List proxiesList;
+      if (result is List) {
+        proxiesList = result;
+      } else if (result is Map && result['proxies'] is List) {
+        proxiesList = result['proxies'] as List;
+      } else {
+        logger.log('Unexpected jetkai response format', null, null);
+        return;
+      }
+
+      for (final e in proxiesList) {
+        try {
+          if (e is! Map) continue;
+          final entry = e as Map<String, dynamic>;
+          
+          // Parse protocols array - check for SOCKS4/SOCKS5 with TLS
+          final protocols = entry['protocols'];
+          if (protocols is! List || protocols.isEmpty) continue;
+          
+          final isSSL = protocols.any((p) {
+            if (p is! Map) return false;
+            final type = p['type'] as String?;
+            final tls = p['tls'] as bool?;
+            return (type == 'socks4' || type == 'socks5') && (tls ?? false);
+          });
+          
+          if (!isSSL) continue;
+          
+          // Parse location object
+          final location = entry['location'];
+          if (location is! Map) continue;
+          final isocode = location['isocode'] as String?;
+          if (isocode == null || isocode.isEmpty) continue;
+          
+          // Parse ip and port
+          final ip = entry['ip'] as String?;
+          if (ip == null || ip.isEmpty) continue;
+          
+          final port = entry['port'];
+          if (port == null) continue;
+          // Port can be int or String - convert to String
+          final portStr = port is int ? port.toString() : port as String?;
+          if (portStr == null || portStr.isEmpty) continue;
+
           current++;
-          v[e['location']['isocode']] = v[e['location']['isocode']] ?? {};
-          v[e['location']['isocode']]!.add(
+          _proxies[isocode] = _proxies[isocode] ?? {};
+          _proxies[isocode]!.add(
             Proxy(
               source: 'jetkai/proxy-list',
-              address: '${e['ip']}:${e['port']}',
-              country: e['location']['isocode'],
+              address: '$ip:$portStr',
+              country: isocode,
               ssl: isSSL,
             ),
           );
+        } catch (e) {
+          // Skip invalid entries
         }
-        return v;
-      });
+      }
       if (kDebugMode)
         logger.log(
           'Proxies fetched: $current from jetkai/proxy-list',
@@ -234,6 +303,26 @@ class ProxyManager {
     }
   }
 
+  ///
+  /// Fetches proxies from openproxylist
+  ///
+  /// Example Schema:
+  ///
+  /// SOCKS4 Proxy list updated at 2026-03-30 06:00:01 GMT+7
+  /// Website=https://openproxylist.com
+  ///
+  /// Support us:
+  /// BTC : 1PJNmhxKETLqaD6eexiNxg8ofT4uF7GKvF
+  /// ETH : 0x50403baa42092a3424f41fdc3a8621aeda333ee6
+  /// LTC : MAG1cWWEpgdviZChWvr2oyuxD61JPJ1Q43
+  /// Doge: DSmsHYZUz5NZcfCgso1ZSAvz4ayv6kUPKQ
+  /// https://buymeacoffee.com/roosterkid
+  ///
+  /// Fromat: CountryFlag IP:PORT ResponseTime CountryCode [ISP]
+  ///
+  /// 🇲🇳 203.174.26.137:4153 296ms MN [YokozunaNET]
+  /// 🇧🇼 83.143.29.161:1080 285ms BW [BOTSWANA FIBRE NETWORKS (Proprietary) Limited]
+  /// 🇧🇩 203.190.8.59:1088 183ms BD [DAFFODILNET-SUB]
   static Future<void> _fetchOpenProxyList() async {
     try {
       if (kDebugMode) logger.log('Fetching from openproxylist...', null, null);
@@ -247,7 +336,7 @@ class ProxyManager {
         final response = await http.get(Uri.parse(url));
         if (response.statusCode != 200) {
           logger.log('Failed to fetch from openproxylist', null, null);
-          return;
+          continue;
         }
         response.body.split('\n').fold(_proxies, (v, e) {
           final rgx = RegExp(
@@ -288,6 +377,20 @@ class ProxyManager {
     }
   }
 
+  ///
+  /// Fetches proxies from spys.me
+  ///
+  /// Example Schema:
+  ///
+  /// Proxy list (#400) updated at Mon, 30 Mar 26 01:58:01 +0300
+  /// Socks proxy=https://spys.me/socks.txt
+  /// Support by donations:
+  /// BTC bc1q0hxnu4gmn5ru8j7g29tv2dq2ng5g0zhanl6t4t
+  /// IP address:Port CountryCode-Anonymity(Noa/Anm/Hia)-SSL_support(S)-Google_passed(+)
+  ///
+  /// 103.90.67.35:8080 ID-N! -
+  /// 179.1.48.49:8080 CO-N! -
+  /// 114.5.97.150:8080 ID-N -
   static Future<void> _fetchSpysMe() async {
     try {
       if (kDebugMode) logger.log('Fetching from spys.me...', null, null);
@@ -342,6 +445,53 @@ class ProxyManager {
     }
   }
 
+  ///
+  /// Fetches proxies from proxyscrape.com
+  ///
+  /// Example Schema:
+  /// {
+  ///   "proxies": [
+  ///     {
+  ///       "alive": true,
+  ///       "alive_since": 1774827836.8593388,
+  ///       "anonymity": "elite",
+  ///       "average_timeout": 963.237919717382,
+  ///       "first_seen": 1697032567.714141,
+  ///       "ip_data": {
+  ///         "as": "AS46562 Performive LLC",
+  ///         "asname": "PERFORMIVE",
+  ///         "city": "Los Angeles",
+  ///         "continent": "North America",
+  ///         "continentCode": "NA",
+  ///         "country": "United States",
+  ///         "countryCode": "US",
+  ///         "district": "",
+  ///         "hosting": true,
+  ///         "isp": "Performive LLC",
+  ///         "lat": 34.0549,
+  ///         "lon": -118.243,
+  ///         "mobile": false,
+  ///         "org": "Performive LLC",
+  ///         "proxy": true,
+  ///         "regionName": "California",
+  ///         "status": "success",
+  ///         "timezone": "America/Los_Angeles",
+  ///         "zip": "90009"
+  ///       },
+  ///       "ip_data_last_update": 1774499670,
+  ///       "last_seen": 1774827836.8593388,
+  ///       "port": 4145,
+  ///       "protocol": "socks4",
+  ///       "proxy": "socks4://142.54.229.249:4145",
+  ///       "ssl": true,
+  ///       "timeout": 808.3782196044922,
+  ///       "times_alive": 178424,
+  ///       "times_dead": 742837,
+  ///       "uptime": 19.367367119632764,
+  ///       "ip": "142.54.229.249"
+  ///     }
+  ///   ]
+  /// }
   static Future<void> _fetchProxyScrape() async {
     try {
       if (kDebugMode)
@@ -354,25 +504,41 @@ class ProxyManager {
         logger.log('Failed to fetch from proxyscrape', null, null);
         return;
       }
-      final result = jsonDecode(response.body);
-      (result['proxies'] as List).fold(_proxies, (v, e) {
-        if (e['ip_data'] != null &&
-            (e['alive'] ?? false) &&
-            e['ip_data']['countryCode'] != null &&
-            (e['ssl'] ?? false)) {
-          current++;
-          v[e['ip_data']['countryCode']] = v[e['ip_data']['countryCode']] ?? {};
-          v[e['ip_data']['countryCode']]!.add(
-            Proxy(
-              source: 'proxyscrape.com',
-              address: '${e['ip']}:${e['port']}',
-              country: e['ip_data']['countryCode'],
-              ssl: e['ssl'],
-            ),
-          );
+      final result = jsonDecode(response.body) as Map<String, dynamic>;
+      final proxiesList = result['proxies'] as List?;
+      if (proxiesList == null) {
+        logger.log('No proxies in proxyscrape response', null, null);
+        return;
+      }
+      for (final e in proxiesList) {
+        try {
+          if (e is! Map) continue;
+          final entry = e as Map<String, dynamic>;
+          final ipData = entry['ip_data'];
+          if (ipData is! Map) continue;
+
+          final countryCode = ipData['countryCode'] as String?;
+          final ip = entry['ip'] as String?;
+          final port = entry['port']; // Can be int or String
+          final alive = entry['alive'] as bool?;
+          final ssl = entry['ssl'] as bool?;
+
+          if (countryCode != null && (alive ?? false) && (ssl ?? false)) {
+            current++;
+            _proxies[countryCode] = _proxies[countryCode] ?? {};
+            _proxies[countryCode]!.add(
+              Proxy(
+                source: 'proxyscrape.com',
+                address: '$ip:$port',
+                country: countryCode,
+                ssl: ssl ?? false,
+              ),
+            );
+          }
+        } catch (e) {
+          // Skip invalid entries
         }
-        return v;
-      });
+      }
       if (kDebugMode)
         logger.log(
           'Proxies fetched: $current from proxyscrape.com',
@@ -428,7 +594,8 @@ class ProxyManager {
       final manifest = await ytExplode.videos.streams
           .getManifest(songId, ytClients: [YoutubeApiClient.androidVr])
           .timeout(Duration(seconds: timeout));
-      _workingProxies.add(proxy);
+      // R4 fix: Add proxy with current timestamp for TTL tracking
+      _workingProxies[proxy] = DateTime.now();
       if (kDebugMode)
         logger.log(
           'Manifest success by proxy: ${proxy.source} - ${proxy.address}',
@@ -438,6 +605,8 @@ class ProxyManager {
       ytExplode.close();
       return manifest;
     } catch (e) {
+      // Remove from working proxies on failure
+      _workingProxies.remove(proxy);
       logger.log('Proxy ${proxy.source} - ${proxy.address} failed', e, null);
       return null;
     }
@@ -483,12 +652,20 @@ class ProxyManager {
       if (_proxies.isEmpty) return null;
       Proxy proxy;
       String countryCode;
+      
+      // R4 fix: Expire old working proxies based on TTL
+      final now = DateTime.now();
+      _workingProxies.removeWhere((_, timestamp) => 
+          now.difference(timestamp) > _workingProxyTTL);
+      
       if (_workingProxies.isNotEmpty) {
+        // R4 fix: Select from working proxies (keys of the map)
+        final workingProxyList = _workingProxies.keys.toList();
         final idx =
-            _workingProxies.length == 1
+            workingProxyList.length == 1
                 ? 0
-                : _random.nextInt(_workingProxies.length);
-        proxy = _workingProxies.elementAt(idx);
+                : _random.nextInt(workingProxyList.length);
+        proxy = workingProxyList[idx];
       } else {
         if (preferredCountry != null &&
             _proxies.containsKey(preferredCountry)) {
@@ -538,6 +715,22 @@ class ProxyManager {
     final completer = Completer<String>();
     final receivePort = ReceivePort();
     try {
+      // Serialize proxies for isolate
+      final serializableProxies = <String, List<Map<String, dynamic>>>{};
+      for (final entry in _proxies.entries) {
+        serializableProxies[entry.key] =
+            entry.value
+                .map(
+                  (p) => {
+                    'address': p.address,
+                    'country': p.country,
+                    'ssl': p.ssl,
+                    'source': p.source,
+                  },
+                )
+                .toList();
+      }
+
       final isolate = await Isolate.spawn(
         _getYouTubeAudioUrl,
         _IsolateMessage(
@@ -546,6 +739,7 @@ class ProxyManager {
           timeout: timeout,
           qualitySetting: qualitySetting,
           useProxy: useProxy,
+          proxies: serializableProxies.isNotEmpty ? serializableProxies : null,
         ),
       );
 
@@ -555,7 +749,7 @@ class ProxyManager {
         } else if (message is Exception) {
           completer.completeError(message);
         } else {
-          completer.complete('');
+          completer.completeError(Exception('Failed to get audio URL'));
         }
         receivePort.close();
         isolate.kill();
@@ -601,6 +795,24 @@ class ProxyManager {
   static Future<void> _getYouTubeAudioUrl(_IsolateMessage message) async {
     String audioUrl = '';
     try {
+      // Deserialize proxies from message
+      if (message.proxies != null) {
+        _proxies.clear();
+        for (final entry in message.proxies!.entries) {
+          _proxies[entry.key] =
+              entry.value
+                  .map(
+                    (p) => Proxy(
+                      address: p['address'] as String,
+                      country: p['country'] as String,
+                      ssl: p['ssl'] as bool?,
+                      source: p['source'] as String,
+                    ),
+                  )
+                  .toSet();
+        }
+      }
+
       final manifest = await _getSongManifest(
         message.songId,
         message.timeout,
@@ -627,6 +839,9 @@ class ProxyManager {
     List<AudioStreamInfo> availableSources,
     String qualitySetting,
   ) {
+    if (availableSources.isEmpty) {
+      throw StateError('No audio sources available');
+    }
     if (qualitySetting == 'low') {
       return availableSources.last;
     } else if (qualitySetting == 'medium') {
@@ -643,16 +858,21 @@ class ProxyManager {
     int timeout,
   ) async {
     StreamManifest? manifest;
+    const int maxRetries = 5;
+    HttpClient? client;
+    IOClient? ioClient;
+    YoutubeExplode? ytExplode;
     try {
       Proxy? proxy;
-      final client =
+      client =
           HttpClient()
             ..badCertificateCallback = (context, _context, ___) {
               return false;
             };
-      final ioClient = IOClient(client);
-      final ytExplode = YoutubeExplode(YoutubeHttpClient(ioClient));
-      do {
+      ioClient = IOClient(client);
+      ytExplode = YoutubeExplode(YoutubeHttpClient(ioClient));
+
+      for (int attempt = 1; attempt <= maxRetries; attempt++) {
         await Future.delayed(Duration.zero);
         proxy = await _randomProxy();
         if (proxy == null) break;
@@ -664,12 +884,25 @@ class ProxyManager {
                 : 'DIRECT;';
           };
         manifest = await _validateProxy(proxy, songId, timeout, ytExplode);
-      } while (manifest == null);
+        if (manifest != null) break;
+      }
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
+      );
+    } finally {
+      ytExplode?.close();
+      client?.close();
+      ioClient?.close();
+    }
+
+    if (manifest == null) {
+      logger.log(
+        'All $maxRetries proxies failed after $maxRetries attempts',
+        null,
+        null,
       );
     }
     return manifest;
@@ -713,10 +946,12 @@ class _IsolateMessage {
     required this.timeout,
     required this.qualitySetting,
     required this.useProxy,
+    this.proxies,
   });
   final SendPort sendPort;
   final String songId;
   final int timeout;
   final String qualitySetting;
   final bool useProxy;
+  final Map<String, List<Map<String, dynamic>>>? proxies;
 }

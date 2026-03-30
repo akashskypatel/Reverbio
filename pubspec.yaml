@@ -4,11 +4,11 @@ homepage: https://github.com/akashskypatel/Reverbio
 repository: https://github.com/akashskypatel/Reverbio
 issue_tracker: https://github.com/akashskypatel/Reverbio/issues
 
-publish_to: 'none'
+publish_to: "none"
 version: 2.0.0 # run update.sh after changing the version
 
 environment:
-  sdk: '>=3.7.0 <4.0.0'
+  sdk: ">=3.7.0 <4.0.0"
   flutter: ^3.35.3
 
 dependencies:
@@ -22,7 +22,7 @@ dependencies:
   csv: ^6.0.0
   discogs_api_client: ^0.2.1
   dynamic_color: ^1.8.1
-  ffmpeg_kit_flutter_new_audio: ^2.0.0
+  ffmpeg_kit_extended_flutter: ^0.3.4
   file_picker: ^10.3.3
   fluentui_system_icons: ^1.1.273
   flutter:
@@ -31,7 +31,6 @@ dependencies:
   flutter_js: ^0.8.5
   flutter_localizations:
     sdk: flutter
-  fuzzy: ^0.5.1
   fuzzywuzzy: ^1.2.0
   go_router: ^16.3.0
   hive: ^2.2.3
@@ -87,9 +86,9 @@ flutter:
           style: italic
 
 flutter_native_splash:
-  color: '#f9fafd'
+  color: "#f9fafd"
   image: assets/images/ic_splash.png
-  color_dark: '#151515'
+  color_dark: "#151515"
   image_dark: assets/images/ic_splash.png
 
   android_12:
@@ -98,15 +97,20 @@ flutter_native_splash:
 
 flutter_launcher_icons:
   android: true
-  adaptive_icon_background: '#191919'
-  adaptive_icon_foreground: 'assets/images/ic_launcher_foreground.png'
-  adaptive_icon_round: 'assets/images/ic_launcher_round.png'
-  adaptive_icon_monochrome: 'assets/images/ic_launcher_monochrome.png'
-  android_notification_icon : 'assets/images/ic_notification.png'
-  image_path: 'assets/images/ic_launcher.png'
+  adaptive_icon_background: "#191919"
+  adaptive_icon_foreground: "assets/images/ic_launcher_foreground.png"
+  adaptive_icon_round: "assets/images/ic_launcher_round.png"
+  adaptive_icon_monochrome: "assets/images/ic_launcher_monochrome.png"
+  android_notification_icon: "assets/images/ic_notification.png"
+  image_path: "assets/images/ic_launcher.png"
   windows:
     generate: true
     image_path: "assets/images/ic_splash.png"
     icon_size: 256 # min:48, max:256, default: 48
 
 flutter_lints: ^5.0.0
+
+ffmpeg_kit_extended_config:
+  type: "audio" # pre-bundled builds: debug, base, full, audio, video, video_hw
+  gpl: true # enable to include GPL libraries
+  small: true # enable to use smaller builds

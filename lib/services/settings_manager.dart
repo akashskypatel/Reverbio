@@ -24,117 +24,121 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:reverbio/services/plugins_manager.dart';
+import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/notifiable_value.dart';
 import 'package:reverbio/utilities/utils.dart';
 
-typedef PM = PluginsManager;
+export 'package:reverbio/services/plugins_manager.dart' show PM;
 
 Future<void> initializeSettings() async {
-  await playNextSongAutomatically.ensureInitialized(false);
-  await useSystemColor.ensureInitialized(true);
-  await usePureBlackColor.ensureInitialized(false);
-  await offlineMode.ensureInitialized(false);
-  await predictiveBack.ensureInitialized(false);
-  await sponsorBlockSupport.ensureInitialized(true);
-  await skipNonMusic.ensureInitialized(true);
-  await audioQualitySetting.ensureInitialized('high');
-  await enablePlugins.ensureInitialized(false);
-  await languageSetting.ensureInitialized(
-    getLocaleFromLanguageCode('English').toLanguageTag(),
-  );
-  await themeModeSetting.ensureInitialized('dark');
-  await primaryColorSetting.ensureInitialized(0xff91cef4);
-  await volume.ensureInitialized(100);
-  await prepareNextSong.ensureInitialized(false);
-  await useProxies.ensureInitialized(true);
-  await autoCacheOffline.ensureInitialized(false);
-  await postUpdateRun.ensureInitialized({});
-  await streamRequestTimeout.ensureInitialized(30);
-  await audioDevice.ensureInitialized(null);
+  // R10 fix: Use Future.wait for parallel initialization of independent settings
+  await Future.wait([
+    playNextSongAutomatically.ensureInitialized(false),
+    useSystemColor.ensureInitialized(true),
+    usePureBlackColor.ensureInitialized(false),
+    offlineMode.ensureInitialized(false),
+    predictiveBack.ensureInitialized(false),
+    sponsorBlockSupport.ensureInitialized(true),
+    skipNonMusic.ensureInitialized(true),
+    audioQualitySetting.ensureInitialized('high'),
+    enablePlugins.ensureInitialized(false),
+    languageSetting.ensureInitialized(
+      getLocaleFromLanguageCode('English').toLanguageTag(),
+    ),
+    themeModeSetting.ensureInitialized('dark'),
+    primaryColorSetting.ensureInitialized(0xff91cef4),
+    volume.ensureInitialized(100),
+    prepareNextSong.ensureInitialized(false),
+    useProxies.ensureInitialized(true),
+    autoCacheOffline.ensureInitialized(false),
+    postUpdateRun.ensureInitialized({}),
+    streamRequestTimeout.ensureInitialized(30),
+    audioDevice.ensureInitialized(null),
+    additionalDirectories.ensureInitialized(),
+  ]);
+  // offlineDirectory depends on getApplicationSupportDirectory(), initialize separately
   await offlineDirectory.ensureInitialized(
     (await getApplicationSupportDirectory()).path,
   );
-  await additionalDirectories.ensureInitialized();
 }
 
 // Preferences
 
 final playNextSongAutomatically = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'playNextSongAutomatically',
   defaultValue: false,
 );
 
 final useSystemColor = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'useSystemColor',
   defaultValue: Platform.isAndroid,
 );
 
 final usePureBlackColor = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'usePureBlackColor',
   defaultValue: false,
 );
 
 final offlineMode = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'offlineMode',
   defaultValue: false,
 );
 
 final predictiveBack = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'predictiveBack',
   defaultValue: false,
 );
 
 final sponsorBlockSupport = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'sponsorBlockSupport',
   defaultValue: true,
 );
 
 final skipNonMusic = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'skipNonMusic',
   defaultValue: true,
 );
 
 final audioQualitySetting = NotifiableValue<String>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'audioQuality',
   defaultValue: 'high',
 );
 
 final enablePlugins = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'pluginsSupport',
   defaultValue: false,
 );
 
 final languageSetting = NotifiableValue<String>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'language',
   defaultValue: getLocaleFromLanguageCode('English').toLanguageTag(),
 );
 
 final themeModeSetting = NotifiableValue<String>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'themeMode',
   defaultValue: 'dark',
 );
 
 final primaryColorSetting = NotifiableValue<int>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'accentColor',
   defaultValue: 0xff91cef4,
 );
 
 final volume = NotifiableValue<int>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'volume',
   defaultValue: 100,
 );
@@ -147,55 +151,55 @@ final repeatNotifier = ValueNotifier<AudioServiceRepeatMode>(
   AudioServiceRepeatMode.none,
 );
 
-var sleepTimerNotifier = ValueNotifier<Duration?>(null);
+final sleepTimerNotifier = ValueNotifier<Duration?>(null);
 
 // Server-Notifiers
 
 final announcementURL = ValueNotifier<String?>(null);
 
 final prepareNextSong = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'prepareNextSong',
   defaultValue: false,
 );
 
 final useProxies = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'useProxies',
   defaultValue: true,
 );
 
 final autoCacheOffline = NotifiableValue<bool>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'autoCacheOffline',
   defaultValue: false,
 );
 
-final postUpdateRun = NotifiableValue<Map>.fromHive(
-  'settings',
+final postUpdateRun = NotifiableValue<Map<String, dynamic>>.fromHive(
+  HiveBoxNames.settings,
   'postUpdateRun',
   defaultValue: {},
 );
 
 final streamRequestTimeout = NotifiableValue<int>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'streamRequestTimeout',
   defaultValue: 30,
 );
 
-final audioDevice = NotifiableValue<dynamic>.fromHive(
-  'settings',
+final audioDevice = NotifiableValue<Map<String, dynamic>?>.fromHive(
+  HiveBoxNames.settings,
   'audioDevice',
   defaultValue: null,
 );
 
 final offlineDirectory = NotifiableValue<String?>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'offlineDirectory',
   defaultValue: null,
 );
 
 final additionalDirectories = NotifiableList<String>.fromHive(
-  'settings',
+  HiveBoxNames.settings,
   'additionalDirectories_${Platform.operatingSystem}',
 );

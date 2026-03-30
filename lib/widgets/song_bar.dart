@@ -252,6 +252,7 @@ class _SongBarState extends State<SongBar> {
   @override
   void dispose() {
     widget.songFuture.removeListener(_listener);
+    widget.songFuture.dispose();
     super.dispose();
   }
 

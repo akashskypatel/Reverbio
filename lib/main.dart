@@ -168,34 +168,44 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
 
   @override
   void onWindowClose() async {
-    final _isPreventClose = await windowManager.isPreventClose();
-    if (_isPreventClose) {
-      await showDialog(
-        context: NavigationManager().context,
-        builder: (_) {
-          return ConfirmationDialog(
-            title: L10n.current.quitApp,
-            confirmText: L10n.current.confirm,
-            cancelText: L10n.current.cancel,
-            onCancel: () {
-              Navigator.of(context).pop();
-            },
-            onSubmit: () async {
-              await clearTempFiles();
-              await HiveService.close();
-              downloader.FileDownloader().destroy();
-              Navigator.of(context).pop();
-              await windowManager.destroy();
-            },
-          );
-        },
-      );
+    try {
+      final _isPreventClose = await windowManager.isPreventClose();
+      if (_isPreventClose) {
+        await showDialog(
+          context: NavigationManager().context!,
+          builder: (dialogContext) {
+            return ConfirmationDialog(
+              title: L10n.current.quitApp,
+              confirmText: L10n.current.confirm,
+              cancelText: L10n.current.cancel,
+              onCancel: () {
+                Navigator.of(dialogContext).pop();
+              },
+              onSubmit: () async {
+                try {
+                  await clearTempFiles();
+                  disposeData();
+                  await HiveService.close();
+                  downloader.FileDownloader().destroy();
+                  Navigator.of(dialogContext).pop();
+                  await windowManager.destroy();
+                } catch (e, stackTrace) {
+                  logger.log('Window Close Error', e, stackTrace);
+                }
+              },
+            );
+          },
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.log('Window Close Error', e, stackTrace);
     }
   }
 
   @override
   void dispose() {
     if (Platform.isWindows) windowManager.removeListener(this);
+    disposeData();
     unawaited(HiveService.close());
     unawaited(audioHandler.dispose());
     unawaited(clearTempFiles());
@@ -309,7 +319,7 @@ Future<void> initialization() async {
 }
 
 void handleIncomingLink(Uri? uri) async {
-  final context = NavigationManager().context;
+  final context = NavigationManager().context!;
   if (uri != null && uri.scheme == 'reverbio' && uri.host == 'playlist') {
     try {
       if (uri.pathSegments[0] == 'custom') {

@@ -22,7 +22,7 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:fuzzy/fuzzy.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -33,20 +33,21 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/utils.dart';
 
 List globalArtists = [];
+// R10 fix: Loading flag to prevent race condition
+bool _isLoadingRecommendedArtists = false;
 
 /// Returns current liked status if successful.
 Future<bool> updateArtistLikeStatus(dynamic artist, bool add) async {
   try {
     artist['id'] = parseEntityId(artist);
-    if (artist['id']?.isEmpty) throw Exception('ID is null or empty');
+    if (artist['id'] == null || artist['id'].isEmpty) {
+      throw Exception('ID is null or empty');
+    }
     if (add) {
       if (artist['id'] != null &&
           (artist['musicbrainz'] == null || artist['musicbrainz'].isEmpty))
         unawaited(getArtistDetails(artist));
-      userLikedArtistsList.addOrUpdate(
-        minimizeArtistData(artist),
-        checkEntityId,
-      );
+      userLikedArtistsList.addOrUpdate(minimizeArtistData(artist), checkArtist);
       await PM.triggerHook(artist, 'onEntityLiked');
     } else {
       userLikedArtistsList.removeWhere((value) => checkArtist(artist, value));
@@ -84,7 +85,11 @@ bool isArtistAlreadyLiked(artistToCheck) =>
     artistToCheck is Map &&
     userLikedArtistsList.any((artist) => checkArtist(artist, artistToCheck));
 
-Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
+// R13 fix: Return proper Map type on error instead of raw artistData
+Future<Map<String, dynamic>> getArtistDetails(
+  dynamic artistData, {
+  bool refresh = false,
+}) async {
   try {
     final id = parseEntityId(artistData);
     final ids = Uri.parse('?$id').queryParameters;
@@ -95,7 +100,7 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
     if (!refresh) {
       final cached = _getCachedArtist(id);
       if (cached != null) {
-        if (cached?['youtube'] == null || cached?['youtube'].isEmpty)
+        if (cached['youtube'] == null || cached['youtube'].isEmpty)
           cached['youtube'] = await _parseYTRelations(
             List.from(cached['musicbrainz']?['relations'] ?? []),
           );
@@ -140,10 +145,14 @@ Future<Map> getArtistDetails(dynamic artistData, {bool refresh = false}) async {
     return result;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return artistData;
+    // R13 fix: Return Map type on error
+    return artistData is Map<String, dynamic>
+        ? artistData
+        : <String, dynamic>{};
   }
 }
 
+// R11 fix: Add logging for swallowed exceptions
 Future<dynamic> _parseDCRelations(List relations) async {
   final urls = relations.where((e) => e['type'] == 'discogs').toList();
   dynamic data = {};
@@ -157,11 +166,15 @@ Future<dynamic> _parseDCRelations(List relations) async {
         if (data != null && data.isNotEmpty) return data;
       }
     }
-  } catch (_) {}
+  } catch (e, stackTrace) {
+    // R11 fix: Log exceptions instead of silently swallowing
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
   data['source'] = 'discogs';
   return data;
 }
 
+// R11 fix: Add logging for swallowed exceptions
 Future<dynamic> _parseYTRelations(List relations) async {
   dynamic data = {};
   try {
@@ -217,7 +230,7 @@ Future<dynamic> searchArtistDetails(
   try {
     final q = query.collapsed;
     final cached = _searchCachedArtists(q);
-    if (cached != null && cached.isNotEmpty) return cached.first;
+    if (cached != null && cached.isNotEmpty) return cached;
     final res = await _callApis(
       q,
       exact: exact,
@@ -263,29 +276,38 @@ Future<List<Map<String, dynamic>>> getArtistsFromSongs(
   }).toList();
 }
 
+// R10 fix: Use loading flag to prevent race condition
 Future<List<dynamic>> getRecommendedArtists() async {
+  // If already loading, return current list
+  if (_isLoadingRecommendedArtists) return globalArtists;
+
   final songList = globalSongs;
   if (globalArtists.isEmpty) {
-    final searchList = LinkedHashSet<String>();
-    for (final song in songList) {
-      if (song['artist-credit'] != null && song['artist-credit'] is List) {
-        for (final artist in song['artist-credit']) {
-          if (artist['artist'] != null && artist['artist'] is Map) {
-            artist['artist']['primary-type'] = 'artist';
-            artist['artist']['isArtist'] = 'true';
-            globalArtists.addOrUpdateWhere(checkArtist, artist['artist']);
+    _isLoadingRecommendedArtists = true;
+    try {
+      final searchList = LinkedHashSet<String>();
+      for (final song in songList) {
+        if (song['artist-credit'] != null && song['artist-credit'] is List) {
+          for (final artist in song['artist-credit']) {
+            if (artist['artist'] != null && artist['artist'] is Map) {
+              artist['artist']['primary-type'] = 'artist';
+              artist['artist']['isArtist'] = 'true';
+              globalArtists.addOrUpdateWhere(checkArtist, artist['artist']);
+            }
           }
+        } else if (song['artist'] is String) {
+          final artists = splitArtists(song['artist']);
+          searchList.addAll(artists);
         }
-      } else if (song['artist'] is String) {
-        final artists = splitArtists(song['artist']);
-        searchList.addAll(artists);
       }
+      if (searchList.isNotEmpty)
+        globalArtists.addOrUpdateAllWhere(
+          checkArtist,
+          await searchArtistsDetails(searchList.toList()),
+        );
+    } finally {
+      _isLoadingRecommendedArtists = false;
     }
-    if (searchList.isNotEmpty)
-      globalArtists.addOrUpdateAllWhere(
-        checkArtist,
-        await searchArtistsDetails(searchList.toList()),
-      );
   }
   return globalArtists;
 }
@@ -308,10 +330,7 @@ Future<List<dynamic>> searchArtistsDetails(
         uncached.add(q);
     }
     for (int i = 0; i < uncached.length; i += 25) {
-      final str = uncached.getRange(
-        i - 25 <= 0 ? 0 : i - 25,
-        i + 25 >= uncached.length ? uncached.length - 1 : i + 25,
-      );
+      final str = uncached.getRange(i, (i + 25).clamp(0, uncached.length));
       final qry =
           'artist:(${str.map((e) => '"${e.replaceAll(' ', '|')}"').join(' OR ')})';
       final artistsSearch = await mb.artists.search(qry, limit: str.length);
@@ -350,31 +369,30 @@ Future<List<dynamic>> _callApis(
       offset: offset,
       paginated: paginated,
     );
-    mbRes['source'] = 'musicbrainz';
+    if (mbRes == null) return [];
     final results = [];
-    if (mbRes != null) {
-      for (final artist in mbRes) {
-        if (artist['type'] != 'Other') {
-          final relations = List.from(artist['relations'] ?? []);
-          final dcRes = <String, dynamic>{};
-          final ytRes = <String, dynamic>{};
-          final futures =
-              <Future>[]
-                ..add(_parseDCRelations(relations))
-                ..add(_parseYTRelations(relations));
-          await Future.wait(futures).then((value) {
-            for (final res in value) {
-              if (res['source'] == 'discogs') dcRes.addAll(res);
-              if (res['source'] == 'youtube') ytRes.addAll(res);
-            }
-          });
-          final combined = await _combineResults(
-            mbRes: artist,
-            dcRes: dcRes,
-            ytRes: ytRes,
-          );
-          results.add(combined);
-        }
+    for (final artist in mbRes) {
+      if (artist is Map && artist['type'] != 'Other') {
+        artist['source'] = 'musicbrainz';
+        final relations = List.from(artist['relations'] ?? []);
+        final dcRes = <String, dynamic>{};
+        final ytRes = <String, dynamic>{};
+        final futures =
+            <Future>[]
+              ..add(_parseDCRelations(relations))
+              ..add(_parseYTRelations(relations));
+        await Future.wait(futures).then((value) {
+          for (final res in value) {
+            if (res['source'] == 'discogs') dcRes.addAll(res);
+            if (res['source'] == 'youtube') ytRes.addAll(res);
+          }
+        });
+        final combined = await _combineResults(
+          mbRes: artist,
+          dcRes: dcRes,
+          ytRes: ytRes,
+        );
+        results.add(combined);
       }
     }
     if (exact) {
@@ -430,14 +448,25 @@ Future<Map<String, dynamic>> _combineResults({
   }
 }
 
+// R7 fix: Use checkEntityId instead of loose String.contains
+// R8 fix: Check cache staleness (30 day TTL)
 dynamic _getCachedArtist(String id) {
   try {
-    final cached =
-        cachedArtistsList.where((e) => e['id'].contains(id)).toList();
-    if (cached.isNotEmpty)
-      return cached.first;
-    else
-      return null;
+    for (final e in cachedArtistsList) {
+      if (e['id'] != null && checkEntityId(e['id'], id)) {
+        // R8 fix: Check if cache is stale (older than 30 days)
+        try {
+          final cachedAt = DateTime.parse(e['cachedAt'] as String);
+          if (DateTime.now().difference(cachedAt).inDays > 30) {
+            continue; // Skip stale cache entry
+          }
+        } catch (_) {
+          // Skip items with invalid cachedAt
+        }
+        return e;
+      }
+    }
+    return null;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return null;
@@ -484,24 +513,18 @@ Future<dynamic> _getArtistDetailsMB(
     if (_results.isNotEmpty) {
       final names =
           _results.map((e) => {'id': e['id'], 'name': e['name']}).toList();
-      final WeightedKey<Map<String, dynamic>> keys = WeightedKey(
-        name: 'name',
-        getter: (e) => e['name'],
-        weight: 1,
-      );
-      final fuzzy = Fuzzy(
-        names,
-        options: FuzzyOptions(threshold: 1, keys: [keys]),
-      );
-      final sorted = fuzzy.search(query)..sort((a, b) {
-        final comp = a.score.compareTo(b.score);
-        if (comp != 0) {
-          return comp;
-        }
-        return a.matches.first.arrayIndex.compareTo(b.matches.first.arrayIndex);
-      });
-      final result =
-          exact ? sorted.where((e) => e.score.isNearlyZero()) : sorted;
+      // Score each candidate against the query (0–100, higher = better match)
+      final scored =
+          names
+              .map(
+                (e) => MapEntry(
+                  e,
+                  weightedRatio(query, e['name'] as String? ?? ''),
+                ),
+              )
+              .toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+      final result = exact ? scored.where((e) => e.value == 100) : scored;
 
       final inc = [
         'recordings',
@@ -517,7 +540,7 @@ Future<dynamic> _getArtistDetailsMB(
         if (exact) {
           final artistId =
               _results.firstWhere(
-                (e) => e['id'] == result.first.item['id'],
+                (e) => e['id'] == result.first.key['id'],
               )['id'];
           final finalResult = await mb.artists.get(artistId, inc: inc);
           if (finalResult['error'] != null) throw finalResult['error'];
@@ -526,7 +549,7 @@ Future<dynamic> _getArtistDetailsMB(
         } else {
           final finalResult = [];
           for (final artist in result) {
-            final artQry = await mb.artists.get(artist.item['id'], inc: inc);
+            final artQry = await mb.artists.get(artist.key['id'], inc: inc);
             if (artQry['error'] != null) continue;
             finalResult.add(artQry ?? {});
           }
@@ -541,6 +564,7 @@ Future<dynamic> _getArtistDetailsMB(
   }
 }
 
+// R12 fix: Add page limit to prevent unbounded pagination
 Future<dynamic> _getArtistDetailsDC(String query) async {
   dynamic res;
   try {
@@ -561,7 +585,9 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
 
       if (res['results'].length > 0) _results.addAll(res['results']);
 
-      for (var i = 2; i <= _pages; i++) {
+      // R12 fix: Limit pagination to 5 pages max
+      final maxPage = (_pages is int ? _pages : 0).clamp(2, 5);
+      for (var i = 2; i <= maxPage; i++) {
         res = await dc.search.search(query: query, type: 'artist', page: i);
         if (res['results'].length > 0) _results.addAll(res['results']);
       }
@@ -573,22 +599,22 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
               .where((e) => e['type'] == 'artist')
               .map((e) => {'id': e['id'], 'title': e['title']})
               .toList();
-      final WeightedKey<Map<String, dynamic>> keys = WeightedKey(
-        name: 'title',
-        getter: (e) => e['title'],
-        weight: 1,
-      );
-      final fuzzy = Fuzzy(
-        names,
-        options: FuzzyOptions(threshold: 1, keys: [keys]),
-      );
-      final result = fuzzy.search(query)
-        ..sort((a, b) => a.score.compareTo(b.score));
-      final val = _results.where((e) => e['id'] == result.first.item['id']);
+      // Score each candidate against the query (0–100, higher = better match)
+      final scored =
+          names
+              .map(
+                (e) => MapEntry(
+                  e,
+                  weightedRatio(query, e['title'] as String? ?? ''),
+                ),
+              )
+              .toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+      final val = _results.where((e) => e['id'] == scored.first.key['id']);
       if (val.isNotEmpty)
-        await _getArtistDetailsDC(val.first['id']);
+        return await _getArtistDetailsDC(val.first['id']);
       else
-        return;
+        return await _getArtistDetailsDC(query);
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -614,6 +640,7 @@ int? getArtistHashCode(dynamic artist) {
   }
 }
 
+// R9 fix: Don't mutate input - extract ID parsing to local variables
 bool checkArtist(dynamic artistA, dynamic artistB) {
   try {
     if (artistA == null ||
@@ -621,33 +648,38 @@ bool checkArtist(dynamic artistA, dynamic artistB) {
         artistA.isEmpty ||
         artistB.isEmpty)
       return false;
-    if (artistA is Map) artistA['id'] = parseEntityId(artistA);
-    if (artistB is Map) artistB['id'] = parseEntityId(artistB);
-    if (artistA is String && artistB is String)
-      return (artistA.isNotEmpty && artistB.isNotEmpty) &&
-          checkEntityId(artistA, artistB);
-    if (artistA is String && artistB is Map)
-      return (artistA.isNotEmpty &&
-              artistB['id'] != null &&
-              artistB['id'].isNotEmpty) &&
-          (checkEntityId(artistA, artistB['id']) ||
-              checkEntityId(artistB['id'], artistA) ||
-              getArtistHashCode(artistA) == getArtistHashCode(artistB));
-    if (artistB is String && artistA is Map)
-      return (artistB.isNotEmpty &&
-              artistA['id'] != null &&
-              artistA['id'].isNotEmpty) &&
-          (checkEntityId(artistB, artistA['id']) ||
-              checkEntityId(artistA['id'], artistB) ||
-              getArtistHashCode(artistA) == getArtistHashCode(artistB));
-    if (artistA['id'] == null ||
-        artistB['id'] == null ||
-        artistA['id'].isEmpty ||
-        artistB['id'].isEmpty)
+
+    // R9 fix: Use local variables instead of mutating input
+    String idA = '';
+    String idB = '';
+
+    if (artistA is Map) {
+      idA = parseEntityId(artistA);
+    } else if (artistA is String) {
+      idA = artistA;
+    }
+
+    if (artistB is Map) {
+      idB = parseEntityId(artistB);
+    } else if (artistB is String) {
+      idB = artistB;
+    }
+
+    if (idA.isEmpty || idB.isEmpty)
       return getArtistHashCode(artistA) == getArtistHashCode(artistB);
-    parseEntityId(artistA);
-    parseEntityId(artistB);
-    return checkEntityId(artistA['id'], artistB['id']);
+
+    if (artistA is String && artistB is String)
+      return checkEntityId(artistA, artistB);
+    if (artistA is String && artistB is Map)
+      return checkEntityId(artistA, idB) ||
+          checkEntityId(idB, artistA) ||
+          getArtistHashCode(artistA) == getArtistHashCode(artistB);
+    if (artistB is String && artistA is Map)
+      return checkEntityId(artistB, idA) ||
+          checkEntityId(idA, artistB) ||
+          getArtistHashCode(artistA) == getArtistHashCode(artistB);
+
+    return checkEntityId(idA, idB);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return false;

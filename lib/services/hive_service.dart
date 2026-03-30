@@ -29,7 +29,14 @@ import 'package:path/path.dart' as path;
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/utilities/notifiable_value.dart';
+
+abstract class HiveBoxNames {
+  static const String settings = 'settings';
+  static const String user = 'user';
+  static const String userNoBackup = 'userNoBackup';
+  static const String cache = 'cache';
+}
 
 class HiveService {
   factory HiveService() => _instance;
@@ -45,9 +52,15 @@ class HiveService {
   static Duration cachingDuration = const Duration(days: 30);
 
   // Box names and categories
-  static const _boxNames = ['settings', 'user', 'userNoBackup', 'cache'];
+  static const _boxNames = [
+    HiveBoxNames.settings,
+    HiveBoxNames.user,
+    HiveBoxNames.userNoBackup,
+    HiveBoxNames.cache,
+  ];
 
   static Future<void> ensureInitialize() async {
+    if (_initCompleter.isCompleted) return;
     await Hive.initFlutter('reverbio');
     for (final box in _boxNames) {
       await _openBox(box);
@@ -66,7 +79,7 @@ class HiveService {
       final _box = await _openBox(boxName);
       final value = _box.get(category, defaultValue: defaultValue);
       final returnValue = getDataByType<T>(value, defaultValue: defaultValue);
-      if (boxName == 'cache') {
+      if (boxName == HiveBoxNames.cache) {
         final cacheIsValid = _isCacheValid(_box, category, cachingDuration);
         if (!cacheIsValid) {
           // Schedule deletion but don't wait for it
@@ -87,13 +100,17 @@ class HiveService {
   }
 
   static T getDataByType<T>(dynamic value, {dynamic defaultValue}) {
+    // Handle type conversion for Hive data
     if (T == List<String>) {
       value = getList<String>(
         value,
         defaultValue: (defaultValue ?? <String>[]) as List<String>,
       );
     } else if (T == Map<String, dynamic>) {
-      value = getMap(value, defaultValue: defaultValue as Map<String, dynamic>);
+      value = getMap(
+        value,
+        defaultValue: defaultValue as Map<String, dynamic>?,
+      );
     } else if (T == List<Map<String, dynamic>>) {
       value = getList<Map<String, dynamic>>(
         value,
@@ -102,11 +119,18 @@ class HiveService {
                 as List<Map<String, dynamic>>,
       );
     } else if (T == List<Map>) {
-      value = getList<Map>(
-        value,
-        defaultValue:
-            (defaultValue ?? List<Map>.empty(growable: true)) as List<Map>,
-      );
+      // Handle List<Map> - Hive returns List<Map<dynamic, dynamic>>
+      if (value is List) {
+        value = value.whereType<Map>().map(Map<String, dynamic>.from).toList();
+      } else {
+        value = defaultValue ?? <Map<String, dynamic>>[];
+      }
+    }
+    // Hive returns Map<dynamic, dynamic>; convert to Map<String, dynamic> for
+    // nullable variants (e.g. T == Map<String, dynamic>?) that fall through the
+    // T == Map<String, dynamic> branch above.
+    if (value is Map && value is! Map<String, dynamic>) {
+      value = Map<String, dynamic>.from(value);
     }
     return value as T;
   }
@@ -116,9 +140,19 @@ class HiveService {
       if (value == null) return defaultValue;
       if (value is List) {
         if ((T == Map<String, dynamic>) && value.every((e) => e is Map)) {
-          return value.whereType<Map>().map(getMap).toList() as List<T>;
+          return value
+                  .whereType<Map>()
+                  .map(
+                    (e) => getMap(
+                      e is Map<String, dynamic>
+                          ? e
+                          : Map<String, dynamic>.from(e),
+                    ),
+                  )
+                  .toList()
+              as List<T>;
         } else if (value.every((e) => e is T)) {
-          return value.cast<T>();
+          return value.toList().cast<T>();
         } else {
           return value.map((e) => e as T).toList();
         }
@@ -135,16 +169,15 @@ class HiveService {
 
   static Map<String, dynamic> getMap(
     dynamic value, {
-    dynamic defaultValue = const {},
+    Map<String, dynamic>? defaultValue,
   }) {
     try {
-      if (value == null) return defaultValue;
+      if (value == null) {
+        return defaultValue ?? <String, dynamic>{};
+      }
       if (value is Map) {
-        if (value.keys.every((k) => k is String)) {
-          return value.cast<String, dynamic>();
-        } else {
-          return copyMap(value);
-        }
+        // Convert Map<dynamic, dynamic> to Map<String, dynamic>
+        return Map<String, dynamic>.from(value);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -153,7 +186,7 @@ class HiveService {
         stackTrace,
       );
     }
-    return defaultValue;
+    return defaultValue ?? <String, dynamic>{};
   }
 
   static Future<Box> _openBox(String boxName) async {
@@ -189,6 +222,8 @@ class HiveService {
   }
 
   static Future<void> close() async {
+    // R6 fix: Flush all pending NotifiableValue writes before closing
+    await NotifiableValue.flushAll();
     await compactAllBoxes();
     await closeAllBoxes();
     await Hive.close();
@@ -204,7 +239,7 @@ class HiveService {
       final box = await _openBox(boxName);
       final _newData = getDataByType<T>(value);
       await box.put(category, _newData);
-      if (category == 'cache') {
+      if (boxName == 'cache') {
         await box.put('${category}_date', DateTime.now());
       }
     } catch (e, stackTrace) {
@@ -218,8 +253,16 @@ class HiveService {
 
   static Future<void> deleteData(String boxName, String key) async {
     await _initCompleter.future;
-    final box = await _openBox(boxName);
-    await box.delete(key);
+    try {
+      final box = await _openBox(boxName);
+      await box.delete(key);
+    } catch (e, stackTrace) {
+      logger.log(
+        'Error in ${stackTrace.getCurrentMethodName()}:',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   static Future<void> clearBox(String boxName) async {
@@ -264,7 +307,7 @@ class HiveService {
 
   static Future<String> backupData(BuildContext context) async {
     await _initCompleter.future;
-    final boxNames = ['user', 'settings'];
+    final boxNames = [HiveBoxNames.user, HiveBoxNames.settings];
     final dlPath = await FilePicker.platform.getDirectoryPath();
 
     if (dlPath == null) {
@@ -300,7 +343,7 @@ class HiveService {
 
   static Future<String> restoreData(BuildContext context) async {
     await _initCompleter.future;
-    final boxNames = ['user', 'settings'];
+    final boxNames = [HiveBoxNames.user, HiveBoxNames.settings];
     final backupFiles = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.custom,
@@ -320,11 +363,12 @@ class HiveService {
 
         if (backupFile.path != null && backupFile.size > 0) {
           final box = await _openBox(boxName);
+          final boxPath = box.path!; // Save path before closing
           await box.close(); // Close before restoring
 
           // Copy backup file over existing box file
           final backup = File(backupFile.path!);
-          final boxFile = File(box.path!);
+          final boxFile = File(boxPath);
 
           if (await boxFile.exists()) {
             await boxFile.delete();

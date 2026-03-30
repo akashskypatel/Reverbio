@@ -282,6 +282,8 @@ class AudioPlayerService {
   Future<void> setVolume(double volume) async {
     _volume = volume;
     _volumeNotifier.value = volume;
+    // R5 fix: Persist volume to settings
+    settings.volume.value = volume.toInt();
     return _player.setVolume(volume);
   }
 
