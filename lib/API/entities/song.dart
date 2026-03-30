@@ -1300,13 +1300,15 @@ Future<List<File>> _getRelatedFiles(String directory, dynamic entity) async {
         }
       }
     }
-    for (final file in userDeviceSongs) {
-      if (checkSong(file, entity) &&
-          file['devicePath'] != null &&
-          file['devicePath'].isNotEmpty) {
-        if (File(file['devicePath']).existsSync() &&
-            !files.any((e) => checkSong(entity, e)))
-          files.add(File(file['devicePath']));
+    for (final song in userDeviceSongs) {
+      if (checkSong(song, entity) &&
+          song['devicePath'] != null &&
+          song['devicePath'].isNotEmpty) {
+        final deviceFile = File(song['devicePath'] as String);
+        if (deviceFile.existsSync() &&
+            !files.any((f) => f.path == deviceFile.path)) {
+          files.add(deviceFile);
+        }
       }
     }
   } catch (e, stackTrace) {
