@@ -158,7 +158,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     //TODO: restore pagination to large playlists
     final _list = NotifiableList.from(
       ((_playlistData['list'] as List?) ?? []).map((e) {
-        return initializeSongBar(Map<String, dynamic>.from(e), context);
+        return initializeSongBar(Map<String, dynamic>.from(e));
       }),
     );
     return _list;

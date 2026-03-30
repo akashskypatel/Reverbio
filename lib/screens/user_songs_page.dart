@@ -503,10 +503,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
             isSongValid(cached)
                 ? cached!
                 : <String, dynamic>{'id': e, 'title': null, 'artist': null};
-        return initializeSongBar(song, context);
+        return initializeSongBar(song);
       });
       if (!context.mounted) return <SongBar>[];
-      final device = userDeviceSongs.map((e) => initializeSongBar(e, context));
+      final device = userDeviceSongs.map((e) => initializeSongBar(e));
       return [...offline, ...device];
     });
   }
@@ -514,14 +514,14 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Future<Iterable<SongBar>> _getUserLikedSongs() async {
     return Future.microtask(() async {
       if (!context.mounted) return <SongBar>[];
-      return userLikedSongsList.map((e) => initializeSongBar(e, context));
+      return userLikedSongsList.map((e) => initializeSongBar(e));
     });
   }
 
   Future<Iterable<SongBar>> _getUserRecentSongs() async {
     return Future.microtask(() async {
       if (!context.mounted) return <SongBar>[];
-      return userRecentlyPlayed.map((e) => initializeSongBar(e, context));
+      return userRecentlyPlayed.map((e) => initializeSongBar(e));
     });
   }
 

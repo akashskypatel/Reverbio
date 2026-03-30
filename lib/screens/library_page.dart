@@ -545,8 +545,15 @@ class _LibraryPageState extends State<LibraryPage> {
                                   '${dialogContext.l10n!.playlistAlreadyExists}. ${dialogContext.l10n!.overwriteExistingPlaylist}',
                               confirmText: dialogContext.l10n!.confirm,
                               cancelText: dialogContext.l10n!.cancel,
-                              // R9 fix: Clear state on cancel
+                              // R9 fix: Clear state on cancel so stale values
+                              // don't persist if user re-opens the dialog
                               onCancel: () {
+                                setState(() {
+                                  customPlaylistName = '';
+                                  imageUrl = null;
+                                  imageFile = null;
+                                  imagePathController.clear();
+                                });
                                 GoRouter.of(savecontext).pop();
                               },
                               onSubmit: () async {

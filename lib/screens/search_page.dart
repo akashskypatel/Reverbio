@@ -336,7 +336,7 @@ class _SearchPageState extends State<SearchPage> {
             page: 'search',
             songBars: NotifiableList<SongBar>.from(
               (suggestionList['data'] as List).map(
-                (e) => initializeSongBar(e, context),
+                (e) => initializeSongBar(e),
               ),
             ),
             expandedActions: _buildPrevNextButtons(header, suggestionList),

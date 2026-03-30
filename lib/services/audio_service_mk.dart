@@ -570,8 +570,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           }
         } else {
           showToast(
-            songBar.context.l10n!.errorCouldNotFindAStream,
-            context: songBar.context,
+            L10n.current.errorCouldNotFindAStream,
           );
         }
       }

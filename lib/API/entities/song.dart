@@ -265,7 +265,7 @@ Map<String, dynamic> minimizeSongData(dynamic song) {
     'artist': songArtist(song),
     'artist-credit': song['artist-credit'],
     'devicePath': song['devicePath'],
-    'songUrl': song['songUrl'],
+    // R4 fix: Don't cache songUrl - YouTube stream URLs expire and become stale
     'offlineAudioPath': song['offlineAudioPath'],
     'duration': song['duration'],
     'cachedAt': DateTime.now().toString(),
@@ -564,7 +564,8 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
 }
 
 NotifiableFuture<Map<String, dynamic>> queueSongInfoRequest(dynamic song) {
-  if (song == null) return NotifiableFuture.fromValue(song);
+  // Fix: Return empty map instead of null to avoid CancelledException
+  if (song == null) return NotifiableFuture.fromValue(<String, dynamic>{});
   if (song is String) {
     song = <String, dynamic>{'id': song};
     song['id'] = parseEntityId(song);
@@ -583,7 +584,7 @@ NotifiableFuture<Map<String, dynamic>> queueSongInfoRequest(dynamic song) {
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    return NotifiableFuture.fromValue(song);
+    return NotifiableFuture.fromValue(<String, dynamic>{});
   }
 }
 
@@ -944,7 +945,13 @@ Future<int> moveSongToDeviceLibrary(dynamic song, {String? destination}) async {
     if (!(await checkAllPermissions())) return count;
     if (song is String) song = await queueSongInfoRequest(song).completerFuture;
     if (isSongAppOfflineOnly(song) && !isSongInDeviceLibrary(song)) {
-      final _dir = Directory(offlineDirectory.value!);
+      // Fix: Use null-safe pattern for offlineDirectory.value
+      final dirValue = offlineDirectory.value;
+      if (dirValue == null) {
+        logger.log('offlineDirectory not initialized yet', null, null);
+        return 0;
+      }
+      final _dir = Directory(dirValue);
       final _audioDirPath = join(_dir.path, 'tracks');
       final files = await _getRelatedFiles(_audioDirPath, song);
       String? dest = Platform.isWindows ? destination : null;
@@ -1008,7 +1015,14 @@ Future<void> makeSongOffline(dynamic song) async {
   try {
     await getUserOfflineSongs();
     if (isSongAlreadyOffline(song)) return;
-    final _dir = Directory(offlineDirectory.value!);
+    // Fix: Use null-safe pattern for offlineDirectory.value
+    final dirValue = offlineDirectory.value;
+    if (dirValue == null) {
+      logger.log('offlineDirectory not initialized yet', null, null);
+      showToast('Storage not ready. Please try again.');
+      return;
+    }
+    final _dir = Directory(dirValue);
     final _audioDirPath = join(_dir.path, 'tracks');
     final _artworkDirPath = join(_dir.path, 'artworks');
     await Directory(_audioDirPath).create(recursive: true);
@@ -1186,7 +1200,13 @@ Future<void> _getUserDeviceSongMetadata() async {
 }
 
 Future<void> getExistingOfflineSongs() async {
-  final _dir = Directory(offlineDirectory.value!);
+  // Fix: Use null-safe pattern for offlineDirectory.value
+  final dirValue = offlineDirectory.value;
+  if (dirValue == null) {
+    logger.log('offlineDirectory not initialized yet', null, null);
+    return;
+  }
+  final _dir = Directory(dirValue);
   final _audioDirPath = join(_dir.path, 'tracks');
   final List<String> _userOfflineSongs = [];
   await Directory(_audioDirPath).create(recursive: true);
@@ -1226,7 +1246,13 @@ Future<void> getExistingOfflineSongs() async {
 
 Future<void> _matchFileToSongInfo(File file) async {
   try {
-    final _dir = Directory(offlineDirectory.value!);
+    // Fix: Use null-safe pattern for offlineDirectory.value
+    final dirValue = offlineDirectory.value;
+    if (dirValue == null) {
+      logger.log('offlineDirectory not initialized yet', null, null);
+      return;
+    }
+    final _dir = Directory(dirValue);
     final _artworkDirPath = join(_dir.path, 'artworks');
     await Directory(_artworkDirPath).create(recursive: true);
     final filename = basenameWithoutExtension(file.path);
@@ -1256,7 +1282,13 @@ Future<String?> getOfflinePath(dynamic song) async {
           doesFileExist(offlinePath))
         return offlinePath;
     }
-    final _dir = Directory(offlineDirectory.value!);
+    // Fix: Use null-safe pattern for offlineDirectory.value
+    final dirValue = offlineDirectory.value;
+    if (dirValue == null) {
+      logger.log('offlineDirectory not initialized yet', null, null);
+      return null;
+    }
+    final _dir = Directory(dirValue);
     final _audioDirPath = join(_dir.path, 'tracks');
     final _artworkDirPath = join(_dir.path, 'artworks');
     await Directory(_audioDirPath).create(recursive: true);
@@ -1326,7 +1358,14 @@ Future<void> _deleteRelatedFiles(String directory, dynamic entity) async {
 }
 
 Future<void> removeSongFromOffline(dynamic song) async {
-  final _dir = Directory(offlineDirectory.value!);
+  // Fix: Use null-safe pattern for offlineDirectory.value
+  final dirValue = offlineDirectory.value;
+  if (dirValue == null) {
+    logger.log('offlineDirectory not initialized yet', null, null);
+    showToast('Storage not ready. Please try again.');
+    return;
+  }
+  final _dir = Directory(dirValue);
   final _audioDirPath = join(_dir.path, 'tracks');
   final _artworkDirPath = join(_dir.path, 'artworks');
   await Directory(_audioDirPath).create(recursive: true);
@@ -1400,12 +1439,12 @@ Future<void> updateRecentlyPlayed(dynamic song) async {
     if (userRecentlyPlayed.isNotEmpty &&
         checkSong(userRecentlyPlayed.first, song))
       return;
+    // Fix: Remove duplicates FIRST, then trim if over limit (old code order)
+    userRecentlyPlayed.removeWhere((s) => checkSong(s, song));
     if (userRecentlyPlayed.length >= recentlyPlayedSongsLimit) {
       userRecentlyPlayed.removeLast();
     }
-    userRecentlyPlayed
-      ..removeWhere((s) => checkSong(s, song))
-      ..insert(0, song);
+    userRecentlyPlayed.insert(0, song);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;

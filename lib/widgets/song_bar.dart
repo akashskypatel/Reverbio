@@ -54,8 +54,7 @@ import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
   SongBar(
-    this.songData,
-    this.context, {
+    this.songData, {
     this.backgroundColor,
     this.showMusicDuration = false,
     this.onRemove,
@@ -64,7 +63,7 @@ class SongBar extends StatefulWidget {
   }) : songFuture = NotifiableFuture<Map<String, dynamic>>(songData),
        songMetadataNotifier = ValueNotifier(copyMap(songData)),
        _borderRadiusNotifier = ValueNotifier(borderRadius);
-  final BuildContext context;
+  // R7 fix: Removed context field - use State's context instead
   final Map<String, dynamic> songData;
   final NotifiableFuture<Map<String, dynamic>> songFuture;
   final Color? backgroundColor;
@@ -1008,14 +1007,13 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
 }
 
 /// A1 fix: Moved from song.dart to decouple entity from widget layer
+/// R7 fix: Removed context parameter - SongBar no longer stores context
 SongBar initializeSongBar(
-  Map<String, dynamic> song,
-  BuildContext context, {
+  Map<String, dynamic> song, {
   BorderRadius? borderRadius,
 }) {
   return SongBar(
     song,
-    context,
     borderRadius: borderRadius ?? BorderRadius.zero,
     showMusicDuration: true,
   );

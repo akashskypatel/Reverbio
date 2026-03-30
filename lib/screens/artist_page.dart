@@ -381,7 +381,7 @@ class _ArtistPageState extends State<ArtistPage> {
                   return e;
                 })
                 .toList();
-        return singles.map((e) => initializeSongBar(e, context));
+        return singles.map((e) => initializeSongBar(e));
       }),
     );
   }
