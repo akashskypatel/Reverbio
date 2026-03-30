@@ -282,13 +282,11 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                     ),
                                     child: FilledButton(
                                       onPressed: () {
-                                        showToast(
-                                          addSongsToPlaylist(
-                                            context,
-                                            filteredPlaylists[index],
-                                            activeQueue['list'],
-                                          ),
+                                        final result = addSongsToPlaylist(
+                                          filteredPlaylists[index],
+                                          activeQueue['list'],
                                         );
+                                        showToast(result.toLocalizedString());
                                         Navigator.pop(
                                           context,
                                           filteredPlaylists[index],
@@ -406,35 +404,31 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                     savecontext,
                                   ).pop(confirmcontext),
                               onSubmit: () {
-                                showToast(
-                                  createCustomPlaylist(
-                                    customPlaylistName,
-                                    image:
-                                        imageFile != null
-                                            ? imageFile!
-                                                .readAsBytesSync()
-                                                .toList()
-                                            : imageUrl,
-                                    context,
-                                    songList: activeQueue['list'],
-                                  ),
+                                final result = createCustomPlaylist(
+                                  customPlaylistName,
+                                  image:
+                                      imageFile != null
+                                          ? imageFile!
+                                              .readAsBytesSync()
+                                              .toList()
+                                          : imageUrl,
+                                  songList: activeQueue['list'],
                                 );
+                                showToast(result.toLocalizedString());
                                 GoRouter.of(context).pop(context);
                               },
                             ),
                       );
                     else {
-                      showToast(
-                        createCustomPlaylist(
-                          customPlaylistName,
-                          image:
-                              imageFile != null
-                                  ? imageFile!.readAsBytesSync().toList()
-                                  : imageUrl,
-                          context,
-                          songList: activeQueue['list'],
-                        ),
+                      final result = createCustomPlaylist(
+                        customPlaylistName,
+                        image:
+                            imageFile != null
+                                ? imageFile!.readAsBytesSync().toList()
+                                : imageUrl,
+                        songList: activeQueue['list'],
                       );
+                      showToast(result.toLocalizedString());
                       GoRouter.of(context).pop(context);
                     }
                   } else {

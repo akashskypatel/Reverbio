@@ -517,7 +517,8 @@ class _LibraryPageState extends State<LibraryPage> {
                 child: Text(context.l10n!.add.toUpperCase()),
                 onPressed: () async {
                   if (isYouTubeMode && id.isNotEmpty) {
-                    showToast(await addYTUserPlaylist(id, context));
+                    final result = await addYTUserPlaylist(id);
+                    showToast(result.toLocalizedString());
                     GoRouter.of(context).pop(context);
                   } else if (!isYouTubeMode && customPlaylistName.isNotEmpty) {
                     if (findPlaylistByName(customPlaylistName) != null)
@@ -537,33 +538,29 @@ class _LibraryPageState extends State<LibraryPage> {
                                     savecontext,
                                   ).pop(confirmcontext),
                               onSubmit: () async {
-                                showToast(
-                                  createCustomPlaylist(
-                                    customPlaylistName,
-                                    image:
-                                        imageFile != null
-                                            ? imageFile!
-                                                .readAsBytesSync()
-                                                .toList()
-                                            : imageUrl,
-                                    context,
-                                  ),
+                                final result = createCustomPlaylist(
+                                  customPlaylistName,
+                                  image:
+                                      imageFile != null
+                                          ? imageFile!
+                                              .readAsBytesSync()
+                                              .toList()
+                                          : imageUrl,
                                 );
+                                showToast(result.toLocalizedString());
                                 GoRouter.of(context).pop();
                               },
                             ),
                       );
                     else {
-                      showToast(
-                        createCustomPlaylist(
-                          customPlaylistName,
-                          image:
-                              imageFile != null
-                                  ? imageFile!.readAsBytesSync().toList()
-                                  : imageUrl,
-                          context,
-                        ),
+                      final result = createCustomPlaylist(
+                        customPlaylistName,
+                        image:
+                            imageFile != null
+                                ? imageFile!.readAsBytesSync().toList()
+                                : imageUrl,
                       );
+                      showToast(result.toLocalizedString());
                       GoRouter.of(context).pop();
                     }
                   } else {

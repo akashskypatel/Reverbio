@@ -25,6 +25,7 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 import 'package:reverbio/widgets/custom_bar.dart';
 
@@ -108,7 +109,8 @@ void showPlaylistImporter(BuildContext context) => showDialog(
                                           FluentIcons.folder_open_24_filled,
                                       borderRadius: commonBarRadius,
                                       onTap: () async {
-                                        await uploadCsvPlaylist(context);
+                                        final result = await uploadCsvPlaylist();
+                                        showToast(result.toLocalizedString());
                                       },
                                     ),
                                   ],

@@ -978,13 +978,11 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
                             playlist['title'] ?? context.l10n!.unknown,
                           ),
                           onTap: () {
-                            showToast(
-                              addSongToCustomPlaylist(
-                                context,
-                                playlist['title'],
-                                song,
-                              ),
+                            final result = addSongToCustomPlaylist(
+                              playlist['title'],
+                              song,
                             );
+                            showToast(result.toLocalizedString());
                             GoRouter.of(context).pop(context);
                           },
                         ),
@@ -1007,4 +1005,37 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
       );
     },
   );
+}
+
+/// A1 fix: Moved from song.dart to decouple entity from widget layer
+SongBar initializeSongBar(
+  Map<String, dynamic> song,
+  BuildContext context, {
+  BorderRadius? borderRadius,
+}) {
+  return SongBar(
+    song,
+    context,
+    borderRadius: borderRadius ?? BorderRadius.zero,
+    showMusicDuration: true,
+  );
+}
+
+/// A1 fix: Moved from song.dart to decouple entity from widget layer
+NotifiableFuture<Map<String, dynamic>> initializeSongBarFuture(dynamic song) {
+  try {
+    parseEntityId(song);
+    if (!isSongValid(song)) {
+      return queueSongInfoRequest(song);
+    } else {
+      final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
+        ..runFuture(Future.value(song));
+      return futureTracker;
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
+      ..runFuture(Future.value(song));
+    return futureTracker;
+  }
 }

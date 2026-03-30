@@ -33,7 +33,6 @@ import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/entities.dart';
-import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -48,7 +47,6 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final List globalSongs = [];
@@ -57,9 +55,9 @@ int activeSongId = 0;
 final lyrics = ValueNotifier<String?>(null);
 String? lastFetchedLyrics;
 
-final Set<NotifiableFuture<Map<String, dynamic>>> getSongInfoQueue = {};
+// R22 fix: Changed from Set to List for clarity (Set had no custom hashCode/==)
+final List<NotifiableFuture<Map<String, dynamic>>> getSongInfoQueue = [];
 
-const Duration _cacheDuration = Duration(hours: 3);
 
 Future<List> getSongsList(String searchQuery) async {
   try {
@@ -105,10 +103,16 @@ Future<List<dynamic>> getRecommendedSongs() async {
   }
 }
 
+// R21 fix: Allow clearing globalSongs cache to prevent memory buildup
+void clearGlobalSongs() {
+  globalSongs.clear();
+}
+
 Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
   try {
-    song['id'] = parseEntityId(song);
-    if (song['id']?.isEmpty) throw Exception('ID is null or empty');
+    final songId = parseEntityId(song);
+    if (songId.isEmpty) throw Exception('ID is null or empty');
+    song['id'] = songId;
     if (add && song != null) {
       userLikedSongsList.addOrUpdate(song, checkSong);
       song['song'] = songTitle(song);
@@ -125,6 +129,8 @@ Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
 
 void moveLikedSong(int oldIndex, int newIndex) {
   final _song = userLikedSongsList[oldIndex];
+  // R13 fix: Adjust newIndex when moving down to account for removal shift
+  if (oldIndex < newIndex) newIndex--;
   userLikedSongsList
     ..removeAt(oldIndex)
     ..insert(newIndex, _song);
@@ -134,7 +140,7 @@ bool isSongAlreadyLiked(songToCheck) =>
     songToCheck is Map &&
     userLikedSongsList.any((song) => checkSong(song, songToCheck));
 
-void getSimilarSong(String songYtId) async {
+Future<void> getSimilarSong(String songYtId) async {
   try {
     final song = await yt.videos.get(songYtId);
     final relatedSongs = await yt.videos.getRelatedVideos(song) ?? [];
@@ -174,11 +180,11 @@ Future<Map<String, dynamic>> findYTSong(dynamic song, {String? newYtid}) async {
       if (song['artist'] != null) ytSong.remove('artist');
       song.addAll(ytSong);
     }
+    addSongToCache(song as Map<String, dynamic>);
+    if (getSongInfoQueue.isEmpty) cachedSongsList.writeToCache();
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
-  addSongToCache(song as Map<String, dynamic>);
-  if (getSongInfoQueue.isEmpty) cachedSongsList.writeToCache();
   return song;
 }
 
@@ -386,12 +392,12 @@ Future<dynamic> _findSongByIsrc(dynamic song) async {
       final qryResult =
           (await mb.recordings.search(qry, limit: 10))?['recordings'] ?? [];
       final recordings = List<Map<String, dynamic>>.from(qryResult);
-      for (dynamic recording in recordings) {
-        recording['artist'] = combineArtists(recording);
+      for (final rec in recordings) {
+        rec['artist'] = combineArtists(rec);
         if (song['ytid'] != null && song['ytid'].isNotEmpty)
-          recording['ytid'] = song['ytid'];
-        if ((recording['isrcs'] as List).contains(isrc)) {
-          recording = await _getSongByRecordingDetails(recording);
+          rec['ytid'] = song['ytid'];
+        if ((rec['isrcs'] as List).contains(isrc)) {
+          recording = await _getSongByRecordingDetails(rec);
           recording['isrc'] = isrc;
           recording['id'] = parseEntityId(recording);
           recording['id'] = (recording['id'] as String).mergedAbsentId(
@@ -536,8 +542,9 @@ Future<dynamic> _findMBSong(dynamic song) async {
 Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   song['isError'] = false;
   song?.remove('error');
+  final taskIds = await FileDownloader().allTaskIds();
   final offlinePath =
-      !(await FileDownloader().allTaskIds()).contains(song['id'])
+      !taskIds.contains(song['id'])
           ? await getOfflinePath(song)
           : null;
   if (offlinePath != null) {
@@ -551,7 +558,7 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
   if (((song['autoCacheOffline'] ?? false) || autoCacheOffline.value) &&
       (song['songUrl'] != null && offlinePath == null) &&
       !skipDownload &&
-      !(await FileDownloader().allTaskIds()).contains(song['id']))
+      !taskIds.contains(song['id']))
     await makeSongOffline(song);
   return song;
 }
@@ -580,49 +587,17 @@ NotifiableFuture<Map<String, dynamic>> queueSongInfoRequest(dynamic song) {
   }
 }
 
-SongBar initializeSongBar(
-  Map<String, dynamic> song,
-  BuildContext context, {
-  BorderRadius? borderRadius,
-}) {
-  return SongBar(
-    song,
-    context,
-    borderRadius: borderRadius ?? BorderRadius.zero,
-    showMusicDuration: true,
-  );
-}
-
-NotifiableFuture<Map<String, dynamic>> initializeSongBarFuture(dynamic song) {
-  try {
-    parseEntityId(song);
-    if (!isSongValid(song)) {
-      return queueSongInfoRequest(song);
-    } else {
-      final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
-        ..runFuture(Future.value(song));
-      return futureTracker;
-    }
-  } catch (e, stackTrace) {
-    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
-    final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
-      ..runFuture(Future.value(song));
-    return futureTracker;
-  }
-}
-
 Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
-  late final String offlineId;
   await cachedSongsList.ensureInitialized();
   try {
-    if (song == null) return song;
+    if (song == null) return <String, dynamic>{};
     if (song is String) {
       song = <String, dynamic>{'id': song};
       song['id'] = parseEntityId(song);
     }
     if (song is Map) {
       song['id'] = parseEntityId(song);
-      offlineId = getUserOfflineSong(song);
+      final offlineId = getUserOfflineSong(song);
       song['id'] =
           offlineId.isEmpty
               ? song['id']
@@ -736,7 +711,7 @@ bool isSongIdKeyValid(dynamic song, {String idKey = 'mbid'}) {
         (song['dcid'] as String).dcid.isNotEmpty &&
         ids['dc'] != null &&
         ids['dc']!.isNotEmpty &&
-        (ids['dc'] as String).mbid.isNotEmpty;
+        (ids['dc'] as String).dcid.isNotEmpty;
   if (idKey == 'isrc' || idKey == 'is')
     return song.isNotEmpty &&
         song['isrc'] != null &&
@@ -804,7 +779,7 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
       bool cachedUrlValid = false;
 
       // Validate cached URL if it exists
-      if (cachedUrl != null) {
+      if (cachedUrl != null && cachedUrl.isNotEmpty) {
         final uri = Uri.parse(cachedUrl);
         final expires = int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -846,8 +821,8 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         song['error'] = L10n.current.errorCouldNotFindAStream;
         song['isError'] = true;
       }
-      //check if url resolves
-      if (await checkUrl(songUrl) >= 400) {
+      //check if url resolves (R5 fix: only check non-empty URLs)
+      if (songUrl.isNotEmpty && await checkUrl(songUrl) >= 400) {
         logger.log('Song url could not be resolved. $songUrl', null, null);
         songUrl = song['songUrl'] = '';
         song['error'] = L10n.current.urlError;
@@ -890,6 +865,7 @@ Future<Map<String, dynamic>> _getYTSongDetails(dynamic song) async {
 Future<String?> getSongLyrics(dynamic song) async {
   final artist = songArtist(song);
   final title = songTitle(song);
+  // R14 fix: Standardize return value for "no lyrics" - don't cache unavailable lyrics
   if (lastFetchedLyrics != '$artist - $title' ||
       lyrics.value == null ||
       lyrics.value == L10n.current.lyricsNotAvailable) {
@@ -900,7 +876,9 @@ Future<String?> getSongLyrics(dynamic song) async {
       _lyrics = _lyrics.replaceAll(RegExp(r'\n{4}'), '\n\n');
       lyrics.value = _lyrics;
     } else {
-      lyrics.value = L10n.current.lyricsNotAvailable;
+      // R14 fix: Return null instead of caching unavailable message
+      lastFetchedLyrics = '$artist - $title';
+      return null;
     }
 
     lastFetchedLyrics = '$artist - $title';
@@ -1127,8 +1105,11 @@ String getUserOfflineSong(dynamic song) {
 }
 
 Future<bool> checkOfflineFiles() async {
-  final _dir = Directory(offlineDirectory.value!);
+  final dirValue = offlineDirectory.value;
+  if (dirValue == null) return false;
+  final _dir = Directory(dirValue);
   final _audioDirPath = join(_dir.path, 'tracks');
+  if (!Directory(_audioDirPath).existsSync()) return false;
   final fileList =
       Directory(
         _audioDirPath,
@@ -1405,8 +1386,9 @@ const recentlyPlayedSongsLimit = 50;
 
 Future<void> updateRecentlyPlayed(dynamic song) async {
   try {
-    if (userRecentlyPlayed.length == 1 &&
-        checkSong(userRecentlyPlayed[0], song))
+    // R18 fix: Race condition - check isNotEmpty before accessing [0]
+    if (userRecentlyPlayed.isNotEmpty &&
+        checkSong(userRecentlyPlayed.first, song))
       return;
     if (userRecentlyPlayed.length >= recentlyPlayedSongsLimit) {
       userRecentlyPlayed.removeLast();
@@ -1451,29 +1433,30 @@ bool isSongDerivative(
 }
 
 bool checkSong(dynamic songA, dynamic songB) {
-  if (songA is Map) songA['id'] = parseEntityId(songA);
-  if (songB is Map) songB['id'] = parseEntityId(songB);
+  // R16 fix: Use local variables instead of mutating input maps
+  final idA = songA is Map ? parseEntityId(songA) : songA;
+  final idB = songB is Map ? parseEntityId(songB) : songB;
   if (songA is String && songB is String)
     return (songA.isNotEmpty && songB.isNotEmpty) &&
         checkEntityId(songA, songB);
   if (songA is String && songB is Map)
     return (songA.isNotEmpty &&
-            songB['id'] != null &&
-            songB['id'].isNotEmpty) &&
-        (checkEntityId(songA, songB['id']) ||
-            checkEntityId(songB['id'], songA));
+            idB != null &&
+            idB.isNotEmpty) &&
+        (checkEntityId(songA, idB) ||
+            checkEntityId(idB, songA));
   if (songB is String && songA is Map)
     return (songB.isNotEmpty &&
-            songA['id'] != null &&
-            songA['id'].isNotEmpty) &&
-        (checkEntityId(songB, songA['id']) ||
-            checkEntityId(songA['id'], songB));
-  if (songA['id'] == null ||
-      songB['id'] == null ||
-      songA['id'].isEmpty ||
-      songB['id'].isEmpty)
+            idA != null &&
+            idA.isNotEmpty) &&
+        (checkEntityId(songB, idA) ||
+            checkEntityId(idA, songB));
+  if (idA == null ||
+      idB == null ||
+      idA.isEmpty ||
+      idB.isEmpty)
     return checkTitleAndArtist(songA, songB);
-  final idCheck = checkEntityId(songA['id'], songB['id']);
+  final idCheck = checkEntityId(idA, idB);
   final hashA = getSongHashCode(songA);
   final hashB = getSongHashCode(songB);
   final hashCheck =
@@ -1493,12 +1476,11 @@ int? getSongHashCode(dynamic song) {
 }
 
 bool checkTitleAndArtist(dynamic songA, dynamic songB) {
-  String artistA =
-      songA['artist'] = songA['artist'] ?? combineArtists(songA) ?? '';
+  // R15 fix: Use local variables instead of mutating input maps
+  String artistA = songA['artist'] ?? combineArtists(songA) ?? '';
   artistA = artistA.isUnknown ? '' : artistA;
   final titleA = songTitle(songA).isUnknown ? '' : songTitle(songA);
-  String artistB =
-      songB['artist'] = songB['artist'] ?? combineArtists(songB) ?? '';
+  String artistB = songB['artist'] ?? combineArtists(songB) ?? '';
   artistB = artistB.isUnknown ? '' : artistB;
   final titleB = songTitle(songB).isUnknown ? '' : songTitle(songB);
   if (titleA.isNotEmpty &&

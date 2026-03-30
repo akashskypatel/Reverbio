@@ -22,14 +22,49 @@
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/DB/albums.db.dart';
 import 'package:reverbio/DB/playlists.db.dart';
 import 'package:reverbio/services/hive_service.dart';
+import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 
 // A2 fix: Moved from playlist.dart to break song.dart <-> playlist.dart cycle
 List dbPlaylists = [...playlistsDB, ...albumsDB];
 dynamic nextRecommendedSong;
+
+// A2 fix: Moved from playlist.dart to break circular import
+Future<List<dynamic>> getSongsFromPlaylist(dynamic playlistId) async {
+  final songList =
+      ((await HiveService.getData<List<Map<String, dynamic>>>(
+                'cache',
+                'playlistSongs$playlistId',
+              )) ??
+              [])
+          .map(Map<String, dynamic>.from)
+          .toList();
+  String id;
+  if (playlistId.toString().contains('yt=')) {
+    id = Uri.parse('?$playlistId').queryParameters['yt'] ?? '';
+  } else {
+    id = playlistId;
+  }
+
+  if (songList.isEmpty) {
+    await for (final song in yt.playlists.getVideos(id)) {
+      songList.add(returnYtSongLayout(song));
+    }
+    // R5 fix: Write fetched songs to cache
+    if (songList.isNotEmpty) {
+      await HiveService.addOrUpdateData<List<dynamic>>(
+        'cache',
+        'playlistSongs$playlistId',
+        songList,
+      );
+    }
+  }
+  return songList;
+}
 
 Future<void> initializeData() async {
   // R7 fix: Use Future.wait for parallel initialization of independent lists

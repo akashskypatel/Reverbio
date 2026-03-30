@@ -32,7 +32,6 @@ import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
-import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -554,11 +553,14 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   void _handleSyncPlaylist() async {
     if (widget.playlistData['ytid'] != null) {
-      widget.playlistData.addAll(
-        await updatePlaylistList(context, widget.playlistData['ytid']),
-      );
-      _songsList.clear();
-      if (mounted) setState(fetch);
+      final result = await updatePlaylistList(widget.playlistData['ytid']);
+      if (result.isSuccess) {
+        widget.playlistData.addAll(result.data ?? {});
+        _songsList.clear();
+        if (mounted) setState(fetch);
+      } else {
+        showToast(result.toLocalizedString());
+      }
     } else if (widget.playlistData['source'] == 'user-created') {
       setState(() {
         _songsList = widget.playlistData['list'] ?? [];
@@ -582,14 +584,15 @@ class _PlaylistPageState extends State<PlaylistPage> {
       context.l10n!.songRemoved,
       context.l10n!.undo.toUpperCase(),
       () {
-        addSongToCustomPlaylist(
-          context,
+        final result = addSongToCustomPlaylist(
           widget.playlistData['title'],
           songToRemove,
           indexToInsert: indexOfRemovedSong,
         );
-        _songsList.insert(indexOfRemovedSong, songToRemove);
-        if (mounted) setState(() {});
+        if (result.isSuccess) {
+          _songsList.insert(indexOfRemovedSong, songToRemove);
+          if (mounted) setState(() {});
+        }
       },
     );
     if (mounted)

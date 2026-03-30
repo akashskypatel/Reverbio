@@ -146,14 +146,11 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
 
   Future<Iterable<T>> ensureInitialized() async {
     if (_isInitialized) return _items;
-    // R5 fix: Guard against re-triggering Hive init on error path
-    if (_initializationCompleter.isCompleted) {
-      return _items;
-    }
+    // R5 fix: Wait for initialization to complete if in progress
     if (!_initializationCompleter.isCompleted) {
       return _initializationCompleter.future;
     }
-    await _initializeFromHive();
+    // Already initialized (or failed) - return cached items
     return _items;
   }
 

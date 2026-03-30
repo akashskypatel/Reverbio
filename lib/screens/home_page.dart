@@ -35,6 +35,7 @@ import 'package:reverbio/widgets/announcement_box.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/notification_log.dart';
+import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 

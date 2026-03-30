@@ -33,7 +33,8 @@ import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
 
-final Set<NotifiableFuture<Map<String, dynamic>>> getAlbumInfoQueue = {};
+// R14 fix: Changed from Set to List for clarity (Set had no custom hashCode/==)
+final List<NotifiableFuture<Map<String, dynamic>>> getAlbumInfoQueue = [];
 
 dynamic _getCachedAlbum(dynamic album) {
   try {
@@ -65,10 +66,12 @@ Map<String, dynamic> minimizeAlbumData(dynamic album) {
     'artist': album['artist'],
     'artist-credit': album['artist-credit'],
     'first-release-date': album['first-release-date'],
+    // R12 fix: Add type check before accessing e['id'] on non-Maps
     'list':
         ((album['list'] ?? []) as Iterable).where((e) => e != null).map((e) {
           if (e is String) return e;
-          return e['id'];
+          if (e is Map) return e['id'];
+          return e.toString();
         }).toList(),
     'cachedAt': DateTime.now().toString(),
     'image':
@@ -125,7 +128,10 @@ Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return album;  // R2 fix: Return original album on error, don't cache empty data
   }
+  // R2 fix: Don't cache invalid/empty album data
+  if (!isAlbumValid(albumData)) return album;
   album = Map<String, dynamic>.from(albumData);
   album['id'] = parseEntityId(album);
   addAlbumToCache(album);
@@ -177,8 +183,9 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
       album['cachedAt'] = DateTime.now().toString();
       album['musicbrainz'] = true;
       await getAlbumCoverArt(album);
+      // R8 fix: Assign return value of getTrackList to album['list']
       if (album['primary-type']?.toLowerCase() != 'single')
-        await getTrackList(album);
+        album['list'] = await getTrackList(album);
       else
         await _getSinglesDetails(album);
     }
@@ -190,6 +197,19 @@ Future<Map> _getAlbumDetailsById(dynamic album) async {
   return album;
 }
 
+// R7 fix: Helper function to escape Lucene special characters
+String _escapeLucene(String input) {
+  const specialChars = r'+-&|!(){}[]^"~*?:\/';
+  final buffer = StringBuffer();
+  for (final char in input.split('')) {
+    if (specialChars.contains(char)) {
+      buffer.write('\\');
+    }
+    buffer.write(char);
+  }
+  return buffer.toString();
+}
+
 Future<Map<String, dynamic>> _findMBAlbum(
   String title, {
   String? artist,
@@ -197,10 +217,13 @@ Future<Map<String, dynamic>> _findMBAlbum(
 }) async {
   Map<String, dynamic> albumData = {};
   try {
+    // R7 fix: Escape Lucene special characters to prevent query injection
+    final escapedTitle = _escapeLucene(title);
+    final escapedArtist = artist != null ? _escapeLucene(artist) : null;
     final query =
         artist == null
-            ? '(\'$title\' AND type:\'album\')'
-            : '(\'$title\' AND artist:\'$artist\' AND type:\'album\') OR (\'$artist\' AND artist:\'$title\' AND type:\'album\')';
+            ? '(\'$escapedTitle\' AND type:\'album\')'
+            : '(\'$escapedTitle\' AND artist:\'$escapedArtist\' AND type:\'album\') OR (\'$escapedArtist\' AND artist:\'$escapedTitle\' AND type:\'album\')';
     final albQry = await mb.releaseGroups.search(query, limit: limit ?? 25);
     final albums = ((albQry ?? {})['release-groups'] ?? []) as List;
     if (albums.isEmpty) return {};
@@ -249,21 +272,21 @@ Future<Map<String, dynamic>> getAlbumCoverArt(
 Future<dynamic> getAlbumsCoverArt(List<dynamic> albums) async {
   if (albums.isEmpty) return albums;
   try {
-    for (dynamic album in albums) {
-      album = Map<String, dynamic>.from(album);
+    // R1 fix: Use indexed loop to actually modify the list (loop variable reassignment has no effect)
+    for (int i = 0; i < albums.length; i++) {
+      final album = Map<String, dynamic>.from(albums[i]);
       final cached = _getCachedAlbum(album);
       if (isAlbumValid(cached)) {
         if (cached['images'] == null) {
           cached.addAll(await getAlbumCoverArt(cached));
         }
-        if (album is Map && cached is Map) {
-          for (final key in album.keys) {
-            if (!cached.containsKey(key) &&
-                !['id', 'title', 'artist', 'primary-type'].contains(key))
-              cached[key] = album[key];
-          }
+        // album is already Map<String, dynamic>, no need to check
+        for (final key in album.keys) {
+          if (!cached.containsKey(key) &&
+              !['id', 'title', 'artist', 'primary-type'].contains(key))
+            cached[key] = album[key];
         }
-        album = cached;
+        albums[i] = cached;
       }
     }
   } catch (e, stackTrace) {
@@ -275,10 +298,11 @@ Future<dynamic> getAlbumsCoverArt(List<dynamic> albums) async {
 Future<dynamic> _getSinglesDetails(dynamic song) async {
   final id = parseEntityId(song);
   final ids = Uri.parse('?${parseEntityId(id)}').queryParameters;
+  // R3 fix: Add null-safe fallback for mbid (was causing NoSuchMethodError on null)
   final rgid =
       song['mbidType'] == 'release-group'
           ? ((song['rgid'] ?? song['mbid'] ?? '') as String).mbid
-          : (ids['mb'] ?? (song['mbid'] as String).mbid);
+          : (ids['mb'] ?? (song['mbid'] ?? '') as String).mbid;
   if (rgid.isEmpty) return song;
   try {
     final cached = _getCachedAlbum(song);
@@ -296,14 +320,16 @@ Future<dynamic> _getSinglesDetails(dynamic song) async {
         }
       }
       final albumArtist = combineArtists(cached);
-      for (dynamic recording in cached['list']) {
-        recording = copyMap(await getSongInfo(recording));
+      // R13 fix: Use indexed loop to actually update list elements (loop variable reassignment has no effect)
+      for (int i = 0; i < cached['list'].length; i++) {
+        final recording = copyMap(await getSongInfo(cached['list'][i]));
         recording['album'] = cached['title'];
         recording['albumArtist'] = albumArtist;
         if (isYouTubeSongValid(recording) &&
             checkTitleAndArtist(cached, recording)) {
           cached['ytid'] = (recording['ytid'] as String).ytid;
           cached['id'] = parseEntityId(cached);
+          cached['list'][i] = recording;
           break;
         }
       }
@@ -360,7 +386,7 @@ Future<List?> getTrackList(dynamic album) async {
         ))?['recordings'] ??
         [];
     final trackList = LinkedHashSet<String>();
-    album['list'] = [];
+    final list = <Map<String, dynamic>>[];
     for (dynamic recording in recordings) {
       if (!(derivativeRegex.hasMatch(recording['title'] ?? '') &&
               boundExtrasRegex.hasMatch(recording['title'] ?? '')) &&
@@ -381,14 +407,14 @@ Future<List?> getTrackList(dynamic album) async {
               album['validImage'] ?? album['image'] ?? album['images'],
         });
         recording = Map<String, dynamic>.from(recording);
-        album['list'].add(recording);
+        list.add(recording);
       }
     }
+    album['list'] = list;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }
   parseEntityId(album);
-  album = Map<String, dynamic>.from(album);
   return album['list'];
 }
 
@@ -397,10 +423,11 @@ Future<bool> updateAlbumLikeStatus(dynamic album, bool add) async {
   try {
     if (add) {
       album['id'] = parseEntityId(album);
-      if (album['id']?.isEmpty) throw Exception('ID is null or empty');
-      if (album['id'] != null &&
-          (album['image'] == null || album['image'].isEmpty))
-        unawaited(getAlbumCoverArt(Map<String, dynamic>.from(album)));
+      // R10 fix: Check for null OR empty (not just empty)
+      if (album['id'] == null || album['id'].isEmpty) throw Exception('ID is null or empty');
+      // R11 fix: Pass original album directly, not a copy
+      if (album['image'] == null || album['image'].isEmpty)
+        unawaited(getAlbumCoverArt(album));
       userLikedAlbumsList.addOrUpdate(minimizeAlbumData(album), checkAlbum);
       album['album'] = album['title'];
       await PM.triggerHook(album, 'onEntityLiked');
@@ -434,8 +461,9 @@ bool isAlbumValid(dynamic album) {
 
 bool isAlbumIdValid(dynamic album) {
   if (album == null || !(album is Map)) return false;
-  album['id'] = parseEntityId(album['id']);
-  return album.isNotEmpty && album['id'] != null && album['id'].isNotEmpty;
+  // R4 fix: Remove side effect - validation should not mutate input
+  final id = parseEntityId(album['id']);
+  return album.isNotEmpty && id.isNotEmpty;
 }
 
 bool isAlbumTitleValid(dynamic album) {
@@ -459,38 +487,39 @@ bool isAlbumAlreadyLiked(albumToCheck) =>
 int? getAlbumHashCode(dynamic album) {
   if (!(album is Map)) return null;
   if (!isAlbumTitleValid(album) || !isAlbumArtistValid(album)) return null;
+  // R6 fix: Use safe access patterns instead of force-unwrap
   final title = (album['title'] ?? album['album']) as String?;
   final artist = album['artist'] as String?;
-  return title!.cleansed.toLowerCase().hashCode ^
-      artist!.cleansed.toLowerCase().hashCode;
+  if (title == null || artist == null) return null;
+  return title.cleansed.toLowerCase().hashCode ^
+      artist.cleansed.toLowerCase().hashCode;
 }
 
 bool checkAlbum(dynamic albumA, dynamic albumB) {
   if (albumA == null || albumB == null || albumA.isEmpty || albumB.isEmpty)
     return false;
-  if (albumA is Map) albumA['id'] = parseEntityId(albumA);
-  if (albumB is Map) albumB['id'] = parseEntityId(albumB);
+  // R5 fix: Use local variables instead of mutating inputs, add type guards
+  final idA = albumA is Map ? parseEntityId(albumA) : albumA;
+  final idB = albumB is Map ? parseEntityId(albumB) : albumB;
   if (albumA is String && albumB is String)
     return (albumA.isNotEmpty && albumB.isNotEmpty) &&
         checkEntityId(albumA, albumB);
   if (albumA is String && albumB is Map)
     return (albumA.isNotEmpty &&
-            albumB['id'] != null &&
-            albumB['id'].isNotEmpty) &&
-        (checkEntityId(albumA, albumB['id']) ||
-            checkEntityId(albumB['id'], albumA));
+            idB != null &&
+            idB.isNotEmpty) &&
+        (checkEntityId(albumA, idB) ||
+            checkEntityId(idB, albumA));
   if (albumB is String && albumA is Map)
     return (albumB.isNotEmpty &&
-            albumA['id'] != null &&
-            albumA['id'].isNotEmpty) &&
-        (checkEntityId(albumB, albumA['id']) ||
-            checkEntityId(albumA['id'], albumB));
-  if (albumA['id'] == null ||
-      albumB['id'] == null ||
-      albumA['id'].isEmpty ||
-      albumB['id'].isEmpty)
+            idA != null &&
+            idA.isNotEmpty) &&
+        (checkEntityId(albumB, idA) ||
+            checkEntityId(idA, albumB));
+  if (idA == null ||
+      idB == null ||
+      idA.isEmpty ||
+      idB.isEmpty)
     return getAlbumHashCode(albumA) == getAlbumHashCode(albumB);
-  parseEntityId(albumA);
-  parseEntityId(albumB);
-  return checkEntityId(albumA['id'], albumB['id']);
+  return checkEntityId(idA, idB);
 }

@@ -517,8 +517,8 @@ Future<List<Map<String, dynamic>>> getSkipSegments(
   String id, {
   http.Client? client,
 }) async {
+  final c = client ?? http.Client();
   try {
-    final c = client ?? http.Client();
     final res = await c.get(
       Uri(
         scheme: 'https',
@@ -567,6 +567,8 @@ Future<List<Map<String, dynamic>>> getSkipSegments(
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
+  } finally {
+    if (client == null) c.close();
   }
 }
 
@@ -594,14 +596,16 @@ Future<String> getLiveStreamUrl(String songId) async {
 }
 
 Future<Map<String, dynamic>> getIPGeolocation({http.Client? client}) async {
+  final c = client ?? http.Client();
   try {
-    final c = client ?? http.Client();
     final uri = Uri.https('ip-api.com', '/json');
     final response = await c.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return {};
+  } finally {
+    if (client == null) c.close();
   }
 }
 
@@ -621,12 +625,6 @@ bool checkEntityId(dynamic entity, dynamic other) {
   id = parseEntityId(id);
   otherId = parseEntityId(otherId);
   var result = false;
-  if ((id.contains('=') || id.contains('&')) &&
-      (otherId.contains('=') || otherId.contains('&'))) {
-    final ids = otherId.split('&');
-    result = ids.any((i) => i.contains(id));
-    if (result) return result;
-  }
   // id is simple, otherId is composite - split otherId and check if any component contains id
   if (!(id.contains('=') || id.contains('&')) &&
       (otherId.contains('=') || otherId.contains('&'))) {
@@ -634,8 +632,9 @@ bool checkEntityId(dynamic entity, dynamic other) {
     result = ids.any((i) => i.contains(id));
     if (result) return result;
   }
-  if (id.contains('=') ||
-      id.contains('&') && (otherId.contains('=') || otherId.contains('&'))) {
+  // R4 fix: Both id and otherId must be composite - add parentheses for correct precedence
+  if ((id.contains('=') || id.contains('&')) &&
+      (otherId.contains('=') || otherId.contains('&'))) {
     final ids = id.split('&');
     final otherIds = otherId.split('&');
     result = ids.any((i) => otherIds.any((e) => i == e));
