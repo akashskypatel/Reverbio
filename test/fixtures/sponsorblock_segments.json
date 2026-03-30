@@ -1,0 +1,14 @@
+[
+  {
+    "category": "sponsor",
+    "segment": [0, 30],
+    "UUID": "abc123",
+    "videoDuration": 212
+  },
+  {
+    "category": "intro",
+    "segment": [180, 200],
+    "UUID": "def456",
+    "videoDuration": 212
+  }
+]

@@ -3,6 +3,8 @@
  * Contains reusable Map fixtures for songs, artists, albums, etc.
  */
 
+import 'dart:io';
+
 /// Minimal song Map with required fields for testing.
 const Map<String, dynamic> kMinimalSong = {
   'id': 'yt=dQw4w9WgXcQ',
@@ -52,3 +54,8 @@ const Map<String, dynamic> kSongWithEmptyId = {
   'title': 'Never Gonna Give You Up',
   'artist': 'Rick Astley',
 };
+
+/// Load a JSON fixture file from test/fixtures/.
+String loadFixture(String filename) {
+  return File('test/fixtures/$filename').readAsStringSync();
+}
