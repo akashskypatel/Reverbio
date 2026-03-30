@@ -97,6 +97,9 @@ class ProxyManager {
   }
 
   static Future<void> _fetchProxies() async {
+    // R4 fix: Assign future to _fetchingList to prevent concurrent fetches
+    final completer = Completer<void>();
+    _fetchingList = completer.future;
     try {
       if (kDebugMode) logger.log('Fetching proxies...', null, null);
       _proxies.clear();
@@ -119,12 +122,17 @@ class ProxyManager {
       }
       _lastFetched = DateTime.now();
       _fetched = true;
+      completer.complete();
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
+      completer.completeError(e);
+    } finally {
+      // R4 fix: Clear _fetchingList after fetch completes (success or error)
+      _fetchingList = null;
     }
   }
 

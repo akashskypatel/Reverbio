@@ -583,7 +583,8 @@ Future<dynamic> getPlaylistInfoForWidget(
     // R12 fix: Create copy instead of mutating input
     return Map<String, dynamic>.from(playlist);
   }
-  return playlistData as Map<String, dynamic>;
+  // R12 fix: Return enriched playlist data, not the original input
+  return Map<String, dynamic>.from(playlist);
 }
 
 int? getPlaylistHashCode(dynamic playlist) {

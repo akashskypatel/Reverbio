@@ -792,6 +792,9 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         }
       }
 
+      // R5 fix: Return early if cached URL is valid (skip redundant checkUrl call)
+      if (cachedUrlValid) return songUrl;
+
       // Fetch fresh URL if no valid cache
       if (!cachedUrlValid) {
         songUrl =
