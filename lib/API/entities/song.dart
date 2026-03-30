@@ -1197,7 +1197,12 @@ Future<void> getExistingOfflineSongs() async {
         final newPath = ensureCorrectExtension(file.path, extension: ext);
         File(file.path).renameSync(newPath);
         if (isAudio(newPath)) {
-          _userOfflineSongs.addOrUpdateWhere(checkEntityId, 'fn=$filename');
+          // Only add files with entity IDs (mb=, yt=, is=) to _userOfflineSongs
+          final ids = Uri.parse('?$filename').queryParameters;
+          final entityId = (ids['mb'] != null || ids['yt'] != null || ids['is'] != null)
+              ? filename
+              : 'fn=$filename';
+          _userOfflineSongs.addOrUpdateWhere(checkEntityId, entityId);
         }
         if (filename.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
           final fileTagger = FileTagger();
@@ -1228,7 +1233,9 @@ Future<void> _matchFileToSongInfo(File file) async {
       song?['offlineArtworkPath'] = imageFiles.first.path;
     }
     song?['offlineAudioPath'] = file.path;
-    userOfflineSongs.addOrUpdate(song?['id'], checkEntityId);
+    // Fix: Only add to userOfflineSongs if song ID is not null
+    if (song?['id'] != null && song!['id'].isNotEmpty)
+      userOfflineSongs.addOrUpdate(song['id'], checkEntityId);
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
   }

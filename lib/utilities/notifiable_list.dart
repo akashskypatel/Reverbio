@@ -30,6 +30,9 @@ import 'package:reverbio/utilities/notifiable_future.dart'
     show FutureTrackerState;
 
 class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
+  // R4 fix: Static registry to track all instances for flush on shutdown
+  static final Set<NotifiableList> _instances = {};
+  
   NotifiableList() : _boxName = null, _category = null, _isInitialized = true;
   NotifiableList._internal(
     this._boxName,
@@ -117,6 +120,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       addListener(writeToCache);
       _isInitialized = true;
       _initializationCompleter.complete(_items);
+      // R4 fix: Register instance for flush on shutdown
+      _instances.add(this);
     } catch (e, stackTrace) {
       _error = e;
       _stackTrace = stackTrace;
@@ -150,7 +155,9 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     if (!_initializationCompleter.isCompleted) {
       return _initializationCompleter.future;
     }
-    // Already initialized (or failed) - return cached items
+    // Initialization already completed (may have failed)
+    // Note: If initialization failed, caller can check hasError property
+    // Retry would require recreating the completer (not implemented)
     return _items;
   }
 
@@ -173,12 +180,39 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
     });
   }
 
+  // R4 fix: Flush pending writes immediately (bypass debounce)
+  void flush() {
+    if (_boxName == null || _category == null) return;
+    // Cancel any pending timer
+    _debounceTimer?.cancel();
+    // Write immediately
+    if (_minimize != null)
+      HiveService.addOrUpdateData<List<T>>(
+        _boxName,
+        _category,
+        _items.map(_minimize!).toList(),
+      );
+    else
+      HiveService.addOrUpdateData<List<T>>(_boxName, _category, _items);
+  }
+
+  // R4 fix: Flush all instances (called on app shutdown)
+  static void flushAll() {
+    for (final instance in _instances) {
+      instance.flush();
+    }
+  }
+
   @override
   void dispose() {
     if (_boxName != null && _category != null) {
       removeListener(writeToCache);
+      // R4 fix: Flush pending writes before disposing
+      flush();
     }
     _debounceTimer?.cancel(); // Cancel timer on dispose
+    // R4 fix: Remove from registry
+    _instances.remove(this);
     super.dispose();
   }
 

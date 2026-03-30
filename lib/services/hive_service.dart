@@ -29,6 +29,7 @@ import 'package:path/path.dart' as path;
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/notifiable_value.dart';
 
 abstract class HiveBoxNames {
@@ -222,7 +223,8 @@ class HiveService {
   }
 
   static Future<void> close() async {
-    // R6 fix: Flush all pending NotifiableValue writes before closing
+    // R6 fix: Flush all pending NotifiableList and NotifiableValue writes before closing
+    NotifiableList.flushAll();
     await NotifiableValue.flushAll();
     await compactAllBoxes();
     await closeAllBoxes();

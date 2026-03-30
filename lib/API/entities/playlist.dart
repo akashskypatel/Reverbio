@@ -191,10 +191,16 @@ Future<void> updateCustomPlaylist(
   String playlistName, {
   String? imageUrl,
 }) async {
-  oldPlaylist.addAll({
-    'title': playlistName,
-    if (imageUrl != null) 'image': imageUrl,
-  });
+  // R14 fix: Find and update the actual playlist in userCustomPlaylists
+  final index = userCustomPlaylists.indexWhere(
+    (p) => p['id'] == oldPlaylist['id'],
+  );
+  if (index != -1) {
+    userCustomPlaylists[index]['title'] = playlistName;
+    if (imageUrl != null) userCustomPlaylists[index]['image'] = imageUrl;
+    // Trigger persistence
+    userCustomPlaylists.writeToCache();
+  }
 }
 
 PlaylistOperationResult createCustomPlaylist(
