@@ -513,9 +513,13 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
   return results;
 }
 
-Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
+Future<List<Map<String, dynamic>>> getSkipSegments(
+  String id, {
+  http.Client? client,
+}) async {
   try {
-    final res = await http.get(
+    final c = client ?? http.Client();
+    final res = await c.get(
       Uri(
         scheme: 'https',
         host: 'sponsor.ajay.app',
@@ -589,10 +593,11 @@ Future<String> getLiveStreamUrl(String songId) async {
   }
 }
 
-Future<Map<String, dynamic>> getIPGeolocation() async {
+Future<Map<String, dynamic>> getIPGeolocation({http.Client? client}) async {
   try {
-    final uri = Uri.http('ip-api.com', 'json');
-    final response = await http.get(uri);
+    final c = client ?? http.Client();
+    final uri = Uri.https('ip-api.com', '/json');
+    final response = await c.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
