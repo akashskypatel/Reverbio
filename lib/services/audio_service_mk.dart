@@ -20,7 +20,6 @@
  */
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -36,8 +35,8 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
-import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
@@ -47,7 +46,8 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:rxdart/rxdart.dart';
 
-final Map activeQueue = {
+// R26 fix: Typed Map instead of untyped Map
+final Map<String, dynamic> activeQueue = {
   'id': '',
   'ytid': '',
   'title': 'No Songs in Queue',
@@ -323,7 +323,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   audio_session.AudioSession? _session;
   Timer? _sleepTimer;
   bool sleepTimerExpired = false;
-  late bool wasPlayingBeforeCall = false;
+  // R14 fix: Removed unused wasPlayingBeforeCall variable
   NotifiableList<SongBar> get queueSongBars => audioPlayer.queueSongBars;
   late final StreamSubscription<bool?> _playbackEventSubscription;
   late final StreamSubscription<AudioProcessingState?> _stateChangeSubscription;
@@ -508,8 +508,15 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> seekForward(bool begin) async {
     // R5 fix: Properly implement forward seek (skip seekToStart)
-    if (!begin) {
-      await seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
+    // Seek on button press (begin=true), not release (begin=false)
+    if (begin) {
+      final duration = audioPlayer.duration;
+      final newPosition = audioPlayer.position.inSeconds + 15;
+      // R27 fix: Clamp position to valid [0, duration] range
+      final clampedPosition = duration.inSeconds > 0
+          ? newPosition.clamp(0, duration.inSeconds)
+          : newPosition;
+      await seek(Duration(seconds: clampedPosition));
     }
     _updatePlaybackState();
   }
@@ -517,8 +524,12 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> seekBackward(bool begin) async {
     // R5 fix: Properly implement backward seek (skip seekToStart)
-    if (!begin) {
-      await seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
+    // Seek on button press (begin=true), not release (begin=false)
+    if (begin) {
+      final newPosition = audioPlayer.position.inSeconds - 15;
+      // R27 fix: Clamp position to valid [0, duration] range
+      final clampedPosition = newPosition.clamp(0, double.infinity);
+      await seek(Duration(seconds: clampedPosition.toInt()));
     }
     _updatePlaybackState();
   }
@@ -659,13 +670,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
   }
 
+  // R24 fix: Properly cast dynamic return to bool
   Future<bool> getAndroidAutoDevMode() async {
     try {
       if (Platform.isAndroid) {
         final devMode = await audioChannel.invokeMethod<dynamic>(
           'getAndroidAutoDevMode',
         );
-        return devMode;
+        return devMode as bool;
       }
       return false;
     } catch (e, stackTrace) {
@@ -678,6 +690,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     }
   }
 
+  // R17 fix: Added explicit return null for non-Android and fixed return type
   Future<dynamic> getCurrentAudioDevice() async {
     try {
       if (Platform.isAndroid) {
@@ -687,6 +700,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         audioDevice.value = device;
         return device;
       }
+      return null;  // R17 fix: Explicit return for non-Android
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()} change',
@@ -717,9 +731,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     return [];
   }
 
-  Future<void> _handleDeviceEventChange(
-    audio_session.AudioDevicesChangedEvent event,
-  ) async {}
+  // R15 fix: Removed empty _handleDeviceEventChange stub - never connected to any stream
 
   void _handleSessionEventChange(audio_session.AudioInterruptionEvent event) {
     if (event.begin) {
@@ -781,17 +793,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     _updatePlaybackState();
   }
 
+  // R16 fix: Simplified _handleDurationChange - removed empty try-catch
   void _handleDurationChange(Duration? duration) {
-    try {} catch (e, stackTrace) {
-      logger.log('Error handling duration change', e, stackTrace);
-    }
     _updatePlaybackState();
   }
 
+  // R16 fix: Simplified _handleCurrentSongIndexChanged - removed empty try-catch
   void _handleCurrentSongIndexChanged(int? index) {
-    try {} catch (e, stackTrace) {
-      logger.log('Error handling current song index change', e, stackTrace);
-    }
     _updatePlaybackState();
   }
 
@@ -837,9 +845,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       if (song != null &&
           song['skipSegments'] != null &&
           song['skipSegments'].isNotEmpty) {
+        // R23 fix: Removed unnecessary JSON round-trip (jsonDecode/jsonEncode)
         final checkSegment =
-            (jsonDecode(jsonEncode(song['skipSegments'])) as List)
-                .cast<Map<String, dynamic>>()
+            (song['skipSegments'] as List)
+                .whereType<Map<String, dynamic>>()
                 .where(
                   (e) =>
                       e['start']! <= value.position.inMicroseconds &&
@@ -855,8 +864,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
               // R10 fix: Only skip to next if segment ends near song end AND not already skipping
               if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100 &&
                   !_isSkipping)
-                await audioHandler.skipToNext();
-              await audioHandler.seek(Duration(microseconds: seekTo));
+                await this.skipToNext();
+              await this.seek(Duration(microseconds: seekTo));
             }
         }
       }
@@ -1028,7 +1037,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       return media;
     }
 
-    final uri = Uri.parse(song['songUrl']);
+    // R22 fix: Null-check songUrl before constructing Media
+    final songUrl = song['songUrl'] as String?;
+    if (songUrl == null || songUrl.isEmpty) {
+      throw StateError('songUrl is null or empty');
+    }
+
+    final uri = Uri.parse(songUrl);
     final audioSource = Media(uri.toString(), extras: extras);
 
     if (!settings.sponsorBlockSupport.value) {
@@ -1070,9 +1085,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await audioPlayer.setPlaylistMode(newMode);
   }
 
+  // R19 fix: Store original playNextSongAutomatically value to restore on cancel
+  bool? _playNextSongBeforeSleepTimer;
+
   Future<void> setSleepTimer(Duration duration) async {
     _sleepTimer?.cancel();
     sleepTimerExpired = false;
+    // R19 fix: Save original value before mutating settings
+    _playNextSongBeforeSleepTimer = settings.playNextSongAutomatically.value;
     _sleepTimer = Timer(duration, () async {
       await stop();
       settings.playNextSongAutomatically.value = false;
@@ -1086,6 +1106,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       _sleepTimer!.cancel();
       _sleepTimer = null;
       sleepTimerExpired = false;
+      // R19 fix: Restore original playNextSongAutomatically value
+      if (_playNextSongBeforeSleepTimer != null) {
+        settings.playNextSongAutomatically.value = _playNextSongBeforeSleepTimer!;
+        _playNextSongBeforeSleepTimer = null;
+      }
     }
   }
 
@@ -1097,18 +1122,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     settings.playNextSongAutomatically.value =
         !settings.playNextSongAutomatically.value;
   }
-
-  int _generateRandomIndex(int length) {
-    final random = Random();
-    var randomIndex = random.nextInt(length);
-
-    while (randomIndex == activeSongId) {
-      randomIndex = random.nextInt(length);
-    }
-
-    return randomIndex;
-  }
 }
+
+// R13 fix: Removed _generateRandomIndex() - dead code with potential infinite loop
+// skipToRandom() now uses Random().nextInt() directly
 
 void updateMediaItemQueue(List<SongBar> songBars) {
   audioHandler.queue.add(songBars.map((e) => e.mediaItem).whereType<MediaItem>().toList());

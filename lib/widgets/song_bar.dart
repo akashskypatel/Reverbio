@@ -53,18 +53,39 @@ import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
-  SongBar(
-    this.songData, {
+  // A1 fix: Factory constructor to share same NotifiableFuture instance
+  factory SongBar(
+    Map<String, dynamic> songData, {
+    Color? backgroundColor,
+    bool showMusicDuration = false,
+    VoidCallback? onRemove,
+    BorderRadius borderRadius = BorderRadius.zero,
+    LocalKey? key,
+  }) {
+    final songFuture = NotifiableFuture<Map<String, dynamic>>(songData);
+    return SongBar._(
+      songData: songData,
+      songFuture: songFuture,
+      backgroundColor: backgroundColor,
+      showMusicDuration: showMusicDuration,
+      onRemove: onRemove,
+      borderRadius: borderRadius,
+      key: key,
+    );
+  }
+
+  // Private constructor that receives shared songFuture
+  SongBar._({
+    required this.songData,
+    required this.songFuture,
     this.backgroundColor,
     this.showMusicDuration = false,
     this.onRemove,
     this.borderRadius = BorderRadius.zero,
     super.key,
-  }) : songFuture = NotifiableFuture<Map<String, dynamic>>(songData),
-       // A1 fix: Store controller directly on widget instead of broken GlobalKey lookup
-       controller = SongPreparationController(
+  }) : controller = SongPreparationController(
          song: songData,
-         songFuture: NotifiableFuture<Map<String, dynamic>>(songData),
+         songFuture: songFuture,  // ✅ Same instance!
        );
   // R7 fix: Removed context field - use State's context instead
   final Map<String, dynamic> songData;
