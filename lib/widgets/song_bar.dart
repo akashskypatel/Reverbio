@@ -908,6 +908,7 @@ class _SongBarState extends State<SongBar> {
         break;
       case 'tag':
         openMetadataForm(context, song);
+        break;  // R5 fix: Prevent fall-through to move_to_library
       case 'move_to_library':
         {
           final count = await moveSongToDeviceLibrary(song);

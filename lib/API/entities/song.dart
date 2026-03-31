@@ -1534,8 +1534,10 @@ int? getSongHashCode(dynamic song) {
   if (!isSongTitleValid(song) || !isSongArtistValid(song)) return null;
   final title = songTitle(song).nullIfEmpty;
   final artist = songArtist(song).nullIfEmpty;
-  return title!.cleansed.toLowerCase().hashCode ^
-      artist!.cleansed.toLowerCase().hashCode;
+  // R2 fix: Add null guards instead of force-unwrapping nullable values
+  if (title == null || artist == null) return null;
+  return title.cleansed.toLowerCase().hashCode ^
+      artist.cleansed.toLowerCase().hashCode;
 }
 
 bool checkTitleAndArtist(dynamic songA, dynamic songB) {

@@ -628,14 +628,21 @@ bool checkEntityId(dynamic entity, dynamic other) {
   id = parseEntityId(id);
   otherId = parseEntityId(otherId);
   var result = false;
-  // id is simple, otherId is composite - split otherId and check if any component contains id
+  // Case 1: id is simple, otherId is composite - split otherId and check if any component contains id
   if (!(id.contains('=') || id.contains('&')) &&
       (otherId.contains('=') || otherId.contains('&'))) {
     final ids = otherId.split('&');
     result = ids.any((i) => i.contains(id));
     if (result) return result;
   }
-  // R4 fix: Both id and otherId must be composite - add parentheses for correct precedence
+  // Case 2: id is composite, otherId is simple - split id and check if any component contains otherId
+  if ((id.contains('=') || id.contains('&')) &&
+      !(otherId.contains('=') || otherId.contains('&'))) {
+    final ids = id.split('&');
+    result = ids.any((i) => i.contains(otherId));
+    if (result) return result;
+  }
+  // Case 3: Both id and otherId are composite - check if any components match
   if ((id.contains('=') || id.contains('&')) &&
       (otherId.contains('=') || otherId.contains('&'))) {
     final ids = id.split('&');
