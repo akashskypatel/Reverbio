@@ -36,7 +36,7 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/audio_player_service.dart';
-import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/queue_manager.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
 import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
@@ -46,17 +46,8 @@ import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 
-// R26 fix: Typed Map instead of untyped Map
-final Map<String, dynamic> activeQueue = {
-  'id': '',
-  'ytid': '',
-  'title': 'No Songs in Queue',
-  'image': '',
-  'source': '',
-  'list': [],
-};
-
 // Phase 4.B.2: AudioPlayerService moved to audio_player_service.dart
+// Phase 4.B.3: Queue functions moved to queue_manager.dart
 
 class ReverbioAudioHandler extends BaseAudioHandler {
   ReverbioAudioHandler() {
@@ -178,7 +169,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (_isSkipping) return;
     _isSkipping = true;
     try {
-      final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
+      final loopAllSongs = settings.repeatNotifier.value == AudioServiceRepeatMode.all;
       // R9 fix: Allow repeat-all wrap-around by not returning early
       if (!audioPlayer.hasNext && !loopAllSongs) return;
       if (audioPlayer.songValueNotifier.value?.song == null) return;
@@ -210,7 +201,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     bool play = true,
     bool skipOnError = true,
   }) async {
-    final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
+    final loopAllSongs = settings.repeatNotifier.value == AudioServiceRepeatMode.all;
     if (!audioPlayer.hasPrevious && !loopAllSongs) return;
     if (audioPlayer.songValueNotifier.value == null) return;
     final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
@@ -236,7 +227,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> skipToQueueItem(int index, {bool play = true}) async {
     // R4 fix: Guard against empty queue
     if (queueSongBars.isEmpty) return;
-    index = min(index, queueSongBars.length - 1);
+    // Fix: Clamp index to valid [0, length-1] range to prevent RangeError on negative indices
+    index = index.clamp(0, queueSongBars.length - 1);
     await this.prepare(songBar: queueSongBars[index], play: play);
     _updatePlaybackState();
   }
@@ -244,8 +236,16 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> skipToRandom({bool play = true}) async {
     // R3 fix: Guard against single-item queue
     if (queueSongBars.length <= 1) return;
-    // Fix: Use queueSongBars.length to include last song in random selection
-    final index = Random().nextInt(queueSongBars.length);
+    // Fix: Exclude current song index to ensure we actually skip to a different song
+    final random = Random();
+    var index = random.nextInt(queueSongBars.length);
+    final currentIndex = queueSongBars.indexWhere((e) => e.equals(audioPlayer.songValueNotifier.value!));
+    // Re-roll if we picked the current song (max 10 attempts to avoid infinite loop)
+    var attempts = 0;
+    while (index == currentIndex && attempts < 10) {
+      index = random.nextInt(queueSongBars.length);
+      attempts++;
+    }
     await this.prepare(songBar: queueSongBars[index], play: play);
     _updatePlaybackState();
   }
@@ -351,7 +351,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           );
         }
       }
-      if (prepareNextSong.value) {
+      if (settings.prepareNextSong.value) {
         final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
         if (next != null &&
             !(songBar.songPrepareTracker.value?.isCancelled ?? true))
@@ -371,7 +371,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     try {
       cachedIsPlaying = false;
       songValueNotifier.value?.songPrepareTracker.value?.cancel();
-      if (prepareNextSong.value && songValueNotifier.value != null) {
+      if (settings.prepareNextSong.value && songValueNotifier.value != null) {
         final next = nextSongBar(
           songValueNotifier.value!,
           songBars: audioPlayer.queueSongBars,
@@ -442,7 +442,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         final device = await audioChannel.invokeMethod<dynamic>(
           'getCurrentAudioDevice',
         );
-        audioDevice.value = device;
+        settings.audioDevice.value = device;
         return device;
       }
       return null;  // R17 fix: Explicit return for non-Android
@@ -563,7 +563,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (((value.duration - value.position).inMilliseconds / 10) <= 100 &&
         value.duration != Duration.zero &&
         value.position != Duration.zero) {
-      switch (repeatNotifier.value) {
+      switch (settings.repeatNotifier.value) {
         case AudioServiceRepeatMode.one:
           await this.prepare(
             songBar: audioPlayer.songValueNotifier.value,
@@ -575,7 +575,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           // (_handlePlaybackEvent handles completion skip)
           if (!_isSkipping &&
               audioPlayer.processingState != AudioProcessingState.completed) {
-            if (shuffleNotifier.value)
+            if (settings.shuffleNotifier.value)
               await skipToRandom();
             else
               await skipToNext();
@@ -603,8 +603,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         if (checkSegment.isNotEmpty) {
           final seekTo = checkSegment.first['end'];
           final category = checkSegment.first['category'];
-          if ((category == 'sponsor' && sponsorBlockSupport.value) ||
-              (category != 'sponsor' && skipNonMusic.value))
+          if ((category == 'sponsor' && settings.sponsorBlockSupport.value) ||
+              (category != 'sponsor' && settings.skipNonMusic.value))
             if (seekTo != null) {
               // R10 fix: Only skip to next if segment ends near song end AND not already skipping
               if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100 &&
@@ -795,7 +795,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       return audioSource;
     }
 
-    if (song['source'] == 'youtube' && !offlineMode.value)
+    if (song['source'] == 'youtube' && !settings.offlineMode.value)
       song['skipSegments'] = await getSkipSegments(
         song['ytid'],
       );
@@ -869,90 +869,4 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 }
 
-// R13 fix: Removed _generateRandomIndex() - dead code with potential infinite loop
-// skipToRandom() now uses Random().nextInt() directly
-
-void updateMediaItemQueue(List<SongBar> songBars) {
-  audioHandler.queue.add(songBars.map((e) => e.mediaItem).whereType<MediaItem>().toList());
-}
-
-void addSongsToQueue(List<SongBar> songBars) {
-  for (final songBar in songBars) {
-    addSongToQueue(songBar);
-  }
-}
-
-void addSongToQueue(SongBar songBar) {
-  if (!isSongInQueue(songBar)) {
-    activeQueue['list'].add(songBar.song);
-    audioHandler.queueSongBars.add(songBar);
-    if (songBar.mediaItem != null) {
-      audioHandler.queue.add(audioHandler.queue.value + [songBar.mediaItem!]);
-    }
-  }
-}
-
-bool removeSongFromQueue(SongBar songBar) {
-  final val = activeQueue['list'].remove(songBar.song);
-  audioHandler.queueSongBars.removeWhere((e) {
-    return e.equals(songBar);
-  });
-  updateMediaItemQueue(audioHandler.queueSongBars);
-  return val;
-}
-
-bool isSongInQueue(SongBar songBar) {
-  final inQueue =
-      audioHandler.queueSongBars.where((e) {
-        return e.equals(songBar);
-      }).isNotEmpty;
-  return inQueue;
-}
-
-int queueIndexOf(SongBar songBar, {List<SongBar>? songBars}) {
-  if (songBars != null) return songBars.indexWhere((e) => e.equals(songBar));
-  return audioHandler.queueSongBars.indexWhere((e) => e.equals(songBar));
-}
-
-SongBar? nextSongBar(SongBar songBar, {List<SongBar>? songBars}) {
-  final list = songBars != null ? songBars : audioHandler.queueSongBars;
-  final length = list.length;
-  final index = list.indexWhere((e) => e.equals(songBar));
-  if (index < 0 || index + 1 >= list.length) return null;
-  if (length == 1) return songBar;
-  if (index == (length - 1) &&
-      repeatNotifier.value == AudioServiceRepeatMode.all)
-    return list[0];
-  return list[index + 1];
-}
-
-SongBar? previousSongBar(SongBar songBar, {List<SongBar>? songBars}) {
-  final list = songBars != null ? songBars : audioHandler.queueSongBars;
-  final length = list.length;
-  final index = list.indexWhere((e) => e.equals(songBar));
-  if (index < 0 || index - 1 < 0) return null;
-  if (length == 1) return songBar;
-  if (index == 0 && repeatNotifier.value == AudioServiceRepeatMode.all)
-    return list[length - 1];
-  return list[index - 1];
-}
-
-void setQueueToPlaylist(dynamic playlist, List<SongBar> songBars) {
-  clearSongQueue();
-  activeQueue['id'] = playlist['id'];
-  activeQueue['ytid'] = playlist['ytid'];
-  activeQueue['title'] = playlist['title'];
-  activeQueue['image'] = playlist['image'];
-  activeQueue['source'] = playlist['source'];
-  addSongsToQueue(songBars);
-}
-
-void clearSongQueue() {
-  activeQueue['id'] = '';
-  activeQueue['ytid'] = '';
-  activeQueue['title'] = 'No Songs in Queue';
-  activeQueue['image'] = '';
-  activeQueue['source'] = '';
-  activeQueue['list'].clear();
-  audioHandler.queueSongBars.clear();
-}
+// Phase 4.B.3: Queue functions moved to queue_manager.dart

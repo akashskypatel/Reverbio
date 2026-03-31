@@ -42,7 +42,7 @@ class AudioPlayerService {
 
   late final Player _player = Player();
   bool _isShuffleEnabled = false;
-  late double _volume;
+  double _volume = 0.5;  // Default volume, will be set by setVolume() call
 
   late final _volumeNotifier = ValueNotifier(_volume);
   final _processingStateNotifier = ValueNotifier<AudioProcessingState>(

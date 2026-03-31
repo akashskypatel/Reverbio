@@ -25,7 +25,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -34,7 +33,7 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/queue_manager.dart';
 import 'package:reverbio/services/song_preparation_controller.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/audio_tags.dart';
@@ -51,6 +50,7 @@ import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
+import 'package:reverbio/screens/edit_metadata_page.dart';
 
 class SongBar extends StatefulWidget {
   // A1 fix: Factory constructor to share same NotifiableFuture instance
@@ -922,9 +922,13 @@ class _SongBarState extends State<SongBar> {
     }
   }
 
-  // R9 fix: Use GoRouter instead of Navigator.push
+  // R9 fix: Navigate to EditMetadataPage using Navigator.push
   void openMetadataForm(BuildContext context, dynamic song) {
-    context.go('editMetadata?${song['id']}');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditMetadataPage(context: context, song: song),
+      ),
+    );
   }
 
   Widget _buildActionButtons(
