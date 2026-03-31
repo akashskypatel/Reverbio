@@ -21,11 +21,9 @@ import 'package:reverbio/widgets/spinner.dart';
 class EditMetadataPage extends StatefulWidget {
   const EditMetadataPage({
     super.key,
-    required this.context,
     required this.song,
   });
   final dynamic song;
-  final BuildContext context;
   @override
   _EditMetadataPageState createState() => _EditMetadataPageState();
 }
@@ -60,6 +58,11 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
   Tag? tags;
   final pictures = <Picture>[];
   final customTags = <String, String>{};
+  // R5 fix: Move local state variables from build() to State fields
+  bool metaLoading = false;
+  bool showTitleError = false;
+  bool showArtistError = false;
+  bool isSaving = false;
 
   @override
   void initState() {
@@ -67,21 +70,53 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
     initialize();
   }
 
+  // R2 fix: Dispose all TextEditingControllers
+  @override
+  void dispose() {
+    titleController.dispose();
+    artistController.dispose();
+    albumController.dispose();
+    albumArtistController.dispose();
+    yearController.dispose();
+    commentController.dispose();
+    genreController.dispose();
+    trackNumberController.dispose();
+    trackTotalController.dispose();
+    discNumberController.dispose();
+    discTotalController.dispose();
+    bpmController.dispose();
+    composerController.dispose();
+    copyrightController.dispose();
+    descriptionController.dispose();
+    synopsisController.dispose();
+    groupingController.dispose();
+    ytController.dispose();
+    mbController.dispose();
+    lyricsController.dispose();
+    durationController.dispose();
+    super.dispose();
+  }
+
   void initialize() async {
     song = widget.song;
     offlinePath = await getOfflinePath(song) ?? '';
+    // R3 fix: Add mounted check after await
+    if (!mounted) return;
     if (offlinePath.isNotEmpty) {
-      if (offlinePath.isEmpty || !doesFileExist(offlinePath)) {
-        return showToast(context: widget.context, L10n.current.cannotOpenFile);
+      // R1 fix: Removed dead offlinePath.isEmpty check - already checked with isNotEmpty
+      if (!doesFileExist(offlinePath)) {
+        return showToast(L10n.current.cannotOpenFile);
       }
       try {
         tags = await fileTagger.getTagFromOfflineFile(widget.song);
+        // R3 fix: Add mounted check after await
+        if (!mounted) return;
         if (tags == null)
-          showToast(context: widget.context, L10n.current.cannotOpenFile);
+          showToast(L10n.current.cannotOpenFile);
         pictures.addAll(tags?.pictures ?? []);
         customTags.addAll(tags?.customTags ?? {});
       } catch (_) {
-        return showToast(context: widget.context, L10n.current.cannotOpenFile);
+        return showToast(L10n.current.cannotOpenFile);
       }
       titleController.text =          tags?.title ?? basenameWithoutExtension(offlinePath);
       artistController.text = tags?.artist ?? '';
@@ -105,7 +140,7 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
       ytController.text = tags?.youtube ?? '';
       mbController.text = tags?.musicbrainz ?? '';
     } else {
-      showToast(context: widget.context, L10n.current.cannotOpenFile);
+      showToast(L10n.current.cannotOpenFile);
     }
     isInitialized.value = true;
   }
@@ -113,16 +148,16 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    bool metaLoading = false;
-    bool showTitleError = false;
-    bool showArtistError = false;
-    bool isSaving = false;
+    // R5 fix: Removed local variable declarations - now State fields
     return StatefulBuilder(
       builder:
           (context, setState) => Scaffold(
             persistentFooterButtons: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                // R8 fix: Only pop on successful save, not unconditionally
+                onPressed: () {
+                  if (!isSaving) Navigator.of(context).pop();
+                },
                 child: Text(L10n.current.cancel.toUpperCase()),
               ),
               TextButton(
@@ -178,7 +213,13 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
                       stackTrace,
                     );
                     showToast(L10n.current.tagsError);
+                  } finally {
+                    // R9 fix: Reset isSaving on completion or failure
+                    setState(() {
+                      isSaving = false;
+                    });
                   }
+                  // R8 fix: Only pop after successful save (moved from unconditional pop)
                   Navigator.of(context).pop();
                 },
                 child:

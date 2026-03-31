@@ -293,10 +293,11 @@ Map<String, dynamic> tryParseVideoTitleAndArtist(Video song) {
     ...singleQuotedRegEx.allMatches(song.title.sanitized),
     ...doubleQuotedRegEx.allMatches(song.title.sanitized),
   ];
+  // R3 fix: Changed || to && - both conditions must be true (null check AND non-empty)
   if (strings.length == 1 &&
       quoted.isNotEmpty &&
       quoted.length == 1 &&
-      (quoted[0].namedGroup('value') != null ||
+      (quoted[0].namedGroup('value') != null &&
           quoted[0].namedGroup('value')!.isNotEmpty)) {
     final title = quoted[0].namedGroup('value')!;
     final artist =

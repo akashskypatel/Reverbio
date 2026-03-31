@@ -154,12 +154,11 @@ Future<void> checkAppUpdates() async {
             ),
             FilledButton(
               onPressed: () {
-                getDownloadUrl(map).then(
-                  (url) => {
-                    launchURL(Uri.parse(url)),
-                    GoRouter.of(context).pop(context),
-                  },
-                );
+                // R5 fix: Changed set literal {} to statement block () { ... }
+                getDownloadUrl(map).then((url) {
+                  launchURL(Uri.parse(url));
+                  GoRouter.of(context).pop(context);
+                });
               },
               child: Text(L10n.current.download.toUpperCase()),
             ),

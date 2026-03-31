@@ -39,15 +39,11 @@ import 'package:reverbio/widgets/playback_icon_button.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class MiniPlayer extends StatefulWidget {
-  MiniPlayer({
+  const MiniPlayer({
     super.key,
-    required this.context,
-    required this.mediaItem,
     required this.closeButton,
   });
-  final MediaItem mediaItem;
   final Widget closeButton;
-  final BuildContext context;
 
   @override
   _MiniPlayerState createState() => _MiniPlayerState();
@@ -55,15 +51,24 @@ class MiniPlayer extends StatefulWidget {
 
 class _MiniPlayerState extends State<MiniPlayer> {
   late ThemeData _theme;
+  // R3 fix: Move like status to State field to avoid creating new ValueNotifier on every rebuild
+  late final ValueNotifier<bool> _likeStatus;
+
   @override
   void initState() {
     super.initState();
     audioHandler.songValueNotifier.addListener(_songListener);
+    // R3 fix: Initialize like status once
+    _likeStatus = ValueNotifier<bool>(
+      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
+    );
   }
 
   @override
   void dispose() {
     audioHandler.songValueNotifier.removeListener(_songListener);
+    // R3 fix: Dispose like status
+    _likeStatus.dispose();
     super.dispose();
   }
 
@@ -148,34 +153,26 @@ class _MiniPlayerState extends State<MiniPlayer> {
           children: [
             _buildArtwork(),
             _buildMetadata(),
+            // R2 fix: Removed dead large-screen branch - this is already large screen controls
             Row(
               children: [
-                if (isLargeScreen(context: context)) ...[
-                  _buildLikeButton(),
-                  const SizedBox(width: 10),
-                  _buildPreviousButton(context),
-                  if (audioHandler.hasPrevious) const SizedBox(width: 10),
-                  StreamBuilder<Duration>(
-                    stream: audioHandler.positionStream,
-                    builder: (context, snapshot) {
-                      return _buildStopButton(context);
-                    },
-                  ),
-                  const SizedBox(width: 10),
-                  StreamBuilder<PlaybackState>(
-                    stream: audioHandler.playbackState,
-                    builder: _buildPlayPauseButton,
-                  ),
-                  if (audioHandler.hasNext) const SizedBox(width: 10),
-                  _buildNextButton(context),
-                ] else ...[
-                  _buildLikeButton(),
-                  const SizedBox(width: 10),
-                  StreamBuilder<PlaybackState>(
-                    stream: audioHandler.playbackState,
-                    builder: _buildPlayPauseButton,
-                  ),
-                ],
+                _buildLikeButton(),
+                const SizedBox(width: 10),
+                _buildPreviousButton(context),
+                if (audioHandler.hasPrevious) const SizedBox(width: 10),
+                StreamBuilder<Duration>(
+                  stream: audioHandler.positionStream,
+                  builder: (context, snapshot) {
+                    return _buildStopButton(context);
+                  },
+                ),
+                const SizedBox(width: 10),
+                StreamBuilder<PlaybackState>(
+                  stream: audioHandler.playbackState,
+                  builder: _buildPlayPauseButton,
+                ),
+                if (audioHandler.hasNext) const SizedBox(width: 10),
+                _buildNextButton(context),
               ],
             ),
           ],
@@ -184,13 +181,11 @@ class _MiniPlayerState extends State<MiniPlayer> {
     );
   }
 
+  // R3 fix: Use State field _likeStatus instead of creating new ValueNotifier on every rebuild
   Widget _buildLikeButton() {
-    final status = ValueNotifier<bool>(
-      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
-    );
     final primaryColor = _theme.colorScheme.primary;
     return ValueListenableBuilder<bool>(
-      valueListenable: status,
+      valueListenable: _likeStatus,
       builder: (context, value, __) {
         final icon = Icon(
           value ? FluentIcons.heart_24_filled : FluentIcons.heart_24_regular,
@@ -200,9 +195,9 @@ class _MiniPlayerState extends State<MiniPlayer> {
         void onPressed() {
           updateSongLikeStatus(
             audioHandler.songValueNotifier.value?.song,
-            !status.value,
+            !_likeStatus.value,
           );
-          status.value = !status.value;
+          _likeStatus.value = !_likeStatus.value;
         }
 
         return buildIconDataButton(
@@ -430,7 +425,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
               ? null
               : () async {
                 try {
-                  await widget.context.push('/artist', extra: artistData);
+                  await context.push('/artist', extra: artistData);
                 } catch (_) {}
               },
       child: Text(

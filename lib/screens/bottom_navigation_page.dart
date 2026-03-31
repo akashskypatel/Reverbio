@@ -176,8 +176,6 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                           Flexible(fit: FlexFit.tight, child: widget.child),
                           if (value != null && value.mediaItem != null)
                             MiniPlayer(
-                              context: context,
-                              mediaItem: value.mediaItem!,
                               closeButton: _buildMiniPlayerCloseButton(context),
                             ),
                         ],

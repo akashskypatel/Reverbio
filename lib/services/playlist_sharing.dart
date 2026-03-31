@@ -26,34 +26,49 @@ import 'package:reverbio/utilities/formatter.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class PlaylistSharingService {
+  // R3 fix: Include id and primary-type in compact playlist
   static Map createCompactPlaylist(Map fullPlaylist) {
+    // R2 fix: Filter out null ytid values
+    final songYtids = fullPlaylist['list']
+        .map((song) => song['ytid'] as String?)
+        .where((ytid) => ytid != null)
+        .toList();
+    
     return {
+      'id': fullPlaylist['id'] ?? '',  // R3 fix: Add id with empty fallback
+      'primary-type': 'playlist',  // R3 fix: Add primary-type
       'title': fullPlaylist['title'],
       if (fullPlaylist['image'] != null) 'image': fullPlaylist['image'],
       'source': 'user-created',
-      'list': fullPlaylist['list'].map((song) => song['ytid']).toList(),
+      'list': songYtids,  // R2 fix: Now guaranteed non-null values
     };
   }
 
+  // R1 fix: Close YoutubeExplode instance in finally block
   static Future<Map> expandCompactPlaylist(Map compactPlaylist) async {
     final List<dynamic> songIds = compactPlaylist['list'];
     final _yt = YoutubeExplode();
-    final expandedSongs = await Future.wait(
-      songIds.map((ytid) async {
-        try {
-          final video = await _yt.videos.get(ytid);
-          return returnYtSongLayout(video);
-        } catch (e, stackTrace) {
-          logger.log('Error expanding song: $ytid', e, stackTrace);
-          return null;
-        }
-      }),
-    );
+    try {
+      final expandedSongs = await Future.wait(
+        songIds.map((ytid) async {
+          try {
+            final video = await _yt.videos.get(ytid);
+            return returnYtSongLayout(video);
+          } catch (e, stackTrace) {
+            logger.log('Error expanding song: $ytid', e, stackTrace);
+            return null;
+          }
+        }),
+      );
 
-    return {
-      ...compactPlaylist,
-      'list': expandedSongs.where((song) => song != null).toList(),
-    };
+      return {
+        ...compactPlaylist,
+        'list': expandedSongs.where((song) => song != null).toList(),
+      };
+    } finally {
+      // R1 fix: Close YoutubeExplode to prevent resource leak
+      _yt.close();
+    }
   }
 
   static String encodePlaylist(Map playlist) {

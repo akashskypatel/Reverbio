@@ -25,11 +25,14 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 Map<String, dynamic> returnYtSongLayout(Video song) {
   final songInfo = tryParseVideoTitleAndArtist(song);
+  // R6 fix: Add 'album' key with empty fallback
+  final album = songInfo['album'] ?? '';
   return {
     'id': 'yt=${song.id}',
     'ytid': song.id.toString(),
     'title': songInfo['title'],
     'artist': songInfo['artist'],
+    'album': album,  // R6 fix: Add album key
     'ytTitle': song.title,
     'ytArtist': song.author,
     'source': 'youtube',
@@ -43,9 +46,10 @@ Map<String, dynamic> returnYtSongLayout(Video song) {
     'channelId': song.channelId.value,
     'views': song.engagement.viewCount,
     'isError': false,
+    // R1 fix: Pass album from songInfo (may be empty, but at least it's the correct field)
     'isDerivative': isSongDerivative(
       songInfo['artist'],
-      songInfo['album'],
+      album,  // R1 fix: Use album from songInfo
       songInfo['title'],
       song.title,
     ),
@@ -53,6 +57,7 @@ Map<String, dynamic> returnYtSongLayout(Video song) {
 }
 
 Map<String, dynamic> returnYTPlaylistLayout(Playlist playlist) {
+  // R4 fix: Add 'primary-type' key to match codebase convention
   return {
     'id': 'yt=${playlist.id.value}',
     'ytid': playlist.id.value,
@@ -61,6 +66,7 @@ Map<String, dynamic> returnYTPlaylistLayout(Playlist playlist) {
     'description': playlist.description,
     'title': playlist.title,
     'videoCount': playlist.videoCount,
+    'primary-type': 'playlist',  // R4 fix: Add primary-type
     'engagement': {
       'avgRating': playlist.engagement.avgRating,
       'dislikeCount': playlist.engagement.dislikeCount,
@@ -78,8 +84,12 @@ Map<String, dynamic> returnYTPlaylistLayout(Playlist playlist) {
   };
 }
 
+// R5 fix: Handle negative input by clamping to zero
+// R2 fix: Changed parameter to int (non-nullable) - callers must ensure non-null
 String formatDuration(int audioDurationInSeconds) {
-  final duration = Duration(seconds: audioDurationInSeconds);
+  // R5 fix: Clamp to zero for negative input
+  final clampedDuration = audioDurationInSeconds < 0 ? 0 : audioDurationInSeconds;
+  final duration = Duration(seconds: clampedDuration);
 
   final hours = duration.inHours;
   final minutes = duration.inMinutes.remainder(60);

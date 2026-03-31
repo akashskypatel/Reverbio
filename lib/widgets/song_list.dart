@@ -70,7 +70,10 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    widget.songBars.clear();
+    // R1 fix: Removed widget.songBars.clear() - widget does not own this list
+    // Parent owns songBars, clearing here would cause side effects
+    // R5 fix: Dispose search controller
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -139,13 +142,14 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
   }
 
   void _searchSongBars(String value) {
+    // R2 fix: Escape user input to prevent regex injection
+    final escapedValue = RegExp.escape(value);
+    final searchRegex = RegExp(escapedValue, caseSensitive: false);
     for (final songBar in widget.songBars) {
       if (value.isEmpty)
         songBar.setVisibility(true);
-      else if (!(songBar.title?.contains(RegExp(value, caseSensitive: false)) ??
-              false) &&
-          !(songBar.artist?.contains(RegExp(value, caseSensitive: false)) ??
-              false))
+      else if (!(songBar.title?.contains(searchRegex) ?? false) &&
+          !(songBar.artist?.contains(searchRegex) ?? false))
         songBar.setVisibility(false);
     }
   }

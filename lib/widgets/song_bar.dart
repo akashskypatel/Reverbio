@@ -926,7 +926,7 @@ class _SongBarState extends State<SongBar> {
   void openMetadataForm(BuildContext context, dynamic song) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => EditMetadataPage(context: context, song: song),
+        builder: (context) => EditMetadataPage(song: song),
       ),
     );
   }
