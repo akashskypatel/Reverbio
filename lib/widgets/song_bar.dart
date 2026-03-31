@@ -190,6 +190,18 @@ class _SongBarState extends State<SongBar> {
     });
   }
 
+  // R86 fix: Dispose old widget's controller when widget is updated
+  @override
+  void didUpdateWidget(SongBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Dispose the old controller to prevent resource leak
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.dispose();
+      oldWidget.songFuture.removeListener(_listener);
+      oldWidget.songFuture.dispose();
+    }
+  }
+
   @override
   void dispose() {
     // A1 fix: Dispose controller which handles all ValueNotifiers

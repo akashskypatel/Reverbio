@@ -19,6 +19,8 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -148,7 +150,8 @@ class WidgetFactory {
         notifier?.value = newValue;
   };
 
-  static final void Function({
+  // R1 fix: Changed typedef from void Function to Future<void> Function for async
+  static final Future<void> Function({
     required String pluginName,
     required String id,
     required String label,
@@ -279,7 +282,7 @@ class WidgetFactory {
   }) {
     if (methodData == null) return;
     if (methodData['isBackground'] ?? false)
-      return _methodBackground(
+      _methodBackground(
         pluginName: pluginName,
         id: id,
         label: label,
@@ -291,7 +294,7 @@ class WidgetFactory {
         methodParamBuilder: methodParamBuilder,
       );
     if (methodData['isAsync'] ?? false)
-      return _methodAsync(
+      unawaited(_methodAsync(
         pluginName: pluginName,
         id: id,
         label: label,
@@ -301,8 +304,8 @@ class WidgetFactory {
         setState: setState,
         notifier: notifier,
         methodParamBuilder: methodParamBuilder,
-      );
-    return _methodSync(
+      ));
+    _methodSync(
       pluginName: pluginName,
       id: id,
       label: label,

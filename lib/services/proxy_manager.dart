@@ -87,13 +87,17 @@ class ProxyManager {
         DateTime.now().difference(_lastFetched).inMinutes >= 60 ||
         !_fetched) {
       await _fetchProxies();
+      // Reinitialize clients only after fetch is complete
+      // Fix: Create new clients first, then close old ones to prevent race condition
+      final oldProxyClient = _proxyClient;
+      final oldProxyYTClient = _proxyYTClient;
+      _proxyClient = _randomProxyClient();
+      _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
+      // Close old clients after new ones are ready (in-flight requests complete)
+      oldProxyClient.close();
+      oldProxyYTClient.close();
     }
-
-    // Reinitialize clients after fetch is complete
-    _proxyClient.close();
-    _proxyYTClient.close();
-    _proxyClient = _randomProxyClient();
-    _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
+    // If no fetch occurred, keep existing clients (no disruption to in-flight requests)
   }
 
   static Future<void> _fetchProxies() async {
@@ -112,14 +116,8 @@ class ProxyManager {
             ..add(_fetchOpenProxyList())
             ..add(_fetchProxyScrape());
 
-      final results = await Future.wait(futures);
-      for (final result in results) {
-        if (result != null) {
-          for (final proxy in result) {
-            _proxies[proxy.address] = proxy;
-          }
-        }
-      }
+      // R115 fix: Removed dead code - fetch methods return void, results are populated via side effects
+      await Future.wait(futures);
       _lastFetched = DateTime.now();
       _fetched = true;
       completer.complete();

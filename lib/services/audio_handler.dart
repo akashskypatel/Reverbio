@@ -239,7 +239,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     // Fix: Exclude current song index to ensure we actually skip to a different song
     final random = Random();
     var index = random.nextInt(queueSongBars.length);
-    final currentIndex = queueSongBars.indexWhere((e) => e.equals(audioPlayer.songValueNotifier.value!));
+    // Fix: Add null check before force-unwrap
+    final currentSong = audioPlayer.songValueNotifier.value;
+    final currentIndex = currentSong != null
+        ? queueSongBars.indexWhere((e) => e.equals(currentSong))
+        : -1;
     // Re-roll if we picked the current song (max 10 attempts to avoid infinite loop)
     var attempts = 0;
     while (index == currentIndex && attempts < 10) {

@@ -1181,11 +1181,10 @@ class PluginsManager {
     try {
       for (final plugin in plugins) {
         final hook = getHooks(plugin['name'])[hookName];
-        final methodName = hook['onTrigger']['methodName'];
-        if (hook == null ||
-            hook.isEmpty ||
-            methodName == null ||
-            methodName.isEmpty)
+        // R1 fix: Check hook null/empty before dereferencing
+        if (hook == null || hook.isEmpty) continue;
+        final methodName = hook['onTrigger']?['methodName'];
+        if (methodName == null || methodName.isEmpty)
           continue;
         if (hooks[hookName]!['isBackground']!) {
           queueBackground(

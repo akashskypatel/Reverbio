@@ -214,9 +214,10 @@ class FileTagger {
 
   Future<Tag> getTagFromFileOrMetadata(dynamic song) async {
     final metaTag = await getTagFromMetadata(song);
-    final songTag = Tag.fromJson(song['audioTags']);
+    // R1 fix: Add null check for song['audioTags']
+    final songTag = song['audioTags'] != null ? Tag.fromJson(song['audioTags']) : null;
     final fileTag =
-        songTag.equalsWithoutPictures(metaTag)
+        songTag != null && songTag.equalsWithoutPictures(metaTag)
             ? metaTag
             : await getTagFromOfflineFile(song);
     final pictures =

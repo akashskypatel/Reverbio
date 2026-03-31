@@ -117,7 +117,7 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       else
         // R8 fix: Don't apply minimize on load - data is already minimized on write
         _items.addAll(value);
-      addListener(writeToCache);
+      // R120 fix: Register listener AFTER initial notifyListeners to avoid wasted write-back
       _isInitialized = true;
       _initializationCompleter.complete(_items);
       // R4 fix: Register instance for flush on shutdown
@@ -130,7 +130,10 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       _hasError = true;
       debugPrint('Error in ${stackTrace.getCurrentMethodName()}: $e');
     }
+    // Notify listeners that data is ready (before registering writeToCache listener)
     notifyListeners();
+    // Now register the listener - future changes will trigger writeToCache
+    addListener(writeToCache);
   }
 
   final List<T> _items = [];
