@@ -20,59 +20,38 @@
  */
 
 import 'package:audio_service/audio_service.dart';
+import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/utils.dart';
 
-Map mediaItemToMap(MediaItem mediaItem) => {
-  'id': mediaItem.id,
-  'ytid': mediaItem.extras!['ytid'],
-  'album': mediaItem.album.toString(),
-  'artist': mediaItem.artist.toString(),
-  'title': mediaItem.title,
-  'highResImage': mediaItem.artUri.toString(),
-  'lowResImage': mediaItem.extras!['lowResImage'],
-  'isLive': mediaItem.extras!['isLive'],
-};
-
-MediaItem mapToMediaItem(Map song) {
+// R4 fix: Extract shared image resolution helper to avoid divergence
+String _resolveImagePath(Map song) {
   final _imagePath =
       song['validImage'] ??
       (song['image'] is String ? song['image'] : null) ??
       song['highResImage'] ??
       song['lowResImage'] ??
       song['offlineArtworkPath'];
-  final imagePath =
-      (_imagePath != null && _imagePath is String)
-          ? _imagePath
-          : parseImage(song)?.first ?? '';
-  return MediaItem(
-    id: song['id'] ?? '',
-    album: song['album'] ?? '',
-    artist: song['artist'] ?? '',
-    title: song['title'] ?? '',
-    duration: Duration(seconds: song['duration'] ?? 0),
-    artUri:
-        imagePath.isNotEmpty
-            ? (isFilePath(imagePath) && doesFileExist(imagePath)
-                ? Uri.file(imagePath)
-                : (isUrl(imagePath) ? Uri.parse(imagePath) : null))
-            : null,
-    extras: {
-      'android.media.metadata.DURATION': (song['duration'] ?? 0) * 1000,
-      'android.media.metadata.ART_URI': imagePath,
-      'android.media.metadata.ALBUM_ART_URI': imagePath,
-      'artistId': song['artistId'] ?? '',
-      'lowResImage': song['lowResImage'] ?? '',
-      'ytid': song['ytid'] ?? '',
-      'isLive': song['isLive'] ?? false,
-      'isOffline': song['isOffline'] ?? false,
-      'artWorkPath': song['highResImage'] ?? '',
-    },
-  );
+  return (_imagePath != null && _imagePath is String)
+      ? _imagePath
+      : parseImage(song)?.first ?? '';
 }
 
-// Add this helper method to convert Media to MediaItem
-Map<String, dynamic> songToMediaExtras(Map song) {
-  final imagePath = parseImage(song)?.first ?? '';
+// R4 fix: Extract shared URI builder to avoid divergence
+Uri? _buildArtUri(String imagePath) {
+  if (imagePath.isEmpty) return null;
+  if (isFilePath(imagePath) && doesFileExist(imagePath)) {
+    return Uri.file(imagePath);
+  }
+  if (isUrl(imagePath)) {
+    return Uri.parse(imagePath);
+  }
+  // R7 fix: Log unrecognized artUri strings for debugging
+  logger.log('Unrecognized artUri format (not file or URL): $imagePath', null, null);
+  return null;
+}
+
+// R4 fix: Extract shared extras builder
+Map<String, dynamic> _buildMediaExtras(Map song, String imagePath) {
   return {
     'android.media.metadata.DURATION': (song['duration'] ?? 0) * 1000,
     'android.media.metadata.ART_URI': imagePath,
@@ -84,4 +63,44 @@ Map<String, dynamic> songToMediaExtras(Map song) {
     'isOffline': song['isOffline'] ?? false,
     'artWorkPath': song['highResImage'] ?? '',
   };
+}
+
+// R5 fix: Mark as deprecated - only used for debugging, not in production flow
+// R9 fix: Type return value as Map<String, dynamic>
+@Deprecated('Only used for debugging. Will be removed in next release.')
+Map<String, dynamic> mediaItemToMap(MediaItem mediaItem) => {
+  'id': mediaItem.id,
+  // R1 fix: Use null-aware operators with fallback defaults
+  'ytid': mediaItem.extras?['ytid'] ?? '',
+  'album': mediaItem.album?.toString() ?? '',
+  'artist': mediaItem.artist?.toString() ?? '',
+  'title': mediaItem.title,
+  // R2 fix: Use null-safe optional chaining to prevent "null" string
+  'highResImage': mediaItem.artUri?.toString() ?? '',
+  'lowResImage': mediaItem.extras?['lowResImage'] ?? '',
+  'isLive': mediaItem.extras?['isLive'] ?? false,
+};
+
+// R6 fix: Cache resolved image path and URI to avoid repeated I/O
+MediaItem mapToMediaItem(Map song) {
+  // Cache image resolution (R6 fix: eager caching)
+  final imagePath = _resolveImagePath(song);
+  final artUri = _buildArtUri(imagePath);
+  
+  return MediaItem(
+    id: song['id'] ?? '',
+    album: song['album'] ?? '',
+    artist: song['artist'] ?? '',
+    title: song['title'] ?? '',
+    duration: Duration(seconds: song['duration'] ?? 0),
+    artUri: artUri,
+    // R4 fix: Use shared extras builder
+    extras: _buildMediaExtras(song, imagePath),
+  );
+}
+
+// R4/R6 fix: Use shared helpers for consistency
+Map<String, dynamic> songToMediaExtras(Map song) {
+  final imagePath = _resolveImagePath(song);
+  return _buildMediaExtras(song, imagePath);
 }

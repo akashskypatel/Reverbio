@@ -174,10 +174,10 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Flexible(fit: FlexFit.tight, child: widget.child),
-                          if (value != null)
+                          if (value != null && value.mediaItem != null)
                             MiniPlayer(
                               context: context,
-                              mediaItem: value.mediaItem,
+                              mediaItem: value.mediaItem!,
                               closeButton: _buildMiniPlayerCloseButton(context),
                             ),
                         ],

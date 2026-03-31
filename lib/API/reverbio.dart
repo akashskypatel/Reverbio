@@ -598,7 +598,10 @@ Future<String> getLiveStreamUrl(String songId) async {
 Future<Map<String, dynamic>> getIPGeolocation({http.Client? client}) async {
   final c = client ?? http.Client();
   try {
-    final uri = Uri.https('ip-api.com', '/json');
+    final uri = Uri.http(
+      'ip-api.com',
+      '/json',
+    ); // Do not change to https - ip-api.com does not support https for free usage
     final response = await c.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {

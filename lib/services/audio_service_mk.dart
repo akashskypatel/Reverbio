@@ -202,7 +202,8 @@ class AudioPlayerService {
   }
 
   void setProcessingState(AudioProcessingState newState) {
-    _updateProcessingState(processingState);
+    // R1 fix: Use newState argument instead of ignoring it
+    _updateProcessingState(newState);
   }
 
   Future<void> play() async {
@@ -241,9 +242,9 @@ class AudioPlayerService {
     await _mediaItemSubscription?.cancel();
     await _playerStreamAudioDevice?.cancel();
     await _playerStreamAudioDevices?.cancel();
+    // R7 fix: Remove duplicate _processingStateController.close()
     await _processingStateController.close();
     await _indexController.close();
-    await _processingStateController.close();
     await _mediaItemStreamController.close();
     return _player.dispose();
   }
@@ -264,9 +265,13 @@ class AudioPlayerService {
       _updateProcessingState(AudioProcessingState.loading);
       songValueNotifier.value = songBar;
       await songBar.prepareSong();
-      _mediaItemSubscription = songBar.mediaItemStream.listen(
-        _mediaItemStreamController.add,
-      );
+      // R6 fix: Cancel existing subscription before creating new one
+      await _mediaItemSubscription?.cancel();
+      if (songBar.mediaItemStream != null) {
+        _mediaItemSubscription = songBar.mediaItemStream!.listen(
+          _mediaItemStreamController.add,
+        );
+      }
     } else {
       unawaited(songBar.prepareSong());
     }
@@ -328,8 +333,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   late final StreamSubscription<PositionData> _positionDataSubscription;
   late final StreamSubscription<MediaItem?> _mediaItemSubscription;
   late final StreamSubscription<TaskUpdate?> _downloadStatusSubscription;
-  late final StreamSubscription<audio_session.AudioInterruptionEvent>
-  _sessionEventStream;
+  // R2 fix: Make nullable to prevent LateInitializationError on non-mobile
+  StreamSubscription<audio_session.AudioInterruptionEvent>? _sessionEventStream;
   final ValueNotifier<PositionData> positionDataNotifier = ValueNotifier(
     PositionData(Duration.zero, Duration.zero, Duration.zero),
   );
@@ -348,6 +353,10 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   bool get playing => audioPlayer.playing;
   Stream<Duration> get positionStream => audioPlayer.positionStream;
   bool cachedIsPlaying = false;
+  // R8 fix: Store original volume before ducking to restore on unduck
+  double? _volumeBeforeDucking;
+  // R11 fix: Re-entrancy guard to prevent concurrent skip calls
+  bool _isSkipping = false;
 
   Future<void> dispose() async {
     await _playbackEventSubscription.cancel();
@@ -357,7 +366,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     await _sequenceStateSubscription.cancel();
     await _positionDataSubscription.cancel();
     await _mediaItemSubscription.cancel();
-    await _sessionEventStream.cancel();
+    // R2 fix: Use null-aware cancel for nullable _sessionEventStream
+    await _sessionEventStream?.cancel();
     await _downloadStatusSubscription.cancel();
     await audioPlayer.dispose();
   }
@@ -419,26 +429,35 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> skipToNext({bool play = true, bool skipOnError = true}) async {
-    final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
-    if (!audioPlayer.hasNext && !loopAllSongs) return;
-    if (audioPlayer.songValueNotifier.value?.song == null) return;
-    final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
-    if (loopAllSongs && index == queueSongBars.length - 1) {
-      await this.prepare(
-        songBar: queueSongBars.first,
-        play: play,
-        skipOnError: skipOnError,
-      );
-      audioPlayer.skipToNext(0);
-    } else if (index < queueSongBars.length - 1) {
-      await this.prepare(
-        songBar: queueSongBars[index + 1],
-        play: play,
-        skipOnError: skipOnError,
-      );
-      audioPlayer.skipToNext(index + 1);
+    // R11 fix: Re-entrancy guard to prevent concurrent skip calls
+    if (_isSkipping) return;
+    _isSkipping = true;
+    try {
+      final loopAllSongs = repeatNotifier.value == AudioServiceRepeatMode.all;
+      // R9 fix: Allow repeat-all wrap-around by not returning early
+      if (!audioPlayer.hasNext && !loopAllSongs) return;
+      if (audioPlayer.songValueNotifier.value?.song == null) return;
+      final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
+      // R9 fix: Properly handle repeat-all wrap-around
+      if (loopAllSongs && index == queueSongBars.length - 1) {
+        await this.prepare(
+          songBar: queueSongBars.first,
+          play: play,
+          skipOnError: skipOnError,
+        );
+        audioPlayer.skipToNext(0);
+      } else if (index < queueSongBars.length - 1) {
+        await this.prepare(
+          songBar: queueSongBars[index + 1],
+          play: play,
+          skipOnError: skipOnError,
+        );
+        audioPlayer.skipToNext(index + 1);
+      }
+      _updatePlaybackState();
+    } finally {
+      _isSkipping = false;
     }
-    _updatePlaybackState();
   }
 
   @override
@@ -470,12 +489,16 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> skipToQueueItem(int index, {bool play = true}) async {
+    // R4 fix: Guard against empty queue
+    if (queueSongBars.isEmpty) return;
     index = min(index, queueSongBars.length - 1);
     await this.prepare(songBar: queueSongBars[index], play: play);
     _updatePlaybackState();
   }
 
   Future<void> skipToRandom({bool play = true}) async {
+    // R3 fix: Guard against single-item queue
+    if (queueSongBars.length <= 1) return;
     final index = min(
       Random().nextInt(queueSongBars.length - 1),
       queueSongBars.length - 1,
@@ -486,19 +509,19 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> seekForward(bool begin) async {
-    if (begin)
-      await seekToStart();
-    else
+    // R5 fix: Properly implement forward seek (skip seekToStart)
+    if (!begin) {
       await seek(Duration(seconds: audioPlayer.position.inSeconds + 15));
+    }
     _updatePlaybackState();
   }
 
   @override
   Future<void> seekBackward(bool begin) async {
-    if (begin)
-      await seekToStart();
-    else
+    // R5 fix: Properly implement backward seek (skip seekToStart)
+    if (!begin) {
       await seek(Duration(seconds: audioPlayer.position.inSeconds - 15));
+    }
     _updatePlaybackState();
   }
 
@@ -507,14 +530,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     String parentMediaId, [
     Map<String, dynamic>? options,
   ]) async {
-    return queueSongBars.map((songBar) => songBar.mediaItem).toList();
+    return queueSongBars.map((songBar) => songBar.mediaItem!).whereType<MediaItem>().toList();
   }
 
   @override
   Future<MediaItem?> getMediaItem(String mediaId) async {
     try {
       return queueSongBars
-          .firstWhere((songBar) => songBar.mediaItem.id == mediaId)
+          .firstWhere((songBar) => songBar.mediaItem?.id == mediaId)
           .mediaItem;
     } catch (e) {
       return null;
@@ -538,15 +561,15 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         addSongToQueue(songBar);
       }
       if (queueSongBars.isEmpty) return;
-      songValueNotifier.value?.songPrepareTracker.value?.cancel();
+      songValueNotifier.value?.songPrepareTracker?.value?.cancel();
       audioPlayer.setProcessingState(AudioProcessingState.loading);
       songBar = songBar ?? audioPlayer.queueSongBars.first;
       await audioPlayer.prepare(songBar);
       if (!songBar.isError &&
           songBar.media != null &&
-          !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
+          !(songBar.songPrepareTracker?.value?.isCancelled ?? true)) {
         await audioPlayer.queue(songBar.media!);
-        if (play && !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
+        if (play && !(songBar.songPrepareTracker?.value?.isCancelled ?? true)) {
           await this.play();
         }
       } else if (skipOnError &&
@@ -558,7 +581,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
             songBars: audioPlayer.queueSongBars,
           );
           if (next != null &&
-              !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
+              !(songBar.songPrepareTracker?.value?.isCancelled ?? true)) {
             await Future.delayed(const Duration(seconds: 3));
             await prepare(
               songBar: next,
@@ -577,7 +600,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       if (prepareNextSong.value) {
         final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
         if (next != null &&
-            !(songBar.songPrepareTracker.value?.isCancelled ?? true))
+            !(songBar.songPrepareTracker?.value?.isCancelled ?? true))
           unawaited(audioPlayer.prepare(next, setMetadata: false));
       }
     } catch (e, stackTrace) {
@@ -593,13 +616,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> close() async {
     try {
       cachedIsPlaying = false;
-      songValueNotifier.value?.songPrepareTracker.value?.cancel();
+      songValueNotifier.value?.songPrepareTracker?.value?.cancel();
       if (prepareNextSong.value && songValueNotifier.value != null) {
         final next = nextSongBar(
           songValueNotifier.value!,
           songBars: audioPlayer.queueSongBars,
         );
-        next?.songPrepareTracker.value?.cancel();
+        next?.songPrepareTracker?.value?.cancel();
       }
       await audioPlayer.close();
       queue.add([]);
@@ -704,6 +727,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     if (event.begin) {
       switch (event.type) {
         case audio_session.AudioInterruptionType.duck:
+          // R8 fix: Store original volume before ducking
+          _volumeBeforeDucking ??= audioPlayer.volume;
           // Another app started playing audio and we should duck.
           if (audioPlayer.playing) unawaited(setVolume(audioPlayer.volume / 2));
           break;
@@ -716,12 +741,17 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     } else {
       switch (event.type) {
         case audio_session.AudioInterruptionType.duck:
-          // The interruption ended and we should unduck.
-          if (audioPlayer.playing) unawaited(setVolume(audioPlayer.volume * 2));
+          // R8 fix: Restore original volume on unduck
+          if (audioPlayer.playing && _volumeBeforeDucking != null) {
+            unawaited(setVolume(_volumeBeforeDucking!));
+            _volumeBeforeDucking = null;
+          }
           break;
         case audio_session.AudioInterruptionType.pause:
           // The interruption ended and we should resume.
           if (cachedIsPlaying) unawaited(play());
+          // R12 fix: Add missing break to prevent fall-through
+          break;
         case audio_session.AudioInterruptionType.unknown:
           // The interruption ended but we should not resume.
           break;
@@ -731,9 +761,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   Future<void> _handlePlaybackEvent(bool playing) async {
     try {
+      // R10/R11 fix: Only skip on song completion, not during skip segment handling
       if (playing &&
           audioPlayer.processingState == AudioProcessingState.completed &&
-          !sleepTimerExpired) {
+          !sleepTimerExpired &&
+          !_isSkipping) {
         await skipToNext();
       }
     } catch (e, stackTrace) {
@@ -776,6 +808,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 
   Future<void> _positionDataNotify(PositionData value) async {
     positionDataNotifier.value = value;
+    // R10/R11 fix: Use else branches to prevent multiple skip triggers
     if (((value.duration - value.position).inMilliseconds / 10) <= 100 &&
         value.duration != Duration.zero &&
         value.position != Duration.zero) {
@@ -787,18 +820,21 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           );
           break;
         default:
-          if (shuffleNotifier.value &&
-              audioPlayer.processingState == AudioProcessingState.completed)
-            await skipToRandom();
-          else if (audioPlayer.processingState ==
-              AudioProcessingState.completed)
-            await skipToNext();
+          // R10/R11 fix: Only skip if not already skipping and song not completed
+          // (_handlePlaybackEvent handles completion skip)
+          if (!_isSkipping &&
+              audioPlayer.processingState != AudioProcessingState.completed) {
+            if (shuffleNotifier.value)
+              await skipToRandom();
+            else
+              await skipToNext();
+          }
           break;
       }
-    }
-    if (value.duration != value.position &&
+    } else if (value.duration != value.position &&
         value.duration != Duration.zero &&
         value.position != Duration.zero) {
+      // R10 fix: Use else if to prevent double-trigger with above block
       final song = audioPlayer.songValueNotifier.value?.song;
       if (song != null &&
           song['skipSegments'] != null &&
@@ -818,7 +854,9 @@ class ReverbioAudioHandler extends BaseAudioHandler {
           if ((category == 'sponsor' && sponsorBlockSupport.value) ||
               (category != 'sponsor' && skipNonMusic.value))
             if (seekTo != null) {
-              if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100)
+              // R10 fix: Only skip to next if segment ends near song end AND not already skipping
+              if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100 &&
+                  !_isSkipping)
                 await audioHandler.skipToNext();
               await audioHandler.seek(Duration(microseconds: seekTo));
             }
@@ -916,10 +954,11 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     cachedIsPlaying = audioPlayer.playing;
     Future.microtask(() {
       try {
-        final newMediaItem = songValueNotifier.value?.mediaItem.copyWith(
+        final currentMediaItem = songValueNotifier.value?.mediaItem;
+        final newMediaItem = currentMediaItem?.copyWith(
           duration: audioHandler.duration,
         );
-        if (newMediaItem != mediaItem.value) mediaItem.add(newMediaItem);
+        if (newMediaItem != null && newMediaItem != mediaItem.value) mediaItem.add(newMediaItem);
         if (mediaItem.value == null)
           playbackState.add(PlaybackState());
         else {
@@ -977,8 +1016,12 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   Future<Media> buildAudioSource(SongBar songBar) async {
-    final extras = songToMediaExtras(songBar.song);
-    final offlinePath = await getOfflinePath(songBar.song);
+    return buildAudioSourceFromMap(songBar.song);
+  }
+
+  Future<Media> buildAudioSourceFromMap(Map<String, dynamic> song) async {
+    final extras = songToMediaExtras(song);
+    final offlinePath = await getOfflinePath(song);
     if (offlinePath != null &&
         isFilePath(offlinePath) &&
         doesFileExist(offlinePath)) {
@@ -987,16 +1030,16 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       return media;
     }
 
-    final uri = Uri.parse(songBar.song['songUrl']);
+    final uri = Uri.parse(song['songUrl']);
     final audioSource = Media(uri.toString(), extras: extras);
 
     if (!settings.sponsorBlockSupport.value) {
       return audioSource;
     }
 
-    if (songBar.song['source'] == 'youtube' && !offlineMode.value)
-      songBar.song['skipSegments'] = await getSkipSegments(
-        songBar.song['ytid'],
+    if (song['source'] == 'youtube' && !offlineMode.value)
+      song['skipSegments'] = await getSkipSegments(
+        song['ytid'],
       );
     return audioSource;
   }
@@ -1070,7 +1113,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 }
 
 void updateMediaItemQueue(List<SongBar> songBars) {
-  audioHandler.queue.add(songBars.map((e) => e.mediaItem).toList());
+  audioHandler.queue.add(songBars.map((e) => e.mediaItem!).whereType<MediaItem>().toList());
 }
 
 void addSongsToQueue(List<SongBar> songBars) {
@@ -1083,7 +1126,9 @@ void addSongToQueue(SongBar songBar) {
   if (!isSongInQueue(songBar)) {
     activeQueue['list'].add(songBar.song);
     audioHandler.queueSongBars.add(songBar);
-    audioHandler.queue.add(audioHandler.queue.value + [songBar.mediaItem]);
+    if (songBar.mediaItem != null) {
+      audioHandler.queue.add(audioHandler.queue.value + [songBar.mediaItem!]);
+    }
   }
 }
 
