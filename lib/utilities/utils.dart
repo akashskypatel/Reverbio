@@ -111,7 +111,7 @@ Map getAudioDeviceCategory(String category, {BuildContext? context}) {
     'Android Auto': {
       'order': 1,
       'localization': context.l10n?.androidAuto ?? 'Android Auto',
-      'icon': ReverbioIcons.android_auto_monochrome,
+      'icon': ReverbioIcons.androidAutoMonochrome,
     },
     'Car Audio': {
       'order': 2,
@@ -492,7 +492,10 @@ Future<int> checkUrl(String url) async {
     if (isFilePath(url)) return (doesFileExist(url)) ? 200 : 400;
     final response = await http.head(Uri.parse(url));
     if (response.statusCode == 403 && Uri.parse(url).host == 'youtube.com') {
-      showToast(NavigationManager().context?.l10n?.youtubeInaccessible ?? 'YouTube is inaccessible');
+      showToast(
+        NavigationManager().context?.l10n?.youtubeInaccessible ??
+            'YouTube is inaccessible',
+      );
       logger.log('Forbidden error trying to play YouTube Stream', {
         'message': response.body,
         'status': response.statusCode,

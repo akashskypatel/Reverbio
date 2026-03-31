@@ -25,11 +25,9 @@ class ReverbioIcons {
   ReverbioIcons._();
 
   static const _kFontFam = 'ReverbioIcons';
-  static const String? _kFontPkg = null;
 
-  static const IconData android_auto_monochrome = IconData(
+  static const IconData androidAutoMonochrome = IconData(
     0xe800,
     fontFamily: _kFontFam,
-    fontPackage: _kFontPkg,
   );
 }

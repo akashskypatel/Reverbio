@@ -209,7 +209,7 @@ class NavigationManager {
                           page: state.pathParameters['page'] ?? 'albums',
                         );
                       case 'offlinePlaylists':
-                        return OfflinePlaylistsPage();
+                        return const OfflinePlaylistsPage();
                       default:
                         return homePage;
                     }

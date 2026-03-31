@@ -30,8 +30,6 @@ import 'package:reverbio/utilities/notifiable_future.dart'
     show FutureTrackerState;
 
 class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
-  // R4 fix: Static registry to track all instances for flush on shutdown
-  static final Set<NotifiableList> _instances = {};
   
   NotifiableList() : _boxName = null, _category = null, _isInitialized = true;
   NotifiableList._internal(
@@ -72,6 +70,8 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       minimizeFunction: minimizeFunction,
     );
   }
+  // R4 fix: Static registry to track all instances for flush on shutdown
+  static final Set<NotifiableList> _instances = {};
   // R7 fix: Note intentional asymmetry - _initializeFromAsync does not add writeToCache listener
   // because it's used for non-Hive async data sources that shouldn't be persisted.
   // Only _initializeFromHive adds the writeToCache listener for Hive-backed lists.

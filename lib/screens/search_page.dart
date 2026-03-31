@@ -364,8 +364,8 @@ class _SearchPageState extends State<SearchPage> {
             title: entityName[header.toLowerCase()]!['localization']!,
             page: 'search',
             songBars: NotifiableList<SongBar>.from(
-              (suggestionList['data'] as List).map(
-                (e) => initializeSongBar(e),
+              (suggestionList['data'] as List<Map<String, dynamic>>).map(
+                initializeSongBar,
               ),
             ),
             expandedActions: _buildPrevNextButtons(header, suggestionList),
@@ -570,9 +570,10 @@ class _SearchPageState extends State<SearchPage> {
     // R2 fix: Show cached suggestions while loading
     final suggestions = Map<String, dynamic>.from(_suggestionList);
     return Column(
-      children: suggestions.entries
-          .map((e) => _buildSearchSubList(e.key, e.value))
-          .toList(),
+      children:
+          suggestions.entries
+              .map((e) => _buildSearchSubList(e.key, e.value))
+              .toList(),
     );
   }
 

@@ -506,7 +506,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
         return initializeSongBar(song);
       });
       if (!context.mounted) return <SongBar>[];
-      final device = userDeviceSongs.map((e) => initializeSongBar(e));
+      final device = userDeviceSongs.map(initializeSongBar);
       return [...offline, ...device];
     });
   }
@@ -514,14 +514,14 @@ class _UserSongsPageState extends State<UserSongsPage> {
   Future<Iterable<SongBar>> _getUserLikedSongs() async {
     return Future.microtask(() async {
       if (!context.mounted) return <SongBar>[];
-      return userLikedSongsList.map((e) => initializeSongBar(e));
+      return userLikedSongsList.map(initializeSongBar);
     });
   }
 
   Future<Iterable<SongBar>> _getUserRecentSongs() async {
     return Future.microtask(() async {
       if (!context.mounted) return <SongBar>[];
-      return userRecentlyPlayed.map((e) => initializeSongBar(e));
+      return userRecentlyPlayed.map(initializeSongBar);
     });
   }
 

@@ -33,9 +33,10 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/screens/edit_metadata_page.dart';
 import 'package:reverbio/services/queue_manager.dart';
-import 'package:reverbio/services/song_preparation_controller.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/song_preparation_controller.dart';
 import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/file_tagger.dart';
@@ -50,7 +51,6 @@ import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/bottom_sheet_bar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
-import 'package:reverbio/screens/edit_metadata_page.dart';
 
 class SongBar extends StatefulWidget {
   // A1 fix: Factory constructor to share same NotifiableFuture instance

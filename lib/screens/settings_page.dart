@@ -151,7 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (Platform.isAndroid)
           CustomBar(
             tileName: context.l10n!.androidAuto,
-            tileIcon: ReverbioIcons.android_auto_monochrome,
+            tileIcon: ReverbioIcons.androidAutoMonochrome,
             onTap: () async {
               await _showAndroidAutoMessage(context);
             },
@@ -414,7 +414,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           constraints: BoxConstraints(
                             maxWidth: constraints.maxWidth * .4,
                           ),
-                          child: Text(offlineDirectory.value ?? '', softWrap: true),
+                          child: Text(
+                            offlineDirectory.value ?? '',
+                            softWrap: true,
+                          ),
                         ),
                       ),
                 ),

@@ -47,12 +47,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // R8 fix: Removed _theme instance field - use Theme.of(context) directly
-  // R1 fix: Dispose PaginatedList instances
-  late final PaginatedList _dbPlaylists;
-  late final PaginatedList _dbSongs;
-  late final PaginatedList _dbArtists;
-
   _HomePageState() {
     _dbPlaylists = PaginatedList(
       dbPlaylists,
@@ -66,6 +60,11 @@ class _HomePageState extends State<HomePage> {
       }),
     );
   }
+  // R8 fix: Removed _theme instance field - use Theme.of(context) directly
+  // R1 fix: Dispose PaginatedList instances
+  late final PaginatedList _dbPlaylists;
+  late final PaginatedList _dbSongs;
+  late final PaginatedList _dbArtists;
 
   @override
   void initState() {
@@ -90,10 +89,7 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Reverbio'),
         actions: [
           ExpandingToolbar(
-            actions: [
-              _buildAlertButton(context),
-              _buildSyncButton()
-            ],
+            actions: [_buildAlertButton(context), _buildSyncButton()],
           ),
         ],
       ),
@@ -180,7 +176,9 @@ class _HomePageState extends State<HomePage> {
                         snapshot.data!.isEmpty)
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     final _list = NotifiableList.from(
-                      snapshot.data!.map((e) => initializeSongBar(e)),
+                      (snapshot.data! as List<Map<String, dynamic>>).map(
+                        initializeSongBar,
+                      ),
                     );
                     return SongList(
                       page: 'recommended',
@@ -202,7 +200,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  List<Widget> _buildPrevNextButtons(BuildContext context, Function? previous, Function? next) {
+  List<Widget> _buildPrevNextButtons(
+    BuildContext context,
+    Function? previous,
+    Function? next,
+  ) {
     final theme = Theme.of(context);
     return [
       IconButton(
