@@ -329,7 +329,6 @@ class _MiniPlayerState extends State<MiniPlayer> {
           builder: (context, songBar, child) {
             if (songBar == null) return const SizedBox.shrink();
             final songMetadataNotifier = songBar.songMetadataNotifier;
-            if (songMetadataNotifier == null) return const SizedBox.shrink();
             return ValueListenableBuilder(
               valueListenable: songMetadataNotifier,
               builder:
@@ -354,7 +353,6 @@ class _MiniPlayerState extends State<MiniPlayer> {
       builder: (context, songBar, child) {
         if (songBar == null) return const SizedBox.shrink();
         final songMetadataNotifier = songBar.songMetadataNotifier;
-        if (songMetadataNotifier == null) return const SizedBox.shrink();
         return ValueListenableBuilder(
           valueListenable: songMetadataNotifier,
           builder: (context, song, child) {

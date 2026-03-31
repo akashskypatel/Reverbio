@@ -33,6 +33,7 @@ import 'package:mime/mime.dart';
 import 'package:path/path.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/entities.dart';
+import 'package:reverbio/API/entities/song_state.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -49,14 +50,17 @@ import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-final List globalSongs = [];
-int activeSongId = 0;
+// Phase 4 A2.2: Export song_state.dart for barrel pattern
+export 'song_state.dart';
 
-final lyrics = ValueNotifier<String?>(null);
+// Note: Module-level state moved to song_state.dart (Phase 4 A2.1)
+// - globalSongs
+// - activeSongId
+// - lyrics
+// - getSongInfoQueue
+// - recentlyPlayedSongsLimit
+// - clearGlobalSongs()
 String? lastFetchedLyrics;
-
-// R22 fix: Changed from Set to List for clarity (Set had no custom hashCode/==)
-final List<NotifiableFuture<Map<String, dynamic>>> getSongInfoQueue = [];
 
 
 Future<List> getSongsList(String searchQuery) async {
@@ -103,17 +107,16 @@ Future<List<dynamic>> getRecommendedSongs() async {
   }
 }
 
-// R21 fix: Allow clearing globalSongs cache to prevent memory buildup
-void clearGlobalSongs() {
-  globalSongs.clear();
-}
+// Note: clearGlobalSongs() moved to song_state.dart (Phase 4 A2.1)
 
 Future<bool> updateSongLikeStatus(dynamic song, bool add) async {
   try {
+    // R1 fix: Check for null before dereferencing
+    if (song == null) throw Exception('Song is null');
     final songId = parseEntityId(song);
     if (songId.isEmpty) throw Exception('ID is null or empty');
     song['id'] = songId;
-    if (add && song != null) {
+    if (add) {
       userLikedSongsList.addOrUpdate(song, checkSong);
       song['song'] = songTitle(song);
       await PM.triggerHook(song, 'onEntityLiked');
@@ -591,30 +594,33 @@ NotifiableFuture<Map<String, dynamic>> queueSongInfoRequest(dynamic song) {
 Future<Map<String, dynamic>> getSongInfo(dynamic song) async {
   await cachedSongsList.ensureInitialized();
   try {
+    // R2 fix: Return empty map for null input
     if (song == null) return <String, dynamic>{};
     if (song is String) {
       song = <String, dynamic>{'id': song};
       song['id'] = parseEntityId(song);
     }
-    if (song is Map) {
-      song['id'] = parseEntityId(song);
-      final offlineId = getUserOfflineSong(song);
-      song['id'] =
-          offlineId.isEmpty
-              ? song['id']
-              : (song['id'] as String).mergedAbsentId(offlineId);
-      song = Map<String, dynamic>.from(song);
-      song['primary-type'] = song['primary-type'] ?? 'song';
-      dynamic songInfo = await _findMBSong(song);
-      if (!isSongValid(songInfo)) {
-        songInfo = await getAlbumInfo(song);
-      }
-      if (isSongValid(songInfo)) {
-        song.addAll(copyMap(songInfo));
-      }
+    // R2 fix: Return empty map for non-Map input
+    if (song is! Map) return <String, dynamic>{};
+    song['id'] = parseEntityId(song);
+    final offlineId = getUserOfflineSong(song);
+    song['id'] =
+        offlineId.isEmpty
+            ? song['id']
+            : (song['id'] as String).mergedAbsentId(offlineId);
+    song = Map<String, dynamic>.from(song);
+    song['primary-type'] = song['primary-type'] ?? 'song';
+    dynamic songInfo = await _findMBSong(song);
+    if (!isSongValid(songInfo)) {
+      songInfo = await getAlbumInfo(song);
+    }
+    if (isSongValid(songInfo)) {
+      song.addAll(copyMap(songInfo));
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    // R2 fix: Return empty map on error
+    return <String, dynamic>{};
   }
   song['title'] = songTitle(song);
   song['artist'] = songArtist(song);
@@ -805,15 +811,6 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
               audioQualitySetting.value,
               useProxies.value,
             );
-        if (songUrl.isNotEmpty) {
-          await HiveService.addOrUpdateData<String>('cache', cacheKey, songUrl);
-          final uri = Uri.parse(songUrl);
-          final expires =
-              int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
-          song['songUrlExpire'] = expires;
-          song['isError'] = false;
-          song['source'] = 'youtube';
-        }
       }
       if (songUrl.isEmpty) {
         logger.log(
@@ -832,6 +829,16 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
         song['error'] = L10n.current.urlError;
         song['isError'] = true;
         return '';
+      }
+      // Fix: Cache URL only after validation passes
+      if (songUrl.isNotEmpty) {
+        await HiveService.addOrUpdateData<String>('cache', cacheKey, songUrl);
+        final uri = Uri.parse(songUrl);
+        final expires =
+            int.tryParse(uri.queryParameters['expire'] ?? '0') ?? 0;
+        song['songUrlExpire'] = expires;
+        song['isError'] = false;
+        song['source'] = 'youtube';
       }
     }
   } catch (e, stackTrace) {

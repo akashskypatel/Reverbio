@@ -499,10 +499,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> skipToRandom({bool play = true}) async {
     // R3 fix: Guard against single-item queue
     if (queueSongBars.length <= 1) return;
-    final index = min(
-      Random().nextInt(queueSongBars.length - 1),
-      queueSongBars.length - 1,
-    );
+    // Fix: Use queueSongBars.length to include last song in random selection
+    final index = Random().nextInt(queueSongBars.length);
     await this.prepare(songBar: queueSongBars[index], play: play);
     _updatePlaybackState();
   }
@@ -530,7 +528,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     String parentMediaId, [
     Map<String, dynamic>? options,
   ]) async {
-    return queueSongBars.map((songBar) => songBar.mediaItem!).whereType<MediaItem>().toList();
+    return queueSongBars.map((songBar) => songBar.mediaItem).whereType<MediaItem>().toList();
   }
 
   @override
@@ -561,15 +559,15 @@ class ReverbioAudioHandler extends BaseAudioHandler {
         addSongToQueue(songBar);
       }
       if (queueSongBars.isEmpty) return;
-      songValueNotifier.value?.songPrepareTracker?.value?.cancel();
+      songValueNotifier.value?.songPrepareTracker.value?.cancel();
       audioPlayer.setProcessingState(AudioProcessingState.loading);
       songBar = songBar ?? audioPlayer.queueSongBars.first;
       await audioPlayer.prepare(songBar);
       if (!songBar.isError &&
           songBar.media != null &&
-          !(songBar.songPrepareTracker?.value?.isCancelled ?? true)) {
+          !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
         await audioPlayer.queue(songBar.media!);
-        if (play && !(songBar.songPrepareTracker?.value?.isCancelled ?? true)) {
+        if (play && !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
           await this.play();
         }
       } else if (skipOnError &&
@@ -581,7 +579,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
             songBars: audioPlayer.queueSongBars,
           );
           if (next != null &&
-              !(songBar.songPrepareTracker?.value?.isCancelled ?? true)) {
+              !(songBar.songPrepareTracker.value?.isCancelled ?? true)) {
             await Future.delayed(const Duration(seconds: 3));
             await prepare(
               songBar: next,
@@ -600,7 +598,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       if (prepareNextSong.value) {
         final next = nextSongBar(songBar, songBars: audioPlayer.queueSongBars);
         if (next != null &&
-            !(songBar.songPrepareTracker?.value?.isCancelled ?? true))
+            !(songBar.songPrepareTracker.value?.isCancelled ?? true))
           unawaited(audioPlayer.prepare(next, setMetadata: false));
       }
     } catch (e, stackTrace) {
@@ -616,13 +614,13 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   Future<void> close() async {
     try {
       cachedIsPlaying = false;
-      songValueNotifier.value?.songPrepareTracker?.value?.cancel();
+      songValueNotifier.value?.songPrepareTracker.value?.cancel();
       if (prepareNextSong.value && songValueNotifier.value != null) {
         final next = nextSongBar(
           songValueNotifier.value!,
           songBars: audioPlayer.queueSongBars,
         );
-        next?.songPrepareTracker?.value?.cancel();
+        next?.songPrepareTracker.value?.cancel();
       }
       await audioPlayer.close();
       queue.add([]);
@@ -1113,7 +1111,7 @@ class ReverbioAudioHandler extends BaseAudioHandler {
 }
 
 void updateMediaItemQueue(List<SongBar> songBars) {
-  audioHandler.queue.add(songBars.map((e) => e.mediaItem!).whereType<MediaItem>().toList());
+  audioHandler.queue.add(songBars.map((e) => e.mediaItem).whereType<MediaItem>().toList());
 }
 
 void addSongsToQueue(List<SongBar> songBars) {
