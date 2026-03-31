@@ -1215,10 +1215,17 @@ Future<void> getExistingOfflineSongs() async {
     for (final file in fileList) {
       try {
         final filename = basenameWithoutExtension(file.path);
+        // Fix: Only rename files when MIME detection succeeds
         final mime = getMimeTypeFromFile(file.path);
-        final ext = getExtensionFromMime(mime);
-        final newPath = ensureCorrectExtension(file.path, extension: ext);
-        File(file.path).renameSync(newPath);
+        String newPath = file.path;
+        if (mime != null) {
+          final ext = getExtensionFromMime(mime);
+          newPath = ensureCorrectExtension(file.path, extension: ext);
+          if (newPath != file.path) {
+            File(file.path).renameSync(newPath);
+          }
+        }
+        // Fix: Check if file is audio BEFORE processing (use original path for check)
         if (isAudio(newPath)) {
           // Only add files with entity IDs (mb=, yt=, is=) to _userOfflineSongs
           final ids = Uri.parse('?$filename').queryParameters;
