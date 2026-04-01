@@ -33,10 +33,10 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/screens/edit_metadata_page.dart';
 import 'package:reverbio/services/queue_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/song_preparation_controller.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/file_tagger.dart';
@@ -934,13 +934,10 @@ class _SongBarState extends State<SongBar> {
     }
   }
 
-  // R9 fix: Navigate to EditMetadataPage using Navigator.push
+  // R7/R9 fix: Use GoRouter navigation consistently instead of Navigator.push
   void openMetadataForm(BuildContext context, dynamic song) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => EditMetadataPage(song: song),
-      ),
-    );
+    final songId = song['id'] ?? '';
+    context.go('/editMetadata?song=$songId');
   }
 
   Widget _buildActionButtons(

@@ -57,6 +57,21 @@ class NowPlayingPage extends StatefulWidget {
 class _NowPlayingPageState extends State<NowPlayingPage> {
   late ThemeData _theme;
   late bool _isLargeScreen;
+  // R3 fix: Move ValueNotifiers from build() to State fields
+  late final ValueNotifier<bool> _songLikeStatus;
+  late final ValueNotifier<bool> _songOfflineStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    // R3 fix: Initialize ValueNotifiers once in initState
+    _songLikeStatus = ValueNotifier<bool>(
+      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
+    );
+    _songOfflineStatus = ValueNotifier<bool>(
+      isSongAlreadyOffline(audioHandler.songValueNotifier.value?.song),
+    );
+  }
 
   @override
   void deactivate() {
@@ -66,6 +81,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   @override
   void dispose() {
+    // R3 fix: Dispose ValueNotifiers
+    _songLikeStatus.dispose();
+    _songOfflineStatus.dispose();
     super.dispose();
   }
 
@@ -76,12 +94,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     _theme = Theme.of(context);
     const adjustedIconSize = 43.0;
     final adjustedMiniIconSize = _isLargeScreen ? pageHeaderIconSize : 20.0;
-    final songLikeStatus = ValueNotifier<bool>(
-      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
-    );
-    final songOfflineStatus = ValueNotifier<bool>(
-      isSongAlreadyOffline(audioHandler.songValueNotifier.value?.song),
-    );
+    // R3 fix: Use State fields instead of creating new ValueNotifiers in build()
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -100,8 +113,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               _buildSyncButton(),
               if (_isLargeScreen)
                 ..._buildActionList(
-                  songLikeStatus,
-                  songOfflineStatus,
+                  _songLikeStatus,
+                  _songOfflineStatus,
                   adjustedMiniIconSize,
                 ),
             ],
@@ -129,8 +142,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                   adjustedMiniIconSize: adjustedMiniIconSize,
                   isLargeScreen: _isLargeScreen,
                   actions: _buildActionList(
-                    songLikeStatus,
-                    songOfflineStatus,
+                    _songLikeStatus,
+                    _songOfflineStatus,
                     adjustedMiniIconSize,
                   ),
                 );
@@ -1233,8 +1246,8 @@ class PlayerControlButtons extends StatelessWidget {
                         ? AudioServiceRepeatMode.one
                         : AudioServiceRepeatMode.all;
 
-                if (repeatNotifier.value == AudioServiceRepeatMode.one)
-                  audioHandler.setRepeatMode(repeatNotifier.value);
+                // R1 fix: Always pass current repeatNotifier.value to setRepeatMode
+                audioHandler.setRepeatMode(repeatNotifier.value);
               },
               tooltip: context.l10n!.repeat,
             );

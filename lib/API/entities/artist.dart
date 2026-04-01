@@ -613,8 +613,8 @@ Future<dynamic> _getArtistDetailsDC(String query) async {
       final val = _results.where((e) => e['id'] == scored.first.key['id']);
       if (val.isNotEmpty)
         return await _getArtistDetailsDC(val.first['id']);
-      else
-        return await _getArtistDetailsDC(query);
+      // R617 fix: Return null result instead of infinite recursion
+      return res;
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);

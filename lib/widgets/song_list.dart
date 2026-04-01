@@ -146,11 +146,15 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
     final escapedValue = RegExp.escape(value);
     final searchRegex = RegExp(escapedValue, caseSensitive: false);
     for (final songBar in widget.songBars) {
-      if (value.isEmpty)
+      // R3 fix: Properly restore visibility - show matching items, hide non-matching
+      if (value.isEmpty) {
         songBar.setVisibility(true);
-      else if (!(songBar.title?.contains(searchRegex) ?? false) &&
-          !(songBar.artist?.contains(searchRegex) ?? false))
-        songBar.setVisibility(false);
+      } else {
+        // Show matching items, hide non-matching
+        final matches = (songBar.title?.contains(searchRegex) ?? false) ||
+            (songBar.artist?.contains(searchRegex) ?? false);
+        songBar.setVisibility(matches);
+      }
     }
   }
 
@@ -337,6 +341,11 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
     return IconButton(
       tooltip: context.l10n!.play,
       onPressed: () async {
+        // R4 fix: Guard against empty song list
+        if (widget.songBars.isEmpty) {
+          showToast('No songs to play');
+          return;
+        }
         if (widget.page != 'queue') {
           await PM.triggerHook(widget.songBars, 'onPlaylistPlay');
           setQueueToPlaylist({

@@ -93,6 +93,8 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   double? _volumeBeforeDucking;
   // R11 fix: Re-entrancy guard to prevent concurrent skip calls
   bool _isSkipping = false;
+  // R2 fix: Re-entrancy guard to prevent concurrent position updates
+  bool _isPositionUpdating = false;
 
   Future<void> dispose() async {
     await _playbackEventSubscription.cancel();
@@ -562,64 +564,71 @@ class ReverbioAudioHandler extends BaseAudioHandler {
   }
 
   Future<void> _positionDataNotify(PositionData value) async {
-    positionDataNotifier.value = value;
-    // R10/R11 fix: Use else branches to prevent multiple skip triggers
-    if (((value.duration - value.position).inMilliseconds / 10) <= 100 &&
-        value.duration != Duration.zero &&
-        value.position != Duration.zero) {
-      switch (settings.repeatNotifier.value) {
-        case AudioServiceRepeatMode.one:
-          await this.prepare(
-            songBar: audioPlayer.songValueNotifier.value,
-            play: true,
-          );
-          break;
-        default:
-          // R10/R11 fix: Only skip if not already skipping and song not completed
-          // (_handlePlaybackEvent handles completion skip)
-          if (!_isSkipping &&
-              audioPlayer.processingState != AudioProcessingState.completed) {
-            if (settings.shuffleNotifier.value)
-              await skipToRandom();
-            else
-              await skipToNext();
-          }
-          break;
-      }
-    } else if (value.duration != value.position &&
-        value.duration != Duration.zero &&
-        value.position != Duration.zero) {
-      // R10 fix: Use else if to prevent double-trigger with above block
-      final song = audioPlayer.songValueNotifier.value?.song;
-      if (song != null &&
-          song['skipSegments'] != null &&
-          song['skipSegments'].isNotEmpty) {
-        // R23 fix: Removed unnecessary JSON round-trip (jsonDecode/jsonEncode)
-        final checkSegment =
-            (song['skipSegments'] as List)
-                .whereType<Map<String, dynamic>>()
-                .where(
-                  (e) =>
-                      e['start']! <= value.position.inMicroseconds &&
-                      e['end']! > value.position.inMicroseconds,
-                )
-                .toList();
-        if (checkSegment.isNotEmpty) {
-          final seekTo = checkSegment.first['end'];
-          final category = checkSegment.first['category'];
-          if ((category == 'sponsor' && settings.sponsorBlockSupport.value) ||
-              (category != 'sponsor' && settings.skipNonMusic.value))
-            if (seekTo != null) {
-              // R10 fix: Only skip to next if segment ends near song end AND not already skipping
-              if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100 &&
-                  !_isSkipping)
-                await this.skipToNext();
-              await this.seek(Duration(microseconds: seekTo));
+    // R2 fix: Re-entrancy guard to prevent concurrent position updates
+    if (_isPositionUpdating) return;
+    _isPositionUpdating = true;
+    try {
+      positionDataNotifier.value = value;
+      // R10/R11 fix: Use else branches to prevent multiple skip triggers
+      if (((value.duration - value.position).inMilliseconds / 10) <= 100 &&
+          value.duration != Duration.zero &&
+          value.position != Duration.zero) {
+        switch (settings.repeatNotifier.value) {
+          case AudioServiceRepeatMode.one:
+            await this.prepare(
+              songBar: audioPlayer.songValueNotifier.value,
+              play: true,
+            );
+            break;
+          default:
+            // R10/R11 fix: Only skip if not already skipping and song not completed
+            // (_handlePlaybackEvent handles completion skip)
+            if (!_isSkipping &&
+                audioPlayer.processingState != AudioProcessingState.completed) {
+              if (settings.shuffleNotifier.value)
+                await skipToRandom();
+              else
+                await skipToNext();
             }
+            break;
+        }
+      } else if (value.duration != value.position &&
+          value.duration != Duration.zero &&
+          value.position != Duration.zero) {
+        // R10 fix: Use else if to prevent double-trigger with above block
+        final song = audioPlayer.songValueNotifier.value?.song;
+        if (song != null &&
+            song['skipSegments'] != null &&
+            song['skipSegments'].isNotEmpty) {
+          // R23 fix: Removed unnecessary JSON round-trip (jsonDecode/jsonEncode)
+          final checkSegment =
+              (song['skipSegments'] as List)
+                  .whereType<Map<String, dynamic>>()
+                  .where(
+                    (e) =>
+                        e['start']! <= value.position.inMicroseconds &&
+                        e['end']! > value.position.inMicroseconds,
+                  )
+                  .toList();
+          if (checkSegment.isNotEmpty) {
+            final seekTo = checkSegment.first['end'];
+            final category = checkSegment.first['category'];
+            if ((category == 'sponsor' && settings.sponsorBlockSupport.value) ||
+                (category != 'sponsor' && settings.skipNonMusic.value))
+              if (seekTo != null) {
+                // R10 fix: Only skip to next if segment ends near song end AND not already skipping
+                if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100 &&
+                    !_isSkipping)
+                  await this.skipToNext();
+                await this.seek(Duration(microseconds: seekTo));
+              }
+          }
         }
       }
+      _updatePlaybackState();
+    } finally {
+      _isPositionUpdating = false;
     }
-    _updatePlaybackState();
   }
 
   void _setupEventSubscriptions() {

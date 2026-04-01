@@ -186,7 +186,7 @@ class _SectionHeaderState extends State<SectionHeader>
               ? CrossFadeState.showSecond
               : CrossFadeState.showFirst,
       firstChild: IconButton(
-        tooltip: context.l10n!.shuffle,
+        tooltip: context.l10n!.search,
         color: _theme.colorScheme.primary,
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,

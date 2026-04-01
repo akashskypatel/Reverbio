@@ -258,6 +258,22 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
                 IconButton(
                   iconSize: pageHeaderIconSize,
                   onPressed: () async {
+                    // R7 fix: Show confirmation before overwriting user edits
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder:
+                          (context) => ConfirmationDialog(
+                            title: L10n.current.confirmation,
+                            message:
+                                'This will overwrite your current edits with fetched metadata. Continue?',
+                            confirmText: L10n.current.confirm,
+                            cancelText: L10n.current.cancel,
+                            onCancel: () => Navigator.of(context).pop(false),
+                            onSubmit: () => Navigator.of(context).pop(true),
+                          ),
+                    );
+                    if (confirmed != true) return;
+                    
                     setState(() => metaLoading = true);
                     final title =
                         songTitle(song).nullIfEmpty ?? tags?.title?.nullIfEmpty;

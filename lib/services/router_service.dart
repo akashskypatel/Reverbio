@@ -34,6 +34,7 @@ import 'package:reverbio/screens/offline_playlists_page.dart';
 import 'package:reverbio/screens/search_page.dart';
 import 'package:reverbio/screens/settings_page.dart';
 import 'package:reverbio/screens/user_songs_page.dart';
+import 'package:reverbio/screens/edit_metadata_page.dart';
 import 'package:reverbio/services/settings_manager.dart';
 
 class NavigationManager {
@@ -262,6 +263,18 @@ class NavigationManager {
                   ),
                 ),
               ],
+            ),
+            // R7 fix: Add editMetadata route for GoRouter navigation
+            GoRoute(
+              name: 'editMetadata',
+              path: '/editMetadata',
+              pageBuilder: (context, state) {
+                final songId = state.uri.queryParameters['song'];
+                return getPage(
+                  child: EditMetadataPage(song: songId != null ? {'id': songId} : {}),
+                  state: state,
+                );
+              },
             ),
           ],
         ),

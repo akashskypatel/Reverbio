@@ -269,6 +269,8 @@ PlaylistOperationResult addSongToCustomPlaylist(
     } else {
       playlistSongs.add(song);
     }
+    // R267 fix: Persist changes to Hive after mutating inner list
+    userCustomPlaylists.writeToCache();
     return PlaylistOperationResult.success('Song added');
   } else {
     logger.log('Custom playlist not found: $playlistName', null, null);
@@ -298,6 +300,8 @@ bool removeSongFromPlaylist(
 
     playlist['list'] = playlistSongs;
 
+    // R267 fix: Persist changes to Hive after mutating inner list
+    userCustomPlaylists.writeToCache();
     return true;
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
