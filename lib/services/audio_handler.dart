@@ -173,8 +173,14 @@ class ReverbioAudioHandler extends BaseAudioHandler {
     try {
       final loopAllSongs = settings.repeatNotifier.value == AudioServiceRepeatMode.all;
       // R9 fix: Allow repeat-all wrap-around by not returning early
-      if (!audioPlayer.hasNext && !loopAllSongs) return;
-      if (audioPlayer.songValueNotifier.value?.song == null) return;
+      if (!audioPlayer.hasNext && !loopAllSongs) {
+        _updatePlaybackState();  // R176 fix: Update state before early return
+        return;
+      }
+      if (audioPlayer.songValueNotifier.value?.song == null) {
+        _updatePlaybackState();  // R177 fix: Update state before early return
+        return;
+      }
       final index = queueIndexOf(audioPlayer.songValueNotifier.value!);
       // R9 fix: Properly handle repeat-all wrap-around
       if (loopAllSongs && index == queueSongBars.length - 1) {

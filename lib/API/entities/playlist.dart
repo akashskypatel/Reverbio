@@ -61,6 +61,7 @@ Future<void> addOfflinePlaylist(dynamic playlist) async {
   final ids = Uri.parse('?${parseEntityId(playlist)}').queryParameters;
   if ((ids['yt'] ?? ids['mb'] ?? ids['uc']) != null) {
     playlist['autoCacheOffline'] = true;
+    // R64 fix: Use checkPlaylist predicate for semantic correctness (not checkEntityId)
     userOfflinePlaylists.addOrUpdate(<String, dynamic>{
       'id': playlist['id'],
       'title': playlist['title'],
@@ -68,7 +69,7 @@ Future<void> addOfflinePlaylist(dynamic playlist) async {
       // R4 fix: Check 'yt' key (not 'ytid') after parseEntityId
       'primary-type':
           ids['yt'] != null ? 'playlist' : playlist['primary-type'],
-    }, checkEntityId);
+    }, checkPlaylist);
   }
 }
 
@@ -142,7 +143,7 @@ Future<PlaylistOperationResult> addYTUserPlaylist(String input) async {
         _playlist.videoCount == null) {
       return PlaylistOperationResult.invalidInput('Invalid YouTube playlist');
     }
-    await PM.triggerHook(returnYTPlaylistLayout(_playlist), 'onPlaylistAdd');
+    await PM.triggerHook(returnYtPlaylistLayout(_playlist), 'onPlaylistAdd');
     userPlaylists.add(playlistId);
     return PlaylistOperationResult.success('Playlist added successfully');
   } catch (e, stackTrace) {

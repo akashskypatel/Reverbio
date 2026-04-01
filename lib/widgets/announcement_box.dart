@@ -37,17 +37,22 @@ class AnnouncementBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // R3 fix: Add responsive layout with breakpoint
+    final isWide = MediaQuery.of(context).size.width > 600;
+    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: GestureDetector(
-        // R1/R2 fix: Add error handling for URL launch
-        onTap: () {
-          try {
-            launchURL(Uri.parse(url));
-          } catch (e) {
-            // Silently fail - URL launch is non-critical
-          }
-        },
+        // R1/R2/R3 fix: Add error handling and URL guard
+        onTap: url.isNotEmpty
+            ? () {
+                try {
+                  launchURL(Uri.parse(url));
+                } catch (e) {
+                  // Silently fail - URL launch is non-critical
+                }
+              }
+            : null,
         child: Card(
           color: backgroundColor,
           shape: const RoundedRectangleBorder(
@@ -56,24 +61,43 @@ class AnnouncementBox extends StatelessWidget {
           elevation: 0.1,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Row(
-              children: [
-                Icon(Icons.notifications, color: textColor, size: 32),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: textColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+            child: isWide
+                ? Row(
+                    children: [
+                      Icon(Icons.notifications, color: textColor, size: 32),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: textColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications, color: textColor, size: 32),
+                      const SizedBox(height: 8),
+                      Text(
+                        message,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: textColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

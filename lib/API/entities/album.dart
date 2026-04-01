@@ -499,8 +499,9 @@ bool checkAlbum(dynamic albumA, dynamic albumB) {
   if (albumA == null || albumB == null || albumA.isEmpty || albumB.isEmpty)
     return false;
   // R5 fix: Use local variables instead of mutating inputs, add type guards
-  final idA = albumA is Map ? parseEntityId(albumA) : albumA;
-  final idB = albumB is Map ? parseEntityId(albumB) : albumB;
+  // R498 fix: Pass Map copy to parseEntityId to prevent mutating original
+  final idA = albumA is Map ? parseEntityId(Map<String, dynamic>.from(albumA)) : albumA;
+  final idB = albumB is Map ? parseEntityId(Map<String, dynamic>.from(albumB)) : albumB;
   if (albumA is String && albumB is String)
     return (albumA.isNotEmpty && albumB.isNotEmpty) &&
         checkEntityId(albumA, albumB);

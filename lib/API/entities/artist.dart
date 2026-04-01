@@ -650,17 +650,18 @@ bool checkArtist(dynamic artistA, dynamic artistB) {
       return false;
 
     // R9 fix: Use local variables instead of mutating input
+    // R644 fix: Pass Map copy to parseEntityId to prevent mutating original
     String idA = '';
     String idB = '';
 
     if (artistA is Map) {
-      idA = parseEntityId(artistA);
+      idA = parseEntityId(Map<String, dynamic>.from(artistA));
     } else if (artistA is String) {
       idA = artistA;
     }
 
     if (artistB is Map) {
-      idB = parseEntityId(artistB);
+      idB = parseEntityId(Map<String, dynamic>.from(artistB));
     } else if (artistB is String) {
       idB = artistB;
     }

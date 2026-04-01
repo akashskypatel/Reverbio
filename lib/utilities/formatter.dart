@@ -56,7 +56,8 @@ Map<String, dynamic> returnYtSongLayout(Video song) {
   };
 }
 
-Map<String, dynamic> returnYTPlaylistLayout(Playlist playlist) {
+// R7 fix: Consistent naming - returnYtPlaylistLayout (lowercase 't')
+Map<String, dynamic> returnYtPlaylistLayout(Playlist playlist) {
   // R4 fix: Add 'primary-type' key to match codebase convention
   return {
     'id': 'yt=${playlist.id.value}',

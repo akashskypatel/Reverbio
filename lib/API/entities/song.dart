@@ -554,8 +554,9 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
     song['songUrl'] = offlinePath;
   }
   if (offlinePath == null || offlinePath.isEmpty) {
-    final _songUrl = await PM.getSongUrl(song, getSongYoutubeUrl);
-    song['songUrl'] = _songUrl;
+    // R557 fix: PM.getSongUrl already sets song['songUrl'] internally via onSuccess callback
+    // No need to assign the return value - it may overwrite the plugin's URL with fallback
+    await PM.getSongUrl(song, getSongYoutubeUrl);
   }
 
   if (((song['autoCacheOffline'] ?? false) || autoCacheOffline.value) &&
@@ -1497,8 +1498,9 @@ bool isSongDerivative(
 
 bool checkSong(dynamic songA, dynamic songB) {
   // R16 fix: Use local variables instead of mutating input maps
-  final idA = songA is Map ? parseEntityId(songA) : songA;
-  final idB = songB is Map ? parseEntityId(songB) : songB;
+  // R1499 fix: Pass Map copy to parseEntityId to prevent mutating original
+  final idA = songA is Map ? parseEntityId(Map<String, dynamic>.from(songA)) : songA;
+  final idB = songB is Map ? parseEntityId(Map<String, dynamic>.from(songB)) : songB;
   if (songA is String && songB is String)
     return (songA.isNotEmpty && songB.isNotEmpty) &&
         checkEntityId(songA, songB);
