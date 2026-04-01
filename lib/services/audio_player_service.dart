@@ -42,7 +42,9 @@ class AudioPlayerService {
 
   late final Player _player = Player();
   bool _isShuffleEnabled = false;
-  double _volume = 0.5;  // Default volume, will be set by setVolume() call
+  // R45 fix: Initialize volume from settings instead of hardcoded 0.5
+  // Settings volume is stored as int (0-100), player expects double (0.0-100.0)
+  double _volume = 100;  // Default to full volume, will be synced with settings
 
   late final _volumeNotifier = ValueNotifier(_volume);
   final _processingStateNotifier = ValueNotifier<AudioProcessingState>(

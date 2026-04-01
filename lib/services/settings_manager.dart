@@ -24,6 +24,7 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:reverbio/main.dart';
 import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/notifiable_value.dart';
@@ -61,6 +62,8 @@ Future<void> initializeSettings() async {
   await offlineDirectory.ensureInitialized(
     (await getApplicationSupportDirectory()).path,
   );
+  // R45 fix: Sync audio player volume with loaded settings after initialization
+  await audioHandler.setVolume(volume.value.toDouble());
 }
 
 // Preferences

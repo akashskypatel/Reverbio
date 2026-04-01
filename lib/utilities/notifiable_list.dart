@@ -122,6 +122,10 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       _initializationCompleter.complete(_items);
       // R4 fix: Register instance for flush on shutdown
       _instances.add(this);
+      // Notify listeners that data is ready (before registering writeToCache listener)
+      notifyListeners();
+      // Now register the listener - future changes will trigger writeToCache
+      addListener(writeToCache);
     } catch (e, stackTrace) {
       _error = e;
       _stackTrace = stackTrace;
@@ -129,11 +133,10 @@ class NotifiableList<T> with ChangeNotifier, ListMixin<T> {
       _initializationCompleter.completeError(e);
       _hasError = true;
       debugPrint('Error in ${stackTrace.getCurrentMethodName()}: $e');
+      // R136 fix: Don't register writeToCache listener on error - prevents empty list from overwriting valid data
+      // Notify listeners that initialization failed
+      notifyListeners();
     }
-    // Notify listeners that data is ready (before registering writeToCache listener)
-    notifyListeners();
-    // Now register the listener - future changes will trigger writeToCache
-    addListener(writeToCache);
   }
 
   final List<T> _items = [];
