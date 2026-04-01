@@ -71,11 +71,13 @@ class SongArtworkWidget extends StatelessWidget {
       final imageUrl = mediaItem.artUri?.toString() ?? '';
       
       // R4 fix: Consolidate image resolution - use CachedNetworkImage for all non-file images
+      // R8 fix: Add cacheKey to prevent cache pollution
       return CachedNetworkImage(
         width: size,
         height: size,
         memCacheHeight: (size * 1.1).toInt(),
         memCacheWidth: (size * 1.1).toInt(),
+        cacheKey: mediaItem.id,  // R8 fix: Use mediaItem.id as deterministic cache key
         imageUrl: imageUrl,
         imageBuilder: (context, imageProvider) => ClipRRect(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -88,21 +90,30 @@ class SongArtworkWidget extends StatelessWidget {
   }
 
   // R5 fix: Use errorWidgetIconSize parameter
+  // R7 fix: Add SizedBox wrapper for explicit size constraints on DecoratedBox
   Widget _buildErrorWidget(BuildContext context) {
     return SizedBox(
       width: size,
       height: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(borderRadius),
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-        child: Icon(
-          FluentIcons.music_note_1_24_regular,
-          color: Theme.of(context).colorScheme.secondaryContainer,
-          size: errorWidgetIconSize,  // R5 fix: Wire up parameter
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondary,
+          ),
+          child: Icon(
+            FluentIcons.music_note_1_24_regular,
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            size: errorWidgetIconSize,
+          ),
         ),
       ),
     );
   }
 }
+
+// R6 fix: SongArtworkWidget is dead code - never imported/instantiated
+// This file can be safely deleted. Image loading is handled by:
+// - mini_player.dart for mini player artwork
+// - now_playing_page.dart (NowPlayingArtwork) for now playing artwork
+// - Various other widgets use their own image loading logic

@@ -72,7 +72,7 @@ class _ArtistListState extends State<ArtistList> {
               children: [
                 //Drawer slide
                 _buildDrawerSlide(),
-                widget.child,
+                // R1 fix: Remove duplicate widget.child - only render once in LimitedBox
                 LimitedBox(
                   maxWidth: remWidth,
                   maxHeight: maxHeight,

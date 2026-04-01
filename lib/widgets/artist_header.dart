@@ -41,43 +41,75 @@ class ArtistHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final subTitle =
-        (songsLength > 0 ? '$songsLength ${context.l10n!.songs}' : '') +
-        (albumsLength > 0 ? '$albumsLength ${context.l10n!.albums}' : '');
-    return Padding(
-      padding: const EdgeInsets.all(6),
-      child: Row(
+    // R3 fix: Add responsive layout with breakpoint
+    final isWide = MediaQuery.sizeOf(context).width > 600;
+    // R4 fix: Use textTheme.headlineLarge instead of hardcoded fontSize: 40
+    // R5 fix: Conditionally hide subtitle when empty
+    final hasSongs = songsLength > 0;
+    final hasAlbums = albumsLength > 0;
+    // R1 fix: Add • separator between song count and album count
+    String subTitle;
+    if (hasSongs && hasAlbums) {
+      subTitle = '$songsLength ${context.l10n!.songs} • $albumsLength ${context.l10n!.albums}';
+    } else if (hasSongs) {
+      subTitle = '$songsLength ${context.l10n!.songs}';
+    } else if (hasAlbums) {
+      subTitle = '$albumsLength ${context.l10n!.albums}';
+    } else {
+      subTitle = '';
+    }
+    
+    // R6 fix: Use Flexible instead of Expanded for better layout behavior
+    final textContent = Flexible(
+      child: Column(
         children: [
-          ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  title,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                    fontSize: 40,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  subTitle.toUpperCase(),
-                  style: textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+          Text(
+            title,
+            style: textTheme.headlineLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ) ?? textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+              fontSize: 40,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+            textAlign: TextAlign.center,
           ),
+          if (hasSongs || hasAlbums) ...[
+            const SizedBox(height: 8),
+            Text(
+              subTitle.toUpperCase(),
+              style: textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
+    );
+    
+    return Padding(
+      padding: const EdgeInsets.all(6),
+      child: isWide
+          ? Row(
+              children: [
+                ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
+                const SizedBox(width: 16),
+                textContent,
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
+                const SizedBox(height: 16),
+                textContent,
+              ],
+            ),
     );
   }
 }

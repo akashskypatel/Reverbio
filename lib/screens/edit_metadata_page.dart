@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -810,7 +808,9 @@ Widget _imageInput(
   BorderRadius borderRadius = BorderRadius.zero,
 }) {
   final _theme = Theme.of(context).colorScheme;
-  final dimension = min<double>(220, MediaQuery.of(context).size.width * .45);
+  // R20 fix: Use conditional instead of dart:math min()
+  final width = MediaQuery.of(context).size.width * .45;
+  final dimension = 220.0 < width ? 220.0 : width;
   List<Widget> _imageList(void Function(void Function()) setState) {
     return List.generate(initialValue.length, (index) {
       return Stack(
