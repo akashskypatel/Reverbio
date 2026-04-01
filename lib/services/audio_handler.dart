@@ -622,11 +622,15 @@ class ReverbioAudioHandler extends BaseAudioHandler {
             if ((category == 'sponsor' && settings.sponsorBlockSupport.value) ||
                 (category != 'sponsor' && settings.skipNonMusic.value))
               if (seekTo != null) {
-                // R10 fix: Only skip to next if segment ends near song end AND not already skipping
+                // R626 fix: Only skip to next if segment ends near song end AND not already skipping
                 if (((value.duration.inMicroseconds - seekTo) ~/ 1000) <= 100 &&
-                    !_isSkipping)
+                    !_isSkipping) {
                   await this.skipToNext();
-                await this.seek(Duration(microseconds: seekTo));
+                  // R626 fix: Don't seek after skipToNext - that would corrupt the next song's position
+                } else {
+                  // R626 fix: Only seek if we're not skipping to next song
+                  await this.seek(Duration(microseconds: seekTo));
+                }
               }
           }
         }

@@ -334,7 +334,8 @@ Future<bool> updatePlaylistLikeStatus(dynamic playlist, bool add) async {
     }
     if (add) {
       playlist['primary-type'] = playlist['primary-type'] ?? 'playlist';
-      userLikedPlaylists.addOrUpdate(playlist, checkEntityId);
+      // R337 fix: Use checkPlaylist instead of checkEntityId to avoid Map mutation and support title-based comparison
+      userLikedPlaylists.addOrUpdate(playlist, checkPlaylist);
       await PM.triggerHook(playlist, 'onEntityLiked');
     } else {
       userLikedPlaylists.removeWhere((value) => checkPlaylist(playlist, value));

@@ -75,14 +75,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   }
 
   @override
-  void deactivate() {
-    nowPlayingOpen.value = false;
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
     // R3 fix: Dispose ValueNotifiers
+    // R13 fix: Move deactivate logic to dispose for proper cleanup
+    nowPlayingOpen.value = false;
     _songLikeStatus.dispose();
     _songOfflineStatus.dispose();
     // R6 fix: _lyricsController doesn't need disposal (external package controller)
@@ -138,9 +134,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                   adjustedMiniIconSize: adjustedMiniIconSize,
                   lyricsController: _lyricsController,
                 )
+                // R14 fix: Clarify 0.65 scaling intent - scale down artwork for mobile layout
                 : _MobileLayout(
                   mediaItem: mediaItem,
-                  size: size * .65,
+                  size: size * .65,  // Scale to 65% for mobile to fit more content
                   adjustedIconSize: adjustedIconSize,
                   adjustedMiniIconSize: adjustedMiniIconSize,
                   isLargeScreen: _isLargeScreen,
@@ -158,13 +155,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   }
 
   Widget _buildSyncButton() {
-    return IconButton(
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      icon: const Icon(FluentIcons.arrow_sync_24_filled),
-      iconSize: pageHeaderIconSize,
-      onPressed: () async {},
-    );
+    // R12 fix: Hide button with empty onPressed - functionality not implemented
+    return const SizedBox.shrink();
   }
 
   List<Widget> _buildActionList(
@@ -574,7 +566,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => GoRouter.of(context).pop(context),
+                  // R8 fix: Don't pass context as pop result
+                  onPressed: () => GoRouter.of(context).pop(),
                   child: Text(context.l10n!.cancel),
                 ),
                 ElevatedButton(
@@ -588,7 +581,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                       );
                       showToast(context.l10n!.addedSuccess);
                     }
-                    GoRouter.of(context).pop(context);
+                    // R8 fix: Don't pass context as pop result
+                    GoRouter.of(context).pop();
                   },
                   child: Text(context.l10n!.setTimer),
                 ),
@@ -632,7 +626,6 @@ class _DesktopLayout extends StatelessWidget {
               const SizedBox(height: 5),
               if (!(mediaItem.extras?['isLive'] ?? false))
                 NowPlayingControls(
-                  context: context,
                   size: size,
                   audioId: mediaItem.extras?['ytid'],
                   adjustedIconSize: adjustedIconSize,
@@ -679,7 +672,6 @@ class _MobileLayout extends StatelessWidget {
         const SizedBox(height: 10),
         if (!(mediaItem.extras?['isLive'] ?? false))
           NowPlayingControls(
-            context: context,
             size: size,
             audioId: mediaItem.extras?['ytid'],
             adjustedIconSize: adjustedIconSize,
@@ -689,7 +681,6 @@ class _MobileLayout extends StatelessWidget {
         if (!isLargeScreen) ...[
           const SizedBox(height: 10),
           BottomActionsRow(
-            context: context,
             audioId: mediaItem.extras?['ytid'],
             mediaItem: mediaItem,
             iconSize: adjustedMiniIconSize,
@@ -807,30 +798,36 @@ class QueueListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _textColor = Theme.of(context).colorScheme.secondary;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            context.l10n!.queue,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(color: _textColor),
-          ),
-        ),
-        Flexible(
-          fit: FlexFit.tight,
-          child:
-              audioHandler.queueSongBars.isEmpty
-                  ? Center(
-                    child: Text(
-                      context.l10n!.noSongsInQueue,
-                      style: TextStyle(color: _textColor),
-                    ),
-                  )
-                  : ListView(children: audioHandler.queueSongBars),
-        ),
-      ],
+    // R10 fix: Wrap in ListenableBuilder to listen to queue changes
+    return ListenableBuilder(
+      listenable: audioHandler.queueSongBars,
+      builder: (context, _) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text(
+                context.l10n!.queue,
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: _textColor),
+              ),
+            ),
+            Flexible(
+              fit: FlexFit.tight,
+              child:
+                  audioHandler.queueSongBars.isEmpty
+                      ? Center(
+                        child: Text(
+                          context.l10n!.noSongsInQueue,
+                          style: TextStyle(color: _textColor),
+                        ),
+                      )
+                      : ListView(children: audioHandler.queueSongBars),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -867,14 +864,13 @@ class MarqueeTextWidget extends StatelessWidget {
 class NowPlayingControls extends StatefulWidget {
   const NowPlayingControls({
     super.key,
-    required this.context,
     required this.size,
     required this.audioId,
     required this.adjustedIconSize,
     required this.adjustedMiniIconSize,
     required this.mediaItem,
   });
-  final BuildContext context;
+  // R9 fix: Removed BuildContext field - use context from build()
   final Size size;
   final dynamic audioId;
   final double adjustedIconSize;
@@ -947,7 +943,6 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
             ),
             const PositionSlider(),
             PlayerControlButtons(
-              context: context,
               mediaItem: widget.mediaItem,
               iconSize: widget.adjustedIconSize,
               miniIconSize: widget.adjustedMiniIconSize,
@@ -960,41 +955,39 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
 
   Widget _buildArtistLabel(dynamic artistData) {
     final screenHeight = widget.size.height;
+    // R15 fix: Remove redundant null/empty checks - already validated in caller
+    final artistName = artistData is String
+        ? artistData
+        : artistData['name'] ??
+            artistData['artist'] ??
+            artistData['title'] ??
+            context.l10n!.unknown;
+    
     return GestureDetector(
-      onTap:
-          artistData is String ||
-                  !mounted ||
-                  artistData == null ||
-                  artistData.isEmpty
-              ? null
-              : () async {
-                try {
-                  if (!mounted || artistData == null || artistData.isEmpty)
-                    throw Exception();
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => ArtistPage(
-                            page: '/artist',
-                            artistData: artistData,
-                          ),
-                      settings: RouteSettings(
-                        name:
-                            '/artist?${artistData is String ? artistData : artistData['id']}',
-                      ),
+      onTap: artistData is String || artistData == null || artistData.isEmpty
+          ? null
+          : () async {
+              try {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ArtistPage(
+                      page: '/artist',
+                      artistData: artistData,
                     ),
-                  );
-                } catch (_) {}
-              },
+                    settings: RouteSettings(
+                      name:
+                          '/artist?${artistData is String ? artistData : artistData['id']}',
+                    ),
+                  ),
+                );
+              } catch (e, stackTrace) {
+                // R11 fix: Log the error instead of silently swallowing
+                logger.log('Error navigating to artist page', e, stackTrace);
+              }
+            },
       child: MarqueeTextWidget(
-        text:
-            artistData is String
-                ? artistData
-                : artistData['name'] ??
-                    artistData['artist'] ??
-                    artistData['title'] ??
-                    context.l10n!.unknown,
+        text: artistName,
         fontColor: Theme.of(context).colorScheme.secondary,
         fontSize: screenHeight * 0.025,
         fontWeight: FontWeight.w500,
@@ -1060,12 +1053,11 @@ class PositionSlider extends StatelessWidget {
 class PlayerControlButtons extends StatelessWidget {
   const PlayerControlButtons({
     super.key,
-    required this.context,
     required this.mediaItem,
     required this.iconSize,
     required this.miniIconSize,
   });
-  final BuildContext context;
+  // R9 fix: Removed BuildContext field - use context from build()
   final MediaItem mediaItem;
   final double iconSize;
   final double miniIconSize;
@@ -1283,14 +1275,13 @@ class PlayerControlButtons extends StatelessWidget {
 class BottomActionsRow extends StatelessWidget {
   const BottomActionsRow({
     super.key,
-    required this.context,
     required this.audioId,
     required this.mediaItem,
     required this.iconSize,
     required this.isLargeScreen,
     required this.actions,
   });
-  final BuildContext context;
+  // R9 fix: Removed BuildContext field - use context from build()
   final dynamic audioId;
   final MediaItem mediaItem;
   final double iconSize;

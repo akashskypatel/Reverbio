@@ -49,6 +49,8 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
   TextEditingController mbController = TextEditingController();
   TextEditingController lyricsController = TextEditingController();
   TextEditingController durationController = TextEditingController();
+  // R10 fix: Persistent controllers for custom tags to prevent leaks
+  final customTagControllers = <String, TextEditingController>{};
   final isInitialized = ValueNotifier(false);
   dynamic song;
   String offlinePath = '';
@@ -92,11 +94,16 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
     mbController.dispose();
     lyricsController.dispose();
     durationController.dispose();
+    // R10 fix: Dispose custom tag controllers
+    for (final controller in customTagControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
   void initialize() async {
-    song = widget.song;
+    // R11 fix: Use local copy instead of mutating widget.song directly
+    song = Map<String, dynamic>.from(widget.song);
     offlinePath = await getOfflinePath(song) ?? '';
     // R3 fix: Add mounted check after await
     if (!mounted) return;
@@ -304,38 +311,47 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
                     }
                     song['title'] = title;
                     song['artist'] = artist;
-                    final value =
-                        await queueSongInfoRequest(song).completerFuture;
-                    final metaTag = await FileTagger.getTagFromMetadata(value);
-                    setState(() {
-                      song.addAll(value);
-                      pictures
-                        ..clear()
-                        ..addAll(metaTag?.pictures ?? []);
-                      titleController.text = metaTag?.title ?? tags?.title ?? basenameWithoutExtension(offlinePath);
-                      artistController.text = metaTag?.artist ?? tags?.artist ?? '';
-                      albumController.text = metaTag?.album ?? tags?.album ?? '';
-                      albumArtistController.text = metaTag?.albumArtist ?? tags?.albumArtist ?? '';
-                      yearController.text = metaTag?.year?.toString() ?? tags?.year?.toString() ?? '';
-                      commentController.text = metaTag?.comment ?? tags?.comment ?? '';
-                      genreController.text = metaTag?.genre ?? tags?.genre ?? '';
-                      trackNumberController.text = metaTag?.track?.toString() ?? tags?.track?.toString() ?? '';
-                      trackTotalController.text = metaTag?.trackTotal?.toString() ?? tags?.trackTotal?.toString() ?? '';
-                      discNumberController.text = metaTag?.disc?.toString() ?? tags?.disc?.toString() ?? '';
-                      discTotalController.text = metaTag?.discTotal?.toString() ?? tags?.discTotal?.toString() ?? '';
-                      lyricsController.text = metaTag?.lyrics ?? tags?.lyrics ?? '';
-                      durationController.text = metaTag?.duration?.toString() ?? tags?.duration?.toString() ?? '';
-                      bpmController.text = metaTag?.bpm?.toString() ?? tags?.bpm?.toString() ?? '';
-                      composerController.text = metaTag?.composer ?? tags?.composer ?? '';
-                      copyrightController.text = metaTag?.copyright ?? tags?.copyright ?? '';
-                      descriptionController.text = metaTag?.description ?? tags?.description ?? '';
-                      synopsisController.text = metaTag?.synopsis ?? tags?.synopsis ?? '';
-                      groupingController.text = metaTag?.grouping ?? tags?.grouping ?? '';
-                      ytController.text = metaTag?.youtube ?? tags?.youtube ?? '';
-                      mbController.text = metaTag?.musicbrainz ?? tags?.musicbrainz ?? '';
-                      metaLoading = false;
-                      showToast(L10n.current.fetchedMetadata);
-                    });
+                    // R12 fix: Add error handling for queueSongInfoRequest
+                    try {
+                      final value =
+                          await queueSongInfoRequest(song).completerFuture;
+                      final metaTag = await FileTagger.getTagFromMetadata(value);
+                      setState(() {
+                        song.addAll(value);
+                        pictures
+                          ..clear()
+                          ..addAll(metaTag?.pictures ?? []);
+                        titleController.text = metaTag?.title ?? tags?.title ?? basenameWithoutExtension(offlinePath);
+                        artistController.text = metaTag?.artist ?? tags?.artist ?? '';
+                        albumController.text = metaTag?.album ?? tags?.album ?? '';
+                        albumArtistController.text = metaTag?.albumArtist ?? tags?.albumArtist ?? '';
+                        yearController.text = metaTag?.year?.toString() ?? tags?.year?.toString() ?? '';
+                        commentController.text = metaTag?.comment ?? tags?.comment ?? '';
+                        genreController.text = metaTag?.genre ?? tags?.genre ?? '';
+                        trackNumberController.text = metaTag?.track?.toString() ?? tags?.track?.toString() ?? '';
+                        trackTotalController.text = metaTag?.trackTotal?.toString() ?? tags?.trackTotal?.toString() ?? '';
+                        discNumberController.text = metaTag?.disc?.toString() ?? tags?.disc?.toString() ?? '';
+                        discTotalController.text = metaTag?.discTotal?.toString() ?? tags?.discTotal?.toString() ?? '';
+                        lyricsController.text = metaTag?.lyrics ?? tags?.lyrics ?? '';
+                        durationController.text = metaTag?.duration?.toString() ?? tags?.duration?.toString() ?? '';
+                        bpmController.text = metaTag?.bpm?.toString() ?? tags?.bpm?.toString() ?? '';
+                        composerController.text = metaTag?.composer ?? tags?.composer ?? '';
+                        copyrightController.text = metaTag?.copyright ?? tags?.copyright ?? '';
+                        descriptionController.text = metaTag?.description ?? tags?.description ?? '';
+                        synopsisController.text = metaTag?.synopsis ?? tags?.synopsis ?? '';
+                        groupingController.text = metaTag?.grouping ?? tags?.grouping ?? '';
+                        ytController.text = metaTag?.youtube ?? tags?.youtube ?? '';
+                        mbController.text = metaTag?.musicbrainz ?? tags?.musicbrainz ?? '';
+                        metaLoading = false;
+                        showToast(L10n.current.fetchedMetadata);
+                      });
+                    } catch (e, stackTrace) {
+                      logger.log('Error fetching metadata', e, stackTrace);
+                      setState(() {
+                        metaLoading = false;
+                      });
+                      showToast(L10n.current.error);
+                    }
                   },
                   icon:
                       metaLoading
@@ -368,6 +384,14 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
                                   titleController,
                                   showErrorIcon: showTitleError,
                                   borderRadius: commonCustomBarRadiusFirst,
+                                  // R13 fix: Clear error state when user types
+                                  onChanged: (_) {
+                                    if (showTitleError) {
+                                      setState(() {
+                                        showTitleError = false;
+                                      });
+                                    }
+                                  },
                                 ),
                                 _textInput(
                                   context,
@@ -375,6 +399,14 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
                                   FluentIcons.person_24_regular,
                                   artistController,
                                   showErrorIcon: showArtistError,
+                                  // R13 fix: Clear error state when user types
+                                  onChanged: (_) {
+                                    if (showArtistError) {
+                                      setState(() {
+                                        showArtistError = false;
+                                      });
+                                    }
+                                  },
                                 ),
                                 _textInput(
                                   context,
@@ -533,14 +565,12 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
                                   L10n.current.customTags,
                                   FluentIcons.tag_multiple_24_regular,
                                   customTags,
+                                  customTagControllers,
                                   setState,
                                 ),
                                 // Pictures Section
-                                _imageInput(
-                                  context,
-                                  L10n.current.pictures,
-                                  FluentIcons.image_24_regular,
-                                  pictures,
+                                _PicturesInput(
+                                  pictures: pictures,
                                   borderRadius: commonCustomBarRadiusLast,
                                 ),
                               ],
@@ -557,13 +587,22 @@ Widget _customTagsInput(
   String label,
   IconData icon,
   Map<String, String> customTags,
+  Map<String, TextEditingController> customTagControllers,
   void Function(void Function()) setState,
 ) {
   final theme = Theme.of(context).colorScheme;
-  final customTagControllers = {
-    for (final k in customTags.keys)
-      k: TextEditingController(text: customTags[k]),
-  };
+  // R10 fix: Sync controllers with customTags map (caller manages lifecycle)
+  final keysToRemove = customTagControllers.keys.toSet()
+    ..removeAll(customTags.keys);
+  for (final key in keysToRemove) {
+    customTagControllers[key]?.dispose();
+    customTagControllers.remove(key);
+  }
+  for (final key in customTags.keys) {
+    if (!customTagControllers.containsKey(key)) {
+      customTagControllers[key] = TextEditingController(text: customTags[key] ?? '');
+    }
+  }
 
   return Padding(
     padding: commonBarPadding,
@@ -759,6 +798,7 @@ Widget _textInput(
   TextInputType keyboardType = TextInputType.text,
   bool showErrorIcon = false,
   bool multiLine = false,
+  void Function(String)? onChanged,
 }) {
   final _theme = Theme.of(context).colorScheme;
   Widget _getTextField() {
@@ -776,6 +816,7 @@ Widget _textInput(
               controller: controller,
               keyboardType: keyboardType,
               inputFormatters: inputFormatters,
+              onChanged: onChanged,  // R13 fix: Clear error state on text change
               decoration:
                   !isLargeScreen()
                       ? InputDecoration(
@@ -792,7 +833,6 @@ Widget _textInput(
   }
 
   return CustomInputBar(
-    context: context,
     icon: Icon(icon, color: _theme.primary),
     label: Text(label, style: TextStyle(color: _theme.primary)),
     borderRadius: borderRadius,
@@ -800,110 +840,120 @@ Widget _textInput(
   );
 }
 
-Widget _imageInput(
-  BuildContext context,
-  String label,
-  IconData icon,
-  List<Picture> initialValue, {
-  BorderRadius borderRadius = BorderRadius.zero,
-}) {
-  final _theme = Theme.of(context).colorScheme;
-  // R20 fix: Use conditional instead of dart:math min()
-  final width = MediaQuery.of(context).size.width * .45;
-  final dimension = 220.0 < width ? 220.0 : width;
-  List<Widget> _imageList(void Function(void Function()) setState) {
-    return List.generate(initialValue.length, (index) {
-      return Stack(
-        children: [
-          BaseCard(
-            onPressed: () async {
-              initialValue[index] =
-                  await showImagePickerDialog(
-                    context,
-                    initialValue: initialValue[index],
-                  ) ??
-                  initialValue[index];
-            },
-            size: dimension,
-            showIconLabel: false,
-            label: initialValue[index].pictureType.toString().replaceAll(
-              'PictureType.',
-              '',
-            ),
-            image: Image.memory(
-              width: dimension,
-              height: dimension,
-              initialValue[index].bytes,
-              cacheHeight: (dimension * 1.1).toInt(),
-              cacheWidth: (dimension * 1.1).toInt(),
-            ),
-            customButton: IconButton(
-              iconSize: 35,
-              onPressed: () {
-                if (context.mounted)
-                  setState(() {
-                    initialValue.removeAt(index);
-                  });
-              },
-              icon: const Icon(FluentIcons.delete_24_filled),
-              color: _theme.primary,
-            ),
-          ),
-        ],
-      );
-    });
-  }
+// R15 fix: Extract to StatefulWidget to properly manage mutable state
+class _PicturesInput extends StatefulWidget {
+  const _PicturesInput({
+    required this.pictures,
+    this.borderRadius = BorderRadius.zero,
+  });
+  final List<Picture> pictures;
+  final BorderRadius borderRadius;
 
-  return Padding(
-    padding: commonBarPadding,
-    child: Card(
-      margin: const EdgeInsets.only(bottom: 3),
-      shape: RoundedRectangleBorder(borderRadius: borderRadius),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
-        child: StatefulBuilder(
-          builder:
-              (context, setState) => Column(
-                children: [
-                  SectionHeader(
-                    icon: FluentIcons.image_24_regular,
-                    title: L10n.current.pictures,
-                    expandedActions: [
-                      IconButton(
-                        onPressed: () async {
-                          final newPicture = await showImagePickerDialog(
-                            context,
-                          );
-                          if (newPicture != null && context.mounted)
-                            setState(() {
-                              initialValue.add(newPicture);
-                            });
-                        },
-                        icon: const Icon(FluentIcons.add_24_filled),
-                        color: _theme.primary,
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            initialValue.clear();
-                          });
-                        },
-                        icon: const Icon(FluentIcons.delete_24_filled),
-                        color: _theme.primary,
-                      ),
-                    ],
+  @override
+  State<_PicturesInput> createState() => _PicturesInputState();
+}
+
+class _PicturesInputState extends State<_PicturesInput> {
+  late ColorScheme _theme;
+
+  @override
+  Widget build(BuildContext context) {
+    _theme = Theme.of(context).colorScheme;
+    // R20 fix: Use conditional instead of dart:math min()
+    final width = MediaQuery.of(context).size.width * .45;
+    final dimension = 220.0 < width ? 220.0 : width;
+
+    List<Widget> _imageList() {
+      return List.generate(widget.pictures.length, (index) {
+        return Stack(
+          children: [
+            BaseCard(
+              onPressed: () async {
+                widget.pictures[index] =
+                    await showImagePickerDialog(
+                      context,
+                      initialValue: widget.pictures[index],
+                    ) ??
+                    widget.pictures[index];
+              },
+              size: dimension,
+              showIconLabel: false,
+              label: widget.pictures[index].pictureType.toString().replaceAll(
+                'PictureType.',
+                '',
+              ),
+              image: Image.memory(
+                width: dimension,
+                height: dimension,
+                widget.pictures[index].bytes,
+                cacheHeight: (dimension * 1.1).toInt(),
+                cacheWidth: (dimension * 1.1).toInt(),
+              ),
+              customButton: IconButton(
+                iconSize: 35,
+                onPressed: () {
+                  if (context.mounted)
+                    setState(() {
+                      widget.pictures.removeAt(index);
+                    });
+                },
+                icon: const Icon(FluentIcons.delete_24_filled),
+                color: _theme.primary,
+              ),
+            ),
+          ],
+        );
+      });
+    }
+
+    return Padding(
+      padding: commonBarPadding,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 3),
+        shape: RoundedRectangleBorder(borderRadius: widget.borderRadius),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
+          child: Column(
+            children: [
+              SectionHeader(
+                icon: FluentIcons.image_24_regular,
+                title: L10n.current.pictures,
+                expandedActions: [
+                  IconButton(
+                    onPressed: () async {
+                      final newPicture = await showImagePickerDialog(
+                        context,
+                      );
+                      if (newPicture != null && context.mounted)
+                        setState(() {
+                          widget.pictures.add(newPicture);
+                        });
+                    },
+                    icon: const Icon(FluentIcons.add_24_filled),
+                    color: _theme.primary,
                   ),
-                  Wrap(
-                    spacing: 5,
-                    runSpacing: 15,
-                    children: _imageList(setState),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        widget.pictures.clear();
+                      });
+                    },
+                    icon: const Icon(FluentIcons.delete_24_filled),
+                    color: _theme.primary,
                   ),
                 ],
               ),
+              Wrap(
+                spacing: 5,
+                runSpacing: 15,
+                children: _imageList(),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 Future<Picture?> showImagePickerDialog(
@@ -972,7 +1022,8 @@ Future<Picture?> showImagePickerDialog(
                     ],
                   ),
                   DropdownMenu<PictureType>(
-                    initialSelection: picture?.pictureType ?? PictureType.other,
+                    // R19 fix: Align initialSelection with picTypeValue initialization
+                    initialSelection: picTypeValue,
                     onSelected: (value) {
                       if (value != null && context.mounted) {
                         setState(() {
@@ -1083,14 +1134,18 @@ Future<Picture?> showImagePickerDialog(
                     const SizedBox.shrink()
                   else
                     Expanded(
-                      child: Image.memory(picture!.bytes, fit: BoxFit.contain),
+                      // R16 fix: Add bytes.isNotEmpty guard before Image.memory
+                      child: picture!.bytes.isNotEmpty
+                          ? Image.memory(picture!.bytes, fit: BoxFit.contain)
+                          : const Icon(FluentIcons.image_24_regular),
                     ),
                 ],
               ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(initialValue),
+            // R18 fix: Return null instead of initialValue on cancel
+            onPressed: () => Navigator.of(context).pop(null),
             child: Text(L10n.current.cancel.toUpperCase()),
           ),
           TextButton(
@@ -1106,13 +1161,12 @@ Future<Picture?> showImagePickerDialog(
 class CustomInputBar extends StatelessWidget {
   const CustomInputBar({
     super.key,
-    required this.context,
     required this.child,
     required this.label,
     required this.icon,
     this.borderRadius = BorderRadius.zero,
   });
-  final BuildContext context;
+  // R17 fix: Removed unused BuildContext parameter
   final Widget child;
   final Widget label;
   final Widget icon;

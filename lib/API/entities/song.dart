@@ -1042,16 +1042,20 @@ Future<void> makeSongOffline(dynamic song) async {
     }
     if (!isYouTubeSongValid(song)) await findYTSong(song);
     final id = song['id'] = parseEntityId(song);
-    final _audioFile = join(_audioDirPath, id);
+    // R1045 fix: Get extension before creating file path to ensure path matches actual file
+    final songData = await getSongUrl(song, skipDownload: true);
+    if (songData['songUrl'] == null)
+      throw Exception('Could not find a download source.');
+    final songUrl = songData['songUrl'];
+    final mime = await getMimeTypeFromUrl(songUrl);
+    final ext = getExtensionFromMime(mime);
+    final _audioFile = join(_audioDirPath, '$id$ext');  // R1045 fix: Include extension
     final _artworkFile = File(join(_artworkDirPath, id));
 
     try {
-      song = await getSongUrl(song, skipDownload: true);
+      song = songData;
       if (song['songUrl'] == null)
         throw Exception('Could not find a download source.');
-      final songUrl = song['songUrl'];
-      final mime = await getMimeTypeFromUrl(songUrl);
-      final ext = getExtensionFromMime(mime);
       final task = DownloadTask(
         taskId: id,
         url: songUrl,
@@ -1454,12 +1458,15 @@ Future<void> updateRecentlyPlayed(dynamic song) async {
     if (userRecentlyPlayed.isNotEmpty &&
         checkSong(userRecentlyPlayed.first, song))
       return;
-    // Fix: Remove duplicates FIRST, then trim if over limit (old code order)
-    userRecentlyPlayed.removeWhere((s) => checkSong(s, song));
-    if (userRecentlyPlayed.length >= recentlyPlayedSongsLimit) {
-      userRecentlyPlayed.removeLast();
-    }
-    userRecentlyPlayed.insert(0, song);
+    // R1457 fix: Use batchUpdate to prevent multiple notifications
+    userRecentlyPlayed.batchUpdate((list) {
+      // Fix: Remove duplicates FIRST, then trim if over limit (old code order)
+      list.removeWhere((s) => checkSong(s, song));
+      if (list.length >= recentlyPlayedSongsLimit) {
+        list.removeLast();
+      }
+      list.insert(0, song);
+    });
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     rethrow;

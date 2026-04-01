@@ -77,41 +77,40 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // R10 fix: Removed unused _buildSearchAnchor method
+  // R11 fix: Removed unused isProcessing and loopSongs state variables
+
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
+    // R7 fix: Collapse redundant nested ListenableBuilder - single builder listening to both
     return ListenableBuilder(
-      listenable: widget.songBars,
-      builder: (context, child) {
+      listenable: Listenable.merge([widget.songBars, PM.pluginsData]),
+      builder: (context, _) {
         return SliverMainAxisGroup(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
                 padding: commonSingleChildScrollViewPadding,
-                child: ListenableBuilder(
-                  listenable: PM.pluginsData,
-                  builder: (context, __) {
-                    return SectionHeader(
-                      onChanged: _searchSongBars,
-                      showSearch: true,
-                      expandedActions: widget.expandedActions,
-                      title: widget.title,
-                      actions: [
-                        if (widget.songBars.hasData) ...[
-                          _buildSortSongActionButton(),
-                          _buildShuffleSongActionButton(),
-                          _buildPlayActionButton(),
-                          if (widget.page != 'queue')
-                            _buildAddToQueueActionButton(),
-                          ...PM.getWidgetsByType(
-                            _getSongListData,
-                            'SongListHeader',
-                            context,
-                          ),
-                        ],
-                      ],
-                    );
-                  },
+                child: SectionHeader(
+                  onChanged: _searchSongBars,
+                  showSearch: true,
+                  expandedActions: widget.expandedActions,
+                  title: widget.title,
+                  actions: [
+                    if (widget.songBars.hasData) ...[
+                      _buildSortSongActionButton(),
+                      _buildShuffleSongActionButton(),
+                      _buildPlayActionButton(),
+                      if (widget.page != 'queue')
+                        _buildAddToQueueActionButton(),
+                      ...PM.getWidgetsByType(
+                        _getSongListData,
+                        'SongListHeader',
+                        context,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -158,37 +157,16 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildSearchAnchor() {
-    return SliverToBoxAdapter(
-      child: SearchAnchor(
-        searchController: _searchController,
-        builder:
-            (context, controller) => CustomScrollView(
-              shrinkWrap: true,
-              slivers: [_buildSongList(context)],
-            ),
-        suggestionsBuilder: (context, controller) {
-          return List<Widget>.generate(widget.songBars.length, (index) {
-            final song = widget.songBars[index].song;
-            final title = songTitle(song);
-            final artist = songArtist(song);
-            if (title.nullIfEmpty == null) return const SizedBox.shrink();
-            return ListTile(
-              dense: true,
-              title: Text(title),
-              subtitle: Text(artist),
-            );
-          });
-        },
-      ),
-    );
-  }
+  // R10 fix: Removed unused _buildSearchAnchor, _buildLoadingWidget, and _buildErrorWidget methods
 
+  // R6 fix: Operate on copies instead of mutating original song maps
   dynamic _getSongListData() {
     final data =
         widget.songBars.map((e) {
-          e.song['album'] = e.song['album'];
-          e.song['song'] = e.song['title'];
+          // Create a copy of the song map to avoid mutating the original
+          final songCopy = Map<String, dynamic>.from(e.song);
+          songCopy['album'] = songCopy['album'];
+          songCopy['song'] = songCopy['title'];
           return e;
         }).toList();
     return data;
@@ -346,6 +324,15 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
           showToast('No songs to play');
           return;
         }
+        // R8 fix: Respect current queue position - don't always start from first song
+        final currentSong = audioHandler.songValueNotifier.value;
+        final currentIndex = currentSong != null 
+            ? widget.songBars.indexWhere((bar) => bar.song['id'] == currentSong.song['id'])
+            : -1;
+        final songToPlay = currentIndex >= 0 && currentIndex < widget.songBars.length
+            ? widget.songBars[currentIndex]
+            : widget.songBars.first;
+        
         if (widget.page != 'queue') {
           await PM.triggerHook(widget.songBars, 'onPlaylistPlay');
           setQueueToPlaylist({
@@ -357,7 +344,7 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
           );
         }
         await audioHandler.prepare(
-          songBar: widget.songBars.first,
+          songBar: songToPlay,  // R8 fix: Play current song or first song
           play: true,
           skipOnError: true,
         );
@@ -370,30 +357,7 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildLoadingWidget() {
-    return const SliverToBoxAdapter(
-      child: Center(
-        child: Padding(padding: EdgeInsets.all(35), child: Spinner()),
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget() {
-    final errorText =
-        !widget.songBars.hasError
-            ? (widget.songBars.isEmpty
-                ? context.l10n!.noSongsInQueue
-                : context.l10n!.error)
-            : context.l10n!.error;
-    return SliverToBoxAdapter(
-      child: Center(
-        child: Text(
-          errorText,
-          style: TextStyle(color: _theme.colorScheme.primary, fontSize: 18),
-        ),
-      ),
-    );
-  }
+  // R10 fix: Removed unused _buildLoadingWidget and _buildErrorWidget methods
 
   void moveSongBar(int oldIndex, int newIndex) {
     if (oldIndex < 0 ||
@@ -433,9 +397,11 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
             );
             final songBar =
                 widget.songBars[index]..setBorder(borderRadius: borderRadius);
-            final key = Key(
-              songBar.song['id'] ??
-                  '${songBar.song['artist']} - ${songBar.song['title']}',
+            // R9 fix: Ensure unique keys using index as fallback
+            final key = ValueKey<String>(
+              songBar.song['id']?.toString().isNotEmpty == true
+                  ? songBar.song['id'].toString()
+                  : '${songBar.song['artist'] ?? ''}-${songBar.song['title'] ?? ''}-$index',
             );
             // TODO: possible use value notifier
             return ReorderableDragStartListener(

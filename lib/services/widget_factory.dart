@@ -77,13 +77,8 @@ class WidgetFactory {
     'upload': FluentIcons.arrow_upload_24_filled,
     'warning': FluentIcons.warning_24_filled,
   };
-  static String _buildSettingsMethodCall({
-    required String methodName,
-    required String value,
-    required String id,
-  }) {
-    return '$methodName({"$id": "$value"})';
-  }
+
+  // R5 fix: Removed unused _buildSettingsMethodCall method
 
   static Widget _resetFieldButton(VoidCallback onPressed, bool isEnabled) {
     return isEnabled
@@ -118,6 +113,8 @@ class WidgetFactory {
     notifier,
     methodParamBuilder,
   }) {
+    // R8 fix: Check triggerSave before queueing background job
+    final triggerSave = methodData?['triggerSave'] ?? false;
     PM.queueBackground(
       pluginName: pluginName,
       priority:
@@ -137,6 +134,8 @@ class WidgetFactory {
               ])
               : methodData?['methodName'],
     );
+    // R8 fix: Call triggerSave after queueing
+    if (triggerSave) PM.updateUserSetting(pluginName, id, newValue.toString());
     showToast(
       '$pluginName - $label ${context.l10n!.addedBackgroundJob}',
       context: context,
@@ -427,6 +426,7 @@ class WidgetFactory {
     return button;
   }
 
+  // R11 fix: StatefulWidget to properly dispose ValueNotifier
   static Widget _buildSwitch({
     required String pluginName,
     required String id,
@@ -434,86 +434,11 @@ class WidgetFactory {
     required BuildContext context,
     Map? methodData,
   }) {
-    final settings =
-        PM.getUserSettings(pluginName).isEmpty
-            ? PM.getDefaultSettings(pluginName)
-            : PM.getUserSettings(pluginName);
-    final defaultValue =
-        settings[id] is String
-            ? settings[id] == 'true'
-            : (settings[id] ?? false);
-    final thumbIcon =
-        WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
-          WidgetState.selected: Icon(
-            FluentIcons.checkmark_24_filled,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          WidgetState.any: Icon(
-            FluentIcons.dismiss_24_filled,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        });
-    final switchNotifier = ValueNotifier(defaultValue);
-    void Function(void Function())? _setState;
-    void resetField() {
-      if (switchNotifier.value != defaultValue) {
-        _method(
-          pluginName: pluginName,
-          methodData: methodData,
-          id: id,
-          label: label,
-          newValue: defaultValue,
-          context: context,
-          setState: _setState,
-          notifier: switchNotifier,
-        );
-      }
-    }
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        _setState = setState;
-        return ValueListenableBuilder(
-          valueListenable: switchNotifier,
-          builder:
-              (context, value, __) => Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!isLargeScreen())
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsetsGeometry.directional(end: 10),
-                        child: Text(softWrap: true, label),
-                      ),
-                    ),
-                  _resetFieldButton(resetField, value != defaultValue),
-                  Expanded(
-                    child: Align(
-                      alignment:
-                          isLargeScreen()
-                              ? Alignment.centerLeft
-                              : Alignment.centerRight,
-                      child: Switch(
-                        thumbIcon: thumbIcon,
-                        value: value,
-                        onChanged:
-                            (newValue) => _method(
-                              pluginName: pluginName,
-                              methodData: methodData,
-                              id: id,
-                              label: label,
-                              newValue: newValue,
-                              context: context,
-                              setState: _setState,
-                              notifier: switchNotifier,
-                            ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-        );
-      },
+    return _SettingsSwitch(
+      pluginName: pluginName,
+      id: id,
+      label: label,
+      methodData: methodData,
     );
   }
 
@@ -557,6 +482,7 @@ class WidgetFactory {
     );
   }
 
+  // R10/R11 fix: StatefulWidget to properly dispose TextEditingController and FocusNode
   static Widget _getTextField({
     required String pluginName,
     required String id,
@@ -567,113 +493,14 @@ class WidgetFactory {
     Map? onTapOutsideData,
     Map? onEditingCompleteData,
   }) {
-    final settings =
-        PM.getUserSettings(pluginName).isEmpty
-            ? PM.getDefaultSettings(pluginName)
-            : PM.getUserSettings(pluginName);
-    final defaultValue = settings[id] ?? '';
-    final controller = TextEditingController(text: defaultValue as String);
-    final focusNode = FocusNode();
-    void Function(void Function())? _setState;
-    void resetField(methodData) {
-      if (controller.value.text != defaultValue) {
-        _method(
-          pluginName: pluginName,
-          methodData: methodData,
-          id: id,
-          label: label,
-          newValue: defaultValue,
-          context: context,
-          setState: _setState,
-          notifier: controller,
-        );
-      }
-    }
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        _setState = setState;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _resetFieldButton(
-              () => resetField(onSubmittedData),
-              controller.text != defaultValue,
-            ),
-            Expanded(
-              child: Align(
-                alignment:
-                    isLargeScreen()
-                        ? Alignment.centerLeft
-                        : Alignment.centerRight,
-                child: TextField(
-                  decoration:
-                      !isLargeScreen()
-                          ? InputDecoration(
-                            label: Text(label),
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          )
-                          : const InputDecoration(),
-                  focusNode: focusNode,
-                  controller: controller,
-                  onEditingComplete: () {
-                    _method(
-                      pluginName: pluginName,
-                      methodData: onEditingCompleteData,
-                      id: id,
-                      label: label,
-                      newValue: controller.text,
-                      context: context,
-                      setState: _setState,
-                      notifier: controller,
-                    );
-                    focusNode.unfocus();
-                  },
-                  onChanged:
-                      (newValue) => _method(
-                        pluginName: pluginName,
-                        methodData: onChangedData,
-                        id: id,
-                        label: label,
-                        newValue: controller.text,
-                        context: context,
-                        setState: _setState,
-                        notifier: controller,
-                      ),
-                  onTapOutside: (event) {
-                    _method(
-                      pluginName: pluginName,
-                      methodData: onTapOutsideData,
-                      id: id,
-                      label: label,
-                      newValue: controller.text,
-                      context: context,
-                      setState: _setState,
-                      notifier: controller,
-                    );
-                    focusNode.unfocus();
-                  },
-                  onSubmitted: (newValue) {
-                    _method(
-                      pluginName: pluginName,
-                      methodData: onSubmittedData,
-                      id: id,
-                      label: label,
-                      newValue: controller.text,
-                      context: context,
-                      setState: _setState,
-                      notifier: controller,
-                    );
-                    focusNode.unfocus();
-                  },
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    return _SettingsTextField(
+      pluginName: pluginName,
+      id: id,
+      label: label,
+      onChangedData: onChangedData,
+      onSubmittedData: onSubmittedData,
+      onTapOutsideData: onTapOutsideData,
+      onEditingCompleteData: onEditingCompleteData,
     );
   }
 
@@ -735,17 +562,20 @@ class WidgetFactory {
         PM.getUserSettings(pluginName).isEmpty
             ? PM.getDefaultSettings(pluginName)
             : PM.getUserSettings(pluginName);
-    final defaultValue = settings[id];
-    final controller = TextEditingController(text: defaultValue as String);
+    // R6 fix: Safe cast with fallback instead of unsafe `as String`
+    final defaultValue = settings[id]?.toString() ?? '';
+    final controller = TextEditingController(text: defaultValue);
     void Function(void Function())? _setState;
+    // R15 fix: Read current default value at reset time instead of capturing stale value
     void resetField() {
-      if (controller.value.text != defaultValue) {
+      final currentDefault = PM.getDefaultSettings(pluginName)[id]?.toString() ?? '';
+      if (controller.value.text != currentDefault) {
         _method(
           pluginName: pluginName,
           methodData: methodData,
           id: id,
           label: label,
-          newValue: defaultValue,
+          newValue: currentDefault,
           context: context,
           setState: _setState,
           notifier: controller,
@@ -1086,6 +916,290 @@ class WidgetFactory {
             null,
             borderRadius: radius[index] ?? BorderRadius.zero,
           ),
+    );
+  }
+}
+
+// R10/R11 fix: StatefulWidget to properly dispose TextEditingController and FocusNode
+class _SettingsTextField extends StatefulWidget {
+  const _SettingsTextField({
+    required this.pluginName,
+    required this.id,
+    required this.label,
+    this.onChangedData,
+    this.onSubmittedData,
+    this.onTapOutsideData,
+    this.onEditingCompleteData,
+  });
+  final String pluginName;
+  final String id;
+  final String label;
+  final Map? onChangedData;
+  final Map? onSubmittedData;
+  final Map? onTapOutsideData;
+  final Map? onEditingCompleteData;
+
+  @override
+  State<_SettingsTextField> createState() => _SettingsTextFieldState();
+}
+
+class _SettingsTextFieldState extends State<_SettingsTextField> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+  void Function(void Function())? _setState;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings =
+        PM.getUserSettings(widget.pluginName).isEmpty
+            ? PM.getDefaultSettings(widget.pluginName)
+            : PM.getUserSettings(widget.pluginName);
+    final defaultValue = settings[widget.id]?.toString() ?? '';
+    _controller = TextEditingController(text: defaultValue);
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    // R10 fix: Dispose TextEditingController and FocusNode
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _resetField(methodData) {
+    final settings =
+        PM.getUserSettings(widget.pluginName).isEmpty
+            ? PM.getDefaultSettings(widget.pluginName)
+            : PM.getUserSettings(widget.pluginName);
+    final defaultValue = settings[widget.id]?.toString() ?? '';
+    if (_controller.value.text != defaultValue) {
+      WidgetFactory._method(
+        pluginName: widget.pluginName,
+        methodData: methodData,
+        id: widget.id,
+        label: widget.label,
+        newValue: defaultValue,
+        context: context,
+        setState: _setState,
+        notifier: _controller,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        _setState = setState;
+        final settings =
+            PM.getUserSettings(widget.pluginName).isEmpty
+                ? PM.getDefaultSettings(widget.pluginName)
+                : PM.getUserSettings(widget.pluginName);
+        final defaultValue = settings[widget.id]?.toString() ?? '';
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            WidgetFactory._resetFieldButton(
+              () => _resetField(widget.onSubmittedData),
+              _controller.text != defaultValue,
+            ),
+            Expanded(
+              child: Align(
+                alignment:
+                    isLargeScreen()
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                child: TextField(
+                  decoration:
+                      !isLargeScreen()
+                          ? InputDecoration(
+                            label: Text(widget.label),
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          )
+                          : const InputDecoration(),
+                  focusNode: _focusNode,
+                  controller: _controller,
+                  onEditingComplete: () {
+                    WidgetFactory._method(
+                      pluginName: widget.pluginName,
+                      methodData: widget.onEditingCompleteData,
+                      id: widget.id,
+                      label: widget.label,
+                      newValue: _controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: _controller,
+                    );
+                    _focusNode.unfocus();
+                  },
+                  onChanged:
+                      (newValue) => WidgetFactory._method(
+                        pluginName: widget.pluginName,
+                        methodData: widget.onChangedData,
+                        id: widget.id,
+                        label: widget.label,
+                        newValue: _controller.text,
+                        context: context,
+                        setState: _setState,
+                        notifier: _controller,
+                      ),
+                  onTapOutside: (event) {
+                    WidgetFactory._method(
+                      pluginName: widget.pluginName,
+                      methodData: widget.onTapOutsideData,
+                      id: widget.id,
+                      label: widget.label,
+                      newValue: _controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: _controller,
+                    );
+                    _focusNode.unfocus();
+                  },
+                  onSubmitted: (newValue) {
+                    WidgetFactory._method(
+                      pluginName: widget.pluginName,
+                      methodData: widget.onSubmittedData,
+                      id: widget.id,
+                      label: widget.label,
+                      newValue: _controller.text,
+                      context: context,
+                      setState: _setState,
+                      notifier: _controller,
+                    );
+                    _focusNode.unfocus();
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// R11 fix: StatefulWidget to properly dispose ValueNotifier
+class _SettingsSwitch extends StatefulWidget {
+  const _SettingsSwitch({
+    required this.pluginName,
+    required this.id,
+    required this.label,
+    this.methodData,
+  });
+  final String pluginName;
+  final String id;
+  final String label;
+  final Map? methodData;
+
+  @override
+  State<_SettingsSwitch> createState() => _SettingsSwitchState();
+}
+
+class _SettingsSwitchState extends State<_SettingsSwitch> {
+  late ValueNotifier<bool> _switchNotifier;
+  void Function(void Function())? _setState;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings =
+        PM.getUserSettings(widget.pluginName).isEmpty
+            ? PM.getDefaultSettings(widget.pluginName)
+            : PM.getUserSettings(widget.pluginName);
+    final defaultValue =
+        settings[widget.id] is String
+            ? settings[widget.id] == 'true'
+            : (settings[widget.id] ?? false);
+    _switchNotifier = ValueNotifier(defaultValue);
+  }
+
+  @override
+  void dispose() {
+    // R11 fix: Dispose ValueNotifier
+    _switchNotifier.dispose();
+    super.dispose();
+  }
+
+  void _resetField() {
+    final currentDefault =
+        PM.getDefaultSettings(widget.pluginName)[widget.id] is String
+            ? PM.getDefaultSettings(widget.pluginName)[widget.id] == 'true'
+            : (PM.getDefaultSettings(widget.pluginName)[widget.id] ?? false);
+    if (_switchNotifier.value != currentDefault) {
+      WidgetFactory._method(
+        pluginName: widget.pluginName,
+        methodData: widget.methodData,
+        id: widget.id,
+        label: widget.label,
+        newValue: currentDefault,
+        context: context,
+        setState: _setState,
+        notifier: _switchNotifier,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final thumbIcon =
+        WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
+          WidgetState.selected: Icon(
+            FluentIcons.checkmark_24_filled,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          WidgetState.any: Icon(
+            FluentIcons.dismiss_24_filled,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        });
+    return StatefulBuilder(
+      builder: (context, setState) {
+        _setState = setState;
+        return ValueListenableBuilder(
+          valueListenable: _switchNotifier,
+          builder: (context, value, __) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isLargeScreen())
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsetsGeometry.directional(end: 10),
+                    child: Text(softWrap: true, widget.label),
+                  ),
+                ),
+              WidgetFactory._resetFieldButton(_resetField, value != _switchNotifier.value),
+              Expanded(
+                child: Align(
+                  alignment:
+                      isLargeScreen()
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
+                  child: Switch(
+                    thumbIcon: thumbIcon,
+                    value: value,
+                    onChanged:
+                        (newValue) => WidgetFactory._method(
+                          pluginName: widget.pluginName,
+                          methodData: widget.methodData,
+                          id: widget.id,
+                          label: widget.label,
+                          newValue: newValue,
+                          context: context,
+                          setState: _setState,
+                          notifier: _switchNotifier,
+                        ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
