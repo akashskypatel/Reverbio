@@ -28,12 +28,11 @@ class Spinner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        value: value,
-        valueColor: AlwaysStoppedAnimation<Color>(
-          color ?? Theme.of(context).colorScheme.primary,
-        ),
+    // R1 fix: Removed unconditional Center wrapper to prevent layout issues
+    return CircularProgressIndicator(
+      value: value,
+      valueColor: AlwaysStoppedAnimation<Color>(
+        color ?? Theme.of(context).colorScheme.primary,
       ),
     );
   }

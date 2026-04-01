@@ -29,11 +29,13 @@ class PlaylistHeader extends StatelessWidget {
     this.songsLength, {
     super.key,
     this.customWidget,
+    this.albumsLength,
   });
 
   final Widget image;
   final String title;
   final int songsLength;
+  final int? albumsLength;
   final Widget? customWidget;
 
   @override
@@ -41,40 +43,83 @@ class PlaylistHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    List<Widget> _widgetList() {
+    
+    // R1/R2 fix: Build subtitle with proper separator
+    String _buildSubtitle() {
+      if (albumsLength != null && albumsLength! > 0) {
+        return '$songsLength ${context.l10n!.songs} • $albumsLength ${context.l10n!.albums}'.toUpperCase();
+      }
+      return '$songsLength ${context.l10n!.songs}'.toUpperCase();
+    }
+    
+    // R1 fix: Separate widget builders for Row and Column to avoid spacer issues
+    List<Widget> _buildRowWidgets() {
       return [
         ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
         const SizedBox(width: 16),
         Flexible(
-          child:
-              customWidget == null
-                  ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$songsLength ${context.l10n!.songs}'.toUpperCase(),
-                        style: textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  )
-                  : customWidget ?? const SizedBox.shrink(),
+          child: customWidget == null
+              ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _buildSubtitle(),
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              )
+              : customWidget ?? const SizedBox.shrink(),
         ),
+      ];
+    }
+    
+    List<Widget> _buildColumnWidgets() {
+      return [
+        ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
+        const SizedBox(height: 16),
+        customWidget == null
+            ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _buildSubtitle(),
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            )
+            : customWidget ?? const SizedBox.shrink(),
       ];
     }
 
@@ -85,12 +130,12 @@ class PlaylistHeader extends StatelessWidget {
               ? Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
-                children: _widgetList(),
+                children: _buildRowWidgets(),
               )
               : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
-                children: _widgetList(),
+                children: _buildColumnWidgets(),
               ),
     );
   }

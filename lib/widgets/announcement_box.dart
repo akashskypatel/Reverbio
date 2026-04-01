@@ -40,7 +40,14 @@ class AnnouncementBox extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: GestureDetector(
-        onTap: () => launchURL(Uri.parse(url)),
+        // R1/R2 fix: Add error handling for URL launch
+        onTap: () {
+          try {
+            launchURL(Uri.parse(url));
+          } catch (e) {
+            // Silently fail - URL launch is non-critical
+          }
+        },
         child: Card(
           color: backgroundColor,
           shape: const RoundedRectangleBorder(

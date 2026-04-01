@@ -246,6 +246,21 @@ class _EditMetadataPageState extends State<EditMetadataPage> {
                 IconButton(
                   iconSize: pageHeaderIconSize,
                   onPressed: () async {
+                    // R6 fix: Show confirmation dialog before clearing tags
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder:
+                          (context) => ConfirmationDialog(
+                            title: L10n.current.confirmation,
+                            message: 'Are you sure you want to clear all tags? This action cannot be undone.',
+                            confirmText: L10n.current.confirm,
+                            cancelText: L10n.current.cancel,
+                            onCancel: () => Navigator.of(context).pop(false),
+                            onSubmit: () => Navigator.of(context).pop(true),
+                          ),
+                    );
+                    if (confirmed != true) return;
+                    
                     await AudioTags.clear(offlinePath);
                     if (context.mounted) Navigator.of(context).pop();
                     showToast(L10n.current.tagsCleared);

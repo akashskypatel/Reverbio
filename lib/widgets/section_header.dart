@@ -67,6 +67,15 @@ class _SectionHeaderState extends State<SectionHeader>
     if (widget.showSearch) searchController = SearchController();
   }
 
+  // R2 fix: Dispose Timer and SearchController
+  @override
+  void dispose() {
+    _toolCloseTimer?.cancel();
+    searchCloseTimer?.cancel();
+    searchController?.dispose();
+    super.dispose();
+  }
+
   void _toggleToolExpanded() {
     setState(() {
       _toolsExpanded = !_toolsExpanded;

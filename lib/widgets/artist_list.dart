@@ -21,6 +21,7 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
@@ -50,11 +51,13 @@ class _ArtistListState extends State<ArtistList> {
     _theme = Theme.of(context);
     final maxWidth = MediaQuery.of(context).size.width * .15;
     final maxHeight = MediaQuery.of(context).size.height;
-    final remWidth =
+    // R3 fix: Clamp remWidth to prevent negative values on small screens
+    final remWidth = (
         MediaQuery.of(context).size.width -
         (maxWidth / 2) -
         listHeaderIconSize -
-        (isOpen ? maxWidth : 0);
+        (isOpen ? maxWidth : 0)
+    ).clamp(0.0, double.infinity);
     return ListenableBuilder(
       listenable: widget.notifiableArtistList,
       builder: (context, child) {
@@ -141,7 +144,11 @@ class _ArtistListState extends State<ArtistList> {
               ...widget.notifiableArtistList.map(
                 (e) => ListTile(
                   dense: true,
-                  onTap: () {},
+                  // R4 fix: Implement artist navigation
+                  onTap: () {
+                    final artistData = e is Map ? e : {'name': e};
+                    context.push('/artist', extra: artistData);
+                  },
                   title: Padding(
                     padding: const EdgeInsets.only(left: 10),
                     child: Text(
@@ -165,7 +172,11 @@ class _ArtistListState extends State<ArtistList> {
         final e = widget.notifiableArtistList[index];
         return ListTile(
           dense: true,
-          onTap: () {},
+          // R4 fix: Implement artist navigation
+          onTap: () {
+            final artistData = e is Map ? e : {'name': e};
+            context.push('/artist', extra: artistData);
+          },
           title: Padding(
             padding: const EdgeInsets.only(left: 10),
             child: Text(

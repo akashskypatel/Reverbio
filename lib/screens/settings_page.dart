@@ -918,7 +918,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   snapshot.data == null)
                 return const Icon(FluentIcons.error_circle_24_filled);
               else {
-                final devices =
+                // R1 fix: Build single merged list to avoid index mismatch
+                final deviceData =
                     snapshot.data!
                         .where(
                           (e) =>
@@ -926,51 +927,53 @@ class _SettingsPageState extends State<SettingsPage> {
                                       false)
                                   as bool,
                         )
-                        .toList();
-                final deviceData =
-                    devices.map((e) {
-                        final category = getAudioDeviceCategory(e['category']);
-                        return {
-                          ...(e as Map),
-                          'icon': category['icon'],
-                          'order': category['order'],
-                          'localization': category['localization'],
-                        };
-                      }).toList()
+                        .map((e) {
+                          final category = getAudioDeviceCategory(e['category']);
+                          return {
+                            ...(e as Map),
+                            'icon': category['icon'],
+                            'order': category['order'],
+                            'localization': category['localization'],
+                          };
+                        })
+                        .toList()
                       ..sort((a, b) => a['order'].compareTo(b['order']));
-                devices.add({
+                
+                // Add "auto" option to the merged list
+                deviceData.add({
                   'id': null,
                   'name': 'auto',
                   'type': null,
                   'address': null,
                   'category': null,
                 });
+                
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
                   padding: commonListViewBottomPadding,
-                  itemCount: devices.length,
+                  itemCount: deviceData.length,
                   itemBuilder: (context, index) {
                     final isSelected =
-                        audioDevice.value?['id'] == devices[index]['id'];
+                        audioDevice.value?['id'] == deviceData[index]['id'];
                     final borderRadius = getItemBorderRadius(
                       index,
-                      devices.length,
+                      deviceData.length,
                     );
                     return CustomBar(
                       tileName:
-                          devices[index]['name'] == 'auto'
+                          deviceData[index]['name'] == 'auto'
                               ? context.l10n!.selectAutomatically
                               : '${deviceData[index]['name']} - ${deviceData[index]['localization']} (${androidDeviceTypes[deviceData[index]['type']]?['name']})',
                       tileIcon:
-                          devices[index]['name'] == 'auto'
+                          deviceData[index]['name'] == 'auto'
                               ? FluentIcons.flash_auto_24_filled
                               : FluentIcons.speaker_box_24_filled,
                       onTap: () async {
                         if (context.mounted)
                           setState(() {
-                            audioDevice.value = devices[index];
-                            audioHandler.setAudioDevice(devices[index]);
+                            audioDevice.value = deviceData[index] as Map<String, dynamic>?;
+                            audioHandler.setAudioDevice(deviceData[index] as Map<String, dynamic>?);
                           });
                       },
                       backgroundColor:

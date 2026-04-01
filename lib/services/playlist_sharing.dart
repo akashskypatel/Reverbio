@@ -21,33 +21,51 @@
 
 import 'dart:convert';
 
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/formatter.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class PlaylistSharingService {
   // R3 fix: Include id and primary-type in compact playlist
   static Map createCompactPlaylist(Map fullPlaylist) {
+    // R4 fix: Add null check for playlist['list']
+    final list = fullPlaylist['list'] as List<dynamic>?;
+    if (list == null) {
+      return {
+        'id': fullPlaylist['id'] ?? '',
+        'primary-type': 'playlist',
+        'title': fullPlaylist['title'],
+        if (fullPlaylist['image'] != null) 'image': fullPlaylist['image'],
+        'source': 'user-created',
+        'list': [],
+      };
+    }
+    
     // R2 fix: Filter out null ytid values
-    final songYtids = fullPlaylist['list']
+    // R6 fix: Handle binary image data
+    final songYtids = list
         .map((song) => song['ytid'] as String?)
         .where((ytid) => ytid != null)
         .toList();
     
+    final image = fullPlaylist['image'];
+    final safeImage = image is List ? null : image;  // R6 fix: Skip binary image data
+
     return {
       'id': fullPlaylist['id'] ?? '',  // R3 fix: Add id with empty fallback
       'primary-type': 'playlist',  // R3 fix: Add primary-type
       'title': fullPlaylist['title'],
-      if (fullPlaylist['image'] != null) 'image': fullPlaylist['image'],
+      if (safeImage != null) 'image': safeImage,  // R6 fix: Only include safe image data
       'source': 'user-created',
       'list': songYtids,  // R2 fix: Now guaranteed non-null values
     };
   }
 
   // R1 fix: Close YoutubeExplode instance in finally block
+  // R5 fix: Use proxy-aware YouTube client
   static Future<Map> expandCompactPlaylist(Map compactPlaylist) async {
     final List<dynamic> songIds = compactPlaylist['list'];
-    final _yt = YoutubeExplode();
+    final _yt = px.proxyYoutubeClient;  // R5 fix: Use proxy-aware client
     try {
       final expandedSongs = await Future.wait(
         songIds.map((ytid) async {
@@ -67,7 +85,7 @@ class PlaylistSharingService {
       };
     } finally {
       // R1 fix: Close YoutubeExplode to prevent resource leak
-      _yt.close();
+      // Note: px.proxyYoutubeClient is managed by ProxyManager, don't close it
     }
   }
 

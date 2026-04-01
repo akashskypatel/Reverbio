@@ -45,8 +45,6 @@ import 'package:reverbio/widgets/playback_icon_button.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
-final _lyricsController = FlipCardController();
-
 class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({super.key});
 
@@ -55,6 +53,9 @@ class NowPlayingPage extends StatefulWidget {
 }
 
 class _NowPlayingPageState extends State<NowPlayingPage> {
+  // R6 fix: Move _lyricsController from global scope to State
+  final _lyricsController = FlipCardController();
+  
   late ThemeData _theme;
   late bool _isLargeScreen;
   // R3 fix: Move ValueNotifiers from build() to State fields
@@ -84,6 +85,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     // R3 fix: Dispose ValueNotifiers
     _songLikeStatus.dispose();
     _songOfflineStatus.dispose();
+    // R6 fix: _lyricsController doesn't need disposal (external package controller)
     super.dispose();
   }
 
@@ -134,6 +136,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                   size: size,
                   adjustedIconSize: adjustedIconSize,
                   adjustedMiniIconSize: adjustedMiniIconSize,
+                  lyricsController: _lyricsController,
                 )
                 : _MobileLayout(
                   mediaItem: mediaItem,
@@ -146,6 +149,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     _songOfflineStatus,
                     adjustedMiniIconSize,
                   ),
+                  lyricsController: _lyricsController,
                 );
           }
         },
@@ -603,11 +607,13 @@ class _DesktopLayout extends StatelessWidget {
     required this.size,
     required this.adjustedIconSize,
     required this.adjustedMiniIconSize,
+    required this.lyricsController,
   });
   final MediaItem mediaItem;
   final Size size;
   final double adjustedIconSize;
   final double adjustedMiniIconSize;
+  final FlipCardController lyricsController;
 
   @override
   Widget build(BuildContext context) {
@@ -622,7 +628,7 @@ class _DesktopLayout extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               const SizedBox(height: 5),
-              NowPlayingArtwork(size: size, mediaItem: mediaItem),
+              NowPlayingArtwork(mediaItem: mediaItem, lyricsController: lyricsController),
               const SizedBox(height: 5),
               if (!(mediaItem.extras?['isLive'] ?? false))
                 NowPlayingControls(
@@ -652,6 +658,7 @@ class _MobileLayout extends StatelessWidget {
     required this.adjustedMiniIconSize,
     required this.isLargeScreen,
     required this.actions,
+    required this.lyricsController,
   });
   final MediaItem mediaItem;
   final Size size;
@@ -659,6 +666,7 @@ class _MobileLayout extends StatelessWidget {
   final double adjustedMiniIconSize;
   final bool isLargeScreen;
   final List<Widget> actions;
+  final FlipCardController lyricsController;
 
   @override
   Widget build(BuildContext context) {
@@ -667,7 +675,7 @@ class _MobileLayout extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         const SizedBox(height: 10),
-        NowPlayingArtwork(size: size, mediaItem: mediaItem),
+        NowPlayingArtwork(mediaItem: mediaItem, lyricsController: lyricsController),
         const SizedBox(height: 10),
         if (!(mediaItem.extras?['isLive'] ?? false))
           NowPlayingControls(
@@ -695,22 +703,37 @@ class _MobileLayout extends StatelessWidget {
   }
 }
 
-class NowPlayingArtwork extends StatelessWidget {
+class NowPlayingArtwork extends StatefulWidget {
   const NowPlayingArtwork({
     super.key,
-    required this.size,
     required this.mediaItem,
+    required this.lyricsController,
   });
-  final Size size;
   final MediaItem mediaItem;
+  final FlipCardController lyricsController;
+
+  @override
+  State<NowPlayingArtwork> createState() => _NowPlayingArtworkState();
+}
+
+class _NowPlayingArtworkState extends State<NowPlayingArtwork> {
+  // R5 fix: Cache lyrics Future to prevent re-fetching on every rebuild
+  late final Future<String?> _lyricsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _lyricsFuture = getSongLyrics(widget.mediaItem);
+  }
 
   @override
   Widget build(BuildContext context) {
     const _padding = 50;
     const _radius = 17.0;
-    final size = MediaQuery.sizeOf(context);
-    final screenWidth = size.width;
-    final screenHeight = size.height;
+    // R4 fix: Use local variable name that doesn't shadow constructor parameter
+    final screenSize = MediaQuery.sizeOf(context);
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
     final isLandscape = screenWidth > screenHeight;
     final imageSize =
         isLandscape
@@ -723,14 +746,14 @@ class NowPlayingArtwork extends StatelessWidget {
     return FlipCard(
       rotateSide: RotateSide.right,
       onTapFlipping: !offlineMode.value,
-      controller: _lyricsController,
+      controller: widget.lyricsController,
       frontWidget: BaseCard(
         icon: FluentIcons.music_note_2_24_filled,
         size: imageSize,
         paddingValue: 0,
         loadingWidget: const Spinner(),
         inputData: audioHandler.songValueNotifier.value?.song,
-        onPressed: _lyricsController.flipcard,
+        onPressed: widget.lyricsController.flipcard,
       ),
       backWidget: Container(
         width: imageSize,
@@ -739,8 +762,9 @@ class NowPlayingArtwork extends StatelessWidget {
           color: Theme.of(context).colorScheme.secondaryContainer,
           borderRadius: BorderRadius.circular(_radius),
         ),
+        // R5 fix: Use cached Future instead of creating new one on every build
         child: FutureBuilder<String?>(
-          future: getSongLyrics(audioHandler.songValueNotifier.value?.song),
+          future: _lyricsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Spinner();

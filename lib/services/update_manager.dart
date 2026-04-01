@@ -101,7 +101,7 @@ Future<void> checkAppUpdates() async {
 
     if (releasesRequest.statusCode != 200) {
       logger.log(
-        'Fetch update API (releasesUrl) call returned status code ${response.statusCode}',
+        'Fetch update API (releasesUrl) call returned status code ${releasesRequest.statusCode}',
         null,
         null,
       );
@@ -139,7 +139,8 @@ Future<void> checkAppUpdates() async {
                   maxHeight: MediaQuery.sizeOf(context).height / 2.14,
                 ),
                 child: SingleChildScrollView(
-                  child: AutoFormatText(text: releasesResponse['body']),
+                  // R4 fix: Add null fallback for AutoFormatText.text
+                  child: AutoFormatText(text: releasesResponse['body'] ?? ''),
                 ),
               ),
             ],

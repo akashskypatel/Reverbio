@@ -186,19 +186,21 @@ class WidgetFactory {
               : methodData?['methodName'],
     );
     if (triggerSave) PM.updateUserSetting(pluginName, id, newValue.toString());
-    PM.showPluginMethodResult(
-      context,
-      pluginName: pluginName,
-      message: '${methodData?['methodName']}: $id',
-      result: result,
-    );
-    if (context.mounted)
+    // R2 fix: Check context.mounted before using context
+    if (context.mounted) {
+      PM.showPluginMethodResult(
+        context,
+        pluginName: pluginName,
+        message: '${methodData?['methodName']}: $id',
+        result: result,
+      );
       if (setState != null)
         setState(() {
           notifier?.value = newValue;
         });
       else
         notifier?.value = newValue;
+    }
   };
 
   static final void Function({
@@ -396,17 +398,12 @@ class WidgetFactory {
         leading:
             !isLargeScreen()
                 ? Align(
-                  alignment:
-                      isLargeScreen()
-                          ? Alignment.centerLeft
-                          : Alignment.centerRight,
+                  alignment: Alignment.centerRight,  // R4 fix: Removed contradictory isLargeScreen() check
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (label != null && !isLargeScreen() && isSettings)
+                      if (label != null && isSettings)
                         Expanded(child: Text(softWrap: true, label)),
-                      if (isLargeScreen() && isSettings)
-                        const SizedBox.square(dimension: 40),
                       button,
                     ],
                   ),
@@ -415,17 +412,12 @@ class WidgetFactory {
         trailing:
             isLargeScreen()
                 ? Align(
-                  alignment:
-                      isLargeScreen()
-                          ? Alignment.centerLeft
-                          : Alignment.centerRight,
+                  alignment: Alignment.centerLeft,  // R4 fix: Removed redundant isLargeScreen() check
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (label != null && !isLargeScreen() && isSettings)
+                      if (label != null && isSettings)
                         Expanded(child: Text(softWrap: true, label)),
-                      if (isLargeScreen() && isSettings)
-                        const SizedBox.square(dimension: 40),
                       button,
                     ],
                   ),
@@ -1065,11 +1057,7 @@ class WidgetFactory {
     List<Map<String, dynamic>> widgets,
     BuildContext context,
   ) {
-    final radius = {
-      0: commonCustomBarRadiusFirst,
-      widgets.length - 1: commonCustomBarRadiusLast,
-    };
-
+    // R3 fix: Filter widgets FIRST, then compute border radius
     widgets =
         widgets
             .where(
@@ -1079,6 +1067,12 @@ class WidgetFactory {
               ].contains(pluginWidgets[e['type']]?['context']),
             )
             .toList();
+
+    final radius = {
+      0: commonCustomBarRadiusFirst,
+      if (widgets.isNotEmpty) widgets.length - 1: commonCustomBarRadiusLast,
+    };
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
