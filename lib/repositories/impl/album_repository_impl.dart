@@ -19,21 +19,30 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-// Phase 7 H.7: song.dart is now a pure barrel file
-// All function bodies have been extracted into domain-specific files:
-// - song_state.dart: Module-level state variables
-// - song_metadata.dart: Pure metadata functions
-// - song_likes.dart: Like/unlike functions
-// - song_cache.dart: Cache functions
-// - song_youtube.dart: YouTube functions
-// - song_musicbrainz.dart: MusicBrainz functions
-// - song_offline.dart: Offline functions
+import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/repositories/album_repository.dart';
 
-export 'song_cache.dart';
-export 'song_likes.dart';
-export 'song_metadata.dart';
-export 'song_musicbrainz.dart';
-export 'song_offline.dart';
-// Barrel exports - all existing callers remain unchanged
-export 'song_state.dart';
-export 'song_youtube.dart';
+/// Concrete implementation of [AlbumRepository].
+/// Delegates to existing entity functions in lib/API/entities/album.dart.
+/// This is a thin wrapper that provides a testable seam.
+class AlbumRepositoryImpl implements AlbumRepository {
+  @override
+  Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
+    return getAlbumInfo(album);
+  }
+
+  @override
+  Future<String?> getAlbumCoverArt(Map album) async {
+    return getAlbumCoverArt(album);
+  }
+
+  @override
+  Future<void> updateLikeStatus(Map album, bool add) async {
+    await updateAlbumLikeStatus(album, add);
+  }
+
+  @override
+  void queueAlbumInfoRequest(dynamic album) {
+    queueAlbumInfoRequest(album);
+  }
+}

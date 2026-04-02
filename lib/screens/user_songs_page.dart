@@ -45,7 +45,6 @@ import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -63,7 +62,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
   late ThemeData _theme;
   final _isEditEnabled = ValueNotifier(false);
   late final String _title;
-  late NotifiableList<SongBar> notifiableSongsList = getSongsList(widget.page);
+  late NotifiableList<Map<String, dynamic>> notifiableSongsList = getSongsList(widget.page);
   Future? _syncFuture;
 
   @override
@@ -124,7 +123,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                 page: widget.page,
                 title: getTitle(widget.page),
                 isEditable: value,
-                songBars: notifiableSongsList,
+                songMaps: notifiableSongsList,
               );
             },
           ),
@@ -135,9 +134,9 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   Widget _buildQueueActionsList() {
     return ListenableBuilder(
-      listenable: audioHandler.queueSongBars,
+      listenable: audioHandler.queueSongMaps,
       builder: (context, __) {
-        final value = audioHandler.queueSongBars.length;
+        final value = audioHandler.queueSongMaps.length;
         return Row(
           children: [
             ValueListenableBuilder<AudioServiceRepeatMode>(
@@ -169,7 +168,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       iconSize: pageHeaderIconSize,
                       onPressed: () {
                         final _isSingleSongPlaying =
-                            audioHandler.queueSongBars.length == 1;
+                            audioHandler.queueSongMaps.length == 1;
                         repeatNotifier.value =
                             _isSingleSongPlaying
                                 ? AudioServiceRepeatMode.one
@@ -489,43 +488,43 @@ class _UserSongsPageState extends State<UserSongsPage> {
 
   Future<Iterable<Map<String, dynamic>>> _getArtists() async {
     return notifiableSongsList.completer.future.then((value) async {
-      final songs = value.map((e) => e.song).toList();
+      final songs = value.map((e) => e).toList();
       return getArtistsFromSongs(songs);
     });
   }
 
-  Future<Iterable<SongBar>> _getOfflineSongs() async {
+  Future<Iterable<Map<String, dynamic>>> _getOfflineSongs() async {
     return Future.microtask(() async {
-      if (!context.mounted) return <SongBar>[];
+      if (!context.mounted) return <Map<String, dynamic>>[];
       final offline = userOfflineSongs.map((e) {
         final cached = getCachedSong(e);
         final song =
             isSongValid(cached)
                 ? cached!
                 : <String, dynamic>{'id': e, 'title': null, 'artist': null};
-        return initializeSongBar(song);
+        return song;
       });
-      if (!context.mounted) return <SongBar>[];
-      final device = userDeviceSongs.map(initializeSongBar);
+      if (!context.mounted) return <Map<String, dynamic>>[];
+      final device = userDeviceSongs.map((e) => e);
       return [...offline, ...device];
     });
   }
 
-  Future<Iterable<SongBar>> _getUserLikedSongs() async {
+  Future<Iterable<Map<String, dynamic>>> _getUserLikedSongs() async {
     return Future.microtask(() async {
-      if (!context.mounted) return <SongBar>[];
-      return userLikedSongsList.map(initializeSongBar);
+      if (!context.mounted) return <Map<String, dynamic>>[];
+      return userLikedSongsList.map((e) => e);
     });
   }
 
-  Future<Iterable<SongBar>> _getUserRecentSongs() async {
+  Future<Iterable<Map<String, dynamic>>> _getUserRecentSongs() async {
     return Future.microtask(() async {
-      if (!context.mounted) return <SongBar>[];
-      return userRecentlyPlayed.map(initializeSongBar);
+      if (!context.mounted) return <Map<String, dynamic>>[];
+      return userRecentlyPlayed.map((e) => e);
     });
   }
 
-  NotifiableList<SongBar> getSongsList(String page) {
+  NotifiableList<Map<String, dynamic>> getSongsList(String page) {
     switch (page) {
       case 'liked':
         return NotifiableList.fromAsync(_getUserLikedSongs());
@@ -535,7 +534,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
         return NotifiableList.fromAsync(_getUserRecentSongs());
       case 'queue':
       default:
-        return audioHandler.queueSongBars;
+        return audioHandler.queueSongMaps;
     }
   }
 
@@ -557,7 +556,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                   ValueListenableBuilder(
                     valueListenable: audioHandler.songValueNotifier,
                     builder: (context, value, _) {
-                      final song = value?.song;
+                      final song = value;
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,

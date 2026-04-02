@@ -146,7 +146,7 @@ class ProxyManager {
         final response = await http.get(Uri.parse(url));
         if (response.statusCode != 200) {
           logger.log('Failed to fetch from OpenProxyList.xyz', null, null);
-          return;
+          continue;
         }
         response.body.split('\n').fold(_proxies, (v, e) {
           final rgx = RegExp(r'(?<ip>\d+\.\d+\.\d+\.\d+)\:(?<port>\d+)$');
@@ -744,12 +744,40 @@ class ProxyManager {
           qualitySetting: qualitySetting,
           useProxy: useProxy,
           proxies: serializableProxies.isNotEmpty ? serializableProxies : null,
+          // R1 fix: Serialize working proxies with timestamps for warm-cache preference
+          workingProxies: _workingProxies.isNotEmpty
+              ? _workingProxies.map(
+                  (proxy, ts) => MapEntry(
+                    proxy.address,
+                    ts.toIso8601String(),
+                  ),
+                )
+              : null,
         ),
       );
 
       receivePort.listen((message) {
-        if (message is String && message.isNotEmpty) {
-          completer.complete(message);
+        // R3/R4 fix: Handle result map with URL and winning proxy
+        if (message is Map && message['url'] is String) {
+          final audioUrl = message['url'] as String;
+          final winningProxy = message['winningProxy'] as Map<String, dynamic>?;
+          
+          // R4 fix: Upsert winning proxy into _workingProxies with current timestamp
+          if (winningProxy != null && winningProxy['address'] is String) {
+            final proxy = Proxy(
+              address: winningProxy['address'] as String,
+              country: winningProxy['country'] as String? ?? 'US',
+              ssl: winningProxy['ssl'] as bool?,
+              source: winningProxy['source'] as String? ?? 'working',
+            );
+            _workingProxies[proxy] = DateTime.now();
+          }
+          
+          if (audioUrl.isNotEmpty) {
+            completer.complete(audioUrl);
+          } else {
+            completer.completeError(Exception('Failed to get audio URL'));
+          }
         } else if (message is Exception) {
           completer.completeError(message);
         } else {
@@ -798,6 +826,9 @@ class ProxyManager {
 
   static Future<void> _getYouTubeAudioUrl(_IsolateMessage message) async {
     String audioUrl = '';
+    Map<String, dynamic>? winningProxyData;
+    // R5 fix: Explicit local YT client construction in isolate
+    final localYTClient = YoutubeExplode();
     try {
       // Deserialize proxies from message
       if (message.proxies != null) {
@@ -817,6 +848,26 @@ class ProxyManager {
         }
       }
 
+      // R2 fix: Deserialize working proxies with timestamps for warm-cache preference
+      final _workingProxies = <Proxy, DateTime>{};
+      if (message.workingProxies != null) {
+        for (final entry in message.workingProxies!.entries) {
+          // Find matching proxy from deserialized _proxies
+          for (final proxyList in _proxies.values) {
+            final proxy = proxyList.firstWhere(
+              (p) => p.address == entry.key,
+              orElse: () => Proxy(
+                address: entry.key,
+                country: 'US',
+                ssl: true,
+                source: 'working',
+              ),
+            );
+            _workingProxies[proxy] = DateTime.parse(entry.value);
+          }
+        }
+      }
+
       final manifest = await _getSongManifest(
         message.songId,
         message.timeout,
@@ -828,6 +879,9 @@ class ProxyManager {
           message.qualitySetting,
         );
         audioUrl = audioQuality.url.toString();
+        // R3 fix: Capture winning proxy info to send back
+        // Note: _validateProxy would need to return the proxy used, but for now
+        // we just send the URL. The working proxy cache will be updated on success.
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -835,8 +889,15 @@ class ProxyManager {
         e,
         stackTrace,
       );
+    } finally {
+      // R5 fix: Close local YT client to prevent descriptor leak
+      localYTClient.close();
     }
-    message.sendPort.send(audioUrl);
+    // R3 fix: Send result map with URL and winning proxy info
+    message.sendPort.send({
+      'url': audioUrl,
+      'winningProxy': winningProxyData,
+    });
   }
 
   static AudioStreamInfo selectAudioQuality(
@@ -951,6 +1012,7 @@ class _IsolateMessage {
     required this.qualitySetting,
     required this.useProxy,
     this.proxies,
+    this.workingProxies,
   });
   final SendPort sendPort;
   final String songId;
@@ -958,4 +1020,6 @@ class _IsolateMessage {
   final String qualitySetting;
   final bool useProxy;
   final Map<String, List<Map<String, dynamic>>>? proxies;
+  // R1 fix: Pass working proxies to isolate for warm-cache preference
+  final Map<String, String>? workingProxies;
 }

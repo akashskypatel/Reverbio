@@ -35,7 +35,6 @@ import 'package:reverbio/widgets/announcement_box.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
 import 'package:reverbio/widgets/notification_log.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -176,14 +175,12 @@ class _HomePageState extends State<HomePage> {
                         snapshot.data!.isEmpty)
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     final _list = NotifiableList.from(
-                      (snapshot.data! as List<Map<String, dynamic>>).map(
-                        initializeSongBar,
-                      ),
+                      snapshot.data! as List<Map<String, dynamic>>,
                     );
                     return SongList(
                       page: 'recommended',
                       title: context.l10n!.recommendedForYou,
-                      songBars: _list,
+                      songMaps: _list,
                       expandedActions: _buildPrevNextButtons(
                         context,
                         (!_dbSongs.isLoading && _dbSongs.hasPreviousPage)

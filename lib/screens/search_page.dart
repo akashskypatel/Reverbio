@@ -42,7 +42,6 @@ import 'package:reverbio/widgets/custom_bar.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/section_header.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -363,10 +362,8 @@ class _SearchPageState extends State<SearchPage> {
           SongList(
             title: entityName[header.toLowerCase()]!['localization']!,
             page: 'search',
-            songBars: NotifiableList<SongBar>.from(
-              (suggestionList['data'] as List<Map<String, dynamic>>).map(
-                initializeSongBar,
-              ),
+            songMaps: NotifiableList<Map<String, dynamic>>.from(
+              suggestionList['data'] as List<Map<String, dynamic>>,
             ),
             expandedActions: _buildPrevNextButtons(header, suggestionList),
           )

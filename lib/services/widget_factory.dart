@@ -1172,7 +1172,13 @@ class _SettingsSwitchState extends State<_SettingsSwitch> {
                     child: Text(softWrap: true, widget.label),
                   ),
                 ),
-              WidgetFactory._resetFieldButton(_resetField, value != _switchNotifier.value),
+              WidgetFactory._resetFieldButton(
+                _resetField,
+                value !=
+                    (PM.getDefaultSettings(widget.pluginName)[widget.id] is String
+                        ? PM.getDefaultSettings(widget.pluginName)[widget.id] == 'true'
+                        : (PM.getDefaultSettings(widget.pluginName)[widget.id] ?? false)),
+              ),
               Expanded(
                 child: Align(
                   alignment:

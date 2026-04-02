@@ -47,7 +47,7 @@ Map<String, dynamic> returnYtSongLayout(Video song) {
     'views': song.engagement.viewCount,
     'isError': false,
     // R1 fix: Pass album from songInfo (may be empty, but at least it's the correct field)
-    'isDerivative': isSongDerivative(
+    'isDerivative': isSongDerivativeFromTitle(
       songInfo['artist'],
       album,  // R1 fix: Use album from songInfo
       songInfo['title'],

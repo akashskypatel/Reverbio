@@ -24,11 +24,12 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
 import 'package:reverbio/services/settings_manager.dart' as settings;
+import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/notifiable_list.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Phase 4.B.2: AudioPlayerService - MediaKit Player wrapper
@@ -51,7 +52,7 @@ class AudioPlayerService {
     AudioProcessingState.idle,
   );
 
-  final NotifiableList<SongBar> _queueSongBars = NotifiableList();
+  final NotifiableList<Map<String, dynamic>> _queueSongMaps = NotifiableList();
 
   final _indexController = StreamController<int>.broadcast();
   final _processingStateController =
@@ -71,11 +72,11 @@ class AudioPlayerService {
   StreamSubscription? _playerStreamAudioDevice;
   StreamSubscription? _playerStreamAudioDevices;
 
-  final ValueNotifier<SongBar?> _songValueNotifier = ValueNotifier(null);
+  final ValueNotifier<Map<String, dynamic>?> _songValueNotifier = ValueNotifier(null);
   ValueNotifier<double> get volumeNotifier => _volumeNotifier;
-  ValueNotifier<SongBar?> get songValueNotifier => _songValueNotifier;
+  ValueNotifier<Map<String, dynamic>?> get songValueNotifier => _songValueNotifier;
 
-  NotifiableList<SongBar> get queueSongBars => _queueSongBars;
+  NotifiableList<Map<String, dynamic>> get queueSongMaps => _queueSongMaps;
   AudioProcessingState get processingState => _processingStateNotifier.value;
   PlayerState get state => _player.state;
   Player get player => _player;
@@ -83,14 +84,14 @@ class AudioPlayerService {
   bool get playing => _player.state.playing;
   bool get hasNext {
     if (songValueNotifier.value == null) return false;
-    final index = _queueSongBars.indexWhere((e) => e.equals(songValueNotifier.value!));
-    if (index == -1 || index >= _queueSongBars.length - 1) return false;
+    final index = _queueSongMaps.indexWhere((e) => checkSong(e, songValueNotifier.value));
+    if (index == -1 || index >= _queueSongMaps.length - 1) return false;
     return true;
   }
 
   bool get hasPrevious {
     if (songValueNotifier.value == null) return false;
-    final index = _queueSongBars.indexWhere((e) => e.equals(songValueNotifier.value!));
+    final index = _queueSongMaps.indexWhere((e) => checkSong(e, songValueNotifier.value));
     if (index == -1 || index <= 0) return false;
     return true;
   }
@@ -234,20 +235,19 @@ class AudioPlayerService {
     return _player.open(media);
   }
 
-  Future<void> prepare(SongBar songBar, {bool setMetadata = true}) async {
+  Future<void> prepare(Map<String, dynamic> song, {bool setMetadata = true}) async {
     if (setMetadata) {
       _updateProcessingState(AudioProcessingState.loading);
-      songValueNotifier.value = songBar;
-      await songBar.prepareSong();
+      songValueNotifier.value = song;
+      // Use entity helpers directly instead of SongBar controller
+      await queueSongInfoRequest(song).completerFuture;
       // R6 fix: Cancel existing subscription before creating new one
       await _mediaItemSubscription?.cancel();
-      if (songBar.mediaItemStream != null) {
-        _mediaItemSubscription = songBar.mediaItemStream!.listen(
-          _mediaItemStreamController.add,
-        );
-      }
-    } else {
-      unawaited(songBar.prepareSong());
+      // Create MediaItem from song Map
+      final mediaItem = mapToMediaItem(song);
+      _mediaItemStreamController.add(mediaItem);
+        } else {
+      unawaited(queueSongInfoRequest(song).completerFuture);
     }
   }
 

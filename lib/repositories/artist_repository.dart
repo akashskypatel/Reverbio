@@ -19,21 +19,15 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-// Phase 7 H.7: song.dart is now a pure barrel file
-// All function bodies have been extracted into domain-specific files:
-// - song_state.dart: Module-level state variables
-// - song_metadata.dart: Pure metadata functions
-// - song_likes.dart: Like/unlike functions
-// - song_cache.dart: Cache functions
-// - song_youtube.dart: YouTube functions
-// - song_musicbrainz.dart: MusicBrainz functions
-// - song_offline.dart: Offline functions
+/// Abstract repository interface for Artist operations.
+/// Provides a testable seam between business logic and storage/network layers.
+abstract class ArtistRepository {
+  /// Get artist info/metadata for an artist.
+  Future<Map<String, dynamic>> getArtistInfo(dynamic artist);
 
-export 'song_cache.dart';
-export 'song_likes.dart';
-export 'song_metadata.dart';
-export 'song_musicbrainz.dart';
-export 'song_offline.dart';
-// Barrel exports - all existing callers remain unchanged
-export 'song_state.dart';
-export 'song_youtube.dart';
+  /// Update the like status of an artist.
+  Future<void> updateLikeStatus(Map artist, bool add);
+
+  /// Search for artists by query string.
+  Future<List<Map<String, dynamic>>> searchArtists(String query);
+}

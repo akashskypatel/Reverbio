@@ -1145,7 +1145,7 @@ Future<Picture?> showImagePickerDialog(
         actions: [
           TextButton(
             // R18 fix: Return null instead of initialValue on cancel
-            onPressed: () => Navigator.of(context).pop(null),
+            onPressed: () => Navigator.of(context).pop(),
             child: Text(L10n.current.cancel.toUpperCase()),
           ),
           TextButton(

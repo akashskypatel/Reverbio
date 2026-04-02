@@ -19,21 +19,35 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-// Phase 7 H.7: song.dart is now a pure barrel file
-// All function bodies have been extracted into domain-specific files:
-// - song_state.dart: Module-level state variables
-// - song_metadata.dart: Pure metadata functions
-// - song_likes.dart: Like/unlike functions
-// - song_cache.dart: Cache functions
-// - song_youtube.dart: YouTube functions
-// - song_musicbrainz.dart: MusicBrainz functions
-// - song_offline.dart: Offline functions
+import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/repositories/song_repository.dart';
 
-export 'song_cache.dart';
-export 'song_likes.dart';
-export 'song_metadata.dart';
-export 'song_musicbrainz.dart';
-export 'song_offline.dart';
-// Barrel exports - all existing callers remain unchanged
-export 'song_state.dart';
-export 'song_youtube.dart';
+/// Concrete implementation of [SongRepository].
+/// Delegates to existing entity functions in lib/API/entities/song.dart.
+/// This is a thin wrapper that provides a testable seam.
+class SongRepositoryImpl implements SongRepository {
+  @override
+  Future<Map<String, dynamic>> getSongInfo(Map song) async {
+    return getSongInfo(song);
+  }
+
+  @override
+  Future<String?> getSongUrl(Map song) async {
+    return getSongUrl(song);
+  }
+
+  @override
+  Future<void> updateLikeStatus(Map song, bool add) async {
+    await updateSongLikeStatus(song, add);
+  }
+
+  @override
+  bool checkSong(dynamic a, dynamic b) {
+    return checkSong(a, b);
+  }
+
+  @override
+  bool isSongValid(Map song) {
+    return isSongValid(song);
+  }
+}

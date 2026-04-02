@@ -710,9 +710,9 @@ class PluginsManager {
 
       // Handle cases where methodName might have empty parentheses
       if (methodName.endsWith('()')) {
-        return methodName.replaceAll('()', "($argsString)");
+        return methodName.replaceAll('()', '($argsString)');
       } else {
-        return "$methodName($argsString)";
+        return '$methodName($argsString)';
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -969,6 +969,8 @@ class PluginsManager {
   static JavascriptRuntime? getJsRuntime(String pluginName) {
     try {
       final jsRuntime = getJavascriptRuntime();
+      // R1 fix: Fire-and-forget setup - runtime can be used even while these complete
+      // enableFetch() and enableHandlePromises() are non-blocking setup calls
       unawaited(jsRuntime.enableFetch());
       unawaited(jsRuntime.enableHandlePromises());
       final script =

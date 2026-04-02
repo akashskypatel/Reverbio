@@ -41,7 +41,7 @@ class SongList extends StatefulWidget {
     required this.page,
     this.title = '',
     this.icon = FluentIcons.music_note_1_24_regular,
-    required this.songBars,
+    required this.songMaps,
     this.expandedActions,
     this.isEditable = false,
   });
@@ -49,7 +49,7 @@ class SongList extends StatefulWidget {
   final IconData icon;
   final String title;
   final String page;
-  final NotifiableList<SongBar> songBars;
+  final NotifiableList<Map<String, dynamic>> songMaps;
   final bool isEditable;
   final List<Widget>? expandedActions;
   @override
@@ -61,6 +61,9 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
   bool isProcessing = true;
   bool loopSongs = false;
   final SearchController _searchController = SearchController();
+
+  // 8.1-A: Track search query to filter visible songs
+  String _searchQuery = '';
 
   final Map<String, bool> _sortState = {
     'title': false,
@@ -85,7 +88,7 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
     _theme = Theme.of(context);
     // R7 fix: Collapse redundant nested ListenableBuilder - single builder listening to both
     return ListenableBuilder(
-      listenable: Listenable.merge([widget.songBars, PM.pluginsData]),
+      listenable: Listenable.merge([widget.songMaps, PM.pluginsData]),
       builder: (context, _) {
         return SliverMainAxisGroup(
           slivers: [
@@ -98,7 +101,7 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
                   expandedActions: widget.expandedActions,
                   title: widget.title,
                   actions: [
-                    if (widget.songBars.hasData) ...[
+                    if (widget.songMaps.hasData) ...[
                       _buildSortSongActionButton(),
                       _buildShuffleSongActionButton(),
                       _buildPlayActionButton(),
@@ -114,15 +117,15 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            if (widget.songBars.isLoading)
+            if (widget.songMaps.isLoading)
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsetsGeometry.all(10),
                   child: Spinner(),
                 ),
               ),
-            if (widget.songBars.hasData) _buildSongList(context),
-            if (!widget.songBars.hasData)
+            if (widget.songMaps.hasData) _buildSongList(context),
+            if (!widget.songMaps.hasData)
               SliverToBoxAdapter(
                 child: Align(
                   child: Padding(
@@ -141,35 +144,38 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
   }
 
   void _searchSongBars(String value) {
-    // R2 fix: Escape user input to prevent regex injection
-    final escapedValue = RegExp.escape(value);
-    final searchRegex = RegExp(escapedValue, caseSensitive: false);
-    for (final songBar in widget.songBars) {
-      // R3 fix: Properly restore visibility - show matching items, hide non-matching
-      if (value.isEmpty) {
-        songBar.setVisibility(true);
-      } else {
-        // Show matching items, hide non-matching
-        final matches = (songBar.title?.contains(searchRegex) ?? false) ||
-            (songBar.artist?.contains(searchRegex) ?? false);
-        songBar.setVisibility(matches);
-      }
+    // 8.1-A: Update search query and trigger rebuild to filter songs
+    setState(() {
+      _searchQuery = value;
+    });
+  }
+
+  // 8.1-A: Filter song maps based on search query
+  List<Map<String, dynamic>> _getFilteredSongMaps() {
+    if (_searchQuery.isEmpty) {
+      return widget.songMaps;
     }
+    
+    final escapedValue = RegExp.escape(_searchQuery);
+    final searchRegex = RegExp(escapedValue, caseSensitive: false);
+    
+    return widget.songMaps.where((songMap) {
+      return songTitle(songMap).contains(searchRegex) ||
+          songArtist(songMap).contains(searchRegex);
+    }).toList();
   }
 
   // R10 fix: Removed unused _buildSearchAnchor, _buildLoadingWidget, and _buildErrorWidget methods
 
   // R6 fix: Operate on copies instead of mutating original song maps
-  dynamic _getSongListData() {
-    final data =
-        widget.songBars.map((e) {
-          // Create a copy of the song map to avoid mutating the original
-          final songCopy = Map<String, dynamic>.from(e.song);
-          songCopy['album'] = songCopy['album'];
-          songCopy['song'] = songCopy['title'];
-          return e;
-        }).toList();
-    return data;
+  List<Map<String, dynamic>> _getSongListData() {
+    return widget.songMaps.map((songMap) {
+      // Create a copy of the song map to avoid mutating the original
+      final songCopy = Map<String, dynamic>.from(songMap);
+      songCopy['album'] = songCopy['album'];
+      songCopy['song'] = songCopy['title'];
+      return songCopy;
+    }).toList();
   }
 
   Widget _buildShuffleSongActionButton() {
@@ -181,8 +187,8 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
       icon: const Icon(FluentIcons.arrow_shuffle_16_filled),
       iconSize: listHeaderIconSize,
       onPressed: () {
-        widget.songBars.shuffledWith(widget.songBars);
-        if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
+        widget.songMaps.shuffledWith(widget.songMaps);
+        if (widget.page == 'queue') updateMediaItemQueue(widget.songMaps);
         if (mounted) setState(() {});
       },
     );
@@ -235,12 +241,12 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
   void _sortMenuItemAction(String value) {
     void sortBy(String key) {
       final reverse = _sortState[key] ?? false;
-      widget.songBars.sort((a, b) {
-        final valueA = a.song[key].toString().toLowerCase();
-        final valueB = b.song[key].toString().toLowerCase();
+      widget.songMaps.sort((a, b) {
+        final valueA = a[key].toString().toLowerCase();
+        final valueB = b[key].toString().toLowerCase();
         return reverse ? valueB.compareTo(valueA) : valueA.compareTo(valueB);
       });
-      if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
+      if (widget.page == 'queue') updateMediaItemQueue(widget.songMaps);
       if (mounted)
         setState(() {
           _sortState[key] = !(_sortState[key] ?? false);
@@ -249,14 +255,14 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
 
     void sortByDownloaded() {
       final reverse = _sortState['downloaded'] ?? false;
-      widget.songBars.sort((a, b) {
-        final valueA = isSongAlreadyOffline(a.song);
-        final valueB = isSongAlreadyOffline(b.song);
+      widget.songMaps.sort((a, b) {
+        final valueA = isSongAlreadyOffline(a);
+        final valueB = isSongAlreadyOffline(b);
         if (valueA && !valueB) return reverse ? 1 : -1;
         if (!valueA && valueB) return reverse ? -1 : 1;
         return 0;
       });
-      if (widget.page == 'queue') updateMediaItemQueue(widget.songBars);
+      if (widget.page == 'queue') updateMediaItemQueue(widget.songMaps);
       if (mounted)
         setState(() {
           _sortState['downloaded'] = !(_sortState['downloaded'] ?? false);
@@ -300,14 +306,14 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
       iconSize: listHeaderIconSize,
       onPressed: () async {
         if (widget.page != 'queue') {
-          addSongsToQueue(widget.songBars);
+          addSongsToQueue(widget.songMaps);
           showToast(context.l10n!.songAdded);
         }
-        if (audioHandler.queueSongBars.isNotEmpty &&
+        if (audioHandler.queueSongMaps.isNotEmpty &&
             audioHandler.songValueNotifier.value == null &&
-            widget.songBars.isNotEmpty) {
+            widget.songMaps.isNotEmpty) {
           await audioHandler.prepare(
-            songBar: widget.songBars.first,
+            song: widget.songMaps.first,
             skipOnError: true,
           );
         }
@@ -320,31 +326,31 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
       tooltip: context.l10n!.play,
       onPressed: () async {
         // R4 fix: Guard against empty song list
-        if (widget.songBars.isEmpty) {
+        if (widget.songMaps.isEmpty) {
           showToast('No songs to play');
           return;
         }
         // R8 fix: Respect current queue position - don't always start from first song
         final currentSong = audioHandler.songValueNotifier.value;
-        final currentIndex = currentSong != null 
-            ? widget.songBars.indexWhere((bar) => bar.song['id'] == currentSong.song['id'])
+        final currentIndex = currentSong != null
+            ? widget.songMaps.indexWhere((song) => song['id'] == currentSong['id'])
             : -1;
-        final songToPlay = currentIndex >= 0 && currentIndex < widget.songBars.length
-            ? widget.songBars[currentIndex]
-            : widget.songBars.first;
-        
+        final songToPlay = currentIndex >= 0 && currentIndex < widget.songMaps.length
+            ? widget.songMaps[currentIndex]
+            : widget.songMaps.first;
+
         if (widget.page != 'queue') {
-          await PM.triggerHook(widget.songBars, 'onPlaylistPlay');
+          await PM.triggerHook(widget.songMaps, 'onPlaylistPlay');
           setQueueToPlaylist({
             'title': widget.title,
-            'list': widget.songBars,
-          }, widget.songBars);
+            'list': widget.songMaps,
+          }, widget.songMaps);
           showToast(
             '${context.l10n!.queueReplacedByPlaylist}: ${widget.title}',
           );
         }
         await audioHandler.prepare(
-          songBar: songToPlay,  // R8 fix: Play current song or first song
+          song: songToPlay,  // R8 fix: Play current song or first song
           play: true,
           skipOnError: true,
         );
@@ -359,11 +365,11 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
 
   // R10 fix: Removed unused _buildLoadingWidget and _buildErrorWidget methods
 
-  void moveSongBar(int oldIndex, int newIndex) {
+  void moveSongMap(int oldIndex, int newIndex) {
     if (oldIndex < 0 ||
         newIndex < 0 ||
-        oldIndex >= widget.songBars.length ||
-        newIndex >= widget.songBars.length) {
+        oldIndex >= widget.songMaps.length ||
+        newIndex >= widget.songMaps.length) {
       logger.log(
         'Invalid indices: oldIndex=$oldIndex, newIndex=$newIndex',
         null,
@@ -374,36 +380,56 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
 
     if (oldIndex == newIndex) return;
 
-    final songBar = widget.songBars.removeAt(oldIndex);
+    final songMap = widget.songMaps.removeAt(oldIndex);
 
-    widget.songBars.insert(newIndex, songBar);
-    songBar.setBorder(
-      borderRadius: getItemBorderRadius(newIndex, widget.songBars.length),
-    );
+    widget.songMaps.insert(newIndex, songMap);
 
     setState(() {});
   }
 
   Widget _buildSongList(BuildContext context) {
+    // 8.1-A: Use filtered song maps for search
+    final filteredSongs = _getFilteredSongMaps();
+    
     return ListenableBuilder(
-      listenable: widget.songBars,
+      listenable: widget.songMaps,
       builder: (context, _) {
+        if (filteredSongs.isEmpty && _searchQuery.isNotEmpty) {
+          // Show no results message
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                context.l10n!.noData,
+                style: TextStyle(
+                  color: _theme.colorScheme.secondary,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          );
+        }
+        
         return SliverReorderableList(
-          itemCount: widget.songBars.length,
+          itemCount: filteredSongs.length,
           itemBuilder: (context, index) {
-            final borderRadius = getItemBorderRadius(
-              index,
-              widget.songBars.length,
-            );
-            final songBar =
-                widget.songBars[index]..setBorder(borderRadius: borderRadius);
+            final songMap = filteredSongs[index];
             // R9 fix: Ensure unique keys using index as fallback
-            final key = ValueKey<String>(
-              songBar.song['id']?.toString().isNotEmpty == true
-                  ? songBar.song['id'].toString()
-                  : '${songBar.song['artist'] ?? ''}-${songBar.song['title'] ?? ''}-$index',
+            final songId = songMap['id']?.toString();
+            final keyString = songId?.isNotEmpty == true
+                ? songId!
+                : '${songMap['artist'] ?? ''}-${songMap['title'] ?? ''}-$index';
+            final key = ValueKey<String>(keyString);
+            
+            // 8.1-B: Calculate border radius for first/last/middle items
+            final borderRadius = getItemBorderRadius(index, filteredSongs.length);
+            
+            // Build SongBar widget from song map with border radius
+            final songBar = SongBar(
+              songMap,
+              key: key,
+              borderRadius: borderRadius,
             );
-            // TODO: possible use value notifier
             return ReorderableDragStartListener(
               key: key,
               enabled: widget.isEditable,
@@ -417,9 +443,16 @@ class _SongListState extends State<SongList> with TickerProviderStateMixin {
                 if (oldIndex < newIndex) {
                   newIndex -= 1;
                 }
-                widget.songBars.rearrange(oldIndex, newIndex);
-                if (widget.page == 'queue')
-                  updateMediaItemQueue(widget.songBars);
+                // Find the actual song in the original list
+                final songMap = filteredSongs[oldIndex];
+                final originalIndex = widget.songMaps.indexWhere(
+                  (s) => s['id'] == songMap['id'],
+                );
+                if (originalIndex >= 0) {
+                  widget.songMaps.rearrange(originalIndex, newIndex);
+                  if (widget.page == 'queue')
+                    updateMediaItemQueue(widget.songMaps);
+                }
               });
           },
         );

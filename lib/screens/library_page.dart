@@ -365,6 +365,11 @@ class _LibraryPageState extends State<LibraryPage> {
         ),
       );
     }
+    // R341 fix: Populate userPlaylistBars for search/filter functionality
+    if (source == 'user-created' || source == 'user-youtube') {
+      userPlaylistBars.clear();
+      userPlaylistBars.addAll(bars);
+    }
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

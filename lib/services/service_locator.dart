@@ -19,6 +19,14 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:reverbio/repositories/album_repository.dart';
+import 'package:reverbio/repositories/artist_repository.dart';
+import 'package:reverbio/repositories/impl/album_repository_impl.dart';
+import 'package:reverbio/repositories/impl/artist_repository_impl.dart';
+import 'package:reverbio/repositories/impl/playlist_repository_impl.dart';
+import 'package:reverbio/repositories/impl/song_repository_impl.dart';
+import 'package:reverbio/repositories/playlist_repository.dart';
+import 'package:reverbio/repositories/song_repository.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/logger_service.dart';
@@ -32,11 +40,23 @@ class ServiceLocator {
   static late HiveService hiveService;
   static late Logger logger;
 
+  // Part F: Repository pattern - abstract interfaces with concrete implementations
+  static late SongRepository songRepository;
+  static late AlbumRepository albumRepository;
+  static late ArtistRepository artistRepository;
+  static late PlaylistRepository playlistRepository;
+
   /// Initialize all services. Must be called before accessing any service.
   static Future<void> initialize() async {
     hiveService = HiveService();
     await HiveService.ensureInitialize();
     logger = Logger();
+
+    // Part F: Initialize repository implementations
+    songRepository = SongRepositoryImpl();
+    albumRepository = AlbumRepositoryImpl();
+    artistRepository = ArtistRepositoryImpl();
+    playlistRepository = PlaylistRepositoryImpl();
   }
 
   /// Set the audio handler after it has been initialized.

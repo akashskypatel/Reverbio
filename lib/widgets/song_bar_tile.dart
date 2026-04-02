@@ -27,10 +27,10 @@ import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
-import 'package:reverbio/utilities/file_tagger.dart';
 
 /// SongBarTile - Pure display widget for song tile layout
 /// Extracted from SongBar as part of barrel split (A2)

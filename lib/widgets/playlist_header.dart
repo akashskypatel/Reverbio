@@ -103,8 +103,7 @@ class PlaylistHeader extends StatelessWidget {
       return [
         ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
         const SizedBox(height: 16),
-        customWidget == null
-            ? Column(
+        if (customWidget == null) Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -128,8 +127,7 @@ class PlaylistHeader extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ],
-            )
-            : customWidget!,  // R3 fix: Non-null asserted (checked above)
+            ) else customWidget!,  // R3 fix: Non-null asserted (checked above)
       ];
     }
 

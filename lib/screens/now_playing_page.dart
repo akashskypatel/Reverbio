@@ -67,10 +67,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     super.initState();
     // R3 fix: Initialize ValueNotifiers once in initState
     _songLikeStatus = ValueNotifier<bool>(
-      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
+      isSongAlreadyLiked(audioHandler.songValueNotifier.value),
     );
     _songOfflineStatus = ValueNotifier<bool>(
-      isSongAlreadyOffline(audioHandler.songValueNotifier.value?.song),
+      isSongAlreadyOffline(audioHandler.songValueNotifier.value),
     );
   }
 
@@ -170,7 +170,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       _buildOfflineButton(songOfflineStatus, _primaryColor, iconSize),
       if (!offlineMode.value)
         _buildAddToPlaylistButton(_primaryColor, iconSize),
-      if (audioHandler.queueSongBars.isNotEmpty &&
+      if (audioHandler.queueSongMaps.isNotEmpty &&
           !isLargeScreen(context: context))
         _buildQueueButton(context, _primaryColor, iconSize),
       if (!offlineMode.value) ...[
@@ -290,10 +290,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         void onPressed(value) {
           if (value) {
             unawaited(
-              removeSongFromOffline(audioHandler.songValueNotifier.value?.song),
+              removeSongFromOffline(audioHandler.songValueNotifier.value),
             );
           } else {
-            makeSongOffline(audioHandler.songValueNotifier.value?.song);
+            makeSongOffline(audioHandler.songValueNotifier.value);
           }
           status.value = !status.value;
         }
@@ -322,7 +322,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     void onPressed() {
       showAddToPlaylistDialog(
         context,
-        audioHandler.songValueNotifier.value?.song,
+        audioHandler.songValueNotifier.value,
       );
     }
 
@@ -356,9 +356,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           shrinkWrap: true,
           physics: const BouncingScrollPhysics(),
           padding: commonListViewBottomPadding,
-          itemCount: audioHandler.queueSongBars.length,
+          itemCount: audioHandler.queueSongMaps.length,
           itemBuilder: (BuildContext context, int index) {
-            return audioHandler.queueSongBars[index];
+            final songMap = audioHandler.queueSongMaps[index];
+            return SongBar(songMap);
           },
         ),
       );
@@ -456,7 +457,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         );
         void onPressed() {
           updateSongLikeStatus(
-            audioHandler.songValueNotifier.value?.song,
+            audioHandler.songValueNotifier.value,
             !status.value,
           );
           status.value = !status.value;
@@ -743,7 +744,7 @@ class _NowPlayingArtworkState extends State<NowPlayingArtwork> {
         size: imageSize,
         paddingValue: 0,
         loadingWidget: const Spinner(),
-        inputData: audioHandler.songValueNotifier.value?.song,
+        inputData: audioHandler.songValueNotifier.value,
         onPressed: widget.lyricsController.flipcard,
       ),
       backWidget: Container(
@@ -800,7 +801,7 @@ class QueueListView extends StatelessWidget {
     final _textColor = Theme.of(context).colorScheme.secondary;
     // R10 fix: Wrap in ListenableBuilder to listen to queue changes
     return ListenableBuilder(
-      listenable: audioHandler.queueSongBars,
+      listenable: audioHandler.queueSongMaps,
       builder: (context, _) {
         return Column(
           children: [
@@ -816,14 +817,20 @@ class QueueListView extends StatelessWidget {
             Flexible(
               fit: FlexFit.tight,
               child:
-                  audioHandler.queueSongBars.isEmpty
+                  audioHandler.queueSongMaps.isEmpty
                       ? Center(
                         child: Text(
                           context.l10n!.noSongsInQueue,
                           style: TextStyle(color: _textColor),
                         ),
                       )
-                      : ListView(children: audioHandler.queueSongBars),
+                      : ListView.builder(
+                          itemCount: audioHandler.queueSongMaps.length,
+                          itemBuilder: (context, index) {
+                            final songMap = audioHandler.queueSongMaps[index];
+                            return SongBar(songMap);
+                          },
+                        ),
             ),
           ],
         );
@@ -891,12 +898,12 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
     return ValueListenableBuilder(
       valueListenable: audioHandler.songValueNotifier,
       builder: (context, value, child) {
-        final song = audioHandler.songValueNotifier.value!.song;
+        final song = audioHandler.songValueNotifier.value!;
         final artistData =
             (song['artist-credit'] ?? [song['artist'] ?? context.l10n!.unknown])
                 as List;
         int index = 1;
-        final artistLabels = artistData.fold(<Widget>[], (v, e) {
+        final artistLabels = artistData.fold<List<Widget>>([], (v, e) {
           v.add(_buildArtistLabel(e is String ? e : e['artist']));
           if (index != artistData.length)
             v.add(
@@ -932,8 +939,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
                       if (audioHandler
                               .audioPlayer
                               .songValueNotifier
-                              .value
-                              ?.song !=
+                              .value !=
                           null)
                         ...artistLabels,
                     ],
@@ -1256,7 +1262,7 @@ class PlayerControlButtons extends StatelessWidget {
               ),
               iconSize: iconSize,
               onPressed: () {
-                final _isSingleSongPlaying = audioHandler.queueSongBars.isEmpty;
+                final _isSingleSongPlaying = audioHandler.queueSongMaps.isEmpty;
                 repeatNotifier.value =
                     _isSingleSongPlaying
                         ? AudioServiceRepeatMode.one

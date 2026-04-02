@@ -58,7 +58,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
     audioHandler.songValueNotifier.addListener(_songListener);
     // R3 fix: Initialize like status once
     _likeStatus = ValueNotifier<bool>(
-      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
+      isSongAlreadyLiked(audioHandler.songValueNotifier.value),
     );
     // R10 fix: Initialize volume notifier
     _volumeNotifier = ValueNotifier<double>(audioHandler.volume);
@@ -131,7 +131,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                 _buildLikeButton(),
                 // R12 fix: Make spacing conditional on reactive values
                 ListenableBuilder(
-                  listenable: audioHandler.queueSongBars,
+                  listenable: audioHandler.queueSongMaps,
                   builder:
                       (context, _) =>
                           audioHandler.hasPrevious
@@ -152,7 +152,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   builder: _buildPlayPauseButton,
                 ),
                 ListenableBuilder(
-                  listenable: audioHandler.queueSongBars,
+                  listenable: audioHandler.queueSongMaps,
                   builder:
                       (context, _) =>
                           audioHandler.hasNext
@@ -182,7 +182,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                 _buildLikeButton(),
                 // R12 fix: Make spacing conditional on reactive values
                 ListenableBuilder(
-                  listenable: audioHandler.queueSongBars,
+                  listenable: audioHandler.queueSongMaps,
                   builder:
                       (context, _) =>
                           audioHandler.hasPrevious
@@ -203,7 +203,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   builder: _buildPlayPauseButton,
                 ),
                 ListenableBuilder(
-                  listenable: audioHandler.queueSongBars,
+                  listenable: audioHandler.queueSongMaps,
                   builder:
                       (context, _) =>
                           audioHandler.hasNext
@@ -232,7 +232,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
         );
         void onPressed() {
           updateSongLikeStatus(
-            audioHandler.songValueNotifier.value?.song,
+            audioHandler.songValueNotifier.value,
             !_likeStatus.value,
           );
           _likeStatus.value = !_likeStatus.value;
@@ -259,7 +259,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
     if (mounted) {
       // Only update like status, not full rebuild
       _likeStatus.value = isSongAlreadyLiked(
-        audioHandler.songValueNotifier.value?.song,
+        audioHandler.songValueNotifier.value,
       );
     }
   }
@@ -319,7 +319,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
   Widget _buildNextButton(BuildContext context) {
     return ListenableBuilder(
-      listenable: audioHandler.queueSongBars,
+      listenable: audioHandler.queueSongMaps,
       builder: (context, __) {
         if (audioHandler.hasNext)
           return IconButton(
@@ -340,7 +340,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
   Widget _buildPreviousButton(BuildContext context) {
     return ListenableBuilder(
-      listenable: audioHandler.queueSongBars,
+      listenable: audioHandler.queueSongMaps,
       builder: (context, __) {
         if (audioHandler.hasPrevious)
           return IconButton(
@@ -366,19 +366,14 @@ class _MiniPlayerState extends State<MiniPlayer> {
         constraints: const BoxConstraints(maxHeight: 55, maxWidth: 55),
         child: ValueListenableBuilder(
           valueListenable: audioHandler.songValueNotifier,
-          builder: (context, songBar, child) {
-            if (songBar == null) return const SizedBox.shrink();
-            final songMetadataNotifier = songBar.songMetadataNotifier;
-            return ValueListenableBuilder(
-              valueListenable: songMetadataNotifier,
-              builder:
-                  (context, song, child) => BaseCard(
-                    icon: FluentIcons.music_note_2_24_filled,
-                    size: 55,
-                    paddingValue: 0,
-                    loadingWidget: const Spinner(),
-                    inputData: song,
-                  ),
+          builder: (context, song, child) {
+            if (song == null) return const SizedBox.shrink();
+            return BaseCard(
+              icon: FluentIcons.music_note_2_24_filled,
+              size: 55,
+              paddingValue: 0,
+              loadingWidget: const Spinner(),
+              inputData: song,
             );
           },
         ),
@@ -390,74 +385,67 @@ class _MiniPlayerState extends State<MiniPlayer> {
     final titleColor = _theme.colorScheme.primary;
     return ValueListenableBuilder(
       valueListenable: audioHandler.songValueNotifier,
-      builder: (context, songBar, child) {
-        if (songBar == null) return const SizedBox.shrink();
-        final songMetadataNotifier = songBar.songMetadataNotifier;
-        return ValueListenableBuilder(
-          valueListenable: songMetadataNotifier,
-          builder: (context, song, child) {
-            // R7 fix: Check isEmpty
-            if ((song as Map).isEmpty) return const SizedBox.shrink();
-            // R8 fix: Use safe cast instead of unsafe `as List`
-            final artistData =
-                (song['artist-credit'] ??
-                        [song['artist'] ?? context.l10n!.unknown])
-                    as List? ??
-                [];
-            int index = 1;
-            final artistLabels = artistData.fold(<Widget>[], (v, e) {
-              v.add(_buildArtistLabel(e is String ? e : e['artist']));
-              if (index != artistData.length)
-                v.add(
-                  Text(
-                    ', ',
-                    style: TextStyle(
-                      color: _theme.colorScheme.secondary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                );
-              index++;
-              return v;
-            });
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: MarqueeWidget(
-                    manualScrollEnabled: false,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          songTitle(song).nullIfEmpty ?? context.l10n!.unknown,
-                          style: TextStyle(
-                            color: titleColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            if (audioHandler
-                                    .audioPlayer
-                                    .songValueNotifier
-                                    .value
-                                    ?.song !=
-                                null)
-                              ...artistLabels,
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+      builder: (context, song, child) {
+        if (song == null) return const SizedBox.shrink();
+        // R7 fix: Check isEmpty
+        if (song.isEmpty) return const SizedBox.shrink();
+        // R8 fix: Use safe cast instead of unsafe `as List`
+        final artistData =
+            (song['artist-credit'] ??
+                    [song['artist'] ?? context.l10n!.unknown])
+                as List? ??
+            [];
+        int index = 1;
+        final artistLabels = artistData.fold<List<Widget>>([], (v, e) {
+          v.add(_buildArtistLabel(e is String ? e : e['artist']));
+          if (index != artistData.length)
+            v.add(
+              Text(
+                ', ',
+                style: TextStyle(
+                  color: _theme.colorScheme.secondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
                 ),
               ),
             );
-          },
+          index++;
+          return v;
+        });
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MarqueeWidget(
+                manualScrollEnabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      songTitle(song).nullIfEmpty ?? context.l10n!.unknown,
+                      style: TextStyle(
+                        color: titleColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        if (audioHandler
+                                .audioPlayer
+                                .songValueNotifier
+                                .value !=
+                            null)
+                          ...artistLabels,
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

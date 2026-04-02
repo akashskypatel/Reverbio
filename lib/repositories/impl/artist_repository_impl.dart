@@ -19,21 +19,25 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-// Phase 7 H.7: song.dart is now a pure barrel file
-// All function bodies have been extracted into domain-specific files:
-// - song_state.dart: Module-level state variables
-// - song_metadata.dart: Pure metadata functions
-// - song_likes.dart: Like/unlike functions
-// - song_cache.dart: Cache functions
-// - song_youtube.dart: YouTube functions
-// - song_musicbrainz.dart: MusicBrainz functions
-// - song_offline.dart: Offline functions
+import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/repositories/artist_repository.dart';
 
-export 'song_cache.dart';
-export 'song_likes.dart';
-export 'song_metadata.dart';
-export 'song_musicbrainz.dart';
-export 'song_offline.dart';
-// Barrel exports - all existing callers remain unchanged
-export 'song_state.dart';
-export 'song_youtube.dart';
+/// Concrete implementation of [ArtistRepository].
+/// Delegates to existing entity functions in lib/API/entities/artist.dart.
+/// This is a thin wrapper that provides a testable seam.
+class ArtistRepositoryImpl implements ArtistRepository {
+  @override
+  Future<Map<String, dynamic>> getArtistInfo(dynamic artist) async {
+    return getArtistInfo(artist);
+  }
+
+  @override
+  Future<void> updateLikeStatus(Map artist, bool add) async {
+    await updateArtistLikeStatus(artist, add);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> searchArtists(String query) async {
+    return searchArtists(query);
+  }
+}

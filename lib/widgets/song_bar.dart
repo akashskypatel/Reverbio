@@ -366,7 +366,7 @@ class _SongBarState extends State<SongBar> {
     widget.controller.addMediaItemToStream(widget.controller.mediaItemNotifier.value!);
     if (widget.song['songUrl'] != null && !widget.controller.isErrorNotifier.value)
       widget.controller.mediaNotifier.value = await audioHandler.buildAudioSource(
-        widget,
+        widget.songData,
       );
   }
 
@@ -418,7 +418,7 @@ class _SongBarState extends State<SongBar> {
                 },
                 onTap: () async {
                   await audioHandler.prepare(
-                    songBar: widget,
+                    song: widget.songData,
                     play: true,
                     skipOnError: true,
                   );
@@ -647,7 +647,7 @@ class _SongBarState extends State<SongBar> {
     dynamic song,
   ) {
     try {
-      final isInQueue = isSongInQueue(widget);
+      final isInQueue = isSongInQueue(widget.songData);
       return [
         PopupMenuItem<String>(
           value: 'like',
@@ -873,10 +873,10 @@ class _SongBarState extends State<SongBar> {
         if (widget.onRemove != null) widget.onRemove!();
         break;
       case 'remove_from_queue':
-        removeSongFromQueue(widget);
+        removeSongFromQueue(widget.songData);
         break;
       case 'add_to_queue':
-        addSongToQueue(widget);
+        addSongToQueue(widget.songData);
         break;
       case 'add_to_playlist':
         showAddToPlaylistDialog(context, song);
@@ -1072,15 +1072,18 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
 }
 
 /// A1 fix: Moved from song.dart to decouple entity from widget layer
+/// R211 fix: Accept optional songFuture to share across rebuilds
 /// R7 fix: Removed context parameter - SongBar no longer stores context
 SongBar initializeSongBar(
   Map<String, dynamic> song, {
   BorderRadius? borderRadius,
+  NotifiableFuture<Map<String, dynamic>>? songFuture,
 }) {
   return SongBar(
     song,
     borderRadius: borderRadius ?? BorderRadius.zero,
     showMusicDuration: true,
+    songFuture: songFuture,
   );
 }
 

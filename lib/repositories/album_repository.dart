@@ -19,21 +19,18 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-// Phase 7 H.7: song.dart is now a pure barrel file
-// All function bodies have been extracted into domain-specific files:
-// - song_state.dart: Module-level state variables
-// - song_metadata.dart: Pure metadata functions
-// - song_likes.dart: Like/unlike functions
-// - song_cache.dart: Cache functions
-// - song_youtube.dart: YouTube functions
-// - song_musicbrainz.dart: MusicBrainz functions
-// - song_offline.dart: Offline functions
+/// Abstract repository interface for Album operations.
+/// Provides a testable seam between business logic and storage/network layers.
+abstract class AlbumRepository {
+  /// Get album info/metadata for an album.
+  Future<Map<String, dynamic>> getAlbumInfo(dynamic album);
 
-export 'song_cache.dart';
-export 'song_likes.dart';
-export 'song_metadata.dart';
-export 'song_musicbrainz.dart';
-export 'song_offline.dart';
-// Barrel exports - all existing callers remain unchanged
-export 'song_state.dart';
-export 'song_youtube.dart';
+  /// Get the cover art URL for an album.
+  Future<String?> getAlbumCoverArt(Map album);
+
+  /// Update the like status of an album.
+  Future<void> updateLikeStatus(Map album, bool add);
+
+  /// Queue an album info request for background fetching.
+  void queueAlbumInfoRequest(dynamic album);
+}

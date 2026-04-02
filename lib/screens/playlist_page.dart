@@ -47,7 +47,6 @@ import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -78,7 +77,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   NotifiableList? likeLength;
   final autoOffline = ValueNotifier<bool>(false);
   // R1 fix: Cache fetch future to prevent re-fetching on every rebuild
-  late Future<NotifiableList<SongBar>> _fetchFuture;
+  late Future<NotifiableList<Map<String, dynamic>>> _fetchFuture;
   // R6 fix: Local copy of playlist data to avoid mutating widget.playlistData
   late Map<String, dynamic> _playlistData;
 
@@ -149,7 +148,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     }
   }
 
-  Future<NotifiableList<SongBar>> fetch() async {
+  Future<NotifiableList<Map<String, dynamic>>> fetch() async {
     // R5 fix: Add null guard for completer
     final completerFuture = _infoRequestFuture.completer?.future;
     if (completerFuture != null && !_infoRequestFuture.isComplete)
@@ -158,7 +157,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     //TODO: restore pagination to large playlists
     final _list = NotifiableList.from(
       ((_playlistData['list'] as List?) ?? []).map((e) {
-        return initializeSongBar(Map<String, dynamic>.from(e));
+        return Map<String, dynamic>.from(e);
       }),
     );
     return _list;
@@ -197,7 +196,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
               builder:
                   (context, value, child) => SongList(
                     page: 'playlist',
-                    songBars: snapshot.data!,
+                    songMaps: snapshot.data!,
                     isEditable: value,
                   ),
             );

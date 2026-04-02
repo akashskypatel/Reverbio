@@ -58,6 +58,10 @@ class SongPreparationController extends ChangeNotifier {
       ValueNotifier(BorderRadius.zero);
   final ValueNotifier<NotifiableFuture<void>?> songPrepareTracker =
       ValueNotifier(null);
+  // E1a fix: Extract like status notifier
+  final ValueNotifier<bool> isLikedNotifier = ValueNotifier(false);
+  // E1b fix: Extract download status notifier (true = downloaded, false = not downloaded)
+  final ValueNotifier<bool> isDownloadedNotifier = ValueNotifier(false);
   final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
   Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
   void addMediaItemToStream(MediaItem item) => _mediaItemStreamController.add(item);
@@ -85,6 +89,8 @@ class SongPreparationController extends ChangeNotifier {
     statusNotifier.dispose();
     borderRadiusNotifier.dispose();
     songPrepareTracker.dispose();
+    isLikedNotifier.dispose();
+    isDownloadedNotifier.dispose();
     _mediaItemStreamController.close();
     super.dispose();
   }
@@ -212,5 +218,87 @@ class SongPreparationController extends ChangeNotifier {
   bool setVisibility(bool show) {
     isVisible.value = show;
     return show;
+  }
+
+  // E1a fix: Toggle like status (moved from _SongBarState.likeItem)
+  void toggleLike() {
+    final isLiked = isLikedNotifier.value;
+    updateSongLikeStatus(song, !isLiked);
+    isLikedNotifier.value = !isLiked;
+    notifyListeners();
+  }
+
+  // E1b fix: Trigger download (moved from _SongBarState._onDownload)
+  Future<void> triggerDownload() async {
+    try {
+      await makeSongOffline(song);
+      isDownloadedNotifier.value = true;
+      notifyListeners();
+    } catch (e, stackTrace) {
+      logger.log('Error in triggerDownload:', e, stackTrace);
+    }
+  }
+
+  // E1b fix: Remove from offline (moved from _SongBarState._onRemoveDownload)
+  Future<void> removeDownload() async {
+    try {
+      await removeSongFromOffline(song);
+      isDownloadedNotifier.value = false;
+      notifyListeners();
+    } catch (e, stackTrace) {
+      logger.log('Error in removeDownload:', e, stackTrace);
+    }
+  }
+
+  // E1c fix: Add to queue (moved from _SongBarState._addToQueue)
+  // Note: Requires E2 (Map refactor) to work properly with queue_manager.dart
+  void addToQueue() {
+    // TODO: Call queue_manager.addSongToQueue(song) after E2 refactor
+    // For now, this is a placeholder
+    notifyListeners();
+  }
+
+  // E1c fix: Remove from queue (moved from _SongBarState._removeFromQueue)
+  // Note: Requires E2 (Map refactor) to work properly with queue_manager.dart
+  void removeFromQueue() {
+    // TODO: Call queue_manager.removeSongFromQueue(song) after E2 refactor
+    // For now, this is a placeholder
+    notifyListeners();
+  }
+
+  // E1d fix: Execute menu action (moved from _SongBarState._buildContextMenu)
+  void executeMenuAction(String action) {
+    switch (action) {
+      case 'like':
+        toggleLike();
+      case 'add_to_playlist':
+        // Handled by caller
+      case 'add_to_queue':
+        addToQueue();
+      case 'remove_from_queue':
+        removeFromQueue();
+      case 'offline':
+        if (isDownloadedNotifier.value) {
+          removeDownload();
+        } else {
+          triggerDownload();
+        }
+      case 'youtube':
+      case 'youtube_links':
+      case 'musicbrainz':
+      case 'get_musicbrainz':
+        // These are handled by caller with navigation
+    }
+    notifyListeners();
+  }
+
+  // E1a fix: Initialize like status from song data
+  void initLikeStatus() {
+    isLikedNotifier.value = isSongAlreadyLiked(song);
+  }
+
+  // E1b fix: Initialize download status from song data
+  void initDownloadStatus() {
+    isDownloadedNotifier.value = isSongAlreadyOffline(song);
   }
 }

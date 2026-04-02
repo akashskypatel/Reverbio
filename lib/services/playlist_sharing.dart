@@ -136,8 +136,8 @@ class PlaylistSharingService {
 
 // R9 fix: Custom exception for playlist encoding errors
 class PlaylistEncodeException implements Exception {
-  final String message;
   PlaylistEncodeException(this.message);
+  final String message;
   @override
   String toString() => 'PlaylistEncodeException: $message';
 }

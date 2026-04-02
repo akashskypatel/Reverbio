@@ -37,7 +37,6 @@ import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/genre_list.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
-import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -348,7 +347,7 @@ class _ArtistPageState extends State<ArtistPage> {
     );
   }
 
-  NotifiableList<SongBar> _getSingles() {
+  NotifiableList<Map<String, dynamic>> _getSingles() {
     return NotifiableList.fromAsync(
       Future.microtask(() async {
         if (!dataFuture.isComplete) await dataFuture.completerFuture;
@@ -381,7 +380,7 @@ class _ArtistPageState extends State<ArtistPage> {
                   return e;
                 })
                 .toList();
-        return (singles as List<Map<String, dynamic>>).map(initializeSongBar);
+        return singles as List<Map<String, dynamic>>;
       }),
     );
   }
@@ -460,7 +459,7 @@ class _ArtistPageState extends State<ArtistPage> {
                       : SongList(
                         page: 'singles',
                         title: context.l10n!.singles,
-                        songBars: _singles,
+                        songMaps: _singles,
                       );
                 },
               ),
