@@ -85,6 +85,21 @@ ColorScheme getAppColorScheme(
   }
 }
 
+// R4 fix: Generate ColorScheme for a specific brightness
+ColorScheme getAppColorSchemeForBrightness(
+  ColorScheme? systemColorScheme,
+  Brightness brightness,
+) {
+  if (useSystemColor.value && systemColorScheme != null) {
+    return systemColorScheme.harmonized();
+  } else {
+    return ColorScheme.fromSeed(
+      seedColor: Color(primaryColorSetting.value),
+      brightness: brightness,
+    ).harmonized();
+  }
+}
+
 ThemeData getAppTheme(ColorScheme colorScheme) {
   final base =
       colorScheme.brightness == Brightness.light

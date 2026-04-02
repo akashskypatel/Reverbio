@@ -25,6 +25,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
@@ -36,7 +37,6 @@ import 'package:reverbio/main.dart';
 import 'package:reverbio/services/queue_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/services/song_preparation_controller.dart';
-import 'package:go_router/go_router.dart';
 import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/file_tagger.dart';
@@ -54,6 +54,7 @@ import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
   // A1 fix: Factory constructor to share same NotifiableFuture instance
+  // R211 fix: Accept optional songFuture parameter to allow sharing across rebuilds
   factory SongBar(
     Map<String, dynamic> songData, {
     Color? backgroundColor,
@@ -61,11 +62,13 @@ class SongBar extends StatefulWidget {
     VoidCallback? onRemove,
     BorderRadius borderRadius = BorderRadius.zero,
     LocalKey? key,
+    NotifiableFuture<Map<String, dynamic>>? songFuture,
   }) {
-    final songFuture = NotifiableFuture<Map<String, dynamic>>(songData);
+    // R211 fix: Reuse provided songFuture or create new one
+    final future = songFuture ?? NotifiableFuture<Map<String, dynamic>>(songData);
     return SongBar._(
       songData: songData,
-      songFuture: songFuture,
+      songFuture: future,
       backgroundColor: backgroundColor,
       showMusicDuration: showMusicDuration,
       onRemove: onRemove,
@@ -171,8 +174,10 @@ class _SongBarState extends State<SongBar> {
   @override
   void initState() {
     super.initState();
-    // R258 fix: Initialize song future in initState instead of constructor
-    widget.songFuture.runFuture(getSongInfo(widget.songData));
+    // R176 fix: Only run future if not already loading or complete
+    if (!widget.songFuture.isLoading && !widget.songFuture.isComplete) {
+      widget.songFuture.runFuture(getSongInfo(widget.songData));
+    }
     _songTagFuture = _fetchSongTag();
     widget.songFuture.addListener(_listener);
     WidgetsBinding.instance.addPostFrameCallback((_) {

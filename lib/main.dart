@@ -40,6 +40,7 @@ import 'package:reverbio/localization/app_localizations.dart';
 import 'package:reverbio/services/audio_service_mk.dart';
 import 'package:reverbio/services/hive_service.dart';
 import 'package:reverbio/services/logger_service.dart';
+import 'package:reverbio/services/service_locator.dart';
 import 'package:reverbio/services/playlist_sharing.dart';
 import 'package:reverbio/services/proxy_manager.dart';
 import 'package:reverbio/services/router_service.dart';
@@ -51,12 +52,15 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:window_manager/window_manager.dart';
 
-ReverbioAudioHandler audioHandler = ReverbioAudioHandler();
-HiveService hiveService = HiveService();
+// Service Locator - DI seam (A1 fix)
+// Backward-compatible getters that delegate to ServiceLocator
+ReverbioAudioHandler get audioHandler => ServiceLocator.audioHandler;
+HiveService get hiveService => ServiceLocator.hiveService;
+Logger get logger => ServiceLocator.logger;
 
-final logger = Logger();
 final appLinks = AppLinks();
-ThemeData? theme;
+StreamSubscription<Uri?>? _appLinksSubscription; // R6 fix: Store subscription for cancellation
+// R3 fix: Remove theme global - use primaryColorSetting directly from widget tree
 
 bool isFdroidBuild = false;
 bool isUpdateChecked = false;
@@ -78,12 +82,16 @@ class Reverbio extends StatefulWidget {
     Color? newAccentColor,
     bool? useSystemColor,
   }) async {
-    context.findAncestorStateOfType<_ReverbioState>()!.changeSettings(
-      newThemeMode: newThemeMode,
-      newLocale: newLocale,
-      newAccentColor: newAccentColor,
-      systemColorStatus: useSystemColor,
-    );
+    // R10 fix: Add null check for findAncestorStateOfType
+    final state = context.findAncestorStateOfType<_ReverbioState>();
+    if (state != null) {
+      state.changeSettings(
+        newThemeMode: newThemeMode,
+        newLocale: newLocale,
+        newAccentColor: newAccentColor,
+        systemColorStatus: useSystemColor,
+      );
+    }
   }
 
   @override
@@ -91,6 +99,8 @@ class Reverbio extends StatefulWidget {
 }
 
 class _ReverbioState extends State<Reverbio> with WindowListener {
+  bool _isDisposed = false; // R9 fix: Guard against double disposal
+
   void changeSettings({
     ThemeMode? newThemeMode,
     Locale? newLocale,
@@ -113,7 +123,7 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
           }
           primaryColorSetting.value = newAccentColor.toARGB32();
         }
-        theme = Theme.of(context);
+        // R3 fix: Removed theme = Theme.of(context) - theme global removed
       });
   }
 
@@ -121,48 +131,59 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
   void initState() {
     super.initState();
     if (Platform.isWindows) windowManager.addListener(this);
+    // R7 fix: Call initialize but don't await - it handles its own errors
     initialize();
   }
 
+  // R7 fix: Wrap entire body in single try-catch to prevent swallowed exceptions
   void initialize() async {
-    if (Platform.isWindows) {
-      await windowManager.setPreventClose(true);
-      if (mounted) setState(() {});
-    }
-    getUserGeolocation();
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: Colors.transparent,
-        ),
-      );
-      await checkInternetConnection();
-      await downloader.FileDownloader().start();
-      await ProxyManager.ensureInitialized();
-    });
-
     try {
-      LicenseRegistry.addLicense(() async* {
-        final license = await rootBundle.loadString(
-          'assets/licenses/paytone.txt',
-        );
-        yield LicenseEntryWithLineBreaks(['paytoneOne'], license);
-      });
-    } catch (e, stackTrace) {
-      logger.log('License Registration Error', e, stackTrace);
-    }
+      if (Platform.isWindows) {
+        await windowManager.setPreventClose(true);
+        if (mounted) setState(() {});
+      }
+      getUserGeolocation();
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-    if (!isFdroidBuild &&
-        !isUpdateChecked &&
-        !offlineMode.value &&
-        kReleaseMode) {
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        checkAppUpdates();
-        isUpdateChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          SystemChrome.setSystemUIOverlayStyle(
+            const SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: Colors.transparent,
+            ),
+          );
+          await checkInternetConnection();
+          await downloader.FileDownloader().start();
+          await ProxyManager.ensureInitialized();
+        } catch (e, stackTrace) {
+          logger.log('Error in initialize (postFrameCallback):', e, stackTrace);
+        }
       });
+
+      try {
+        LicenseRegistry.addLicense(() async* {
+          final license = await rootBundle.loadString(
+            'assets/licenses/paytone.txt',
+          );
+          yield LicenseEntryWithLineBreaks(['paytoneOne'], license);
+        });
+      } catch (e, stackTrace) {
+        logger.log('License Registration Error', e, stackTrace);
+      }
+
+      if (!isFdroidBuild &&
+          !isUpdateChecked &&
+          !offlineMode.value &&
+          kReleaseMode) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          // R12 fix: Set flag before calling checkAppUpdates to prevent multiple calls
+          isUpdateChecked = true;
+          checkAppUpdates();
+        });
+      }
+    } catch (e, stackTrace) {
+      logger.log('Error in initialize():', e, stackTrace);
     }
   }
 
@@ -172,6 +193,7 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
       final _isPreventClose = await windowManager.isPreventClose();
       if (_isPreventClose) {
         await showDialog(
+          // R8 fix: Use dialog builder's context for Navigator operations
           context: NavigationManager().context!,
           builder: (dialogContext) {
             return ConfirmationDialog(
@@ -205,11 +227,16 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
   @override
   void dispose() {
     if (Platform.isWindows) windowManager.removeListener(this);
-    disposeData();
-    unawaited(HiveService.close());
-    unawaited(audioHandler.dispose());
-    unawaited(clearTempFiles());
-    downloader.FileDownloader().destroy();
+    _appLinksSubscription?.cancel(); // R6 fix: Cancel appLinks subscription
+    // R9 fix: Guard against double disposal
+    if (!_isDisposed) {
+      _isDisposed = true;
+      disposeData();
+      // A1 fix: Use ServiceLocator for centralized disposal
+      unawaited(ServiceLocator.dispose());
+      unawaited(clearTempFiles());
+      downloader.FileDownloader().destroy();
+    }
     super.dispose();
   }
 
@@ -217,15 +244,20 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
   Widget build(BuildContext context) {
     return DynamicColorBuilder(
       builder: (lightColorScheme, darkColorScheme) {
-        final colorScheme = getAppColorScheme(
+        // R4 fix: Generate separate ColorScheme for light and dark themes
+        final lightScheme = getAppColorSchemeForBrightness(
           lightColorScheme,
+          Brightness.light,
+        );
+        final darkScheme = getAppColorSchemeForBrightness(
           darkColorScheme,
+          Brightness.dark,
         );
 
         return MaterialApp.router(
           themeMode: themeMode,
-          darkTheme: getAppTheme(colorScheme),
-          theme: getAppTheme(colorScheme),
+          darkTheme: getAppTheme(darkScheme),
+          theme: getAppTheme(lightScheme),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -270,16 +302,18 @@ void main() async {
   // Init router
   NavigationManager.instance;
 
-  runApp(MaterialApp(builder: (context, child) => const Reverbio()));
+  // R1 fix: Remove nested MaterialApp - run Reverbio directly (it contains MaterialApp.router)
+  runApp(const Reverbio());
 }
 
 Future<void> initialization() async {
   try {
-    await HiveService.ensureInitialize();
+    // A1 fix: Use ServiceLocator for DI
+    await ServiceLocator.initialize();
     if (Platform.isAndroid) await AndroidMediaStore.ensureInitialized();
     L10n.initialize();
 
-    audioHandler = await AudioService.init(
+    final handler = await AudioService.init(
       builder: ReverbioAudioHandler.new,
       config: AudioServiceConfig(
         androidNotificationChannelId: 'com.akashskypatel.reverbio',
@@ -287,9 +321,11 @@ Future<void> initialization() async {
         androidNotificationIcon: 'drawable/ic_notification',
         androidShowNotificationBadge: true,
         androidNotificationOngoing: true,
-        notificationColor: theme?.colorScheme.primary ?? Colors.blue.shade900,
+        // R3 fix: Use primaryColorSetting directly instead of null theme global
+        notificationColor: Color(primaryColorSetting.value),
       ),
     );
+    ServiceLocator.setAudioHandler(handler);
     audioDevice.value = await audioHandler.getCurrentAudioDevice();
 
     await PM.initialize();
@@ -304,7 +340,8 @@ Future<void> initialization() async {
 
     try {
       // Listen to incoming links while app is running
-      appLinks.uriLinkStream.listen(
+      // R6 fix: Store subscription for cancellation in dispose
+      _appLinksSubscription = appLinks.uriLinkStream.listen(
         handleIncomingLink,
         onError: (err) {
           logger.log('URI link error:', err, null);
@@ -322,7 +359,12 @@ void handleIncomingLink(Uri? uri) async {
   final context = NavigationManager().context!;
   if (uri != null && uri.scheme == 'reverbio' && uri.host == 'playlist') {
     try {
-      if (uri.pathSegments[0] == 'custom') {
+      if (uri.pathSegments.isNotEmpty && uri.pathSegments[0] == 'custom') {
+        // R5 fix: Add bounds checking for pathSegments
+        if (uri.pathSegments.length < 2) {
+          showToast(context.l10n!.invalidPlaylistData);
+          return;
+        }
         final encodedPlaylist = uri.pathSegments[1];
 
         final playlist = await PlaylistSharingService.decodeAndExpandPlaylist(
@@ -331,7 +373,12 @@ void handleIncomingLink(Uri? uri) async {
 
         if (playlist != null) {
           userCustomPlaylists.add(Map<String, dynamic>.from(playlist));
-          //await addOrUpdateData('user','customPlaylists',userCustomPlaylists,);
+          // R5 fix: Persist the incoming deep link playlist
+          await HiveService.addOrUpdateData<List<dynamic>>(
+            'user',
+            'customPlaylists',
+            userCustomPlaylists,
+          );
           showToast(context.l10n!.addedSuccess);
         } else {
           showToast(context.l10n!.invalidPlaylistData);

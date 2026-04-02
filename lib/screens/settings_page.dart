@@ -1210,7 +1210,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             actions: [
                               TextButton(
                                 onPressed: () {
-                                  PM.restSettings(pluginName);
+                                  PM.resetSettings(pluginName);
                                   if (context.mounted) setState(() {});
                                 },
                                 child: Text(

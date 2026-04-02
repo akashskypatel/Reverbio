@@ -68,17 +68,50 @@ class PluginsManager {
       _backgroundJobNotifiers;
   static List<Map<String, dynamic>> get plugins => _plugins;
 
-  static Future<String> _fetchAndEvaluate(String url) async {
+  /// R25 fix: Validate URL for security - must be HTTPS and from allowed domains
+  static bool _isValidPluginUrl(String url) {
     try {
-      final flutterJs = getJavascriptRuntime();
+      final uri = Uri.parse(url);
+      // Must use HTTPS
+      if (uri.scheme != 'https') return false;
+      // Allowlist: GitHub, GitLab, and common CDN domains
+      final allowedHosts = [
+        'raw.githubusercontent.com',
+        'github.com',
+        'gitlab.com',
+        'cdn.jsdelivr.net',
+        'unpkg.com',
+      ];
+      return allowedHosts.contains(uri.host.toLowerCase());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<String> _fetchAndEvaluate(String url) async {
+    // R25 fix: Validate URL before fetching
+    if (!_isValidPluginUrl(url)) {
+      logger.log('Invalid plugin URL blocked: $url', null, null);
+      return '';
+    }
+    final flutterJs = getJavascriptRuntime();
+    try {
       final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
+      // R25 fix: Validate content-type
+      final contentType = response.headers['content-type']?.toLowerCase() ?? '';
+      if (response.statusCode == 200 &&
+          (contentType.isEmpty ||
+              contentType.contains('text/') ||
+              contentType.contains('application/javascript') ||
+              contentType.contains('application/json'))) {
         final result = flutterJs.evaluate(response.body);
         if (!result.isError) return response.body;
       }
       return '';
     } catch (e) {
       return '';
+    } finally {
+      flutterJs.dispose();
     }
   }
 
@@ -95,7 +128,19 @@ class PluginsManager {
       return false;
     }
     try {
-      plugin = _plugins.firstWhere((value) => value['name'] == plugin['name']);
+      // R16 fix: Check if plugin exists before accessing
+      final foundPlugin = _plugins.where(
+        (value) => value['name'] == plugin['name'],
+      ).firstOrNull;
+      if (foundPlugin == null) {
+        logger.log(
+          'syncPlugin: Plugin not found - ${plugin['name']}',
+          null,
+          null,
+        );
+        return false;
+      }
+      plugin = foundPlugin;
       final settings = getUserSettings(plugin['name']);
       plugin['settings'] = settings;
       Map<String, dynamic> pluginData = {};
@@ -117,13 +162,16 @@ class PluginsManager {
         }
         if (pluginData.isNotEmpty) {
           final flutterJs = getJavascriptRuntime();
-          await flutterJs.enableFetch();
-          await flutterJs.enableHandlePromises();
-          final result = flutterJs.evaluate(pluginData['script']);
-          if (!result.isError) {
+          try {
+            await flutterJs.enableFetch();
+            await flutterJs.enableHandlePromises();
+            final result = flutterJs.evaluate(pluginData['script']);
+            if (!result.isError) {
+              await addPlugin(pluginData);
+              return true;
+            }
+          } finally {
             flutterJs.dispose();
-            await addPlugin(pluginData);
-            return true;
           }
         }
       }
@@ -217,17 +265,18 @@ class PluginsManager {
   }
 
   static Future<String> _loadValidateDependencies(String jsCode) async {
+    final flutterJs = getJavascriptRuntime();
     try {
-      final flutterJs = getJavascriptRuntime();
       bool isValid = true;
       final manifest = _extractManifest(jsCode);
       final dependencies = <String, String>{};
 
       if (manifest.isEmpty) return '';
 
+      // R7 fix: Check ALL dependencies, not just the last one
       for (final dep in manifest['dependencies']) {
         final depSource = await _fetchAndEvaluate(dep['url']);
-        isValid = depSource.isNotEmpty;
+        isValid &= depSource.isNotEmpty;  // Check all dependencies
         dependencies[dep['name']] = depSource;
       }
       if (!isValid) return '';
@@ -239,14 +288,15 @@ class PluginsManager {
         final regionTag = '//#region $depName';
         const endRegionTag = '//#endregion';
 
-        if (jsCode.contains(regionTag)) {
+        // R6 fix: Use finalJsCode instead of jsCode for subsequent iterations
+        if (finalJsCode.contains(regionTag)) {
           // Find the region and inject the dependency code
-          final regionStart = jsCode.indexOf(regionTag) + regionTag.length;
-          final regionEnd = jsCode.indexOf(endRegionTag, regionStart);
+          final regionStart = finalJsCode.indexOf(regionTag) + regionTag.length;
+          final regionEnd = finalJsCode.indexOf(endRegionTag, regionStart);
 
           if (regionEnd != -1) {
-            final beforeRegion = jsCode.substring(0, regionStart);
-            final afterRegion = jsCode.substring(regionEnd);
+            final beforeRegion = finalJsCode.substring(0, regionStart);
+            final afterRegion = finalJsCode.substring(regionEnd);
             finalJsCode =
                 '$beforeRegion\n${dependencies[depName]}\n$afterRegion';
           } else {
@@ -275,87 +325,91 @@ class PluginsManager {
         stackTrace,
       );
       return '';
+    } finally {
+      flutterJs.dispose();
     }
   }
 
   static Future<void> _executeBackground(String pluginName) async {
-    try {
-      if (_futures[pluginName].isEmpty) {
-        _activeJob[pluginName] = null;
-        _isProcessingNotifiers[pluginName]!.value = false;
-        return;
-      }
-      _isProcessingNotifiers[pluginName]!.value = true;
-      _activeJob[pluginName] = _futures[pluginName].removeAt(0);
-      if (!_activeJob[pluginName]['cancel']) {
-        _backgroundJobNotifiers[pluginName]!.value =
-            _activeJob[pluginName]['id'];
-        final jsRuntime = getJsRuntime(pluginName);
-        if (jsRuntime == null)
-          throw Exception(
-            'There was an error executing background job for: $pluginName',
-          );
-        await jsRuntime.enableFetch();
-        await jsRuntime.enableHandlePromises();
-        _activeJob[pluginName]['started'] = DateTime.now();
-        _activeJob[pluginName]['status'] = 'running';
-        JsEvalResult? asyncResult;
-        try {
-          final promise = await jsRuntime.evaluateAsync(
-            _activeJob[pluginName]['code'],
-          );
-          jsRuntime.executePendingJob();
-          asyncResult = await jsRuntime.handlePromise(promise);
-        } catch (e, stackTrace) {
-          _activeJob[pluginName]['result'] = {
-            'message': L10n.current.runtimeError,
-          };
-          _activeJob[pluginName]['error'] = true;
-          _activeJob[pluginName]['completed'] = DateTime.now();
-          _activeJob[pluginName]['status'] = 'failed';
-          logger.log(
-            'Error in ${stackTrace.getCurrentMethodName()}:',
-            e,
-            stackTrace,
-          );
-        }
-        if (asyncResult != null) {
-          _activeJob[pluginName]['result'] = asyncResult.stringResult;
-          _activeJob[pluginName]['error'] = asyncResult.isError;
-          _activeJob[pluginName]['completed'] = DateTime.now();
-          _activeJob[pluginName]['status'] =
-              asyncResult.isError ? 'failed' : 'completed';
-          if (asyncResult.isError) {
-            logger.log(
-              'Error in _executeBackground:',
-              '${asyncResult.stringResult} ${_activeJob[pluginName]['code']}',
-              null,
+    // R20 fix: Replace unbounded recursion with while loop
+    while (_futures[pluginName].isNotEmpty) {
+      try {
+        _isProcessingNotifiers[pluginName]!.value = true;
+        _activeJob[pluginName] = _futures[pluginName].removeAt(0);
+        if (!_activeJob[pluginName]['cancel']) {
+          _backgroundJobNotifiers[pluginName]!.value =
+              _activeJob[pluginName]['id'];
+          final jsRuntime = getJsRuntime(pluginName);
+          if (jsRuntime == null)
+            throw Exception(
+              'There was an error executing background job for: $pluginName',
             );
-            showToast('${L10n.current.jobError}: ${asyncResult.stringResult}');
+          await jsRuntime.enableFetch();
+          await jsRuntime.enableHandlePromises();
+          _activeJob[pluginName]['started'] = DateTime.now();
+          _activeJob[pluginName]['status'] = 'running';
+          JsEvalResult? asyncResult;
+          try {
+            final promise = await jsRuntime.evaluateAsync(
+              _activeJob[pluginName]['code'],
+            );
+            jsRuntime.executePendingJob();
+            asyncResult = await jsRuntime.handlePromise(promise);
+          } catch (e, stackTrace) {
+            _activeJob[pluginName]['result'] = {
+              'message': L10n.current.runtimeError,
+            };
+            _activeJob[pluginName]['error'] = true;
+            _activeJob[pluginName]['completed'] = DateTime.now();
+            _activeJob[pluginName]['status'] = 'failed';
+            logger.log(
+              'Error in ${stackTrace.getCurrentMethodName()}:',
+              e,
+              stackTrace,
+            );
           }
+          if (asyncResult != null) {
+            _activeJob[pluginName]['result'] = asyncResult.stringResult;
+            _activeJob[pluginName]['error'] = asyncResult.isError;
+            _activeJob[pluginName]['completed'] = DateTime.now();
+            _activeJob[pluginName]['status'] =
+                asyncResult.isError ? 'failed' : 'completed';
+            if (asyncResult.isError) {
+              logger.log(
+                'Error in _executeBackground:',
+                '${asyncResult.stringResult} ${_activeJob[pluginName]['code']}',
+                null,
+              );
+              showToast('${L10n.current.jobError}: ${asyncResult.stringResult}');
+            }
+          }
+          jsRuntime.dispose();
+        } else {
+          _backgroundJobNotifiers[pluginName]!.value =
+              _activeJob[pluginName]['id'];
+          _activeJob[pluginName]['cancel'] = true;
+          _activeJob[pluginName]['completed'] = DateTime.now();
+          _activeJob[pluginName]['status'] = 'cancelled';
         }
-        jsRuntime.dispose();
-      } else {
-        _backgroundJobNotifiers[pluginName]!.value =
-            _activeJob[pluginName]['id'];
-        _activeJob[pluginName]['cancel'] = true;
-        _activeJob[pluginName]['completed'] = DateTime.now();
-        _activeJob[pluginName]['status'] = 'cancelled';
+        if (!_completed.containsKey(pluginName)) _completed[pluginName] = [];
+        _completed[pluginName].add(
+          Map<String, dynamic>.from(_activeJob[pluginName]),
+        );
+        _activeJob[pluginName] = null;
+        _backgroundJobNotifiers[pluginName]!.value = null;
+      } catch (e, stackTrace) {
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()}:',
+          e,
+          stackTrace,
+        );
+        break;
       }
-      if (!_completed.containsKey(pluginName)) _completed[pluginName] = [];
-      _completed[pluginName].add(
-        Map<String, dynamic>.from(_activeJob[pluginName]),
-      );
-      _activeJob[pluginName] = null;
-      _backgroundJobNotifiers[pluginName]!.value = null;
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
     }
-    return unawaited(_executeBackground(pluginName));
+    // Exit loop: no more futures
+    _activeJob[pluginName] = null;
+    _isProcessingNotifiers[pluginName]!.value = false;
+    _backgroundJobNotifiers[pluginName]!.value = null;
   }
 
   static void removeBackgroundJob(String pluginName, Map list, UniqueKey id) {
@@ -446,6 +500,11 @@ class PluginsManager {
   }
 
   static Future<Map<String, dynamic>> getOnlinePlugin(String url) async {
+    // R25 fix: Validate URL before fetching
+    if (!_isValidPluginUrl(url)) {
+      logger.log('Invalid plugin URL blocked: $url', null, null);
+      return {};
+    }
     try {
       final uri = Uri.parse(url);
       final response = await http.get(uri);
@@ -462,32 +521,32 @@ class PluginsManager {
   }
 
   static Future<bool> addPluginData(Map<String, dynamic> data) async {
+    if (data.isEmpty) return false;
+    final flutterJs = getJavascriptRuntime();
     try {
-      if (data.isNotEmpty) {
-        final flutterJs = getJavascriptRuntime();
-        final result = flutterJs.evaluate(data['script']);
-        if (!result.isError) {
-          removePlugin(data['name']);
-          _pluginsData.add(data);
-          _plugins.add(data);
-          _isProcessingNotifiers[data['name']] = ValueNotifier(false);
-          _backgroundJobNotifiers[data['name']] = ValueNotifier(null);
-          _futures[data['name']] = [];
-          _completed[data['name']] = [];
-          _activeJob[data['name']] = null;
-        } else {
-          return false;
-        }
+      final result = flutterJs.evaluate(data['script']);
+      if (!result.isError) {
+        removePlugin(data['name']);
+        _pluginsData.add(data);
+        _plugins.add(data);
+        _isProcessingNotifiers[data['name']] = ValueNotifier(false);
+        _backgroundJobNotifiers[data['name']] = ValueNotifier(null);
+        _futures[data['name']] = [];
+        _completed[data['name']] = [];
+        _activeJob[data['name']] = null;
         return true;
       }
+      return false;
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
         e,
         stackTrace,
       );
+      return false;
+    } finally {
+      flutterJs.dispose();
     }
-    return false;
   }
 
   static void _clearBackgroundJobData(String pluginName) {
@@ -646,13 +705,14 @@ class PluginsManager {
       methodName = methodName.ensureBalancedParentheses();
       if (!methodName.checkAllBrackets()) return '';
       if (args == null || args.isEmpty) return methodName;
+      // R5 fix: _formatArgument already adds proper quotes, don't double-wrap
       final argsString = args.map(_formatArgument).join(',');
 
       // Handle cases where methodName might have empty parentheses
       if (methodName.endsWith('()')) {
-        return methodName.replaceAll('()', "('$argsString')");
+        return methodName.replaceAll('()', "($argsString)");
       } else {
-        return "$methodName('$argsString')";
+        return "$methodName($argsString)";
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -976,9 +1036,13 @@ class PluginsManager {
         (value) => value['name'] == pluginName,
         orElse: () => {},
       );
+      // R14 fix: Check _plugin.isNotEmpty before accessing properties
+      if (_plugin.isEmpty) return;
       if (_plugin['userSettings'] == null) _plugin['userSettings'] = {};
-      if (_plugin.isNotEmpty) _plugin['userSettings'].addAll(settings);
-      _pluginsData.updateWhere(_plugin, (e) => e['name'] == pluginName);
+      if (_plugin.isNotEmpty && settings != null) {
+        _plugin['userSettings'].addAll(settings);
+        _pluginsData.updateWhere(_plugin, (e) => e['name'] == pluginName);
+      }
     } catch (e, stackTrace) {
       logger.log(
         'Error in ${stackTrace.getCurrentMethodName()}:',
@@ -1028,7 +1092,7 @@ class PluginsManager {
     }
   }
 
-  static void restSettings(String pluginName) {
+  static void resetSettings(String pluginName) {
     try {
       final defaultSettings = getDefaultSettings(pluginName);
       final userSettings = getUserSettings(pluginName);
@@ -1144,13 +1208,14 @@ class PluginsManager {
             'cacheData - $pluginName: could not determine cacheKey for supplied entity',
             entity.toString(),
           ]);
-        final index = cache.indexOf(
+        // R3 fix: Use indexWhere instead of indexOf with closure
+        final index = cache.indexWhere(
           (e) => checkEntityId(e['id'], entity['id']),
         );
         if (cache.isEmpty || index < 0)
           cache.add(entity);
         else
-          cache.insert(index, entity);
+          cache[index] = entity;
         await HiveService.addOrUpdateData<List<dynamic>>(
           'cache',
           cacheKey,
@@ -1180,7 +1245,10 @@ class PluginsManager {
     if (!enablePlugins.value || plugins.isEmpty) return;
     try {
       for (final plugin in plugins) {
-        final hook = getHooks(plugin['name'])[hookName];
+        // R1 fix: Check getHooks result before accessing [hookName]
+        final pluginHooks = getHooks(plugin['name']);
+        if (pluginHooks.isEmpty) continue;
+        final hook = pluginHooks[hookName];
         // R1 fix: Check hook null/empty before dereferencing
         if (hook == null || hook.isEmpty) continue;
         final methodName = hook['onTrigger']?['methodName'];
@@ -1221,7 +1289,8 @@ class PluginsManager {
         }
         if (result is Map) {
           if (entity is Map) {
-            entity.addAll(entity);
+            // R2 fix: Merge result into entity, not self-merge
+            entity.addAll(result);
             await cacheData(plugin['name'], entity, key: entity['cacheKey']);
             continue;
           } else if (entity is List) {
@@ -1256,6 +1325,7 @@ class PluginsManager {
     }
     const timeout = Duration(seconds: 10);
     final allFutures = <Future>[];
+    final resultCompleter = Completer<String?>();
     String onSuccess(dynamic result) {
       var songUrl = '';
       //if (result['stream'] != null && result['stream']['error'] == null && result['stream']['liveMP4'] != null) {
@@ -1282,8 +1352,9 @@ class PluginsManager {
         song['songUrl'] = null;
         final pluginFutures =
             plugins.fold([], (returnValue, _plugin) {
+              // R13 fix: Check hook null/empty before accessing isNotEmpty
               final hook = getHooks(_plugin['name'])['onGetSongUrl'];
-              if (hook.isNotEmpty) {
+              if (hook != null && hook.isNotEmpty) {
                 returnValue.add(
                   executeMethodAsync(
                         pluginName: _plugin['name'],
@@ -1301,8 +1372,11 @@ class PluginsManager {
                             e['songUrl'] is String &&
                             e['songUrl'].isNotEmpty) {
                           e['source'] = _plugin['name'];
-                          return onSuccess(e);
+                          if (!resultCompleter.isCompleted) {
+                            resultCompleter.complete(onSuccess(e));
+                          }
                         }
+                        return e;
                       })
                       .catchError((e, stackTrace) {
                         logger.log('Error in $stackTrace:', e, stackTrace);
@@ -1313,8 +1387,14 @@ class PluginsManager {
               return returnValue;
             }).toList();
         allFutures.addAll([...pluginFutures]);
-        final _futures = await Future.wait(allFutures);
-        if (_futures.isNotEmpty) return _futures.first;
+        
+        // R12 fix: Wait for first successful result instead of just first result
+        if (allFutures.isNotEmpty) {
+          await Future.wait(allFutures);
+          if (resultCompleter.isCompleted) {
+            return resultCompleter.future;
+          }
+        }
         /*
         .then((value) async {
           if (song['songUrl'] == null || song['songUrl'].isEmpty) {
@@ -1418,6 +1498,9 @@ class PluginsManager {
           (pluginName == null || pluginName.isEmpty) &&
           runtime != null) {
         jsRuntime = runtime..evaluate(script);
+      } else {
+        // R4 fix: Fallback for unmatched branches - create new runtime
+        jsRuntime = getJavascriptRuntime();
       }
 
       methodName = methodName.trim();

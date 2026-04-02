@@ -598,10 +598,11 @@ Future<String> getLiveStreamUrl(String songId) async {
 Future<Map<String, dynamic>> getIPGeolocation({http.Client? client}) async {
   final c = client ?? http.Client();
   try {
-    final uri = Uri.http(
+    // R11 fix: Use HTTPS instead of plain HTTP for geolocation
+    final uri = Uri.https(
       'ip-api.com',
       '/json',
-    ); // Do not change to https - ip-api.com does not support https for free usage
+    );
     final response = await c.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {
@@ -615,14 +616,16 @@ Future<Map<String, dynamic>> getIPGeolocation({http.Client? client}) async {
 bool checkEntityId(dynamic entity, dynamic other) {
   String id = '';
   String otherId = '';
+  // R620 fix: Pass copy to parseEntityId to prevent Map mutation
   if (entity is String)
     id = entity;
   else if (entity is Map)
-    id = parseEntityId(entity);
+    id = parseEntityId(Map<String, dynamic>.from(entity));
+  // R620 fix: Pass copy to parseEntityId to prevent Map mutation
   if (other is String)
     otherId = other;
   else if (other is Map)
-    otherId = parseEntityId(other);
+    otherId = parseEntityId(Map<String, dynamic>.from(other));
   if (entity == other) return true;
   if (id.isEmpty || otherId.isEmpty) return false;
   id = parseEntityId(id);

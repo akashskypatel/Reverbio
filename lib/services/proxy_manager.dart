@@ -88,14 +88,12 @@ class ProxyManager {
         !_fetched) {
       await _fetchProxies();
       // Reinitialize clients only after fetch is complete
-      // Fix: Create new clients first, then close old ones to prevent race condition
-      final oldProxyClient = _proxyClient;
-      final oldProxyYTClient = _proxyYTClient;
+      // R97 fix: Don't close old clients - let them complete in-flight requests naturally
+      // Old clients will be garbage collected when no longer referenced
       _proxyClient = _randomProxyClient();
       _proxyYTClient = YoutubeExplode(YoutubeHttpClient(_proxyClient));
-      // Close old clients after new ones are ready (in-flight requests complete)
-      oldProxyClient.close();
-      oldProxyYTClient.close();
+      // Note: Old clients NOT closed to prevent breaking in-flight requests
+      // They will be garbage collected when no longer in use
     }
     // If no fetch occurred, keep existing clients (no disruption to in-flight requests)
   }

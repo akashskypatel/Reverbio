@@ -1450,8 +1450,6 @@ Future<File?> _downloadAndSaveArtworkFile(Uri uri, String filePath) async {
   return null;
 }
 
-const recentlyPlayedSongsLimit = 50;
-
 Future<void> updateRecentlyPlayed(dynamic song) async {
   try {
     // R18 fix: Race condition - check isNotEmpty before accessing [0]
