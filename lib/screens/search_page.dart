@@ -145,8 +145,9 @@ class _SearchPageState extends State<SearchPage> {
             searchHistory.removeLast();
           }
           // R11 fix: Remove duplicate if exists and move to front
-          searchHistory.remove(query);
-          searchHistory.insert(0, query);
+          searchHistory
+            ..remove(query)
+            ..insert(0, query);
         });
     }
   }

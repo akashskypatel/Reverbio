@@ -197,8 +197,7 @@ Map<String, dynamic> minimizeSongData(dynamic song) {
   // R3 fix: Create a copy of audioTags before removing 'pictures' to avoid mutating input
   Map<String, dynamic>? audioTags;
   if (song['audioTags'] != null) {
-    audioTags = Map<String, dynamic>.from(song['audioTags']);
-    audioTags.remove('pictures');
+    audioTags = Map<String, dynamic>.from(song['audioTags'])..remove('pictures');
   }
   return {
     'id': parseEntityId(song),

@@ -937,17 +937,15 @@ class _SettingsPageState extends State<SettingsPage> {
                           };
                         })
                         .toList()
-                      ..sort((a, b) => a['order'].compareTo(b['order']));
-                
-                // Add "auto" option to the merged list
-                deviceData.add({
-                  'id': null,
-                  'name': 'auto',
-                  'type': null,
-                  'address': null,
-                  'category': null,
-                });
-                
+                      ..sort((a, b) => a['order'].compareTo(b['order']))
+                      ..add({
+                        'id': null,
+                        'name': 'auto',
+                        'type': null,
+                        'address': null,
+                        'category': null,
+                      });
+
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),

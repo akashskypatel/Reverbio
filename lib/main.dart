@@ -313,6 +313,9 @@ Future<void> initialization() async {
     if (Platform.isAndroid) await AndroidMediaStore.ensureInitialized();
     L10n.initialize();
 
+    // Load settings BEFORE AudioService.init() so primaryColorSetting has correct value
+    await initializeSettings();
+
     final handler = await AudioService.init(
       builder: ReverbioAudioHandler.new,
       config: AudioServiceConfig(
@@ -328,11 +331,12 @@ Future<void> initialization() async {
     ServiceLocator.setAudioHandler(handler);
     audioDevice.value = await audioHandler.getCurrentAudioDevice();
 
+    // Apply settings that depend on audio handler (e.g., volume sync)
+    await applySettings();
+
     await PM.initialize();
 
     await initializeData();
-
-    await initializeSettings();
 
     //postUpdate();
 
@@ -356,7 +360,11 @@ Future<void> initialization() async {
 }
 
 void handleIncomingLink(Uri? uri) async {
-  final context = NavigationManager().context!;
+  final context = NavigationManager().context;
+  if (context == null) {
+    logger.log('NavigationManager context not ready, deferring deep link', null, null);
+    return;
+  }
   if (uri != null && uri.scheme == 'reverbio' && uri.host == 'playlist') {
     try {
       if (uri.pathSegments.isNotEmpty && uri.pathSegments[0] == 'custom') {

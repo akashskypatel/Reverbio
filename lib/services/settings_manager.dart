@@ -62,6 +62,11 @@ Future<void> initializeSettings() async {
   await offlineDirectory.ensureInitialized(
     (await getApplicationSupportDirectory()).path,
   );
+}
+
+/// Apply settings that depend on initialized services (e.g., audio handler).
+/// Must be called after audioHandler is set up.
+Future<void> applySettings() async {
   // R45 fix: Sync audio player volume with loaded settings after initialization
   await audioHandler.setVolume(volume.value.toDouble());
 }

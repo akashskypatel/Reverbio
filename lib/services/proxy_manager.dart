@@ -316,18 +316,18 @@ class ProxyManager {
   /// Website=https://openproxylist.com
   ///
   /// Support us:
-  /// BTC : 1PJNmhxKETLqaD6eexiNxg8ofT4uF7GKvF
-  /// ETH : 0x50403baa42092a3424f41fdc3a8621aeda333ee6
-  /// LTC : MAG1cWWEpgdviZChWvr2oyuxD61JPJ1Q43
-  /// Doge: DSmsHYZUz5NZcfCgso1ZSAvz4ayv6kUPKQ
-  /// https://buymeacoffee.com/roosterkid
+  /// BTC : `1PJNmhxKETLqaD6eexiNxg8ofT4uF7GKvF`
+  /// ETH : `0x50403baa42092a3424f41fdc3a8621aeda333ee6`
+  /// LTC : `MAG1cWWEpgdviZChWvr2oyuxD61JPJ1Q43`
+  /// Doge: `DSmsHYZUz5NZcfCgso1ZSAvz4ayv6kUPKQ`
+  /// [https://buymeacoffee.com/roosterkid]
   ///
-  /// Format: CountryFlag IP:PORT ResponseTime CountryCode [ISP]
+  /// Format: CountryFlag IP:PORT ResponseTime CountryCode `[ISP]`
   ///
   /// Example entries:
-  /// - 🇲🇳 203.174.26.137:4153 296ms MN [YokozunaNET]
-  /// - 🇧🇼 83.143.29.161:1080 285ms BW [BOTSWANA FIBRE NETWORKS]
-  /// - 🇧🇩 203.190.8.59:1088 183ms BD [DAFFODILNET-SUB]
+  /// - 🇲🇳 `203.174.26.137:4153` 296ms MN `[YokozunaNET]`
+  /// - 🇧🇼 `83.143.29.161:1080` 285ms BW `[BOTSWANA FIBRE NETWORKS]`
+  /// - 🇧🇩 `203.190.8.59:1088` 183ms BD `[DAFFODILNET-SUB]`
   static Future<void> _fetchOpenProxyList() async {
     try {
       if (kDebugMode) logger.log('Fetching from openproxylist...', null, null);

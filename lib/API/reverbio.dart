@@ -212,8 +212,7 @@ String? combineArtists(dynamic value) {
     artistList.addAll(splitArtists(value['channelName']));
   if (value['artist'] is String && value['mbid'] == null)
     artistList.addAll(splitArtists(value['artist']));
-  final artists = artistList.toList();
-  artists.sort((a, b) => a.compareTo(b));
+  final artists = artistList.toList()..sort((a, b) => a.compareTo(b));
   final result = artists
       .fold<Set<String>>(<String>{}, (result, str) {
         final names = str.split(RegExp(r'\s*[&,]\s*')).map((n) => n.trim());
@@ -613,47 +612,42 @@ Future<Map<String, dynamic>> getIPGeolocation({http.Client? client}) async {
   }
 }
 
-bool checkEntityId(dynamic entity, dynamic other) {
-  String id = '';
-  String otherId = '';
-  // R620 fix: Pass copy to parseEntityId to prevent Map mutation
-  if (entity is String)
-    id = entity;
-  else if (entity is Map)
-    id = parseEntityId(Map<String, dynamic>.from(entity));
-  // R620 fix: Pass copy to parseEntityId to prevent Map mutation
-  if (other is String)
-    otherId = other;
-  else if (other is Map)
-    otherId = parseEntityId(Map<String, dynamic>.from(other));
+bool checkEntityId(dynamic entity, dynamic other, {String? id, String? otherId}) {
+  // If caller already parsed IDs, use them directly (avoid redundant parseEntityId calls)
+  final entityId = id ?? (entity is String ? entity : (entity is Map ? parseEntityId(entity) : ''));
+  final otherEntityId = otherId ?? (other is String ? other : (other is Map ? parseEntityId(other) : ''));
+  
   if (entity == other) return true;
-  if (id.isEmpty || otherId.isEmpty) return false;
-  id = parseEntityId(id);
-  otherId = parseEntityId(otherId);
+  if (entityId.isEmpty || otherEntityId.isEmpty) return false;
+  
+  final parsedId = parseEntityId(entityId);
+  final parsedOtherId = parseEntityId(otherEntityId);
+  
   var result = false;
   // Case 1: id is simple, otherId is composite - split otherId and check if any component contains id
-  if (!(id.contains('=') || id.contains('&')) &&
-      (otherId.contains('=') || otherId.contains('&'))) {
-    final ids = otherId.split('&');
-    result = ids.any((i) => i.contains(id));
+  if (!(parsedId.contains('=') || parsedId.contains('&')) &&
+      (parsedOtherId.contains('=') || parsedOtherId.contains('&'))) {
+    final ids = parsedOtherId.split('&');
+    result = ids.any((i) => i.contains(parsedId));
     if (result) return result;
   }
   // Case 2: id is composite, otherId is simple - split id and check if any component contains otherId
-  if ((id.contains('=') || id.contains('&')) &&
-      !(otherId.contains('=') || otherId.contains('&'))) {
-    final ids = id.split('&');
-    result = ids.any((i) => i.contains(otherId));
+  if ((parsedId.contains('=') || parsedId.contains('&')) &&
+      !(parsedOtherId.contains('=') || parsedOtherId.contains('&'))) {
+    final ids = parsedId.split('&');
+    result = ids.any((i) => i.contains(parsedOtherId));
     if (result) return result;
   }
   // Case 3: Both id and otherId are composite - check if any components match
-  if ((id.contains('=') || id.contains('&')) &&
-      (otherId.contains('=') || otherId.contains('&'))) {
-    final ids = id.split('&');
-    final otherIds = otherId.split('&');
+  if ((parsedId.contains('=') || parsedId.contains('&')) &&
+      (parsedOtherId.contains('=') || parsedOtherId.contains('&'))) {
+    final ids = parsedId.split('&');
+    final otherIds = parsedOtherId.split('&');
     result = ids.any((i) => otherIds.any((e) => i == e));
     if (result) return result;
   }
-  result = id == otherId;
+  // Case 4: Both id and otherId are simple - direct comparison
+  result = parsedId == parsedOtherId;
   return result;
 }
 

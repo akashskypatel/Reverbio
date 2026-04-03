@@ -499,9 +499,9 @@ bool checkAlbum(dynamic albumA, dynamic albumB) {
   if (albumA == null || albumB == null || albumA.isEmpty || albumB.isEmpty)
     return false;
   // R5 fix: Use local variables instead of mutating inputs, add type guards
-  // R498 fix: Pass Map copy to parseEntityId to prevent mutating original
-  final idA = albumA is Map ? parseEntityId(Map<String, dynamic>.from(albumA)) : albumA;
-  final idB = albumB is Map ? parseEntityId(Map<String, dynamic>.from(albumB)) : albumB;
+  // R498 fix: Pass IDs directly to checkEntityId to avoid redundant parsing
+  final idA = albumA is Map ? parseEntityId(albumA) : albumA;
+  final idB = albumB is Map ? parseEntityId(albumB) : albumB;
   if (albumA is String && albumB is String)
     return (albumA.isNotEmpty && albumB.isNotEmpty) &&
         checkEntityId(albumA, albumB);
@@ -509,18 +509,18 @@ bool checkAlbum(dynamic albumA, dynamic albumB) {
     return (albumA.isNotEmpty &&
             idB != null &&
             idB.isNotEmpty) &&
-        (checkEntityId(albumA, idB) ||
-            checkEntityId(idB, albumA));
+        (checkEntityId(albumA, idB, otherId: idB) ||
+            checkEntityId(idB, albumA, id: idB));
   if (albumB is String && albumA is Map)
     return (albumB.isNotEmpty &&
             idA != null &&
             idA.isNotEmpty) &&
-        (checkEntityId(albumB, idA) ||
-            checkEntityId(idA, albumB));
+        (checkEntityId(albumB, idA, otherId: idA) ||
+            checkEntityId(idA, albumB, id: idA));
   if (idA == null ||
       idB == null ||
       idA.isEmpty ||
       idB.isEmpty)
     return getAlbumHashCode(albumA) == getAlbumHashCode(albumB);
-  return checkEntityId(idA, idB);
+  return checkEntityId(idA, idB, id: idA, otherId: idB);
 }

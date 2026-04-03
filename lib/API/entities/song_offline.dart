@@ -294,6 +294,10 @@ Future<void> makeSongOffline(dynamic song) async {
       } finally {
         client.close();
       }
+      
+      // 8.3-B fix: Add song to userOfflineSongs since we bypass FileDownloader
+      // The old code relied on _handleFileDownloadState in audio_handler.dart to do this
+      userOfflineSongs.addOrUpdate(id, checkEntityId);
     } catch (e, stackTrace) {
       logger.log(
         'Error in makeSongOffline:',
