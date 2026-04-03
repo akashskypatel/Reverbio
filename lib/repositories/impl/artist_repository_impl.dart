@@ -19,7 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/artist.dart' as artist_entity;
 import 'package:reverbio/repositories/artist_repository.dart';
 
 /// Concrete implementation of [ArtistRepository].
@@ -27,17 +27,17 @@ import 'package:reverbio/repositories/artist_repository.dart';
 /// This is a thin wrapper that provides a testable seam.
 class ArtistRepositoryImpl implements ArtistRepository {
   @override
-  Future<Map<String, dynamic>> getArtistInfo(dynamic artist) async {
-    return getArtistInfo(artist);
+  Future<Map<String, dynamic>> getArtistDetails(dynamic artist) async {
+    return artist_entity.getArtistDetails(artist);
   }
 
   @override
   Future<void> updateLikeStatus(Map artist, bool add) async {
-    await updateArtistLikeStatus(artist, add);
+    await artist_entity.updateArtistLikeStatus(artist, add);
   }
 
   @override
-  Future<List<Map<String, dynamic>>> searchArtists(String query) async {
-    return searchArtists(query);
+  Future<List<dynamic>> searchArtistsDetails(List<String> query) async {
+    return artist_entity.searchArtistsDetails(query);
   }
 }

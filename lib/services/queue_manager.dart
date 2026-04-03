@@ -72,10 +72,11 @@ void addSongToQueue(Map<String, dynamic> song) {
 
 /// Remove song from queue.
 bool removeSongFromQueue(Map<String, dynamic> song) {
-  final val = activeQueue['list'].removeWhere((s) => checkSong(s, song));
+  final wasInQueue = activeQueue['list'].any((s) => checkSong(s, song));
+  activeQueue['list'].removeWhere((s) => checkSong(s, song));
   audioHandler.queueSongMaps.removeWhere((e) => checkSong(e, song));
   updateMediaItemQueue(audioHandler.queueSongMaps);
-  return val.isNotEmpty;
+  return wasInQueue;
 }
 
 /// Check if song is in queue.

@@ -19,17 +19,19 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'package:reverbio/API/entities/playlist_result.dart' show PlaylistOperationResult;
+
 /// Abstract repository interface for Playlist operations.
 /// Provides a testable seam between business logic and storage/network layers.
 abstract class PlaylistRepository {
   /// Get all playlists, optionally filtered to liked only.
-  Future<List<Map<String, dynamic>>> getPlaylists({bool onlyLiked = false});
+  Future<List> getPlaylists({bool onlyLiked = false});
 
   /// Get info/metadata for a specific playlist.
-  Future<Map<String, dynamic>> getPlaylistInfo(Map playlist);
+  Future<Map?> getPlaylistInfo(Map playlist);
 
   /// Create a new custom playlist with the given name.
-  Future<Map<String, dynamic>> createCustomPlaylist(String name);
+  PlaylistOperationResult createCustomPlaylist(String name);
 
   /// Update the playlist list (refresh from storage/network).
   Future<void> updatePlaylistList(String playlistId);

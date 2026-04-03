@@ -19,7 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/API/entities/song.dart' as song_entity;
 import 'package:reverbio/repositories/song_repository.dart';
 
 /// Concrete implementation of [SongRepository].
@@ -28,26 +28,26 @@ import 'package:reverbio/repositories/song_repository.dart';
 class SongRepositoryImpl implements SongRepository {
   @override
   Future<Map<String, dynamic>> getSongInfo(Map song) async {
-    return getSongInfo(song);
+    return song_entity.getSongInfo(song);
   }
 
   @override
-  Future<String?> getSongUrl(Map song) async {
-    return getSongUrl(song);
+  Future<dynamic> getSongUrl(Map song) async {
+    return song_entity.getSongUrl(song);
   }
 
   @override
   Future<void> updateLikeStatus(Map song, bool add) async {
-    await updateSongLikeStatus(song, add);
+    await song_entity.updateSongLikeStatus(song, add);
   }
 
   @override
   bool checkSong(dynamic a, dynamic b) {
-    return checkSong(a, b);
+    return song_entity.checkSong(a, b);
   }
 
   @override
   bool isSongValid(Map song) {
-    return isSongValid(song);
+    return song_entity.isSongValid(song);
   }
 }

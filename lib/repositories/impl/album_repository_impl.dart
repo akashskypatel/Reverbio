@@ -19,7 +19,7 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/album.dart' as album_entity;
 import 'package:reverbio/repositories/album_repository.dart';
 
 /// Concrete implementation of [AlbumRepository].
@@ -28,21 +28,21 @@ import 'package:reverbio/repositories/album_repository.dart';
 class AlbumRepositoryImpl implements AlbumRepository {
   @override
   Future<Map<String, dynamic>> getAlbumInfo(dynamic album) async {
-    return getAlbumInfo(album);
+    return album_entity.getAlbumInfo(album);
   }
 
   @override
-  Future<String?> getAlbumCoverArt(Map album) async {
-    return getAlbumCoverArt(album);
+  Future<Map<String, dynamic>> getAlbumCoverArt(Map album) async {
+    return album_entity.getAlbumCoverArt(album as Map<String, dynamic>);
   }
 
   @override
   Future<void> updateLikeStatus(Map album, bool add) async {
-    await updateAlbumLikeStatus(album, add);
+    await album_entity.updateAlbumLikeStatus(album, add);
   }
 
   @override
   void queueAlbumInfoRequest(dynamic album) {
-    queueAlbumInfoRequest(album);
+    album_entity.queueAlbumInfoRequest(album);
   }
 }

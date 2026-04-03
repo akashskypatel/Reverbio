@@ -131,12 +131,12 @@ class _ReverbioState extends State<Reverbio> with WindowListener {
   void initState() {
     super.initState();
     if (Platform.isWindows) windowManager.addListener(this);
-    // R7 fix: Call initialize but don't await - it handles its own errors
-    initialize();
+    // R7 fix: Initialize app but don't block UI - errors handled internally
+    unawaited(initialize());
   }
 
   // R7 fix: Wrap entire body in single try-catch to prevent swallowed exceptions
-  void initialize() async {
+  Future<void> initialize() async {
     try {
       if (Platform.isWindows) {
         await windowManager.setPreventClose(true);

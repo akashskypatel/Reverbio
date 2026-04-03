@@ -26,7 +26,7 @@ abstract class AlbumRepository {
   Future<Map<String, dynamic>> getAlbumInfo(dynamic album);
 
   /// Get the cover art URL for an album.
-  Future<String?> getAlbumCoverArt(Map album);
+  Future<Map<String, dynamic>> getAlbumCoverArt(Map album);
 
   /// Update the like status of an album.
   Future<void> updateLikeStatus(Map album, bool add);

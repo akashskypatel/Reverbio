@@ -26,7 +26,7 @@ abstract class SongRepository {
   Future<Map<String, dynamic>> getSongInfo(Map song);
 
   /// Get the streaming URL for a song.
-  Future<String?> getSongUrl(Map song);
+  Future<dynamic> getSongUrl(Map song);
 
   /// Update the like status of a song.
   Future<void> updateLikeStatus(Map song, bool add);

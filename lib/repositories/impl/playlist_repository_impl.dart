@@ -19,7 +19,8 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
-import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/playlist.dart' as playlist_entity;
+import 'package:reverbio/API/entities/playlist_result.dart' show PlaylistOperationResult;
 import 'package:reverbio/repositories/playlist_repository.dart';
 
 /// Concrete implementation of [PlaylistRepository].
@@ -27,27 +28,27 @@ import 'package:reverbio/repositories/playlist_repository.dart';
 /// This is a thin wrapper that provides a testable seam.
 class PlaylistRepositoryImpl implements PlaylistRepository {
   @override
-  Future<List<Map<String, dynamic>>> getPlaylists({bool onlyLiked = false}) async {
-    return getPlaylists(onlyLiked: onlyLiked);
+  Future<List> getPlaylists({bool onlyLiked = false}) async {
+    return playlist_entity.getPlaylists(onlyLiked: onlyLiked);
   }
 
   @override
-  Future<Map<String, dynamic>> getPlaylistInfo(Map playlist) async {
-    return getPlaylistInfo(playlist);
+  Future<Map?> getPlaylistInfo(Map playlist) async {
+    return playlist_entity.getPlaylistInfo(playlist);
   }
 
   @override
-  Future<Map<String, dynamic>> createCustomPlaylist(String name) async {
-    return createCustomPlaylist(name);
+  PlaylistOperationResult createCustomPlaylist(String name) {
+    return playlist_entity.createCustomPlaylist(name);
   }
 
   @override
   Future<void> updatePlaylistList(String playlistId) async {
-    await updatePlaylistList(playlistId);
+    await playlist_entity.updatePlaylistList(playlistId);
   }
 
   @override
   Future<void> updateLikeStatus(Map playlist, bool add) async {
-    await updatePlaylistLikeStatus(playlist, add);
+    await playlist_entity.updatePlaylistLikeStatus(playlist, add);
   }
 }

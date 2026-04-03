@@ -23,11 +23,11 @@
 /// Provides a testable seam between business logic and storage/network layers.
 abstract class ArtistRepository {
   /// Get artist info/metadata for an artist.
-  Future<Map<String, dynamic>> getArtistInfo(dynamic artist);
+  Future<Map<String, dynamic>> getArtistDetails(dynamic artist);
 
   /// Update the like status of an artist.
   Future<void> updateLikeStatus(Map artist, bool add);
 
-  /// Search for artists by query string.
-  Future<List<Map<String, dynamic>>> searchArtists(String query);
+  /// Search for artists by query string list.
+  Future<List<dynamic>> searchArtistsDetails(List<String> query);
 }
