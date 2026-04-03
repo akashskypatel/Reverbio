@@ -55,6 +55,11 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   final List<dynamic> inputData = [];
   final List<BaseCard> cardList = <BaseCard>[];
   GenreList? genresWidget;
+  
+  // 8.2-B: Sort state for liked entities
+  String _sortKey = 'name'; // 'name' or 'dateAdded'
+  bool _sortAscending = true;
+  
   // R5 fix: Add validation for widget.page
   final dataMap = {
     'albums': {
@@ -80,6 +85,34 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
     isFilteredNotifier.dispose();
     cardList.clear();
     super.dispose();
+  }
+
+  // 8.2-B: Sort entities by key and direction
+  void _sortEntities() {
+    inputData.sort((a, b) {
+      int comparison;
+      if (_sortKey == 'name') {
+        final nameA = (a['musicbrainzName'] ?? a['discogsName'] ?? a['artist'] ?? a['title'] ?? '').toString().toLowerCase();
+        final nameB = (b['musicbrainzName'] ?? b['discogsName'] ?? b['artist'] ?? b['title'] ?? '').toString().toLowerCase();
+        comparison = nameA.compareTo(nameB);
+      } else {
+        // Sort by date added (if available)
+        final dateA = a['dateAdded'] ?? DateTime(1970);
+        final dateB = b['dateAdded'] ?? DateTime(1970);
+        comparison = dateA.compareTo(dateB);
+      }
+      return _sortAscending ? comparison : -comparison;
+    });
+  }
+
+  // 8.2-B: Refresh and re-sort entities
+  Future<void> _refreshLikedEntities() async {
+    // Trigger a rebuild by notifying listeners
+    if (mounted) {
+      setState(() {
+        _sortEntities();
+      });
+    }
   }
 
   @override

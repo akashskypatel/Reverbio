@@ -338,33 +338,57 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       // Note: songPrepareTracker is now managed by SongPreparationController
       audioPlayer.setProcessingState(AudioProcessingState.loading);
       song = song ?? audioPlayer.queueSongMaps.first;
+      
+      // Step 1: Set metadata and queue info request
       await audioPlayer.prepare(song);
-      final mediaItemObj = mediaItemFromSong(song);
-      if (mediaItemObj != null) {
-        // Add to audio service queue (OS-level media controls)
-        queue.add(queue.value + [mediaItemObj]);
+      
+      // Step 2: Resolve the song's audio URL
+      await getSongUrl(song);
+      
+      try {
+        // Step 3: Build the Media audio source from the song map
+        final media = await buildAudioSourceFromMap(song);
+        
+        // Step 4: Open the media in the player
+        await audioPlayer.open(media);
+        
+        // Step 5: Add to audio service queue (OS-level media controls)
+        final mediaItemObj = mediaItemFromSong(song);
+        if (mediaItemObj != null) {
+          queue.add(queue.value + [mediaItemObj]);
+        }
+        
+        // Step 6: Play if requested
         if (play) {
           await this.play();
         }
-      } else if (skipOnError) {
-        if (skipCount < audioPlayer.queueSongMaps.length || skipCount <= 10) {
-          final next = nextSong(
-            song,
-            songMaps: audioPlayer.queueSongMaps,
-          );
-          if (next != null) {
-            await Future.delayed(const Duration(seconds: 3));
-            await prepare(
-              song: next,
-              play: play,
-              skipOnError: skipOnError,
-              skipCount: skipCount + 1,
+      } catch (e, stackTrace) {
+        if (skipOnError) {
+          if (skipCount < audioPlayer.queueSongMaps.length || skipCount <= 10) {
+            final next = nextSong(
+              song,
+              songMaps: audioPlayer.queueSongMaps,
             );
-            return;
+            if (next != null) {
+              await Future.delayed(const Duration(seconds: 3));
+              await prepare(
+                song: next,
+                play: play,
+                skipOnError: skipOnError,
+                skipCount: skipCount + 1,
+              );
+              return;
+            }
+          } else {
+            showToast(
+              L10n.current.errorCouldNotFindAStream,
+            );
           }
         } else {
-          showToast(
-            L10n.current.errorCouldNotFindAStream,
+          logger.log(
+            'Error in ${stackTrace.getCurrentMethodName()} (buildAudioSource)',
+            e,
+            stackTrace,
           );
         }
       }

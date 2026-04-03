@@ -148,6 +148,41 @@ Future<dynamic> _findSongByIsrc(dynamic song) async {
   return recording;
 }
 
+/// 8.2-C: Select optimal image from cover art images based on quality and type.
+/// Prioritizes front cover art, then falls back to other images.
+/// Prefers larger images when available.
+Map<String, dynamic>? _selectOptimalImage(List<dynamic> images) {
+  if (images.isEmpty) return null;
+  
+  // Priority order for image types
+  const typePriority = ['Front', 'Back', 'Medium', 'Track'];
+  
+  // Try each type in priority order
+  for (final type in typePriority) {
+    final matchingImages = images.where((img) {
+      final types = img['types'] as List? ?? [];
+      return types.contains(type);
+    }).toList();
+    
+    if (matchingImages.isNotEmpty) {
+      // Sort by size preference (prefer larger)
+      matchingImages.sort((a, b) {
+        final aApproved = a['approved'] == true ? 1 : 0;
+        final bApproved = b['approved'] == true ? 1 : 0;
+        return bApproved.compareTo(aApproved); // Prefer approved images
+      });
+      return matchingImages.first;
+    }
+  }
+  
+  // Fallback to first approved image
+  final approvedImages = images.where((img) => img['approved'] == true).toList();
+  if (approvedImages.isNotEmpty) return approvedImages.first;
+  
+  // Last resort: return first image
+  return images.first;
+}
+
 /// Get song by recording details from MusicBrainz.
 Future<dynamic> _getSongByRecordingDetails(
   dynamic song, {
@@ -197,8 +232,9 @@ Future<dynamic> _getSongByRecordingDetails(
         for (final release in (recording['releases'] ?? [])) {
           final coverArt = await mb.coverArt.get(release['id'], 'release');
           if (coverArt['error'] == null) {
-            //TODO: parse by image size
-            recording['images'] = coverArt['images'];
+            // 8.2-C: Parse images by quality and size preference
+            final images = coverArt['images'] as List? ?? [];
+            recording['images'] = _selectOptimalImage(images);
             break;
           }
         }

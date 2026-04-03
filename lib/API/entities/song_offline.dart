@@ -319,10 +319,137 @@ Future<void> makeSongOffline(dynamic song) async {
     }
 
     song['offlineAudioPath'] = _audioFile;
+    
+    // 8.3-B: Verify offline song quality after download
+    final qualityResult = await verifyOfflineSongQuality(song);
+    if (!qualityResult.isValid) {
+      logger.log('Offline song quality check failed: ${qualityResult.message}', null, null);
+      // Remove invalid download
+      await removeSongFromOffline(song);
+      showToast('Download failed quality verification. Please try again.');
+    }
   } catch (e, stackTrace) {
     logger.log('Error in makeSongOffline:', e, stackTrace);
     rethrow;
   }
+}
+
+/// 8.3-B: Result class for offline song quality verification.
+class OfflineSongQualityResult {
+  final bool isValid;
+  final String message;
+  final int fileSize;
+  final int? bitrate;
+  
+  OfflineSongQualityResult({
+    required this.isValid,
+    required this.message,
+    this.fileSize = 0,
+    this.bitrate,
+  });
+  
+  factory OfflineSongQualityResult.invalid(String message) {
+    return OfflineSongQualityResult(isValid: false, message: message);
+  }
+  
+  factory OfflineSongQualityResult.valid({int fileSize = 0, int? bitrate}) {
+    return OfflineSongQualityResult(
+      isValid: true,
+      message: 'Quality check passed',
+      fileSize: fileSize,
+      bitrate: bitrate,
+    );
+  }
+}
+
+/// 8.3-B: Verify the quality and integrity of an offline song.
+/// Checks file existence, size, and attempts to read metadata.
+Future<OfflineSongQualityResult> verifyOfflineSongQuality(dynamic song) async {
+  try {
+    final offlinePath = song['offlineAudioPath'] as String?;
+    if (offlinePath == null || offlinePath.isEmpty) {
+      return OfflineSongQualityResult.invalid('No offline path found');
+    }
+    
+    final audioFile = File(offlinePath);
+    
+    // Check 1: File exists
+    if (!await audioFile.exists()) {
+      return OfflineSongQualityResult.invalid('Audio file not found');
+    }
+    
+    // Check 2: File size meets minimum threshold (100KB)
+    final fileSize = await audioFile.length();
+    const minFileSize = 100 * 1024; // 100KB
+    if (fileSize < minFileSize) {
+      return OfflineSongQualityResult.invalid(
+        'File too small (${(fileSize / 1024).toStringAsFixed(1)}KB < ${minFileSize ~/ 1024}KB)',
+      );
+    }
+    
+    // Check 3: File is readable and not corrupted
+    try {
+      final bytes = await audioFile.readAsBytes();
+      if (bytes.isEmpty) {
+        return OfflineSongQualityResult.invalid('File is empty');
+      }
+      
+      // Basic format validation - check for common audio file headers
+      final header = bytes.take(16).toList();
+      final isLikelyAudio = _isValidAudioHeader(header);
+      if (!isLikelyAudio) {
+        return OfflineSongQualityResult.invalid('Invalid audio file format');
+      }
+    } catch (e) {
+      return OfflineSongQualityResult.invalid('Cannot read file: $e');
+    }
+    
+    return OfflineSongQualityResult.valid(fileSize: fileSize);
+  } catch (e, stackTrace) {
+    logger.log('Error in verifyOfflineSongQuality:', e, stackTrace);
+    return OfflineSongQualityResult.invalid('Quality check failed: $e');
+  }
+}
+
+/// 8.3-B: Check if file header looks like a valid audio file.
+/// Supports MP3, M4A/AAC, OGG, FLAC, WEBM formats.
+bool _isValidAudioHeader(List<int> header) {
+  if (header.isEmpty) return false;
+  
+  // MP3: ID3v2 starts with "ID3" (0x49 0x44 0x33)
+  // MP3 without ID3: 0xFF 0xFB or 0xFF 0xF3
+  if (header.length >= 2) {
+    if (header[0] == 0xFF && (header[1] == 0xFB || header[1] == 0xF3)) return true;
+  }
+  if (header.length >= 3) {
+    if (header[0] == 0x49 && header[1] == 0x44 && header[2] == 0x33) return true; // ID3
+  }
+  
+  // M4A/AAC: starts with "ftyp" at offset 4
+  if (header.length >= 8) {
+    if (header[4] == 0x66 && header[5] == 0x74 && 
+        header[6] == 0x79 && header[7] == 0x70) return true; // ftyp
+  }
+  
+  // OGG: starts with "OggS"
+  if (header.length >= 4) {
+    if (header[0] == 0x4F && header[1] == 0x67 && 
+        header[2] == 0x67 && header[3] == 0x53) return true; // OggS
+  }
+  
+  // FLAC: starts with "fLaC"
+  if (header.length >= 4) {
+    if (header[0] == 0x66 && header[1] == 0x4C && 
+        header[2] == 0x61 && header[3] == 0x43) return true; // fLaC
+  }
+  
+  // WEBM: starts with EBML (0x1A 0x45 0xDF 0xA3)
+  if (header.length >= 4) {
+    if (header[0] == 0x1A && header[1] == 0x45 && 
+        header[2] == 0xDF && header[3] == 0xA3) return true;
+  }
+  
+  return false;
 }
 
 /// Get list of offline songs.

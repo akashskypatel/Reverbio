@@ -269,14 +269,97 @@ int? getSongHashCode(dynamic song) {
 }
 
 /// Check if two songs have matching title and artist.
+/// Uses fuzzy matching with weighted ratios to handle variations like:
+/// - "Rick Astley" vs "Rick Astley feat. Someone"
+/// - "Song Title (Remastered)" vs "Song Title"
+/// - Artist-in-title patterns and extras bracket checking
 bool checkTitleAndArtist(dynamic songA, dynamic songB) {
   if (songA == null || songB == null) return false;
   if (!(songA is Map) || !(songB is Map)) return false;
+
   final titleA = songTitle(songA).cleansed.toLowerCase();
   final titleB = songTitle(songB).cleansed.toLowerCase();
   final artistA = songArtist(songA).cleansed.toLowerCase();
   final artistB = songArtist(songB).cleansed.toLowerCase();
-  return titleA == titleB && artistA == artistB;
+
+  // Exact match
+  if (titleA == titleB && artistA == artistB) return true;
+
+  // Fuzzy matching with weighted ratio
+  final titleRatio = _weightedRatio(titleA, titleB);
+  final artistRatio = _weightedRatio(artistA, artistB);
+
+  // High confidence match
+  if (titleRatio >= 90 && artistRatio >= 90) return true;
+
+  // Good match with artist subsequence check
+  if (titleRatio >= 75 && artistRatio >= 75) {
+    // Check if one artist is a subsequence of the other
+    if (_isSubsequence(artistA, artistB) || _isSubsequence(artistB, artistA)) {
+      return true;
+    }
+    // Check for artist-in-title patterns
+    if (titleA.contains(artistA) || titleB.contains(artistB)) return true;
+    if (titleA.contains(artistB) || titleB.contains(artistA)) return true;
+  }
+
+  // Check for extras in brackets (e.g., "feat.", "remix", "live")
+  final titleAWithoutExtras = titleA.replaceAll(RegExp(r'\([^)]*\)'), '').trim();
+  final titleBWithoutExtras = titleB.replaceAll(RegExp(r'\([^)]*\)'), '').trim();
+  if (titleAWithoutExtras == titleBWithoutExtras && artistA == artistB) return true;
+  if (titleA == titleB && titleAWithoutExtras == titleBWithoutExtras) return true;
+
+  // Split artists and check for overlap
+  final artistsA = _splitArtists(artistA);
+  final artistsB = _splitArtists(artistB);
+  if (artistsA.isNotEmpty && artistsB.isNotEmpty) {
+    final overlap = artistsA.where((a) => artistsB.any((b) => _weightedRatio(a, b) >= 80)).length;
+    if (overlap > 0 && titleRatio >= 80) return true;
+  }
+
+  return false;
+}
+
+/// Calculate weighted similarity ratio between two strings.
+int _weightedRatio(String a, String b) {
+  if (a.isEmpty && b.isEmpty) return 100;
+  if (a.isEmpty || b.isEmpty) return 0;
+  if (a == b) return 100;
+
+  final shorter = a.length < b.length ? a : b;
+  final longer = a.length < b.length ? b : a;
+  
+  // Check if shorter is a subsequence of longer
+  if (_isSubsequence(shorter, longer)) {
+    return (shorter.length / longer.length * 100).round();
+  }
+
+  // Simple character-based similarity
+  final commonChars = shorter.split('').where((c) => longer.contains(c)).length;
+  return (commonChars / longer.length * 100).round();
+}
+
+/// Check if string a is a subsequence of string b.
+bool _isSubsequence(String a, String b) {
+  if (a.isEmpty) return true;
+  if (b.isEmpty) return false;
+  
+  int i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] == b[j]) i++;
+    j++;
+  }
+  return i == a.length;
+}
+
+/// Split artist string into individual artist names.
+List<String> _splitArtists(String artist) {
+  // Split by common separators: &, and, feat., ft., vs.
+  return artist
+      .split(RegExp(r'\s*(?:&|and|feat\.|ft\.|vs\.|,)\s*', caseSensitive: false))
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
 }
 
 /// Get YouTube URL for a song.

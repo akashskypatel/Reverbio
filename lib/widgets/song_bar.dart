@@ -408,9 +408,57 @@ class _SongBarState extends State<SongBar> {
         final artist = (combineArtists(song) ?? songArtist(song)).nullIfEmpty;
         return Stack(
           children: [
-            Padding(
-              padding: commonBarPadding,
-              //TODO: add left/right sliding action to add song to queue or to offline
+            // 8.2-A: Swipe gestures for queue actions
+            Dismissible(
+              key: Key('song-${widget.songData['id'] ?? widget.songData['title'] ?? UniqueKey().toString()}'),
+              direction: DismissDirection.horizontal,
+              confirmDismiss: (direction) async {
+                if (direction == DismissDirection.endToStart) {
+                  // Swipe left: Add to queue
+                  addSongToQueue(widget.songData);
+                  if (context.mounted) {
+                    showToast(context.l10n!.songAdded);
+                  }
+                } else if (direction == DismissDirection.startToEnd) {
+                  // Swipe right: Make offline
+                  if (isSongAlreadyOffline(widget.songData)) {
+                    unawaited(removeSongFromOffline(widget.songData));
+                    if (context.mounted) {
+                      showToast(context.l10n!.songRemovedFromOffline);
+                    }
+                  } else {
+                    makeSongOffline(widget.songData);
+                    if (context.mounted) {
+                      showToast(context.l10n!.songAddedToOffline);
+                    }
+                  }
+                }
+                return true;
+              },
+              background: Container(
+                decoration: BoxDecoration(
+                  color: _theme.colorScheme.secondaryContainer,
+                  borderRadius: widget.controller.borderRadiusNotifier.value,
+                ),
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 16),
+                child: Icon(
+                  FluentIcons.arrow_download_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+              ),
+              secondaryBackground: Container(
+                decoration: BoxDecoration(
+                  color: _theme.colorScheme.secondaryContainer,
+                  borderRadius: widget.controller.borderRadiusNotifier.value,
+                ),
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                child: Icon(
+                  FluentIcons.add_circle_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+              ),
               child: GestureDetector(
                 onDoubleTapDown: (details) => likeItem(details, song),
                 onSecondaryTapDown: (details) {
@@ -608,15 +656,14 @@ class _SongBarState extends State<SongBar> {
     dynamic song,
   ) async {
     try {
-      //TODO: fix positioning to account for navigation rail on large screen
-      final RenderBox tappedBox = context.findRenderObject() as RenderBox;
-      final RelativeRect position = RelativeRect.fromLTRB(
-        details.globalPosition.dx - (isLargeScreen() ? navigationRailWidth : 0),
-        details.globalPosition.dy,
-        tappedBox.size.width -
-            details.globalPosition.dx -
-            (isLargeScreen() ? navigationRailWidth : 0),
-        tappedBox.size.height - details.globalPosition.dy,
+      // 8.1-C: Calculate position relative to overlay for correct positioning
+      final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+      final position = RelativeRect.fromRect(
+        Rect.fromPoints(
+          details.globalPosition,
+          details.globalPosition,
+        ),
+        Offset.zero & overlay.size,
       );
 
       final value = await showMenu(

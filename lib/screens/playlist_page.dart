@@ -80,6 +80,13 @@ class _PlaylistPageState extends State<PlaylistPage> {
   late Future<NotifiableList<Map<String, dynamic>>> _fetchFuture;
   // R6 fix: Local copy of playlist data to avoid mutating widget.playlistData
   late Map<String, dynamic> _playlistData;
+  
+  // 8.3-A: Pagination state for large playlists
+  final int _pageSize = 50;
+  int _loadedCount = 0;
+  bool _hasMoreSongs = true;
+  final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<bool> _isLoadingMore = ValueNotifier(false);
 
   @override
   void initState() {
@@ -92,12 +99,15 @@ class _PlaylistPageState extends State<PlaylistPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       likeStatus.value = getLikeStatus();
       autoOffline.value = isPlaylistAlreadyOffline(widget.playlistData);
+      // 8.3-A: Add scroll listener for pagination
+      _scrollController.addListener(_onScroll);
     });
   }
 
   @override
   void dispose() {
     _infoRequestFuture.dispose();
+    _scrollController.dispose();
     // R12 fix: Dispose all ValueNotifiers
     _isEditEnabled.dispose();
     likeStatus.dispose();
@@ -154,13 +164,67 @@ class _PlaylistPageState extends State<PlaylistPage> {
     if (completerFuture != null && !_infoRequestFuture.isComplete)
       await completerFuture;
     if (_infoRequestFuture.hasData) {}
-    //TODO: restore pagination to large playlists
+    // 8.3-A: Implement pagination for large playlists
+    final allSongs = (_playlistData['list'] as List?) ?? [];
+    final initialCount = allSongs.length > _pageSize ? _pageSize : allSongs.length;
+    _loadedCount = initialCount;
+    _hasMoreSongs = allSongs.length > _loadedCount;
+    
     final _list = NotifiableList.from(
-      ((_playlistData['list'] as List?) ?? []).map((e) {
+      allSongs.take(initialCount).map((e) {
         return Map<String, dynamic>.from(e);
       }),
     );
     return _list;
+  }
+
+  /// 8.3-A: Load more songs when user scrolls near the end
+  Future<void> _loadMoreSongs() async {
+    if (_isLoadingMore.value || !_hasMoreSongs) return;
+    
+    _isLoadingMore.value = true;
+    try {
+      final allSongs = (_playlistData['list'] as List?) ?? [];
+      final remaining = allSongs.length - _loadedCount;
+      if (remaining <= 0) {
+        _hasMoreSongs = false;
+        return;
+      }
+      
+      final toLoad = remaining > _pageSize ? _pageSize : remaining;
+      
+      _loadedCount += toLoad;
+      _hasMoreSongs = _loadedCount < allSongs.length;
+      
+      // Note: We can't directly modify the NotifiableList from FutureBuilder,
+      // so we trigger a rebuild which will re-fetch with updated _loadedCount
+      if (mounted) {
+        setState(() {
+          _fetchFuture = _fetchUpdatedList();
+        });
+      }
+    } finally {
+      _isLoadingMore.value = false;
+    }
+  }
+
+  /// 8.3-A: Fetch updated list with loaded songs
+  Future<NotifiableList<Map<String, dynamic>>> _fetchUpdatedList() async {
+    final allSongs = (_playlistData['list'] as List?) ?? [];
+    final _list = NotifiableList.from(
+      allSongs.take(_loadedCount).map((e) {
+        return Map<String, dynamic>.from(e);
+      }),
+    );
+    return _list;
+  }
+
+  /// 8.3-A: Scroll listener to trigger pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 500) {
+      _loadMoreSongs();
+    }
   }
 
   @override
@@ -174,6 +238,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   Widget _buildList() {
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -200,6 +265,21 @@ class _PlaylistPageState extends State<PlaylistPage> {
                     isEditable: value,
                   ),
             );
+          },
+        ),
+        // 8.3-A: Loading indicator for pagination
+        ValueListenableBuilder(
+          valueListenable: _isLoadingMore,
+          builder: (context, isLoading, child) {
+            if (isLoading) {
+              return const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: Spinner()),
+                ),
+              );
+            }
+            return const SliverToBoxAdapter(child: SizedBox.shrink());
           },
         ),
       ],
