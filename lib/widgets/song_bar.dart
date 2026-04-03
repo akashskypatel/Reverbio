@@ -426,7 +426,7 @@ class _SongBarState extends State<SongBar> {
                       showToast(context.l10n!.songRemovedFromOffline);
                     }
                   } else {
-                    makeSongOffline(widget.songData);
+                    unawaited(makeSongOffline(widget.songData));
                     if (context.mounted) {
                       showToast(context.l10n!.songAddedToOffline);
                     }

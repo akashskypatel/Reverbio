@@ -144,7 +144,7 @@ Future<Map<String, dynamic>> getArtistDetails(
     
     // 8.3-C: Cache the combined result
     result['cachedAt'] = DateTime.now().toIso8601String();
-    addArtistToCache(result);
+    unawaited(addArtistToCache(result));
     
     await PM.triggerHook(artistData, 'onGetArtistInfo');
     return result;
@@ -559,15 +559,15 @@ Future<dynamic> _getArtistDetailsMB(
           
           // 8.3-C: Cache the result
           finalResult['cachedAt'] = DateTime.now().toIso8601String();
-          addArtistToCache(finalResult);
-          
+          unawaited(addArtistToCache(finalResult));
+
           return [finalResult];
         } else {
           // 8.3-C: Optimize batch fetching with parallel requests
           // Check cache for all artists first
           final cachedResults = <Map<String, dynamic>>[];
           final uncachedIds = <String>[];
-          
+
           for (final artist in result) {
             final artistId = artist.key['id'] as String;
             final cached = _getCachedArtist(artistId);
@@ -577,7 +577,7 @@ Future<dynamic> _getArtistDetailsMB(
               uncachedIds.add(artistId);
             }
           }
-          
+
           // 8.3-C: Fetch uncached artists in parallel (max 5 concurrent)
           final newResults = <Map<String, dynamic>>[];
           const batchSize = 5;
@@ -588,7 +588,7 @@ Future<dynamic> _getArtistDetailsMB(
               if (artQry['error'] != null) return null;
               // 8.3-C: Cache each result
               artQry['cachedAt'] = DateTime.now().toIso8601String();
-              addArtistToCache(artQry);
+              unawaited(addArtistToCache(artQry));
               return artQry;
             });
             final batchResults = await Future.wait(futures);

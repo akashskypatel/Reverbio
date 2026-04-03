@@ -20,7 +20,6 @@
  */
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:android_media_store/android_media_store.dart';
@@ -67,9 +66,14 @@ Future<dynamic> getSongUrl(dynamic song, {bool skipDownload = false}) async {
     song['songUrl'] = offlinePath;
   }
   if (offlinePath == null || offlinePath.isEmpty) {
-    // R557 fix: PM.getSongUrl already sets song['songUrl'] internally via onSuccess callback
-    // No need to assign the return value - it may overwrite the plugin's URL with fallback
-    await PM.getSongUrl(song, getSongYoutubeUrl);
+    // 8.3-B fix: Use return value from PM.getSongUrl to ensure consistency
+    // PM.getSongUrl either calls a plugin (which sets song['songUrl'] via onSuccess)
+    // or calls the fallback getSongYoutubeUrl (which also sets song['songUrl'])
+    // We use the return value to ensure song['songUrl'] is set even if plugins fail
+    final resolvedUrl = await PM.getSongUrl(song, getSongYoutubeUrl);
+    if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
+      song['songUrl'] = resolvedUrl;
+    }
   }
 
   if (((song['autoCacheOffline'] ?? false) || autoCacheOffline.value) &&
@@ -270,67 +274,25 @@ Future<void> makeSongOffline(dynamic song) async {
       song = songData;
       if (song['songUrl'] == null)
         throw Exception('Could not find a download source.');
-      final task = DownloadTask(
-        taskId: id,
-        url: songUrl,
-        filename: '$id$ext',
-        directory: 'tracks',
-        baseDirectory: BaseDirectory.applicationSupport,
-        updates: Updates.statusAndProgress,
-        displayName: '${songTitle(song)} - ${songArtist(song)}',
-        metaData: jsonEncode({
-          'id': song['id'],
-          'title': songTitle(song),
-          'artist': songArtist(song),
-        }),
-      );
-      final result = await FileDownloader().enqueue(task);
-      if (!result) {
-        showToast(
-          '${L10n.current.unableToDownload}: ${songTitle(song)} - ${songArtist(song)}',
-        );
-        return;
+      
+      // 8.3-B fix: Download directly with http instead of FileDownloader
+      // This avoids race condition with _handleFileDownloadState in audio_handler.dart
+      // which also listens to FileDownloader().updates
+      final targetDir = Directory(_audioDirPath);
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
       }
       
-      // 8.3-B fix: Wait for download to complete before quality check
-      // enqueue() only queues the task, we must wait for it to finish
-      String? downloadedFilePath;
-      final completer = Completer<void>();
-      final subscription = FileDownloader().updates.listen((update) {
-        if (update.task.taskId == id) {
-          if (update is TaskStatusUpdate) {
-            if (update.status == TaskStatus.complete) {
-              // 8.3-B fix: Capture actual downloaded file path
-              downloadedFilePath = p.join(update.task.directory, update.task.filename);
-              completer.complete();
-            } else if (update.status == TaskStatus.failed ||
-                update.status == TaskStatus.canceled ||
-                update.status == TaskStatus.notFound) {
-              completer.completeError(
-                Exception('Download ${update.status.name}'),
-              );
-            }
-          }
-        }
-      });
-      
+      final client = http.Client();
       try {
-        await completer.future;
-      } finally {
-        await subscription.cancel();
-      }
-      
-      // 8.3-B fix: Move downloaded file to user's offlineDirectory if different
-      if (downloadedFilePath != null && downloadedFilePath != _audioFile) {
-        final downloadedFile = File(downloadedFilePath!);
-        if (await downloadedFile.exists()) {
-          final targetDir = Directory(_audioDirPath);
-          if (!await targetDir.exists()) {
-            await targetDir.create(recursive: true);
-          }
-          await downloadedFile.copy(_audioFile);
-          await downloadedFile.delete();
+        final response = await client.get(Uri.parse(songUrl));
+        if (response.statusCode != 200) {
+          throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
         }
+        final audioFile = File(_audioFile);
+        await audioFile.writeAsBytes(response.bodyBytes);
+      } finally {
+        client.close();
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -430,16 +392,21 @@ Future<OfflineSongQualityResult> verifyOfflineSongQuality(dynamic song) async {
       );
     }
     
-    // Check 3: File is readable and not corrupted
+    // Check 3: File is readable and has valid audio header
     try {
-      final bytes = await audioFile.readAsBytes();
-      if (bytes.isEmpty) {
+      // 8.3-B fix: Read only first 16 bytes instead of entire file
+      // Using openRead().take() avoids loading large files (50-100MB+) into memory
+      final headerBytes = await audioFile
+          .openRead(0, 16)
+          .take(16)
+          .fold<List<int>>([], (prev, element) => prev..addAll(element));
+
+      if (headerBytes.isEmpty) {
         return OfflineSongQualityResult.invalid('File is empty');
       }
-      
+
       // Basic format validation - check for common audio file headers
-      final header = bytes.take(16).toList();
-      final isLikelyAudio = _isValidAudioHeader(header);
+      final isLikelyAudio = _isValidAudioHeader(headerBytes);
       if (!isLikelyAudio) {
         return OfflineSongQualityResult.invalid('Invalid audio file format');
       }

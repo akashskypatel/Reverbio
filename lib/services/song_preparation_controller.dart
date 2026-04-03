@@ -27,6 +27,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/services/queue_manager.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
@@ -67,9 +68,7 @@ class SongPreparationController extends ChangeNotifier {
   void addMediaItemToStream(MediaItem item) => _mediaItemStreamController.add(item);
 
   // A1 fix: Track preparation state to prevent race conditions
-  bool _isPreparing = false;
-  bool get isPreparing => _isPreparing;
-  set isPreparing(bool value) => _isPreparing = value;
+  bool isPreparing = false;
 
   bool get isError => isErrorNotifier.value;
   bool get isLoading => isLoadingNotifier.value;
@@ -97,8 +96,8 @@ class SongPreparationController extends ChangeNotifier {
 
   /// A1 fix: Prepare song metadata (moved from _SongBarState._prepareSong)
   Future<void> prepareSong() async {
-    if (_isPreparing) return;
-    _isPreparing = true;
+    if (isPreparing) return;
+    isPreparing = true;
     try {
       final _song = copyMap(songMetadataNotifier.value)
         ..addAll(songFuture.resultOrData ?? {});
@@ -137,7 +136,7 @@ class SongPreparationController extends ChangeNotifier {
         stackTrace,
       );
     } finally {
-      _isPreparing = false;
+      isPreparing = false;
     }
     if (isErrorNotifier.value) {
       showToast(L10n.current.errorCouldNotFindAStream);
@@ -250,19 +249,15 @@ class SongPreparationController extends ChangeNotifier {
     }
   }
 
-  // E1c fix: Add to queue (moved from _SongBarState._addToQueue)
-  // Note: Requires E2 (Map refactor) to work properly with queue_manager.dart
+  // E1c fix: Add to queue — calls queue_manager.addSongToQueue
   void addToQueue() {
-    // TODO: Call queue_manager.addSongToQueue(song) after E2 refactor
-    // For now, this is a placeholder
+    addSongToQueue(song);
     notifyListeners();
   }
 
-  // E1c fix: Remove from queue (moved from _SongBarState._removeFromQueue)
-  // Note: Requires E2 (Map refactor) to work properly with queue_manager.dart
+  // E1c fix: Remove from queue — calls queue_manager.removeSongFromQueue
   void removeFromQueue() {
-    // TODO: Call queue_manager.removeSongFromQueue(song) after E2 refactor
-    // For now, this is a placeholder
+    removeSongFromQueue(song);
     notifyListeners();
   }
 
