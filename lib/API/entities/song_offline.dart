@@ -285,10 +285,53 @@ Future<void> makeSongOffline(dynamic song) async {
         }),
       );
       final result = await FileDownloader().enqueue(task);
-      if (!result)
+      if (!result) {
         showToast(
           '${L10n.current.unableToDownload}: ${songTitle(song)} - ${songArtist(song)}',
         );
+        return;
+      }
+      
+      // 8.3-B fix: Wait for download to complete before quality check
+      // enqueue() only queues the task, we must wait for it to finish
+      String? downloadedFilePath;
+      final completer = Completer<void>();
+      final subscription = FileDownloader().updates.listen((update) {
+        if (update.task.taskId == id) {
+          if (update is TaskStatusUpdate) {
+            if (update.status == TaskStatus.complete) {
+              // 8.3-B fix: Capture actual downloaded file path
+              downloadedFilePath = p.join(update.task.directory, update.task.filename);
+              completer.complete();
+            } else if (update.status == TaskStatus.failed ||
+                update.status == TaskStatus.canceled ||
+                update.status == TaskStatus.notFound) {
+              completer.completeError(
+                Exception('Download ${update.status.name}'),
+              );
+            }
+          }
+        }
+      });
+      
+      try {
+        await completer.future;
+      } finally {
+        await subscription.cancel();
+      }
+      
+      // 8.3-B fix: Move downloaded file to user's offlineDirectory if different
+      if (downloadedFilePath != null && downloadedFilePath != _audioFile) {
+        final downloadedFile = File(downloadedFilePath!);
+        if (await downloadedFile.exists()) {
+          final targetDir = Directory(_audioDirPath);
+          if (!await targetDir.exists()) {
+            await targetDir.create(recursive: true);
+          }
+          await downloadedFile.copy(_audioFile);
+          await downloadedFile.delete();
+        }
+      }
     } catch (e, stackTrace) {
       logger.log(
         'Error in makeSongOffline:',
@@ -320,7 +363,7 @@ Future<void> makeSongOffline(dynamic song) async {
 
     song['offlineAudioPath'] = _audioFile;
     
-    // 8.3-B: Verify offline song quality after download
+    // 8.3-B: Verify offline song quality AFTER download completes
     final qualityResult = await verifyOfflineSongQuality(song);
     if (!qualityResult.isValid) {
       logger.log('Offline song quality check failed: ${qualityResult.message}', null, null);
@@ -336,10 +379,6 @@ Future<void> makeSongOffline(dynamic song) async {
 
 /// 8.3-B: Result class for offline song quality verification.
 class OfflineSongQualityResult {
-  final bool isValid;
-  final String message;
-  final int fileSize;
-  final int? bitrate;
   
   OfflineSongQualityResult({
     required this.isValid,
@@ -360,6 +399,10 @@ class OfflineSongQualityResult {
       bitrate: bitrate,
     );
   }
+  final bool isValid;
+  final String message;
+  final int fileSize;
+  final int? bitrate;
 }
 
 /// 8.3-B: Verify the quality and integrity of an offline song.

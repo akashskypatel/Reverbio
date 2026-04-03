@@ -57,8 +57,8 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   GenreList? genresWidget;
   
   // 8.2-B: Sort state for liked entities
-  String _sortKey = 'name'; // 'name' or 'dateAdded'
-  bool _sortAscending = true;
+  final String _sortKey = 'name'; // 'name' or 'dateAdded'
+  final bool _sortAscending = true;
   
   // R5 fix: Add validation for widget.page
   final dataMap = {
@@ -109,9 +109,7 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   Future<void> _refreshLikedEntities() async {
     // Trigger a rebuild by notifying listeners
     if (mounted) {
-      setState(() {
-        _sortEntities();
-      });
+      setState(_sortEntities);
     }
   }
 

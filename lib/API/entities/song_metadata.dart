@@ -222,10 +222,27 @@ Map<String, dynamic> minimizeSongData(dynamic song) {
 
 /// Check if two song references point to the same song.
 bool checkSong(dynamic songA, dynamic songB) {
-  // R16 fix: Use local variables instead of mutating input maps
-  // R1499 fix: Pass Map copy to parseEntityId to prevent mutating original
-  final idA = songA is Map ? parseEntityId(Map<String, dynamic>.from(songA)) : songA;
-  final idB = songB is Map ? parseEntityId(Map<String, dynamic>.from(songB)) : songB;
+  // 8.3-C fix: Avoid Map allocations and parseEntityId mutations
+  // Read existing IDs directly instead of calling parseEntityId which mutates maps
+  String? idA, idB;
+  if (songA is Map) {
+    idA = songA['id'] as String?;
+    // If no cached ID, compute without mutating
+    if (idA == null || idA.isEmpty) {
+      idA = getCombinedId(songA);
+    }
+  } else if (songA is String) {
+    idA = songA;
+  }
+  if (songB is Map) {
+    idB = songB['id'] as String?;
+    if (idB == null || idB.isEmpty) {
+      idB = getCombinedId(songB);
+    }
+  } else if (songB is String) {
+    idB = songB;
+  }
+  
   if (songA is String && songB is String)
     return (songA.isNotEmpty && songB.isNotEmpty) &&
         checkEntityId(songA, songB);
@@ -334,9 +351,28 @@ int _weightedRatio(String a, String b) {
     return (shorter.length / longer.length * 100).round();
   }
 
-  // Simple character-based similarity
-  final commonChars = shorter.split('').where((c) => longer.contains(c)).length;
-  return (commonChars / longer.length * 100).round();
+  // Character frequency-based similarity
+  // Count frequency of each character in both strings
+  final shorterFreq = <String, int>{};
+  for (final c in shorter.split('')) {
+    shorterFreq[c] = (shorterFreq[c] ?? 0) + 1;
+  }
+  
+  final longerFreq = <String, int>{};
+  for (final c in longer.split('')) {
+    longerFreq[c] = (longerFreq[c] ?? 0) + 1;
+  }
+  
+  // Count overlapping characters (minimum of frequencies)
+  int overlap = 0;
+  for (final entry in shorterFreq.entries) {
+    final char = entry.key;
+    final shorterCount = entry.value;
+    final longerCount = longerFreq[char] ?? 0;
+    overlap += shorterCount < longerCount ? shorterCount : longerCount;
+  }
+  
+  return (overlap / longer.length * 100).round();
 }
 
 /// Check if string a is a subsequence of string b.

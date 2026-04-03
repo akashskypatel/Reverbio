@@ -411,7 +411,6 @@ class _SongBarState extends State<SongBar> {
             // 8.2-A: Swipe gestures for queue actions
             Dismissible(
               key: Key('song-${widget.songData['id'] ?? widget.songData['title'] ?? UniqueKey().toString()}'),
-              direction: DismissDirection.horizontal,
               confirmDismiss: (direction) async {
                 if (direction == DismissDirection.endToStart) {
                   // Swipe left: Add to queue

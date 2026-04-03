@@ -348,16 +348,17 @@ class ReverbioAudioHandler extends BaseAudioHandler {
       try {
         // Step 3: Build the Media audio source from the song map
         final media = await buildAudioSourceFromMap(song);
-        
-        // Step 4: Open the media in the player
-        await audioPlayer.open(media);
-        
+
+        // Step 4: Queue the media (opens, seeks to start, and pauses)
+        // This prevents auto-play when prepare() is called with play: false
+        await audioPlayer.queue(media);
+
         // Step 5: Add to audio service queue (OS-level media controls)
         final mediaItemObj = mediaItemFromSong(song);
         if (mediaItemObj != null) {
           queue.add(queue.value + [mediaItemObj]);
         }
-        
+
         // Step 6: Play if requested
         if (play) {
           await this.play();
