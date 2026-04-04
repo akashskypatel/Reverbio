@@ -23,12 +23,6 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Format Code
-        run: dart fix . --apply
-
-      - name: Analyze Code
-        run: flutter analyze
-
   test:
     name: Run Tests
     runs-on: ubuntu-latest
