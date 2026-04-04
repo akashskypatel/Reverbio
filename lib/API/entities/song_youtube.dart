@@ -250,14 +250,14 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
           null,
           null,
         );
-        songUrl = song['songUrl'] = '';
+        song['songUrl'] = null;
         song['error'] = L10n.current.errorCouldNotFindAStream;
         song['isError'] = true;
       }
       //check if url resolves (R5 fix: only check non-empty URLs)
       if (songUrl.isNotEmpty && await checkUrl(songUrl) >= 400) {
         logger.log('Song url could not be resolved. $songUrl', null, null);
-        songUrl = song['songUrl'] = '';
+        song['songUrl'] = null;
         song['error'] = L10n.current.urlError;
         song['isError'] = true;
         return '';
@@ -274,6 +274,7 @@ Future<String> getSongYoutubeUrl(dynamic song, {bool waitForMb = false}) async {
       }
     }
   } catch (e, stackTrace) {
+    song['songUrl'] = null;
     song['error'] = L10n.current.urlError;
     song['isError'] = true;
     logger.log('Error in getSongYoutubeUrl:', e, stackTrace);

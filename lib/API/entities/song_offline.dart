@@ -285,12 +285,14 @@ Future<void> makeSongOffline(dynamic song) async {
       
       final client = http.Client();
       try {
-        final response = await client.get(Uri.parse(songUrl));
-        if (response.statusCode != 200) {
-          throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
+        final request = http.Request('GET', Uri.parse(songUrl));
+        final streamedResponse = await client.send(request);
+        if (streamedResponse.statusCode != 200) {
+          throw Exception('HTTP ${streamedResponse.statusCode}: ${streamedResponse.reasonPhrase}');
         }
         final audioFile = File(_audioFile);
-        await audioFile.writeAsBytes(response.bodyBytes);
+        // Stream the response body directly to the file to avoid loading large audio files into memory
+        await streamedResponse.stream.pipe(audioFile.openWrite());
       } finally {
         client.close();
       }

@@ -283,8 +283,11 @@ class _SongBarState extends State<SongBar> {
         widget.controller.songMetadataNotifier.value = _song;
       });
       // R4 fix: Create new map copy instead of mutating via getter bypass
-      if (widget.song['songUrl'] == null ||
-          await checkUrl(widget.song['songUrl']) >= 400) {
+      // Also check for empty string to handle cases where songUrl was cleared on failure
+      final songUrl = widget.song['songUrl'] as String?;
+      if (songUrl == null ||
+          songUrl.isEmpty ||
+          await checkUrl(songUrl) >= 400) {
         final _song =
             copyMap(widget.controller.songMetadataNotifier.value)
               ..['songUrl'] = null

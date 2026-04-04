@@ -174,8 +174,9 @@ class _HomePageState extends State<HomePage> {
                         snapshot.data == null ||
                         snapshot.data!.isEmpty)
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    // Fix: Map list items to correct type to avoid runtime cast error
                     final _list = NotifiableList.from(
-                      snapshot.data! as List<Map<String, dynamic>>,
+                      snapshot.data!.map((e) => Map<String, dynamic>.from(e)).toList(),
                     );
                     return SongList(
                       page: 'recommended',

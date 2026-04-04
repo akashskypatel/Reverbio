@@ -285,28 +285,24 @@ class _ArtistPageState extends State<ArtistPage> {
       albums,
       Future.microtask(() async {
         if (!dataFuture.isComplete) await dataFuture.completerFuture;
-        albums =
-            artistData?['musicbrainz']?['release-groups'] == null
-                ? []
-                : List.from(artistData?['musicbrainz']['release-groups'])
-                    .where(
-                      (value) =>
-                          value['primary-type'].toString().toLowerCase() ==
-                          'album',
-                    )
-                    .map((ele) {
-                      ele['source'] = 'musicbrainz';
-                      ele['artist'] = artistData?['artist'];
-                      ele['artistId'] = artistData?['id'];
-                      ele['isAlbum'] = true;
-                      ele['ytid'] = null;
-                      return ele;
-                    })
-                    .map((e) {
-                      e = Map<String, dynamic>.from(e);
-                      return e;
-                    })
-                    .toList();
+        final source = artistData?['musicbrainz']?['release-groups'];
+        if (source == null) {
+          albums = [];
+        } else {
+          albums = List.from(source)
+              .where((value) =>
+                  value['primary-type'].toString().toLowerCase() == 'album')
+              .map((ele) {
+                ele['source'] = 'musicbrainz';
+                ele['artist'] = artistData?['artist'];
+                ele['artistId'] = artistData?['id'];
+                ele['isAlbum'] = true;
+                ele['ytid'] = null;
+                return ele;
+              })
+              .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
         return getAlbumsCoverArt(albums);
       }),
     );
@@ -317,31 +313,26 @@ class _ArtistPageState extends State<ArtistPage> {
       others,
       Future.microtask(() async {
         if (!dataFuture.isComplete) await dataFuture.completerFuture;
-        others =
-            artistData?['musicbrainz']?['release-groups'] == null
-                ? []
-                : List.from(artistData?['musicbrainz']?['release-groups'])
-                    .where(
-                      (value) =>
-                          value['primary-type'].toString().toLowerCase() !=
-                              'album' &&
-                          value['primary-type'].toString().toLowerCase() !=
-                              'single',
-                    )
-                    .map((ele) {
-                      ele['source'] = 'musicbrainz';
-                      ele['primary-type'] = ele['primary-type'] ?? 'unknown';
-                      ele['artist'] = artistData?['artist'];
-                      ele['artistId'] = artistData?['id'];
-                      ele['isAlbum'] = false;
-                      ele['ytid'] = null;
-                      return ele;
-                    })
-                    .map((e) {
-                      e = Map<String, dynamic>.from(e);
-                      return e;
-                    })
-                    .toList();
+        final source = artistData?['musicbrainz']?['release-groups'];
+        if (source == null) {
+          others = [];
+        } else {
+          others = List.from(source)
+              .where((value) =>
+                  value['primary-type'].toString().toLowerCase() != 'album' &&
+                  value['primary-type'].toString().toLowerCase() != 'single')
+              .map((ele) {
+                ele['source'] = 'musicbrainz';
+                ele['primary-type'] = ele['primary-type'] ?? 'unknown';
+                ele['artist'] = artistData?['artist'];
+                ele['artistId'] = artistData?['id'];
+                ele['isAlbum'] = false;
+                ele['ytid'] = null;
+                return ele;
+              })
+              .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
         return getAlbumsCoverArt(others);
       }),
     );
@@ -351,36 +342,29 @@ class _ArtistPageState extends State<ArtistPage> {
     return NotifiableList.fromAsync(
       Future.microtask(() async {
         if (!dataFuture.isComplete) await dataFuture.completerFuture;
-        singles =
-            (widget.artistData?['musicbrainz']?['release-groups'] == null
-                    ? []
-                    : List.from(
-                          widget.artistData?['musicbrainz']?['release-groups'],
-                        )
-                        .where(
-                          (value) =>
-                              value['primary-type'].toString().toLowerCase() ==
-                              'single',
-                        )
-                        .map((ele) {
-                          ele['source'] = 'musicbrainz';
-                          ele['artist'] = widget.artistData?['artist'];
-                          ele['artistId'] = widget.artistData?['id'];
-                          ele['isAlbum'] = false;
-                          ele['isSong'] = true;
-                          ele['ytid'] = null;
-                          ele['image'] =
-                              pickRandomItem(
-                                widget.artistData?['discogs']?['images'] ?? [],
-                              )?['uri150'];
-                          return ele;
-                        }))
-                .map((e) {
-                  e = Map<String, dynamic>.from(e);
-                  return e;
-                })
-                .toList();
-        return singles as List<Map<String, dynamic>>;
+        final source = widget.artistData?['musicbrainz']?['release-groups'];
+        if (source == null) {
+          singles = [];
+        } else {
+          singles = List.from(source)
+              .where((value) =>
+                  value['primary-type'].toString().toLowerCase() == 'single')
+              .map((ele) {
+                ele['source'] = 'musicbrainz';
+                ele['artist'] = widget.artistData?['artist'];
+                ele['artistId'] = widget.artistData?['id'];
+                ele['isAlbum'] = false;
+                ele['isSong'] = true;
+                ele['ytid'] = null;
+                ele['image'] = pickRandomItem(
+                        widget.artistData?['discogs']?['images'] ?? [])
+                    ?['uri150'];
+                return ele;
+              })
+              .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+        return singles.cast<Map<String, dynamic>>();
       }),
     );
   }

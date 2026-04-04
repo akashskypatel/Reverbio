@@ -421,11 +421,14 @@ bool isSongDerivativeFromTitle(
   // Convert to lowercase and remove title/artist
   final replaced =
       value
+          .toString()
           .toLowerCase()
           .replaceAll(title?.toLowerCase() ?? '', '')
           .replaceAll(album?.toLowerCase() ?? '', '')
           .replaceAll(artist?.toLowerCase() ?? '', '')
-          .sanitized;
+          .replaceAll(RegExp(r'[^\w\s-]'), '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
 
   final derivativeRegex = RegExp(
     '(cover|remix|medley|mashup|sampling|parody|tribute|live version|acoustic version|instrumental)',

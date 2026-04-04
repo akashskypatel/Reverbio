@@ -364,13 +364,13 @@ Future<List> getPlaylists({
 }) async {
   // R2 fix: Handle onlyLiked BEFORE early exit (was unreachable after it)
   if (onlyLiked && playlistsNum == null && query == null) {
-    return userLikedPlaylists;
+    return List<Map<String, dynamic>>.from(userLikedPlaylists);
   }
 
   // Only return [] when neither playlistsNum nor query is specified
   // (onlyLiked case already handled above)
   if (playlistsNum == null && query == null) {
-    return dbPlaylists;
+    return List<Map<String, dynamic>>.from(dbPlaylists);
   }
 
   // If a query is provided (without a limit), filter playlists based on the query and type,
@@ -467,7 +467,7 @@ Future<List> getPlaylists({
   }
 
   // Default to returning all playlists.
-  return dbPlaylists;
+  return List<Map<String, dynamic>>.from(dbPlaylists);
 }
 
 // A2 fix: Moved to entities.dart to break circular import with song.dart
