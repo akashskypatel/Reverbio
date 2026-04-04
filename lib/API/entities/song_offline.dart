@@ -284,6 +284,7 @@ Future<void> makeSongOffline(dynamic song) async {
       }
       
       final client = http.Client();
+      IOSink? fileSink;
       try {
         final request = http.Request('GET', Uri.parse(songUrl));
         final streamedResponse = await client.send(request);
@@ -291,9 +292,11 @@ Future<void> makeSongOffline(dynamic song) async {
           throw Exception('HTTP ${streamedResponse.statusCode}: ${streamedResponse.reasonPhrase}');
         }
         final audioFile = File(_audioFile);
+        fileSink = audioFile.openWrite();
         // Stream the response body directly to the file to avoid loading large audio files into memory
-        await streamedResponse.stream.pipe(audioFile.openWrite());
+        await streamedResponse.stream.pipe(fileSink);
       } finally {
+        await fileSink?.close();
         client.close();
       }
       
@@ -503,17 +506,17 @@ Future<bool> checkOfflineFiles() async {
       Directory(
         _audioDirPath,
       ).listSync().map((file) => p.basenameWithoutExtension(file.path)).toSet();
-  final offlineSongsSet = userOfflineSongs.toSet();
   userOfflineSongs.removeWhere(
     (s) => !fileList.any((f) => checkEntityId(s, f)),
   );
-  if (fileList.length != offlineSongsSet.length) return false;
+  // R506 fix: Use updated userOfflineSongs (after removeWhere) for all comparisons
+  if (fileList.length != userOfflineSongs.length) return false;
   if (fileList.isEmpty && userOfflineSongs.isEmpty) return true;
   if ((userOfflineSongs.isEmpty && fileList.isNotEmpty) ||
       userOfflineSongs.length != fileList.length)
     return false;
   final exists = fileList.every(
-    (f) => offlineSongsSet.any((s) => checkEntityId(f, s)),
+    (f) => userOfflineSongs.any((s) => checkEntityId(f, s)),
   );
   return exists;
 }

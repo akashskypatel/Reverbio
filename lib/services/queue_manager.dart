@@ -96,11 +96,12 @@ Map<String, dynamic>? nextSong(Map<String, dynamic> song, {List<Map<String, dyna
   final list = songMaps != null ? songMaps : audioHandler.queueSongMaps;
   final length = list.length;
   final index = list.indexWhere((e) => checkSong(e, song));
-  if (index < 0 || index + 1 >= list.length) return null;
+  if (index < 0) return null;
   if (length == 1) return song;
   if (index == (length - 1) &&
       repeatNotifier.value == AudioServiceRepeatMode.all)
     return list[0];
+  if (index + 1 >= list.length) return null;
   return list[index + 1];
 }
 
@@ -109,10 +110,11 @@ Map<String, dynamic>? previousSong(Map<String, dynamic> song, {List<Map<String, 
   final list = songMaps != null ? songMaps : audioHandler.queueSongMaps;
   final length = list.length;
   final index = list.indexWhere((e) => checkSong(e, song));
-  if (index < 0 || index - 1 < 0) return null;
+  if (index < 0) return null;
   if (length == 1) return song;
   if (index == 0 && repeatNotifier.value == AudioServiceRepeatMode.all)
     return list[length - 1];
+  if (index - 1 < 0) return null;
   return list[index - 1];
 }
 
