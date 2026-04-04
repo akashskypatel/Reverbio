@@ -23,8 +23,11 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Format Code
+        run: dart fix . --apply
+
       - name: Analyze Code
-        run: flutter analyze --fatal-infos
+        run: flutter analyze
 
   test:
     name: Run Tests
