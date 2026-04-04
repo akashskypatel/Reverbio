@@ -72,7 +72,6 @@ flutter:
     - assets/images/
     - assets/fonts/
     - assets/icons/
-    - .env
 
   fonts:
     - family: ReverbioIcons
