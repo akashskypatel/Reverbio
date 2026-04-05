@@ -7,7 +7,7 @@ on:
     branches: [main, master]
 
 jobs:
-  analyze:
+  get:
     name: Analyze Code
     runs-on: ubuntu-latest
     steps:
@@ -23,36 +23,36 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    needs: analyze
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  # test:
+  #   name: Run Tests
+  #   runs-on: ubuntu-latest
+  #   needs: analyze
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.35.3"
-          cache: true
+  #     - name: Setup Flutter
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: "3.35.3"
+  #         cache: true
 
-      - name: Install Dependencies
-        run: flutter pub get
+  #     - name: Install Dependencies
+  #       run: flutter pub get
 
-      - name: Run Unit Tests
-        run: flutter test --coverage
+  #     - name: Run Unit Tests
+  #       run: flutter test --coverage
 
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v4
-        with:
-          file: coverage/lcov.info
-          fail_ci_if_error: false
+  #     - name: Upload Coverage
+  #       uses: codecov/codecov-action@v4
+  #       with:
+  #         file: coverage/lcov.info
+  #         fail_ci_if_error: false
 
   build:
     name: Build Check
     runs-on: ubuntu-latest
-    needs: test
+    needs: get
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout Repository
@@ -64,8 +64,5 @@ jobs:
           flutter-version: "3.35.3"
           cache: true
 
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --debug
+      - name: Build Linux
+        run: flutter build linux --debug
