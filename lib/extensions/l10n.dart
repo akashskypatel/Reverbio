@@ -81,6 +81,16 @@ class L10n {
     _instance = lookupAppLocalizations(parseLocale(languageSetting.value));
   }
 
+  /// Set L10n instance for testing purposes.
+  static void setInstanceForTesting(AppLocalizations instance) {
+    _instance = instance;
+  }
+
+  /// Reset L10n instance after testing.
+  static void resetForTesting() {
+    _instance = null;
+  }
+
   static AppLocalizations get current {
     return _instance!;
   }

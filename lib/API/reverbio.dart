@@ -62,8 +62,11 @@ String? getCombinedId(dynamic entity) {
   if (entity is String) return entity;
   String? combinedId;
   if (entity is Map) {
-    if (entity['id'] == null) return null;
-    final ids = Uri.parse('?${entity['id']}').queryParameters;
+    // R7 fix: Don't return null if entity['id'] is null
+    // Instead, try to extract IDs from the map directly
+    final ids = entity['id'] != null 
+        ? Uri.parse('?${entity['id']}').queryParameters 
+        : <String, String>{};
     if ((entity['ytid'] != null &&
             entity['ytid'] is String &&
             entity['ytid'].isNotEmpty) ||

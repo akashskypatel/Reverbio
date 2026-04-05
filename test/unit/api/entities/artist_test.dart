@@ -7,8 +7,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reverbio/API/entities/artist.dart';
 
 import '../../../helpers/test_fixtures.dart';
+import '../../../helpers/test_setup.dart';
 
 void main() {
+  setUpAll(() {
+    setUpAllServices();
+  });
+
+  tearDownAll(() {
+    tearDownAllServices();
+  });
+
   group('checkArtist', () {
     test('two artist Maps with matching id returns true', () {
       final artist1 = <String, dynamic>{...kMinimalArtist, 'id': 'mb=artist123'};

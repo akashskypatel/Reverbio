@@ -18,10 +18,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reverbio/API/entities/song_metadata.dart';
 import 'package:reverbio/main.dart';
+import '../helpers/test_setup.dart';
 
 /// Unit tests for song comparison functions.
 /// Tests checkSong, checkTitleAndArtist, and getSongHashCode.
 void main() {
+  setUpAll(() {
+    setUpL10n();
+  });
+
+  tearDownAll(() {
+    tearDownL10n();
+  });
+
   group('checkSong', () {
     group('with string IDs', () {
       test('returns true for matching ytid strings', () {

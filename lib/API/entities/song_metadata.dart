@@ -298,6 +298,11 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
   final artistA = songArtist(songA).cleansed.toLowerCase();
   final artistB = songArtist(songB).cleansed.toLowerCase();
 
+  // R7 fix: Reject songs with empty titles or artists
+  if (titleA.isEmpty || titleB.isEmpty || artistA.isEmpty || artistB.isEmpty) {
+    return false;
+  }
+
   // Exact match
   if (titleA == titleB && artistA == artistB) return true;
 
@@ -308,8 +313,9 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
   // High confidence match
   if (titleRatio >= 90 && artistRatio >= 90) return true;
 
-  // Good match with artist subsequence check
-  if (titleRatio >= 75 && artistRatio >= 75) {
+  // R7 fix: Good match with artist subsequence check
+  // Require higher title ratio to prevent false positives
+  if (titleRatio >= 85 && artistRatio >= 85) {
     // Check if one artist is a subsequence of the other
     if (_isSubsequence(artistA, artistB) || _isSubsequence(artistB, artistA)) {
       return true;
@@ -322,15 +328,17 @@ bool checkTitleAndArtist(dynamic songA, dynamic songB) {
   // Check for extras in brackets (e.g., "feat.", "remix", "live")
   final titleAWithoutExtras = titleA.replaceAll(RegExp(r'\([^)]*\)'), '').trim();
   final titleBWithoutExtras = titleB.replaceAll(RegExp(r'\([^)]*\)'), '').trim();
+  // R7 fix: Only match if both title and artist match
   if (titleAWithoutExtras == titleBWithoutExtras && artistA == artistB) return true;
-  if (titleA == titleB && titleAWithoutExtras == titleBWithoutExtras) return true;
+  // R7 fix: Remove incorrect title-only match - songs with same title but different artists should not match
 
   // Split artists and check for overlap
+  // R7 fix: Increase thresholds to prevent false positives
   final artistsA = _splitArtists(artistA);
   final artistsB = _splitArtists(artistB);
   if (artistsA.isNotEmpty && artistsB.isNotEmpty) {
-    final overlap = artistsA.where((a) => artistsB.any((b) => _weightedRatio(a, b) >= 80)).length;
-    if (overlap > 0 && titleRatio >= 80) return true;
+    final overlap = artistsA.where((a) => artistsB.any((b) => _weightedRatio(a, b) >= 90)).length;
+    if (overlap > 0 && titleRatio >= 90) return true;
   }
 
   return false;

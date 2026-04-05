@@ -18,9 +18,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reverbio/API/entities/song_offline.dart';
 
+import '../helpers/test_setup.dart';
+
 /// Unit tests for offline song quality verification.
 /// Tests verifyOfflineSongQuality and _isValidAudioHeader.
 void main() {
+  setUpAll(() {
+    setUpAllServices();
+  });
+
+  tearDownAll(() {
+    tearDownAllServices();
+  });
+
   group('verifyOfflineSongQuality', () {
     test('returns invalid for null song', () async {
       final result = await verifyOfflineSongQuality(null);

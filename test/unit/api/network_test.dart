@@ -13,8 +13,17 @@ import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/services/proxy_manager.dart';
 
 import '../../helpers/test_fixtures.dart';
+import '../../helpers/test_setup.dart';
 
 void main() {
+  setUpAll(() {
+    setUpAllServices();
+  });
+
+  tearDownAll(() {
+    tearDownAllServices();
+  });
+
   group('getSkipSegments', () {
     test('MockClient returns 200 with segments JSON returns list of segments',
         () async {
