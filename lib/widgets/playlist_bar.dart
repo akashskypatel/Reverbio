@@ -19,13 +19,18 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/confirmation_dialog.dart';
 
 class PlaylistBar extends StatelessWidget {
   PlaylistBar(
@@ -42,12 +47,14 @@ class PlaylistBar extends StatelessWidget {
     this.borderRadius = BorderRadius.zero,
   }) : playlistLikeStatus = ValueNotifier<bool>(
          isPlaylistAlreadyLiked(playlistData),
-       );
+       ),
+       isOffline = ValueNotifier<bool>(isPlaylistAlreadyOffline(playlistData)),
+       hideNotifier = ValueNotifier<bool>(true);
 
   final Map? playlistData;
   final String? playlistId;
   final String playlistTitle;
-  final String? playlistArtwork;
+  final dynamic playlistArtwork;
   final VoidCallback? onPressed;
   final VoidCallback? onDelete;
   final IconData cardIcon;
@@ -59,8 +66,8 @@ class PlaylistBar extends StatelessWidget {
   static const double iconSize = 27;
 
   final ValueNotifier<bool> playlistLikeStatus;
-  final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
-
+  final ValueNotifier<bool> hideNotifier;
+  final ValueNotifier<bool> isOffline;
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
     false: FluentIcons.heart_24_regular,
@@ -101,14 +108,15 @@ class PlaylistBar extends StatelessWidget {
                         builder:
                             (context) => PlaylistPage(
                               page: 'playlist',
-                              playlistData:
-                                  playlistData ??
-                                  {
-                                    'title': playlistTitle,
-                                    'ytid': playlistId,
-                                    'image': playlistArtwork,
-                                    'primary-type': 'playlist',
-                                  },
+                              playlistData: Map<String, dynamic>.from(
+                                playlistData ??
+                                    <String, dynamic>{
+                                      'title': playlistTitle,
+                                      'ytid': playlistId,
+                                      'image': playlistArtwork,
+                                      'primary-type': 'playlist',
+                                    },
+                              ),
                             ),
                       ),
                     );
@@ -120,7 +128,7 @@ class PlaylistBar extends StatelessWidget {
                   padding: commonBarContentPadding,
                   child: Row(
                     children: [
-                      _buildAlbumArt(),
+                      _buildArtwork(),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -149,7 +157,7 @@ class PlaylistBar extends StatelessWidget {
     );
   }
 
-  Widget _buildAlbumArt() {
+  Widget _buildArtwork() {
     return FutureBuilder(
       future: getPlaylistInfo(
         playlistData ??
@@ -179,29 +187,46 @@ class PlaylistBar extends StatelessWidget {
                   'primary-type': 'playlist',
                 },
           );
-        else
+        else {
+          playlistData?.addAll(snapshot.data!);
+          final image =
+              snapshot.data!['image'] != null
+                  ? (snapshot.data!['image'] is List<int>
+                      ? Image.memory(
+                        Uint8List.fromList(snapshot.data!['image']),
+                      )
+                      : snapshot.data!['image'] is String &&
+                          isUrl(snapshot.data!['image'])
+                      ? Image.network(snapshot.data!['image'])
+                      : isFilePath(snapshot.data!['image'])
+                      ? Image.file(File(snapshot.data!['image']))
+                      : null)
+                  : null;
           return BaseCard(
+            image: image,
             icon: cardIcon,
             size: artworkSize,
             showIconLabel: false,
             inputData: snapshot.data,
           );
+        }
       },
     );
   }
 
   Widget _buildActionButtons(BuildContext context, Color primaryColor) {
+    isOffline.value = isPlaylistAlreadyOffline(playlistData);
     return PopupMenuButton<String>(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).colorScheme.surface,
       icon: Icon(FluentIcons.more_horizontal_24_filled, color: primaryColor),
-      onSelected: (String value) {
+      onSelected: (String value) async {
         switch (value) {
           case 'like':
             if ((playlistId ?? playlistData?['id']) != null) {
               final newValue = !playlistLikeStatus.value;
               playlistLikeStatus.value = newValue;
-              updatePlaylistLikeStatus(
+              await updatePlaylistLikeStatus(
                 playlistData ??
                     {
                       'ytid': playlistId,
@@ -215,6 +240,15 @@ class PlaylistBar extends StatelessWidget {
             break;
           case 'remove':
             if (onDelete != null) onDelete!();
+            break;
+          case 'offline':
+            if (!isOffline.value) {
+              final addToOffline = await _confirmAutoCacheOffline(context);
+              if (!addToOffline) return;
+              await addOfflinePlaylist(playlistData);
+            } else
+              await removeOfflinePlaylist(playlistData);
+            isOffline.value = !isOffline.value;
             break;
         }
       },
@@ -249,8 +283,42 @@ class PlaylistBar extends StatelessWidget {
                 ],
               ),
             ),
+          PopupMenuItem<String>(
+            value: 'offline',
+            child: Row(
+              children: [
+                Icon(
+                  !isOffline.value
+                      ? FluentIcons.arrow_download_24_regular
+                      : FluentIcons.arrow_download_off_24_filled,
+                  color: primaryColor,
+                ),
+                const SizedBox(width: 8),
+                if (!isOffline.value)
+                  Text(context.l10n!.makeOffline)
+                else
+                  Text(context.l10n!.removeOffline),
+              ],
+            ),
+          ),
         ];
       },
     );
+  }
+
+  Future<bool> _confirmAutoCacheOffline(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => ConfirmationDialog(
+                confirmText: context.l10n!.confirm,
+                cancelText: context.l10n!.cancel,
+                title: context.l10n!.autoCacheOfflinePlaylist,
+                message: context.l10n!.storageWarning,
+                onCancel: () => Navigator.pop(context, false),
+                onSubmit: () => Navigator.pop(context, true),
+              ),
+        ) ??
+        false;
   }
 }

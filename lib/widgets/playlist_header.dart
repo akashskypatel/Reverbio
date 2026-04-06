@@ -22,6 +22,9 @@
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/l10n.dart';
 
+// R6 fix: Extract responsive breakpoint to constant
+const _responsiveBreakpoint = 480.0;
+
 class PlaylistHeader extends StatelessWidget {
   const PlaylistHeader(
     this.image,
@@ -29,11 +32,13 @@ class PlaylistHeader extends StatelessWidget {
     this.songsLength, {
     super.key,
     this.customWidget,
+    this.albumsLength,
   });
 
   final Widget image;
   final String title;
   final int songsLength;
+  final int? albumsLength;
   final Widget? customWidget;
 
   @override
@@ -41,56 +46,106 @@ class PlaylistHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    List<Widget> _widgetList() {
+    
+    // R1/R2 fix: Build subtitle with proper separator
+    // R5 fix: Use context.l10n instead of context.l10n!
+    // R8 fix: Handle songsLength == 0 edge case
+    String buildSubtitle() {
+      final l10n = context.l10n;
+      if (songsLength == 0) {
+        return 'NO SONGS';
+      }
+      if (albumsLength != null && albumsLength! > 0) {
+        return '$songsLength ${l10n?.songs ?? 'Songs'} • $albumsLength ${l10n?.albums ?? 'Albums'}'.toUpperCase();
+      }
+      return '$songsLength ${l10n?.songs ?? 'Songs'}'.toUpperCase();
+    }
+    
+    // R7 fix: Remove leading underscore from local function names
+    List<Widget> buildRowWidgets() {
       return [
         ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
         const SizedBox(width: 16),
         Flexible(
-          child:
-              customWidget == null
-                  ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$songsLength ${context.l10n!.songs}'.toUpperCase(),
-                        style: textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  )
-                  : customWidget ?? const SizedBox.shrink(),
+          child: customWidget == null
+              ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    buildSubtitle(),
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              )
+              : customWidget!,  // R3 fix: Non-null asserted (checked above)
         ),
+      ];
+    }
+    
+    // R7 fix: Remove leading underscore from local function names
+    List<Widget> buildColumnWidgets() {
+      return [
+        ClipRRect(borderRadius: BorderRadius.circular(8), child: image),
+        const SizedBox(height: 16),
+        if (customWidget == null) Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  buildSubtitle(),
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ) else customWidget!,  // R3 fix: Non-null asserted (checked above)
       ];
     }
 
     return Padding(
       padding: const EdgeInsets.all(6),
       child:
-          MediaQuery.of(context).size.width > 480
+          // R4 fix: Use MediaQuery.sizeOf to avoid unnecessary rebuilds
+          // R6 fix: Use extracted constant for responsive breakpoint
+          MediaQuery.sizeOf(context).width > _responsiveBreakpoint
               ? Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
-                children: _widgetList(),
+                children: buildRowWidgets(),
               )
               : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
-                children: _widgetList(),
+                children: buildColumnWidgets(),
               ),
     );
   }

@@ -19,9 +19,50 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+/// R1 fix: PositionData with value equality to prevent duplicate events
+/// R4 fix: Added invariant validation via factory constructor
+/// R5 fix: Added const constructor (without validation)
+/// R6 fix: Added toString() override for debugging
 class PositionData {
-  PositionData(this.position, this.bufferedPosition, this.duration);
+  const PositionData(
+    this.position,
+    this.bufferedPosition,
+    this.duration,
+  );
+
+  factory PositionData.validated(
+    Duration position,
+    Duration bufferedPosition,
+    Duration duration,
+  ) {
+    assert(!position.isNegative, 'position cannot be negative');
+    assert(!bufferedPosition.isNegative, 'bufferedPosition cannot be negative');
+    assert(!duration.isNegative, 'duration cannot be negative');
+    return PositionData(
+      position,
+      bufferedPosition,
+      duration,
+    );
+  }
+
   final Duration position;
   final Duration bufferedPosition;
   final Duration duration;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PositionData &&
+          runtimeType == other.runtimeType &&
+          position == other.position &&
+          bufferedPosition == other.bufferedPosition &&
+          duration == other.duration;
+
+  @override
+  int get hashCode =>
+      position.hashCode ^ bufferedPosition.hashCode ^ duration.hashCode;
+
+  @override
+  String toString() =>
+      'PositionData(position: $position, buffered: $bufferedPosition, duration: $duration)';
 }

@@ -21,11 +21,13 @@
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
 
 class OfflinePlaylistsPage extends StatefulWidget {
@@ -58,7 +60,9 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n!.offlinePlaylists),
-        actions: [_clearFiltersButton()],
+        actions: [
+          ExpandingToolbar(actions: [_clearFiltersButton()]),
+        ],
       ),
       body: SingleChildScrollView(
         padding: commonSingleChildScrollViewPadding,
@@ -74,10 +78,10 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
 
   Widget _buildPlaylistListView() {
     _buildPlaylistBars();
-    return ValueListenableBuilder(
-      valueListenable: currentOfflinePlaylistsLength,
+    return ListenableBuilder(
+      listenable: userOfflinePlaylists,
       builder:
-          (context, value, child) => ListView.builder(
+          (context, child) => ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: userPlaylistBars.length,
@@ -93,7 +97,7 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
     final playlist = userOfflinePlaylists[index];
     final bar = PlaylistBar(
       key: ValueKey(playlist['id']),
-      playlist['title'] ?? 'unknown',
+      playlist['title'] ?? context.l10n!.unknown,
       playlistId: playlist['id'],
       playlistArtwork: playlist['image'],
       playlistData: playlist,
@@ -112,7 +116,7 @@ class _OfflinePlaylistsPageState extends State<OfflinePlaylistsPage> {
       userPlaylistBars.add(
         PlaylistBar(
           key: ValueKey(playlist['id']),
-          playlist['title'] ?? 'unknown',
+          playlist['title'] ?? context.l10n!.unknown,
           playlistId: playlist['id'],
           playlistArtwork: playlist['image'],
           playlistData: playlist,

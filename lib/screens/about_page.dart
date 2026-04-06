@@ -26,23 +26,12 @@ import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
 
-class AboutPage extends StatefulWidget {
+class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
 
   @override
-  _AboutPageState createState() => _AboutPageState();
-}
-
-class _AboutPageState extends State<AboutPage> {
-  late ThemeData _theme;
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    _theme = Theme.of(context);
+    final _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n!.about)),
       body: SingleChildScrollView(
@@ -79,17 +68,17 @@ class _AboutPageState extends State<AboutPage> {
                     ),
                   ),
                 ),
-                title: const Text(
-                  'Akash Patel',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                title: Text(
+                  context.l10n!.aboutTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Software & Game Developer'),
+                subtitle: Text(context.l10n!.aboutSubtitle),
                 trailing: Wrap(
                   children: <Widget>[
                     IconButton(
                       icon: const Icon(FluentIcons.code_24_filled),
                       iconSize: pageHeaderIconSize,
-                      tooltip: 'Github',
+                      tooltip: context.l10n!.github,
                       onPressed: () {
                         launchURL(
                           Uri.parse('https://github.com/akashskypatel'),
@@ -99,7 +88,7 @@ class _AboutPageState extends State<AboutPage> {
                     IconButton(
                       icon: const Icon(FluentIcons.globe_24_filled),
                       iconSize: pageHeaderIconSize,
-                      tooltip: 'Website',
+                      tooltip: context.l10n!.website,
                       onPressed: () {
                         launchURL(Uri.parse('https://fryingpan.games/'));
                       },

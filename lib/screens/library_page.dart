@@ -19,22 +19,22 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:io';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
-import 'package:reverbio/API/entities/song.dart';
-import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/l10n.dart';
-import 'package:reverbio/services/router_service.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/playlist_bar.dart';
 import 'package:reverbio/widgets/playlist_import.dart';
 import 'package:reverbio/widgets/section_header.dart';
@@ -52,48 +52,47 @@ class _LibraryPageState extends State<LibraryPage> {
   final FocusNode _inputNode = FocusNode();
   ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
   final List<PlaylistBar> userPlaylistBars = [];
-  late ThemeData _theme;
+  // R1 fix: Cache future to prevent re-fetching on every rebuild
+  Future<List<dynamic>>? _getUserYTPlaylistsFuture;
 
   @override
   void dispose() {
-    currentLikedPlaylistsLength.removeListener(_listener);
-    currentLikedSongsLength.removeListener(_listener);
-    currentOfflineSongsLength.removeListener(_listener);
-    currentRecentlyPlayedLength.removeListener(_listener);
-    currentLikedAlbumsLength.removeListener(_listener);
+    // R5 fix: Dispose all controllers and notifiers
+    _searchBar.dispose();
+    _inputNode.dispose();
+    isFilteredNotifier.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-    currentLikedPlaylistsLength.addListener(_listener);
-    currentLikedSongsLength.addListener(_listener);
-    currentOfflineSongsLength.addListener(_listener);
-    currentRecentlyPlayedLength.addListener(_listener);
-    currentLikedAlbumsLength.addListener(_listener);
+    // R1 fix: Initialize cached future once in initState
+    _getUserYTPlaylistsFuture = getUserYTPlaylists();
   }
 
-  void _listener() {
-    if (mounted) setState(() {});
-  }
+  // R6 fix: Remove unused _listener method
 
   @override
   Widget build(BuildContext context) {
-    _theme = Theme.of(context);
-    final primaryColor = _theme.colorScheme.primary;
+    // R10 fix: Use Theme.of(context) directly instead of storing in instance field
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n!.library),
         actions: [
-          if (!offlineMode.value)
-            IconButton(
-              onPressed: _showAddPlaylistDialog,
-              icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
-              iconSize: pageHeaderIconSize,
-            ),
-          if (!offlineMode.value) _clearFiltersButton(),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
+          ExpandingToolbar(
+            actions: [
+              if (!offlineMode.value)
+                IconButton(
+                  onPressed: _showAddPlaylistDialog,
+                  icon: Icon(FluentIcons.add_24_filled, color: primaryColor),
+                  iconSize: pageHeaderIconSize,
+                ),
+              if (!offlineMode.value) _clearFiltersButton(),
+            ],
+          ),
         ],
       ),
       body: Column(
@@ -123,10 +122,9 @@ class _LibraryPageState extends State<LibraryPage> {
             if (!offlineMode.value)
               PlaylistBar(
                 context.l10n!.recentlyPlayed,
+                // R4 fix: Use GoRouter.of(context).push() consistently
                 onPressed:
-                    () => NavigationManager.router.go(
-                      '/library/userSongs/recents',
-                    ),
+                    () => GoRouter.of(context).push('/library/userSongs/recents'),
                 cardIcon: FluentIcons.history_24_filled,
                 borderRadius: commonCustomBarRadiusFirst,
                 showBuildActions: false,
@@ -135,8 +133,7 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.likedSongs,
                 onPressed:
-                    () =>
-                        NavigationManager.router.go('/library/userSongs/liked'),
+                    () => GoRouter.of(context).push('/library/userSongs/liked'),
                 cardIcon: FluentIcons.heart_24_filled,
                 showBuildActions: false,
               ),
@@ -144,9 +141,8 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.likedArtists,
                 onPressed:
-                    () => NavigationManager.router.go(
-                      '/library/userSongs/artists',
-                    ),
+                    () =>
+                        GoRouter.of(context).push('/library/userSongs/artists'),
                 cardIcon: FluentIcons.mic_sparkle_24_filled,
                 showBuildActions: false,
               ),
@@ -154,26 +150,24 @@ class _LibraryPageState extends State<LibraryPage> {
               PlaylistBar(
                 context.l10n!.likedAlbums,
                 onPressed:
-                    () => NavigationManager.router.go(
-                      '/library/userSongs/albums',
-                    ),
+                    () =>
+                        GoRouter.of(context).push('/library/userSongs/albums'),
                 cardIcon: FluentIcons.cd_16_filled,
                 showBuildActions: false,
               ),
             PlaylistBar(
               context.l10n!.offlineSongs,
               onPressed:
-                  () =>
-                      NavigationManager.router.go('/library/userSongs/offline'),
+                  () => GoRouter.of(context).push('/library/userSongs/offline'),
               cardIcon: FluentIcons.cellular_off_24_filled,
               showBuildActions: false,
             ),
             PlaylistBar(
               context.l10n!.offlinePlaylists,
               onPressed:
-                  () => NavigationManager.router.go(
-                    '/library/userSongs/offlinePlaylists',
-                  ),
+                  () => GoRouter.of(
+                    context,
+                  ).push('/library/userSongs/offlinePlaylists'),
               cardIcon: FluentIcons.arrow_download_24_filled,
               borderRadius: commonCustomBarRadiusLast,
               showBuildActions: false,
@@ -190,22 +184,22 @@ class _LibraryPageState extends State<LibraryPage> {
                   ),
                 ],
               ),
-              ValueListenableBuilder<List>(
-                valueListenable: userCustomPlaylists,
-                builder: (context, playlists, _) {
-                  if (playlists.isEmpty) {
+              ListenableBuilder(
+                listenable: userCustomPlaylists,
+                builder: (context, _) {
+                  if (userCustomPlaylists.isEmpty) {
                     return const SizedBox();
                   }
                   return _buildPlaylistListView(
                     context,
-                    playlists,
+                    userCustomPlaylists,
                     'user-created',
                   );
                 },
               ),
-              ValueListenableBuilder<List>(
-                valueListenable: userPlaylists,
-                builder: (context, playlists, _) {
+              ListenableBuilder(
+                listenable: userPlaylists,
+                builder: (context, _) {
                   return Column(
                     children: [
                       SectionHeader(
@@ -221,9 +215,10 @@ class _LibraryPageState extends State<LibraryPage> {
                           ),
                         ],
                       ),
-                      if (userPlaylists.value.isNotEmpty)
+                      if (userPlaylists.isNotEmpty)
+                        // R1 fix: Use cached future instead of calling getUserYTPlaylists() on every rebuild
                         FutureBuilder(
-                          future: getUserYTPlaylists(),
+                          future: _getUserYTPlaylistsFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
@@ -248,9 +243,9 @@ class _LibraryPageState extends State<LibraryPage> {
                   );
                 },
               ),
-              ValueListenableBuilder(
-                valueListenable: currentLikedPlaylistsLength,
-                builder: (context, value, __) {
+              ListenableBuilder(
+                listenable: userLikedPlaylists,
+                builder: (context, __) {
                   return Column(
                     children: [
                       SectionHeader(title: context.l10n!.likedPlaylists),
@@ -275,6 +270,8 @@ class _LibraryPageState extends State<LibraryPage> {
     return ValueListenableBuilder(
       valueListenable: isFilteredNotifier,
       builder: (context, value, __) {
+        // R10 fix: Use Theme.of(context) instead of _theme
+        final theme = Theme.of(context);
         return IconButton(
           onPressed:
               isFilteredNotifier.value
@@ -286,33 +283,38 @@ class _LibraryPageState extends State<LibraryPage> {
                   : null,
           icon: const Icon(FluentIcons.filter_dismiss_24_filled, size: 30),
           iconSize: pageHeaderIconSize,
-          color: _theme.colorScheme.primary,
-          disabledColor: _theme.colorScheme.primaryContainer,
+          color: theme.colorScheme.primary,
+          disabledColor: theme.colorScheme.primaryContainer,
         );
       },
     );
   }
 
+  // R3 fix: Restore visibility for items matching query
   void _filterPlaylistBars(String query) {
     if (query.isEmpty) {
       for (final widget in userPlaylistBars) {
         widget.setVisibility(true);
-        isFilteredNotifier.value = false;
       }
+      isFilteredNotifier.value = false;
     } else {
+      var anyFiltered = false;
       for (final widget in userPlaylistBars) {
         final searchStr = widget.playlistTitle;
         if (searchStr.isNotEmpty && !searchStr.toLowerCase().contains(query)) {
           widget.setVisibility(false);
-          isFilteredNotifier.value = true;
+          anyFiltered = true;
+        } else {
+          // R3 fix: Restore visibility for matching items
+          widget.setVisibility(true);
         }
       }
+      isFilteredNotifier.value = anyFiltered;
     }
   }
 
   Widget _buildSearchBar() {
     return CustomSearchBar(
-      //loadingProgressNotifier: _fetchingSongs,
       searchDelayMs: 0,
       controller: _searchBar,
       focusNode: _inputNode,
@@ -326,13 +328,28 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  void _buildPlaylistBars(List playlists) {
-    for (final playlist in playlists) {
-      if (playlist['source'] == null) playlist['source'] = 'user-liked';
-      userPlaylistBars.add(
+  // R2 fix: _buildPlaylistBars removed - logic now inlined in _buildPlaylistListView
+  // to avoid mutating shared userPlaylistBars list
+
+  // R2 fix: Don't mutate shared userPlaylistBars - create new list instead
+  Widget _buildPlaylistListView(
+    BuildContext context,
+    List playlists,
+    String source,
+  ) {
+    // R2 fix: Create new PlaylistBars for this source instead of mutating shared list
+    final bars = <PlaylistBar>[];
+    for (final playlistOrig in playlists) {
+      // R11 fix: Create a copy to avoid mutating the original
+      final playlist = Map<String, dynamic>.from(playlistOrig);
+      if (playlist['source'] == null) playlist['source'] = source;
+      bars.add(
         PlaylistBar(
           key: ValueKey(
-            playlist['id'] ?? playlist['ytid'] ?? playlist['title'] ?? 'unknown',
+            playlist['id'] ??
+                playlist['ytid'] ??
+                playlist['title'] ??
+                'unknown',
           ),
           playlist['title'] ?? 'unknown',
           playlistId: playlist['ytid'],
@@ -340,6 +357,7 @@ class _LibraryPageState extends State<LibraryPage> {
           isAlbum: playlist['isAlbum'],
           playlistData: playlist,
           onDelete:
+              // R12 fix: Use null-safe access instead of force-unwrap
               playlist['source'] == 'user-created' ||
                       playlist['source'] == 'user-youtube'
                   ? () => _showRemovePlaylistDialog(playlist)
@@ -347,23 +365,12 @@ class _LibraryPageState extends State<LibraryPage> {
         ),
       );
     }
-  }
-
-  Widget _buildPlaylistListView(
-    BuildContext context,
-    List playlists,
-    String source,
-  ) {
-    userPlaylistBars.removeWhere((e) => e.playlistData?['source'] == source);
-    _buildPlaylistBars(playlists);
-    final bars =
-        userPlaylistBars
-            .where(
-              (value) =>
-                  value.playlistData!['source']?.toLowerCase() ==
-                  source.toLowerCase(),
-            )
-            .toList();
+    // R341 fix: Populate userPlaylistBars for search/filter functionality
+    if (source == 'user-created' || source == 'user-youtube') {
+      userPlaylistBars
+        ..clear()
+        ..addAll(bars);
+    }
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -383,14 +390,15 @@ class _LibraryPageState extends State<LibraryPage> {
       var customPlaylistName = '';
       var isYouTubeMode = true;
       String? imageUrl;
-
+      File? imageFile;
+      // R8 fix: Create TextEditingController outside StatefulBuilder
+      final imagePathController = TextEditingController();
       return StatefulBuilder(
-        builder: (context, setState) {
-          final theme = Theme.of(context);
-          final activeButtonBackground = theme.colorScheme.surfaceContainer;
-          final inactiveButtonBackground = theme.colorScheme.secondaryContainer;
-          final dialogBackgroundColor = theme.dialogTheme.backgroundColor;
-          final imagePathController = TextEditingController();
+        builder: (dialogContext, setState) {
+          final dialogTheme = Theme.of(dialogContext);
+          final activeButtonBackground = dialogTheme.colorScheme.surfaceContainer;
+          final inactiveButtonBackground = dialogTheme.colorScheme.secondaryContainer;
+          final dialogBackgroundColor = dialogTheme.dialogTheme.backgroundColor;
           return AlertDialog(
             backgroundColor: dialogBackgroundColor,
             content: SingleChildScrollView(
@@ -404,7 +412,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       children: [
                         Tooltip(
                           waitDuration: const Duration(milliseconds: 1500),
-                          message: context.l10n!.youtubePlaylistLinkOrId,
+                          message: dialogContext.l10n!.youtubePlaylistLinkOrId,
                           child: ElevatedButton(
                             onPressed: () {
                               if (mounted)
@@ -503,13 +511,15 @@ class _LibraryPageState extends State<LibraryPage> {
                           ),
                           IconButton(
                             onPressed: () async {
-                              final path = await pickImageFile();
-                              imageUrl = path;
+                              imageUrl =
+                                  await pickImageFile();
+                              if (imageUrl != null && isFilePath(imageUrl!))
+                                imageFile = await getImageFile(path: imageUrl);
                               if (imageUrl != null)
                                 imagePathController.text = imageUrl!;
                             },
                             icon: const Icon(FluentIcons.folder_open_24_filled),
-                            color: theme.colorScheme.primary,
+                            color: dialogTheme.colorScheme.primary,
                           ),
                         ],
                       ),
@@ -520,11 +530,14 @@ class _LibraryPageState extends State<LibraryPage> {
             ),
             actions: <Widget>[
               TextButton(
-                child: Text(context.l10n!.add.toUpperCase()),
+                child: Text(dialogContext.l10n!.add.toUpperCase()),
                 onPressed: () async {
                   if (isYouTubeMode && id.isNotEmpty) {
-                    showToast(await addYTUserPlaylist(id, context));
-                    GoRouter.of(context).pop(context);
+                    final result = await addYTUserPlaylist(id);
+                    showToast(result.toLocalizedString());
+                    // R7 fix: Use dialogContext instead of context
+                    GoRouter.of(dialogContext).pop();
+                    imagePathController.dispose();
                   } else if (!isYouTubeMode && customPlaylistName.isNotEmpty) {
                     if (findPlaylistByName(customPlaylistName) != null)
                       await showDialog(
@@ -535,37 +548,52 @@ class _LibraryPageState extends State<LibraryPage> {
                         builder:
                             (confirmcontext) => ConfirmationDialog(
                               message:
-                                  '${context.l10n!.playlistAlreadyExists}. ${context.l10n!.overwriteExistingPlaylist}',
-                              confirmText: context.l10n!.confirm,
-                              cancelText: context.l10n!.cancel,
-                              onCancel:
-                                  () => GoRouter.of(
-                                    savecontext,
-                                  ).pop(confirmcontext),
-                              onSubmit: () {
-                                showToast(
-                                  createCustomPlaylist(
-                                    customPlaylistName,
-                                    image: imageUrl,
-                                    context,
-                                  ),
+                                  '${dialogContext.l10n!.playlistAlreadyExists}. ${dialogContext.l10n!.overwriteExistingPlaylist}',
+                              confirmText: dialogContext.l10n!.confirm,
+                              cancelText: dialogContext.l10n!.cancel,
+                              // R9 fix: Clear state on cancel so stale values
+                              // don't persist if user re-opens the dialog
+                              onCancel: () {
+                                setState(() {
+                                  customPlaylistName = '';
+                                  imageUrl = null;
+                                  imageFile = null;
+                                  imagePathController.clear();
+                                });
+                                GoRouter.of(savecontext).pop();
+                              },
+                              onSubmit: () async {
+                                final result = createCustomPlaylist(
+                                  customPlaylistName,
+                                  image:
+                                      imageFile != null
+                                          ? imageFile!
+                                              .readAsBytesSync()
+                                              .toList()
+                                          : imageUrl,
                                 );
-                                GoRouter.of(context).pop();
+                                showToast(result.toLocalizedString());
+                                // R7 fix: Use dialogContext instead of context
+                                GoRouter.of(dialogContext).pop();
+                                imagePathController.dispose();
                               },
                             ),
                       );
                     else {
-                      showToast(
-                        createCustomPlaylist(
-                          customPlaylistName,
-                          image: imageUrl,
-                          context,
-                        ),
+                      final result = createCustomPlaylist(
+                        customPlaylistName,
+                        image:
+                            imageFile != null
+                                ? imageFile!.readAsBytesSync().toList()
+                                : imageUrl,
                       );
-                      GoRouter.of(context).pop();
+                      showToast(result.toLocalizedString());
+                      // R7 fix: Use dialogContext instead of context
+                      GoRouter.of(dialogContext).pop();
+                      imagePathController.dispose();
                     }
                   } else {
-                    showToast('${context.l10n!.provideIdOrNameError}.');
+                    showToast('${dialogContext.l10n!.provideIdOrNameError}.');
                   }
                 },
               ),
@@ -578,16 +606,16 @@ class _LibraryPageState extends State<LibraryPage> {
 
   void _showRemovePlaylistDialog(Map playlist) => showDialog(
     context: context,
-    builder: (context) {
+    builder: (dialogContext) {
       return ConfirmationDialog(
-        message: context.l10n!.removePlaylistQuestion,
-        confirmText: context.l10n!.remove,
-        cancelText: context.l10n!.cancel,
+        message: dialogContext.l10n!.removePlaylistQuestion,
+        confirmText: dialogContext.l10n!.remove,
+        cancelText: dialogContext.l10n!.cancel,
         onCancel: () {
-          GoRouter.of(context).pop();
+          GoRouter.of(dialogContext).pop();
         },
         onSubmit: () {
-          GoRouter.of(context).pop();
+          GoRouter.of(dialogContext).pop();
 
           if (playlist['ytid'] == null &&
               playlist['source'] == 'user-created') {

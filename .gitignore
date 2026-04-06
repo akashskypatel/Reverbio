@@ -56,3 +56,8 @@ l10nupdate.json
 /.vscode/launch.json
 /android/build/reports/problems/problems-report.html
 /android/app/build
+/android/build/reports/problems
+.reviews/*
+.windsurf/*
+.claude/*
+*qwen/*

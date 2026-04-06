@@ -28,10 +28,12 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/animated_heart.dart';
 import 'package:reverbio/widgets/spinner.dart';
@@ -44,29 +46,34 @@ class BaseCard extends StatefulWidget {
     this.iconSize,
     this.image,
     this.inputData,
-    this.showLabel = false,
+    this.label,
     this.showOverflowLabel = false,
     this.showLike = false,
     this.onPressed,
     this.paddingValue = 8,
     this.loadingWidget,
-    this.imageOverlayMask = false,
+    this.duration,
+    //this.imageOverlayMask = false,
     this.showIconLabel = true,
+    this.customButton,
   });
   final IconData icon;
   final double? iconSize;
+  final int? duration;
   final double size;
-  final bool showLabel;
+  final String? label;
   final bool showOverflowLabel;
   final bool showLike;
   final bool showIconLabel;
-  final CachedNetworkImage? image;
-  final bool imageOverlayMask;
+  final Image? image;
+  //final bool imageOverlayMask;
   final Map<dynamic, dynamic>? inputData;
   final ValueNotifier<bool> hideNotifier = ValueNotifier(true);
   final VoidCallback? onPressed;
   final double paddingValue;
   final Widget? loadingWidget;
+  final IconButton? customButton;
+
   static const double typeLabelOffset = 10;
   @override
   State<BaseCard> createState() => _BaseCardState();
@@ -89,7 +96,7 @@ class _BaseCardState extends State<BaseCard> {
 
   String? dataType;
   final borderRadius = 13.0;
-  late final likeSize = widget.size * 0.20;
+  late final buttonSize = widget.size * 0.20;
   late final double artistHeight =
       MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late ThemeData _theme;
@@ -139,7 +146,7 @@ class _BaseCardState extends State<BaseCard> {
         case 'ep':
         case 'broadcast':
         case 'other':
-          return queueAlbumInfoRequest(widget.inputData);
+          return queueAlbumInfoRequest(widget.inputData).completerFuture;
         default:
       }
   }
@@ -177,38 +184,27 @@ class _BaseCardState extends State<BaseCard> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(borderRadius),
                               color: colorScheme.secondary,
+                              backgroundBlendMode:
+                                  (widget.duration != null &&
+                                          widget.duration! > 0)
+                                      ? BlendMode.multiply
+                                      : null,
                             ),
                             child: Stack(
+                              alignment: AlignmentDirectional.center,
                               children: [
-                                if (mounted)
-                                  FutureBuilder(
-                                    initialData:
-                                        widget.loadingWidget != null
-                                            ? SizedBox(
-                                              width: widget.size,
-                                              height: widget.size,
-                                              child: widget.loadingWidget,
-                                            )
-                                            : _buildNoArtworkCard(context),
-                                    future: _buildImage(context),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                              ConnectionState.none ||
-                                          snapshot.hasError ||
-                                          snapshot.data == null) {
-                                        if (widget.loadingWidget != null)
-                                          return SizedBox(
-                                            width: widget.size,
-                                            height: widget.size,
-                                            child: widget.loadingWidget,
-                                          );
-                                        return _buildNoArtworkCard(context);
-                                      }
-                                      return snapshot.data!;
-                                    },
+                                if (mounted) _buildImage(context),
+                                if (widget.label != null)
+                                  Align(
+                                    alignment: AlignmentGeometry.topLeft,
+                                    child: _buildLabel(),
                                   ),
-                                if (widget.showLabel) _buildLabel(),
-                                if (widget.showLike) _buildLiked(),
+                                if (widget.showLike &&
+                                    widget.customButton == null)
+                                  _buildLiked(),
+                                if (!widget.showLike &&
+                                    widget.customButton != null)
+                                  _buildCustomButton(),
                               ],
                             ),
                           ),
@@ -230,8 +226,89 @@ class _BaseCardState extends State<BaseCard> {
     return null;
   }
 
-  Future<Widget> _buildImage(BuildContext context) async {
+  Widget _buildImage(BuildContext context) {
+    return FutureBuilder(
+      initialData: Stack(
+        alignment: AlignmentDirectional.center,
+        children: <Widget>[
+          if (widget.loadingWidget == null)
+            SizedBox.square(
+              dimension: widget.size * .50,
+              child: const Spinner(),
+            )
+          else
+            SizedBox.square(
+              dimension: widget.size * .50,
+              child: widget.loadingWidget,
+            ),
+          if (widget.duration != null && widget.duration! > 0)
+            SizedBox(
+              width: 45,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '(${formatDuration(widget.duration!)})',
+                  style: TextStyle(
+                    color: _theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      future: _getImage(context),
+      builder: (context, snapshot) {
+        Widget? _widget;
+        if (snapshot.connectionState == ConnectionState.none ||
+            snapshot.hasError ||
+            snapshot.data == null) {
+          _widget = _buildNoArtworkCard(context);
+        }
+        _widget = snapshot.data;
+        return Stack(
+          alignment: AlignmentDirectional.center,
+          children: <Widget>[
+            _widget!,
+            if (widget.duration != null && widget.duration! > 0)
+              SizedBox(
+                width: 45,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '(${formatDuration(widget.duration!)})',
+                    style: TextStyle(
+                      color: _theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<Widget> _getImage(BuildContext context) async {
     try {
+      if (widget.image != null)
+        return widget.image!.copyWith(
+          errorBuilder:
+              (context, error, stackTrace) => _buildNoArtworkCard(context),
+          color:
+              (widget.duration != null && widget.duration! > 0)
+                  ? _theme.colorScheme.primaryContainer
+                  : null,
+          colorBlendMode:
+              (widget.duration != null && widget.duration! > 0)
+                  ? BlendMode.multiply
+                  : null,
+          opacity:
+              (widget.duration != null && widget.duration! > 0)
+                  ? const AlwaysStoppedAnimation(0.45)
+                  : null,
+        );
       final image = await getValidImage(widget.inputData);
       if (image == null) return _buildNoArtworkCard(context);
       if (image.isFileUri && doesFileExist(image.toString())) {
@@ -256,16 +333,21 @@ class _BaseCardState extends State<BaseCard> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: Image.file(
+          cacheHeight: (widget.size * 1.1).toInt(),
+          cacheWidth: (widget.size * 1.1).toInt(),
           File(path),
           fit: BoxFit.cover,
-          errorBuilder: (context, __, ___) => _buildNoArtworkCard(context),
+          errorBuilder: (context, _, __) => _buildNoArtworkCard(context),
           color:
-              widget.imageOverlayMask
+              (widget.duration != null && widget.duration! > 0)
                   ? _theme.colorScheme.primaryContainer
                   : null,
-          colorBlendMode: widget.imageOverlayMask ? BlendMode.multiply : null,
+          colorBlendMode:
+              (widget.duration != null && widget.duration! > 0)
+                  ? BlendMode.multiply
+                  : null,
           opacity:
-              widget.imageOverlayMask
+              (widget.duration != null && widget.duration! > 0)
                   ? const AlwaysStoppedAnimation(0.45)
                   : null,
         ),
@@ -279,30 +361,46 @@ class _BaseCardState extends State<BaseCard> {
       imageUrl: imageUrl.toString(),
       height: widget.size,
       width: widget.size,
+      memCacheHeight: (widget.size * 1.1).toInt(),
+      memCacheWidth: (widget.size * 1.1).toInt(),
       fit: BoxFit.cover,
       placeholder: (context, url) => const Spinner(),
-      errorWidget: (context, url, error) => _buildNoArtworkCard(context),
+      errorWidget: (context, url, error) {
+        logger.log(url, error, null);
+        return _buildNoArtworkCard(context);
+      },
       color:
-          widget.imageOverlayMask ? _theme.colorScheme.primaryContainer : null,
-      colorBlendMode: widget.imageOverlayMask ? BlendMode.multiply : null,
+          (widget.duration != null && widget.duration! > 0)
+              ? _theme.colorScheme.primaryContainer
+              : null,
+      colorBlendMode:
+          (widget.duration != null && widget.duration! > 0)
+              ? BlendMode.multiply
+              : null,
     );
   }
 
   Widget _buildNoArtworkCard(BuildContext context) {
+    if (widget.image != null)
+      return widget.image!.copyWith(
+        errorBuilder:
+            (context, error, stackTrace) => _buildNoArtworkCard(context),
+        color:
+            (widget.duration != null && widget.duration! > 0)
+                ? _theme.colorScheme.primaryContainer
+                : null,
+        colorBlendMode:
+            (widget.duration != null && widget.duration! > 0)
+                ? BlendMode.multiply
+                : null,
+        opacity:
+            (widget.duration != null && widget.duration! > 0)
+                ? const AlwaysStoppedAnimation(0.45)
+                : null,
+      );
     return Stack(
+      alignment: Alignment.center,
       children: [
-        if (widget.imageOverlayMask)
-          SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: ClipRRect(
-              child: Container(
-                color: Colors.black.withValues(
-                  alpha: 0.8,
-                ), // Translucent overlay
-              ),
-            ),
-          ),
         Align(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -340,12 +438,45 @@ class _BaseCardState extends State<BaseCard> {
     );
   }
 
+  Widget _buildCustomButton() {
+    if (widget.customButton == null) return const SizedBox.shrink();
+    final _customButton = widget.customButton!;
+    final shadowOffset = -(buttonSize / 18);
+    return Align(
+      alignment: Alignment.topRight,
+      child: Stack(
+        children: [
+          Transform.translate(
+            offset: Offset(shadowOffset + (shadowOffset * .5), shadowOffset),
+            child: IconButton(
+              onPressed: null,
+              icon: Icon(
+                (_customButton.icon as Icon).icon,
+                size: _customButton.iconSize ?? buttonSize,
+                color: _theme.colorScheme.surface,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: _customButton.onPressed,
+            icon: Icon(
+              (_customButton.icon as Icon).icon,
+              size: _customButton.iconSize ?? buttonSize,
+            ),
+            color: _theme.colorScheme.primary,
+            hoverColor: _theme.colorScheme.surface.withAlpha(128),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLiked() {
     return StatefulBuilder(
       builder: (context, setState) {
-        return ValueListenableBuilder(
-          valueListenable: _getLikeNotifier(),
-          builder: (context, value, child) {
+        return ListenableBuilder(
+          listenable: _getLikeNotifier(),
+          builder: (context, child) {
             return FutureBuilder(
               future: Future.microtask(_getLikeStatus),
               builder: (context, snapshot) {
@@ -359,7 +490,7 @@ class _BaseCardState extends State<BaseCard> {
                     value
                         ? FluentIcons.heart_12_filled
                         : FluentIcons.heart_12_regular;
-                final shadowOffset = -(likeSize / 18);
+                final shadowOffset = -(buttonSize / 18);
                 return Align(
                   alignment: Alignment.topRight,
                   child: Stack(
@@ -373,7 +504,7 @@ class _BaseCardState extends State<BaseCard> {
                           onPressed: null,
                           icon: Icon(
                             liked,
-                            size: likeSize,
+                            size: buttonSize,
                             color: _theme.colorScheme.surface,
                           ),
                         ),
@@ -383,7 +514,7 @@ class _BaseCardState extends State<BaseCard> {
                           _toggleLike(context);
                           if (mounted) setState(() {});
                         },
-                        icon: Icon(liked, size: likeSize),
+                        icon: Icon(liked, size: buttonSize),
                         color: _theme.colorScheme.primary,
                         hoverColor: _theme.colorScheme.surface.withAlpha(128),
                       ),
@@ -398,18 +529,18 @@ class _BaseCardState extends State<BaseCard> {
     );
   }
 
-  ValueNotifier<int> _getLikeNotifier() {
+  Listenable _getLikeNotifier() {
     switch (dataType) {
       case 'playlist':
-        return currentLikedPlaylistsLength;
+        return userLikedPlaylists;
       case 'album':
       case 'single':
       case 'ep':
       case 'broadcast':
       case 'other':
-        return currentLikedAlbumsLength;
+        return userLikedAlbumsList;
       case 'artist':
-        return currentLikedArtistsLength;
+        return userLikedArtistsList;
       default:
         return ValueNotifier(0);
     }
@@ -479,7 +610,7 @@ class _BaseCardState extends State<BaseCard> {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
           overflow: TextOverflow.ellipsis,
-          _labelType(),
+          widget.label!, //_labelType(),
           style: _theme.textTheme.labelSmall?.copyWith(
             color: colorScheme.onSecondaryContainer,
           ),
@@ -561,7 +692,7 @@ class _BaseCardState extends State<BaseCard> {
     String title = '';
     if (widget.inputData?['first-release-date'] != null)
       title =
-          '(${tryParseDate(widget.inputData?['first-release-date']).year}${tryParseDate(widget.inputData?['first-release-date']).isAfter(DateTime.now()) ? ' upcoming)' : ')'}';
+          '(${tryParseDate(widget.inputData?['first-release-date']).year}${tryParseDate(widget.inputData?['first-release-date']).isAfter(DateTime.now()) ? ' ${context.l10n!.upcoming})' : ')'}';
     else
       title = '';
     return title;

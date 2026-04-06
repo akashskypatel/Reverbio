@@ -16,5 +16,8 @@
     "webp",
     "ytid"
   ],
-  "cmake.ignoreCMakeListsMissing": true
+  "cmake.ignoreCMakeListsMissing": true,
+  "[dart]": {
+    "editor.formatOnSave": true
+  }
 }

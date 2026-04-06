@@ -3,39 +3,37 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [      
-      
+    "configurations": [
         {
-            "name": "Reverbio",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "Reverbio (profile mode)",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "Reverbio (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "release"
-        },
-        {
-            "name": "Flutter (Windows)",
+            "name": "Debug (Windows)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
             "deviceId": "windows",
         },
         {
-            "name": "Flutter (Android)",
+            "name": "Debug (Android)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
             "deviceId": "emulator-5554",
             "args": ["--no-enable-impeller"]
+        },
+        {
+          "name": "Profile (Windows)",
+          "request": "launch",
+          "type": "dart",
+          "flutterMode": "profile",
+          "deviceId": "windows",
+        },
+        {
+            "name": "Profile (Android)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "deviceId": "emulator-5554",
+            "args": ["--no-enable-impeller"]
         }
+        
     ]
 }

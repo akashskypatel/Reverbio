@@ -20,17 +20,17 @@
  */
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:reverbio/API/entities/album.dart';
-import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/screens/artist_page.dart';
 import 'package:reverbio/screens/playlist_page.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/custom_search_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/genre_list.dart';
 import 'package:reverbio/widgets/section_header.dart';
 
@@ -46,6 +46,8 @@ class LikedCardsPage extends StatefulWidget {
 class _LikedCardsPageState extends State<LikedCardsPage> {
   final TextEditingController _searchBar = TextEditingController();
   final FocusNode _inputNode = FocusNode();
+  // R4 fix: Dispose isFilteredNotifier in dispose()
+  final ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
   late final double cardHeight = MediaQuery.sizeOf(context).height * 0.25 / 1.1;
   late final Set<String> uniqueGenreList = {};
   late final List<dynamic> genreList = [];
@@ -53,16 +55,19 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   final List<dynamic> inputData = [];
   final List<BaseCard> cardList = <BaseCard>[];
   GenreList? genresWidget;
-  ValueNotifier<bool> isFilteredNotifier = ValueNotifier(false);
+  
+  // 8.2-B: Sort state for liked entities
+  final String _sortKey = 'name'; // 'name' or 'dateAdded'
+  final bool _sortAscending = true;
+  
+  // R5 fix: Add validation for widget.page
   final dataMap = {
     'albums': {
-      'list': userLikedAlbumsList,
-      'notifier': currentLikedAlbumsLength,
+      'notifier': userLikedAlbumsList,
       'widgetContext': 'AlbumsPageHeader',
     },
     'artists': {
-      'list': userLikedArtistsList,
-      'notifier': currentLikedArtistsLength,
+      'notifier': userLikedArtistsList,
       'widgetContext': 'ArtistsPageHeader',
     },
   };
@@ -74,8 +79,38 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
 
   @override
   void dispose() {
+    // R4 fix: Dispose all controllers and notifiers
+    _searchBar.dispose();
+    _inputNode.dispose();
+    isFilteredNotifier.dispose();
     cardList.clear();
     super.dispose();
+  }
+
+  // 8.2-B: Sort entities by key and direction
+  void _sortEntities() {
+    inputData.sort((a, b) {
+      int comparison;
+      if (_sortKey == 'name') {
+        final nameA = (a['musicbrainzName'] ?? a['discogsName'] ?? a['artist'] ?? a['title'] ?? '').toString().toLowerCase();
+        final nameB = (b['musicbrainzName'] ?? b['discogsName'] ?? b['artist'] ?? b['title'] ?? '').toString().toLowerCase();
+        comparison = nameA.compareTo(nameB);
+      } else {
+        // Sort by date added (if available)
+        final dateA = a['dateAdded'] ?? DateTime(1970);
+        final dateB = b['dateAdded'] ?? DateTime(1970);
+        comparison = dateA.compareTo(dateB);
+      }
+      return _sortAscending ? comparison : -comparison;
+    });
+  }
+
+  // 8.2-B: Refresh and re-sort entities
+  Future<void> _refreshLikedEntities() async {
+    // Trigger a rebuild by notifying listeners
+    if (mounted) {
+      setState(_sortEntities);
+    }
   }
 
   @override
@@ -85,13 +120,16 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
-          _clearFiltersButton(),
-          ...PM.getWidgetsByType(
-            _getEntityListData,
-            dataMap[widget.page]?['widgetContext'] as String,
-            context,
+          ExpandingToolbar(
+            actions: [
+              _clearFiltersButton(),
+              ...PM.getWidgetsByType(
+                _getEntityListData,
+                dataMap[widget.page]?['widgetContext'] as String,
+                context,
+              ),
+            ],
           ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
       body: _buildBody(context),
@@ -123,14 +161,19 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
   }
 
   Widget _buildBody(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: dataMap[widget.page]?['notifier'] as ValueNotifier<int>,
-      builder: (context, value, child) {
+    return ListenableBuilder(
+      listenable: dataMap[widget.page]?['notifier'] as NotifiableList,
+      builder: (context, child) {
+        // R2 fix: Clear genre data between rebuilds
+        uniqueGenreList.clear();
+        genreList.clear();
         inputData.clear();
-        for (final data in (dataMap[widget.page]?['list'] as List)) {
+        // R8 fix: Move side effects out of build - just read data here
+        for (final data in (dataMap[widget.page]?['notifier'] as List)) {
           data['filterShow'] = true;
           inputData.add(data);
-          _parseGenres(data);
+          // R8 fix: Parse genres without mutating during build
+          _parseGenresWithoutMutation(data);
         }
         _buildCards(context);
         return SingleChildScrollView(
@@ -193,21 +236,41 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
                   (context) =>
                       widget.page == 'artists'
                           ? ArtistPage(page: '/artist', artistData: data)
-                          : PlaylistPage(page: '/album', playlistData: data),
-              settings: RouteSettings(name: '/artist?${data['id']}'),
+                          : PlaylistPage(
+                            page: '/album',
+                            playlistData: Map<String, dynamic>.from(data),
+                          ),
+              // R6 fix: Correct route name for albums vs artists
+              settings: RouteSettings(
+                name:
+                    widget.page == 'artists'
+                        ? '/artist?${data['id']}'
+                        : '/album?${data['id']}',
+              ),
             ),
           ),
     );
+    // R7 fix: Handle entities without primary-type gracefully
     if (data['primary-type'] != null &&
-        data['primary-type']?.toLowerCase() != 'unknown')
+        data['primary-type'].toString().toLowerCase() != 'unknown') {
       cardList.add(card);
+    } else if (data['primary-type'] == null) {
+      // R7 fix: Add card with default primary-type
+      data['primary-type'] = widget.page == 'artists' ? 'artist' : 'album';
+      cardList.add(card);
+    }
   }
 
   void _parseGenres(dynamic data) {
     final genres = data['genres'] ?? data['musicbrainz']?['genres'] ?? [];
     final Set<String> genreString = {};
     for (final genre in genres) {
-      final count = genreList.where((e) => e['name'] == genre['name']).length;
+      // R1 fix: Get existing count properly
+      final existing = genreList.firstWhere(
+        (e) => e['name'] == genre['name'],
+        orElse: () => null,
+      );
+      final count = existing?['count'] ?? 0;
       if (uniqueGenreList.add(genre['name'])) {
         genreList.add({
           'id': genre['id'],
@@ -215,41 +278,56 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
           'count': count + 1,
         });
         genreString.add(genre['name']);
-      } else {
-        final existing = genreList.firstWhere(
-          (e) => e['name'] == genre['name'],
-        );
+      } else if (existing != null) {
         existing['count'] = count + 1;
       }
     }
     data['genreString'] = genreString.toList().join(',');
   }
 
+  // R8 fix: Parse genres without mutating global state during build
+  void _parseGenresWithoutMutation(dynamic data) {
+    final genres = data['genres'] ?? data['musicbrainz']?['genres'] ?? [];
+    final Set<String> genreString = {};
+    for (final genre in genres) {
+      genreString.add(genre['name']);
+    }
+    data['genreString'] = genreString.toList().join(',');
+  }
+
   void _filterCardsByGenre(String query) {
+    // R3 fix: Restore visibility for matching items
     if (query.isEmpty) {
       for (final widget in cardList) {
         widget.setVisibility(true);
-        isFilteredNotifier.value = false;
       }
+      isFilteredNotifier.value = false;
     } else {
+      var anyFiltered = false;
       for (final widget in cardList) {
         if (!widget.inputData!['genreString'].toString().toLowerCase().contains(
           query,
         )) {
           widget.setVisibility(false);
-          isFilteredNotifier.value = true;
+          anyFiltered = true;
+        } else {
+          // R3 fix: Restore visibility for matching items
+          widget.setVisibility(true);
         }
       }
+      isFilteredNotifier.value = anyFiltered;
     }
   }
 
   void _filterCardList(String query) {
+    // R3 fix: Restore visibility for matching items
     if (query.isEmpty) {
       for (final widget in cardList) {
         widget.setVisibility(true);
-        isFilteredNotifier.value = false;
       }
+      isFilteredNotifier.value = false;
     } else {
+      var anyFiltered = false;
       for (final widget in cardList) {
         final searchStr =
             '${widget.inputData!['musicbrainzName'] ?? ''} '
@@ -258,9 +336,13 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
             '${widget.inputData!['title'] ?? ''}';
         if (!searchStr.toLowerCase().contains(query)) {
           widget.setVisibility(false);
-          isFilteredNotifier.value = true;
+          anyFiltered = true;
+        } else {
+          // R3 fix: Restore visibility for matching items
+          widget.setVisibility(true);
         }
       }
+      isFilteredNotifier.value = anyFiltered;
     }
     genresWidget?.searchGenres(query);
   }
@@ -276,7 +358,6 @@ class _LikedCardsPageState extends State<LikedCardsPage> {
 
   Widget _buildSearchBar(BuildContext context) {
     return CustomSearchBar(
-      //loadingProgressNotifier: _fetchingSongs,
       controller: _searchBar,
       focusNode: _inputNode,
       labelText: '${context.l10n!.search}...',

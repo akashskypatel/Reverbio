@@ -147,7 +147,7 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
       inputData: data,
       icon: widget.icon,
       size: playlistHeight,
-      showLabel: !isArtist,
+      label: !isArtist ? dataType : null,
       showOverflowLabel: true,
       showLike: true,
       onPressed: () {
@@ -160,9 +160,15 @@ class _HorizontalCardScrollerState extends State<HorizontalCardScroller> {
             builder: (context) {
               switch (dataType) {
                 case 'artist':
-                  return ArtistPage(page: 'artist', artistData: data);
+                  return ArtistPage(
+                    page: 'artist',
+                    artistData: Map<String, dynamic>.from(data),
+                  );
                 default:
-                  return PlaylistPage(page: dataType ?? '', playlistData: data);
+                  return PlaylistPage(
+                    page: dataType ?? '',
+                    playlistData: Map<String, dynamic>.from(data),
+                  );
               }
             },
           ),

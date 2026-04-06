@@ -21,21 +21,20 @@
 
 import 'package:background_downloader/background_downloader.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/entities/artist.dart';
-import 'package:reverbio/API/entities/playlist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/extensions/l10n.dart';
-import 'package:reverbio/models/paginated_list.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
-import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/utils.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
+import 'package:reverbio/utilities/paginated_list.dart';
 import 'package:reverbio/widgets/announcement_box.dart';
-import 'package:reverbio/widgets/bottom_sheet_bar.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/horizontal_card_scroller.dart';
+import 'package:reverbio/widgets/notification_log.dart';
 import 'package:reverbio/widgets/song_list.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
@@ -47,18 +46,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late ThemeData _theme;
-  final _dbPlaylists = PaginatedList(
-    dbPlaylists,
-    pageSize: recommendedCardsNumber,
-    randomSeed: DateTime.now().millisecond,
-  );
-  final PaginatedList _dbSongs = PaginatedList.fromAsync(getRecommendedSongs());
-  late final PaginatedList _dbArtists = PaginatedList.fromAsync(
-    _dbSongs.initializationFuture!.then((v) async {
-      return getRecommendedArtists();
-    }),
-  );
+  _HomePageState() {
+    _dbPlaylists = PaginatedList(
+      dbPlaylists,
+      pageSize: recommendedCardsNumber,
+      randomSeed: DateTime.now().millisecond,
+    );
+    _dbSongs = PaginatedList.fromAsync(getRecommendedSongs());
+    _dbArtists = PaginatedList.fromAsync(
+      _dbSongs.initializationFuture!.then((v) async {
+        return getRecommendedArtists();
+      }),
+    );
+  }
+  // R8 fix: Removed _theme instance field - use Theme.of(context) directly
+  // R1 fix: Dispose PaginatedList instances
+  late final PaginatedList _dbPlaylists;
+  late final PaginatedList _dbSongs;
+  late final PaginatedList _dbArtists;
 
   @override
   void initState() {
@@ -67,19 +72,24 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    // R1 fix: Dispose all PaginatedList instances
+    _dbPlaylists.dispose();
+    _dbSongs.dispose();
+    _dbArtists.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    _theme = Theme.of(context);
+    // R8 fix: Use Theme.of(context) directly instead of storing in instance field
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reverbio'),
         actions: [
-          _buildAlertButton(context),
-          _buildSyncButton(),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
+          ExpandingToolbar(
+            actions: [_buildAlertButton(context), _buildSyncButton()],
+          ),
         ],
       ),
       body: CustomScrollView(
@@ -94,8 +104,8 @@ class _HomePageState extends State<HomePage> {
                   if (_url == null) return const SizedBox.shrink();
                   return AnnouncementBox(
                     message: context.l10n!.newAnnouncement,
-                    backgroundColor: _theme.colorScheme.secondaryContainer,
-                    textColor: _theme.colorScheme.onSecondaryContainer,
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                    textColor: theme.colorScheme.onSecondaryContainer,
                     url: _url,
                   );
                 },
@@ -105,9 +115,9 @@ class _HomePageState extends State<HomePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: commonBarPadding,
-              child: ValueListenableBuilder<int>(
-                valueListenable: currentLikedPlaylistsLength,
-                builder: (context, value, __) {
+              child: ListenableBuilder(
+                listenable: userLikedPlaylists,
+                builder: (context, __) {
                   return ListenableBuilder(
                     listenable: _dbPlaylists,
                     builder:
@@ -115,6 +125,7 @@ class _HomePageState extends State<HomePage> {
                           title: context.l10n!.suggestedPlaylists,
                           future: Future.value(_dbPlaylists.getCurrentPage()),
                           headerActions: _buildPrevNextButtons(
+                            context,
                             _dbPlaylists.hasPreviousPage
                                 ? _dbPlaylists.getPreviousPage
                                 : null,
@@ -139,6 +150,7 @@ class _HomePageState extends State<HomePage> {
                       future: _dbArtists.getCurrentPageAsync(),
                       icon: FluentIcons.mic_sparkle_24_filled,
                       headerActions: _buildPrevNextButtons(
+                        context,
                         (!_dbArtists.isLoading && _dbArtists.hasPreviousPage)
                             ? _dbArtists.getPreviousPage
                             : null,
@@ -153,16 +165,32 @@ class _HomePageState extends State<HomePage> {
           ListenableBuilder(
             listenable: _dbSongs,
             builder:
-                (context, child) => SongList(
-                  page: 'recommended',
-                  title: context.l10n!.recommendedForYou,
+                (context, child) => FutureBuilder(
                   future: _dbSongs.getCurrentPageAsync(),
-                  expandedActions: _buildPrevNextButtons(
-                    (!_dbSongs.isLoading && _dbSongs.hasPreviousPage)
-                        ? _dbSongs.getPreviousPage
-                        : null,
-                    (_dbSongs.hasNextPage) ? _dbSongs.getNextPage : null,
-                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      return const SliverToBoxAdapter(child: Spinner());
+                    if (!snapshot.hasData ||
+                        snapshot.data == null ||
+                        snapshot.data!.isEmpty)
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    // Fix: Map list items to correct type to avoid runtime cast error
+                    final _list = NotifiableList.from(
+                      snapshot.data!.map((e) => Map<String, dynamic>.from(e)).toList(),
+                    );
+                    return SongList(
+                      page: 'recommended',
+                      title: context.l10n!.recommendedForYou,
+                      songMaps: _list,
+                      expandedActions: _buildPrevNextButtons(
+                        context,
+                        (!_dbSongs.isLoading && _dbSongs.hasPreviousPage)
+                            ? _dbSongs.getPreviousPage
+                            : null,
+                        (_dbSongs.hasNextPage) ? _dbSongs.getNextPage : null,
+                      ),
+                    );
+                  },
                 ),
           ),
         ],
@@ -170,7 +198,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  List<Widget> _buildPrevNextButtons(Function? previous, Function? next) {
+  List<Widget> _buildPrevNextButtons(
+    BuildContext context,
+    Function? previous,
+    Function? next,
+  ) {
+    final theme = Theme.of(context);
     return [
       IconButton(
         onPressed:
@@ -183,8 +216,8 @@ class _HomePageState extends State<HomePage> {
           FluentIcons.chevron_left_24_filled,
           color:
               previous != null
-                  ? _theme.colorScheme.primary
-                  : _theme.colorScheme.inversePrimary,
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.inversePrimary,
         ),
       ),
       IconButton(
@@ -198,8 +231,8 @@ class _HomePageState extends State<HomePage> {
           FluentIcons.chevron_right_24_filled,
           color:
               next != null
-                  ? _theme.colorScheme.primary
-                  : _theme.colorScheme.inversePrimary,
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.inversePrimary,
         ),
       ),
     ];
@@ -211,12 +244,18 @@ class _HomePageState extends State<HomePage> {
       highlightColor: Colors.transparent,
       icon: const Icon(FluentIcons.arrow_sync_24_filled),
       iconSize: pageHeaderIconSize,
+      // R2 fix: Add guard for StateError during async loading
       onPressed: () {
-        if (mounted)
-          setState(() {
-            _dbSongs.reset();
-            _dbArtists.reset();
-          });
+        if (mounted) {
+          try {
+            setState(() {
+              _dbSongs.reset();
+              _dbArtists.reset();
+            });
+          } on StateError {
+            // Ignore StateError if lists are already disposed
+          }
+        }
       },
     );
   }
@@ -228,89 +267,22 @@ class _HomePageState extends State<HomePage> {
           (context, value, child) => IconButton(
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
+            // R5 fix: Correct badge/enabled state logic
             icon:
                 notificationLog.isNotEmpty ||
                         FileDownloader().taskQueues.isNotEmpty
                     ? const Icon(FluentIcons.alert_badge_24_filled)
                     : const Icon(FluentIcons.alert_24_regular),
             iconSize: pageHeaderIconSize,
+            // R5 fix: Enable button if there are notifications OR downloads
             onPressed:
-                notificationLog.isNotEmpty
+                notificationLog.isNotEmpty ||
+                        FileDownloader().taskQueues.isNotEmpty
                     ? () async {
-                      await _showNotificationLog(context);
+                      await showNotificationLog(context);
                     }
                     : null,
           ),
-    );
-  }
-
-  Future<void> _showNotificationLog(BuildContext context) async {
-    final inactivatedColor = _theme.colorScheme.surfaceContainerHigh;
-    showCustomBottomSheet(
-      context,
-      StatefulBuilder(
-        builder: (context, setState) {
-          final _logList =
-              notificationLog.entries.map((entry) {
-                  return {'index': entry.value['index'], 'id': entry.key};
-                }).toList()
-                ..sort((a, b) => a['index'].compareTo(b['index']));
-          final _logKeys = _logList.map((e) => e['id']).toList();
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const BouncingScrollPhysics(),
-            padding: commonListViewBottomPadding,
-            itemCount: _logKeys.length,
-            itemBuilder: (context, index) {
-              final notification = notificationLog[_logKeys[index]];
-              final borderRadius = getItemBorderRadius(index, _logKeys.length);
-              final progress = notificationLog[notification['id']]?['data'];
-              final message = notification['message'];
-              final dateTime = notification['dateTime'];
-              if (progress is ValueNotifier<int>) {
-                return ValueListenableBuilder(
-                  valueListenable: progress,
-                  builder: (context, value, child) {
-                    final action = Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox.square(
-                          dimension: 35,
-                          child: Spinner(value: value / 100),
-                        ),
-                        Text('$value%'),
-                      ],
-                    );
-                    return BottomSheetBar(
-                      '$message · ${dateTime != null ? formatRelativeTime(dateTime) : ''}',
-                      inactivatedColor,
-                      borderRadius: borderRadius,
-                      actions: [action],
-                    );
-                  },
-                );
-              } else {
-                final action = IconButton(
-                  icon: const Icon(FluentIcons.dismiss_24_filled),
-                  onPressed: () {
-                    notificationLog.remove(_logKeys[index]);
-                    if (context.mounted)
-                      setState(() {
-                        notificationLogLength.value = notificationLog.length;
-                      });
-                  },
-                );
-                return BottomSheetBar(
-                  '$message · ${dateTime != null ? formatRelativeTime(dateTime) : ''}',
-                  inactivatedColor,
-                  borderRadius: borderRadius,
-                  actions: [action],
-                );
-              }
-            },
-          );
-        },
-      ),
     );
   }
 }

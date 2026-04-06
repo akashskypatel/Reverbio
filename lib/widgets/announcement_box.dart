@@ -19,8 +19,13 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
+
+// R6 fix: Extract responsive breakpoint to constant
+const _responsiveBreakpoint = 600.0;
 
 class AnnouncementBox extends StatelessWidget {
   const AnnouncementBox({
@@ -37,11 +42,30 @@ class AnnouncementBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // R3/R6 fix: Add responsive layout with breakpoint constant
+    final isWide = MediaQuery.sizeOf(context).width > _responsiveBreakpoint;
+
+    // R5/R6 fix: Add accessibility semantics and visual tap feedback
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: GestureDetector(
-        onTap: () => launchURL(Uri.parse(url)),
-        child: Card(
+      child: Semantics(
+        // R5 fix: Add accessibility semantics
+        button: url.isNotEmpty,
+        link: url.isNotEmpty,
+        child: InkWell(
+          // R6 fix: Add visual tap feedback
+          // R4 fix: Use unawaited() to explicitly mark fire-and-forget async call
+          onTap: url.isNotEmpty
+              ? () => unawaited(() async {
+                  try {
+                    await launchURL(Uri.parse(url));
+                  } catch (e) {
+                    // Silently fail - URL launch is non-critical
+                  }
+                }())
+              : null,
+          borderRadius: BorderRadius.circular(18),
+          child: Card(
           color: backgroundColor,
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(18)),
@@ -49,25 +73,46 @@ class AnnouncementBox extends StatelessWidget {
           elevation: 0.1,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Row(
-              children: [
-                Icon(Icons.notifications, color: textColor, size: 32),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: textColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+            child: isWide
+                ? Row(
+                    children: [
+                      Icon(Icons.notifications, color: textColor, size: 32),
+                      const SizedBox(width: 16),
+                      // R6 fix: Use Flexible instead of Expanded for consistency
+                      Flexible(
+                        child: Text(
+                          message,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: textColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications, color: textColor, size: 32),
+                      const SizedBox(height: 8),
+                      Text(
+                        message,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: textColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
+        ),
         ),
       ),
     );

@@ -1,12 +1,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.akashskypatel.reverbio">
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.MANAGE_MEDIA" />
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <!-- For Android 12 and below -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!-- For devices running Android 9 (API 28) and lower -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"  />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -15,18 +28,20 @@
     </queries>
     <queries>
         <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
         </intent>
     </queries>
+
     <application
         android:label="Reverbio"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
+        android:requestLegacyExternalStorage="true"
         android:extractNativeLibs="true"
         tools:replace="android:extractNativeLibs"
-        android:appCategory="audio" >
+        android:appCategory="audio">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -40,15 +55,19 @@
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
-            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false" />
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:scheme="reverbio"
                     android:host="playlist"
@@ -60,7 +79,8 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <!-- AudioService -->
-        <service android:name="com.ryanheise.audioservice.AudioService"
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="true"
             tools:ignore="Instantiatable"
@@ -68,15 +88,26 @@
             android:icon="@mipmap/ic_launcher">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
-                <action android:name="androidx.car.app.CarAppService"/>
-                <category android:name="androidx.car.app.category.MEDIA"/>
+                <action android:name="androidx.car.app.CarAppService" />
+
+                <category android:name="androidx.car.app.category.MEDIA" />
             </intent-filter>
             <meta-data
                 android:name="android.media.notification.icon"
                 android:resource="@mipmap/ic_notification" />
         </service>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <!-- MediaButtonReceiver -->
-        <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+        <receiver
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
             android:exported="true"
             tools:ignore="Instantiatable">
             <intent-filter>
@@ -84,15 +115,16 @@
             </intent-filter>
         </receiver>
         <!-- Android Auto-->
-        <meta-data android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc"/>
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
         <meta-data
             android:name="com.google.android.gms.car.media"
             android:value="true" />
         <meta-data
             android:name="com.google.android.gms.car.notification.SmallIcon"
             android:resource="@mipmap/ic_notification" />
-        
+
         <meta-data
             android:name="android.media.browseable"
             android:value="true" />

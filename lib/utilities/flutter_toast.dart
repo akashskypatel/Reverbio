@@ -30,7 +30,7 @@ final Map<String, dynamic> notificationLog = {};
 ValueNotifier<int> notificationLogLength = ValueNotifier(0);
 
 void showToast(String text, {BuildContext? context, String? id, dynamic data}) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   final newId = id ?? stableHash('[${DateTime.now()}] $text');
   notificationLog[newId] = {
     'index':
@@ -47,9 +47,16 @@ void showToast(String text, {BuildContext? context, String? id, dynamic data}) {
     SnackBar(
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
       behavior: SnackBarBehavior.floating,
-      content: Text(
-        text,
-        style: TextStyle(color: Theme.of(context).colorScheme.inverseSurface),
+      padding: EdgeInsets.zero,
+      content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => ScaffoldMessenger.of(context!).hideCurrentSnackBar(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Text(text,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.inverseSurface)),
+        ),
       ),
       duration: _toastDuration,
       margin:
@@ -66,13 +73,20 @@ void showToastWithButton(
   VoidCallback onPressedToast, {
   BuildContext? context,
 }) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-      content: Text(
-        text,
-        style: TextStyle(color: Theme.of(context).colorScheme.inverseSurface),
+      padding: EdgeInsets.zero,
+      content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => ScaffoldMessenger.of(context!).hideCurrentSnackBar(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Text(text,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.inverseSurface)),
+        ),
       ),
       action: SnackBarAction(
         label: buttonName,

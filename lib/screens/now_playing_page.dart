@@ -23,11 +23,11 @@ import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/models/position_data.dart';
@@ -39,12 +39,11 @@ import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/playback_icon_button.dart';
 import 'package:reverbio/widgets/song_bar.dart';
 import 'package:reverbio/widgets/spinner.dart';
-
-final _lyricsController = FlipCardController();
 
 class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({super.key});
@@ -54,17 +53,35 @@ class NowPlayingPage extends StatefulWidget {
 }
 
 class _NowPlayingPageState extends State<NowPlayingPage> {
+  // R6 fix: Move _lyricsController from global scope to State
+  final _lyricsController = FlipCardController();
+  
   late ThemeData _theme;
   late bool _isLargeScreen;
+  // R3 fix: Move ValueNotifiers from build() to State fields
+  late final ValueNotifier<bool> _songLikeStatus;
+  late final ValueNotifier<bool> _songOfflineStatus;
 
   @override
-  void deactivate() {
-    nowPlayingOpen.value = false;
-    super.deactivate();
+  void initState() {
+    super.initState();
+    // R3 fix: Initialize ValueNotifiers once in initState
+    _songLikeStatus = ValueNotifier<bool>(
+      isSongAlreadyLiked(audioHandler.songValueNotifier.value),
+    );
+    _songOfflineStatus = ValueNotifier<bool>(
+      isSongAlreadyOffline(audioHandler.songValueNotifier.value),
+    );
   }
 
   @override
   void dispose() {
+    // R3 fix: Dispose ValueNotifiers
+    // R13 fix: Move deactivate logic to dispose for proper cleanup
+    nowPlayingOpen.value = false;
+    _songLikeStatus.dispose();
+    _songOfflineStatus.dispose();
+    // R6 fix: _lyricsController doesn't need disposal (external package controller)
     super.dispose();
   }
 
@@ -75,12 +92,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     _theme = Theme.of(context);
     const adjustedIconSize = 43.0;
     final adjustedMiniIconSize = _isLargeScreen ? pageHeaderIconSize : 20.0;
-    final songLikeStatus = ValueNotifier<bool>(
-      isSongAlreadyLiked(audioHandler.songValueNotifier.value?.song),
-    );
-    final songOfflineStatus = ValueNotifier<bool>(
-      isSongAlreadyOffline(audioHandler.songValueNotifier.value?.song),
-    );
+    // R3 fix: Use State fields instead of creating new ValueNotifiers in build()
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -94,14 +106,17 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           },
         ),
         actions: [
-          _buildSyncButton(),
-          if (_isLargeScreen)
-            ..._buildActionList(
-              songLikeStatus,
-              songOfflineStatus,
-              adjustedMiniIconSize,
-            ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
+          ExpandingToolbar(
+            actions: [
+              _buildSyncButton(),
+              if (_isLargeScreen)
+                ..._buildActionList(
+                  _songLikeStatus,
+                  _songOfflineStatus,
+                  adjustedMiniIconSize,
+                ),
+            ],
+          ),
         ],
       ),
       body: StreamBuilder<MediaItem?>(
@@ -117,18 +132,21 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                   size: size,
                   adjustedIconSize: adjustedIconSize,
                   adjustedMiniIconSize: adjustedMiniIconSize,
+                  lyricsController: _lyricsController,
                 )
+                // R14 fix: Clarify 0.65 scaling intent - scale down artwork for mobile layout
                 : _MobileLayout(
                   mediaItem: mediaItem,
-                  size: size * .65,
+                  size: size * .65,  // Scale to 65% for mobile to fit more content
                   adjustedIconSize: adjustedIconSize,
                   adjustedMiniIconSize: adjustedMiniIconSize,
                   isLargeScreen: _isLargeScreen,
                   actions: _buildActionList(
-                    songLikeStatus,
-                    songOfflineStatus,
+                    _songLikeStatus,
+                    _songOfflineStatus,
                     adjustedMiniIconSize,
                   ),
+                  lyricsController: _lyricsController,
                 );
           }
         },
@@ -137,13 +155,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   }
 
   Widget _buildSyncButton() {
-    return IconButton(
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      icon: const Icon(FluentIcons.arrow_sync_24_filled),
-      iconSize: pageHeaderIconSize,
-      onPressed: () async {},
-    );
+    // R12 fix: Hide button with empty onPressed - functionality not implemented
+    return const SizedBox.shrink();
   }
 
   List<Widget> _buildActionList(
@@ -157,7 +170,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       _buildOfflineButton(songOfflineStatus, _primaryColor, iconSize),
       if (!offlineMode.value)
         _buildAddToPlaylistButton(_primaryColor, iconSize),
-      if (audioHandler.queueSongBars.isNotEmpty &&
+      if (audioHandler.queueSongMaps.isNotEmpty &&
           !isLargeScreen(context: context))
         _buildQueueButton(context, _primaryColor, iconSize),
       if (!offlineMode.value) ...[
@@ -277,10 +290,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         void onPressed(value) {
           if (value) {
             unawaited(
-              removeSongFromOffline(audioHandler.songValueNotifier.value?.song),
+              removeSongFromOffline(audioHandler.songValueNotifier.value),
             );
           } else {
-            makeSongOffline(audioHandler.songValueNotifier.value?.song);
+            makeSongOffline(audioHandler.songValueNotifier.value);
           }
           status.value = !status.value;
         }
@@ -309,7 +322,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     void onPressed() {
       showAddToPlaylistDialog(
         context,
-        audioHandler.songValueNotifier.value?.song,
+        audioHandler.songValueNotifier.value,
       );
     }
 
@@ -343,9 +356,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           shrinkWrap: true,
           physics: const BouncingScrollPhysics(),
           padding: commonListViewBottomPadding,
-          itemCount: audioHandler.queueSongBars.length,
+          itemCount: audioHandler.queueSongMaps.length,
           itemBuilder: (BuildContext context, int index) {
-            return audioHandler.queueSongBars[index];
+            final songMap = audioHandler.queueSongMaps[index];
+            return SongBar(songMap);
           },
         ),
       );
@@ -443,7 +457,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         );
         void onPressed() {
           updateSongLikeStatus(
-            audioHandler.songValueNotifier.value?.song,
+            audioHandler.songValueNotifier.value,
             !status.value,
           );
           status.value = !status.value;
@@ -553,7 +567,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => GoRouter.of(context).pop(context),
+                  // R8 fix: Don't pass context as pop result
+                  onPressed: () => GoRouter.of(context).pop(),
                   child: Text(context.l10n!.cancel),
                 ),
                 ElevatedButton(
@@ -567,7 +582,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                       );
                       showToast(context.l10n!.addedSuccess);
                     }
-                    GoRouter.of(context).pop(context);
+                    // R8 fix: Don't pass context as pop result
+                    GoRouter.of(context).pop();
                   },
                   child: Text(context.l10n!.setTimer),
                 ),
@@ -586,11 +602,13 @@ class _DesktopLayout extends StatelessWidget {
     required this.size,
     required this.adjustedIconSize,
     required this.adjustedMiniIconSize,
+    required this.lyricsController,
   });
   final MediaItem mediaItem;
   final Size size;
   final double adjustedIconSize;
   final double adjustedMiniIconSize;
+  final FlipCardController lyricsController;
 
   @override
   Widget build(BuildContext context) {
@@ -605,11 +623,10 @@ class _DesktopLayout extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               const SizedBox(height: 5),
-              NowPlayingArtwork(size: size, mediaItem: mediaItem),
+              NowPlayingArtwork(mediaItem: mediaItem, lyricsController: lyricsController),
               const SizedBox(height: 5),
               if (!(mediaItem.extras?['isLive'] ?? false))
                 NowPlayingControls(
-                  context: context,
                   size: size,
                   audioId: mediaItem.extras?['ytid'],
                   adjustedIconSize: adjustedIconSize,
@@ -635,6 +652,7 @@ class _MobileLayout extends StatelessWidget {
     required this.adjustedMiniIconSize,
     required this.isLargeScreen,
     required this.actions,
+    required this.lyricsController,
   });
   final MediaItem mediaItem;
   final Size size;
@@ -642,6 +660,7 @@ class _MobileLayout extends StatelessWidget {
   final double adjustedMiniIconSize;
   final bool isLargeScreen;
   final List<Widget> actions;
+  final FlipCardController lyricsController;
 
   @override
   Widget build(BuildContext context) {
@@ -650,11 +669,10 @@ class _MobileLayout extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         const SizedBox(height: 10),
-        NowPlayingArtwork(size: size, mediaItem: mediaItem),
+        NowPlayingArtwork(mediaItem: mediaItem, lyricsController: lyricsController),
         const SizedBox(height: 10),
         if (!(mediaItem.extras?['isLive'] ?? false))
           NowPlayingControls(
-            context: context,
             size: size,
             audioId: mediaItem.extras?['ytid'],
             adjustedIconSize: adjustedIconSize,
@@ -664,7 +682,6 @@ class _MobileLayout extends StatelessWidget {
         if (!isLargeScreen) ...[
           const SizedBox(height: 10),
           BottomActionsRow(
-            context: context,
             audioId: mediaItem.extras?['ytid'],
             mediaItem: mediaItem,
             iconSize: adjustedMiniIconSize,
@@ -678,22 +695,37 @@ class _MobileLayout extends StatelessWidget {
   }
 }
 
-class NowPlayingArtwork extends StatelessWidget {
+class NowPlayingArtwork extends StatefulWidget {
   const NowPlayingArtwork({
     super.key,
-    required this.size,
     required this.mediaItem,
+    required this.lyricsController,
   });
-  final Size size;
   final MediaItem mediaItem;
+  final FlipCardController lyricsController;
+
+  @override
+  State<NowPlayingArtwork> createState() => _NowPlayingArtworkState();
+}
+
+class _NowPlayingArtworkState extends State<NowPlayingArtwork> {
+  // R5 fix: Cache lyrics Future to prevent re-fetching on every rebuild
+  late final Future<String?> _lyricsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _lyricsFuture = getSongLyrics(widget.mediaItem);
+  }
 
   @override
   Widget build(BuildContext context) {
     const _padding = 50;
     const _radius = 17.0;
-    final size = MediaQuery.sizeOf(context);
-    final screenWidth = size.width;
-    final screenHeight = size.height;
+    // R4 fix: Use local variable name that doesn't shadow constructor parameter
+    final screenSize = MediaQuery.sizeOf(context);
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
     final isLandscape = screenWidth > screenHeight;
     final imageSize =
         isLandscape
@@ -706,14 +738,14 @@ class NowPlayingArtwork extends StatelessWidget {
     return FlipCard(
       rotateSide: RotateSide.right,
       onTapFlipping: !offlineMode.value,
-      controller: _lyricsController,
+      controller: widget.lyricsController,
       frontWidget: BaseCard(
         icon: FluentIcons.music_note_2_24_filled,
         size: imageSize,
         paddingValue: 0,
         loadingWidget: const Spinner(),
-        inputData: audioHandler.songValueNotifier.value?.song,
-        onPressed: _lyricsController.flipcard,
+        inputData: audioHandler.songValueNotifier.value,
+        onPressed: widget.lyricsController.flipcard,
       ),
       backWidget: Container(
         width: imageSize,
@@ -722,8 +754,9 @@ class NowPlayingArtwork extends StatelessWidget {
           color: Theme.of(context).colorScheme.secondaryContainer,
           borderRadius: BorderRadius.circular(_radius),
         ),
+        // R5 fix: Use cached Future instead of creating new one on every build
         child: FutureBuilder<String?>(
-          future: getSongLyrics(mediaItem.artist ?? '', mediaItem.title),
+          future: _lyricsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Spinner();
@@ -766,30 +799,42 @@ class QueueListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _textColor = Theme.of(context).colorScheme.secondary;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            context.l10n!.queue,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(color: _textColor),
-          ),
-        ),
-        Flexible(
-          fit: FlexFit.tight,
-          child:
-              audioHandler.queueSongBars.isEmpty
-                  ? Center(
-                    child: Text(
-                      context.l10n!.noSongsInQueue,
-                      style: TextStyle(color: _textColor),
-                    ),
-                  )
-                  : ListView(children: audioHandler.queueSongBars),
-        ),
-      ],
+    // R10 fix: Wrap in ListenableBuilder to listen to queue changes
+    return ListenableBuilder(
+      listenable: audioHandler.queueSongMaps,
+      builder: (context, _) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text(
+                context.l10n!.queue,
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: _textColor),
+              ),
+            ),
+            Flexible(
+              fit: FlexFit.tight,
+              child:
+                  audioHandler.queueSongMaps.isEmpty
+                      ? Center(
+                        child: Text(
+                          context.l10n!.noSongsInQueue,
+                          style: TextStyle(color: _textColor),
+                        ),
+                      )
+                      : ListView.builder(
+                          itemCount: audioHandler.queueSongMaps.length,
+                          itemBuilder: (context, index) {
+                            final songMap = audioHandler.queueSongMaps[index];
+                            return SongBar(songMap);
+                          },
+                        ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -826,14 +871,13 @@ class MarqueeTextWidget extends StatelessWidget {
 class NowPlayingControls extends StatefulWidget {
   const NowPlayingControls({
     super.key,
-    required this.context,
     required this.size,
     required this.audioId,
     required this.adjustedIconSize,
     required this.adjustedMiniIconSize,
     required this.mediaItem,
   });
-  final BuildContext context;
+  // R9 fix: Removed BuildContext field - use context from build()
   final Size size;
   final dynamic audioId;
   final double adjustedIconSize;
@@ -854,11 +898,12 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
     return ValueListenableBuilder(
       valueListenable: audioHandler.songValueNotifier,
       builder: (context, value, child) {
-        final song = audioHandler.songValueNotifier.value!.song;
+        final song = audioHandler.songValueNotifier.value!;
         final artistData =
-            (song['artist-credit'] ?? [song['artist'] ?? 'unknown']) as List;
+            (song['artist-credit'] ?? [song['artist'] ?? context.l10n!.unknown])
+                as List;
         int index = 1;
-        final artistLabels = artistData.fold(<Widget>[], (v, e) {
+        final artistLabels = artistData.fold<List<Widget>>([], (v, e) {
           v.add(_buildArtistLabel(e is String ? e : e['artist']));
           if (index != artistData.length)
             v.add(
@@ -883,11 +928,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
               child: Column(
                 children: [
                   MarqueeTextWidget(
-                    text:
-                        song['mbTitle'] ??
-                        song['title'] ??
-                        song['ytTitle'] ??
-                        'unknown',
+                    text: songTitle(song).nullIfEmpty ?? context.l10n!.unknown,
                     fontColor: Theme.of(context).colorScheme.primary,
                     fontSize: screenHeight * 0.028,
                     fontWeight: FontWeight.w600,
@@ -898,8 +939,7 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
                       if (audioHandler
                               .audioPlayer
                               .songValueNotifier
-                              .value
-                              ?.song !=
+                              .value !=
                           null)
                         ...artistLabels,
                     ],
@@ -909,7 +949,6 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
             ),
             const PositionSlider(),
             PlayerControlButtons(
-              context: context,
               mediaItem: widget.mediaItem,
               iconSize: widget.adjustedIconSize,
               miniIconSize: widget.adjustedMiniIconSize,
@@ -922,41 +961,39 @@ class _NowPlayingControlsState extends State<NowPlayingControls> {
 
   Widget _buildArtistLabel(dynamic artistData) {
     final screenHeight = widget.size.height;
+    // R15 fix: Remove redundant null/empty checks - already validated in caller
+    final artistName = artistData is String
+        ? artistData
+        : artistData['name'] ??
+            artistData['artist'] ??
+            artistData['title'] ??
+            context.l10n!.unknown;
+    
     return GestureDetector(
-      onTap:
-          artistData is String ||
-                  !mounted ||
-                  artistData == null ||
-                  artistData.isEmpty
-              ? null
-              : () async {
-                try {
-                  if (!mounted || artistData == null || artistData.isEmpty)
-                    throw Exception();
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => ArtistPage(
-                            page: '/artist',
-                            artistData: artistData,
-                          ),
-                      settings: RouteSettings(
-                        name:
-                            '/artist?${artistData is String ? artistData : artistData['id']}',
-                      ),
+      onTap: artistData is String || artistData == null || artistData.isEmpty
+          ? null
+          : () async {
+              try {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ArtistPage(
+                      page: '/artist',
+                      artistData: artistData,
                     ),
-                  );
-                } catch (_) {}
-              },
+                    settings: RouteSettings(
+                      name:
+                          '/artist?${artistData is String ? artistData : artistData['id']}',
+                    ),
+                  ),
+                );
+              } catch (e, stackTrace) {
+                // R11 fix: Log the error instead of silently swallowing
+                logger.log('Error navigating to artist page', e, stackTrace);
+              }
+            },
       child: MarqueeTextWidget(
-        text:
-            artistData is String
-                ? artistData
-                : artistData['name'] ??
-                    artistData['artist'] ??
-                    artistData['title'] ??
-                    'unknown',
+        text: artistName,
         fontColor: Theme.of(context).colorScheme.secondary,
         fontSize: screenHeight * 0.025,
         fontWeight: FontWeight.w500,
@@ -1022,12 +1059,11 @@ class PositionSlider extends StatelessWidget {
 class PlayerControlButtons extends StatelessWidget {
   const PlayerControlButtons({
     super.key,
-    required this.context,
     required this.mediaItem,
     required this.iconSize,
     required this.miniIconSize,
   });
-  final BuildContext context;
+  // R9 fix: Removed BuildContext field - use context from build()
   final MediaItem mediaItem;
   final double iconSize;
   final double miniIconSize;
@@ -1226,14 +1262,14 @@ class PlayerControlButtons extends StatelessWidget {
               ),
               iconSize: iconSize,
               onPressed: () {
-                final _isSingleSongPlaying = audioHandler.queueSongBars.isEmpty;
+                final _isSingleSongPlaying = audioHandler.queueSongMaps.isEmpty;
                 repeatNotifier.value =
                     _isSingleSongPlaying
                         ? AudioServiceRepeatMode.one
                         : AudioServiceRepeatMode.all;
 
-                if (repeatNotifier.value == AudioServiceRepeatMode.one)
-                  audioHandler.setRepeatMode(repeatNotifier.value);
+                // R1 fix: Always pass current repeatNotifier.value to setRepeatMode
+                audioHandler.setRepeatMode(repeatNotifier.value);
               },
               tooltip: context.l10n!.repeat,
             );
@@ -1245,14 +1281,13 @@ class PlayerControlButtons extends StatelessWidget {
 class BottomActionsRow extends StatelessWidget {
   const BottomActionsRow({
     super.key,
-    required this.context,
     required this.audioId,
     required this.mediaItem,
     required this.iconSize,
     required this.isLargeScreen,
     required this.actions,
   });
-  final BuildContext context;
+  // R9 fix: Removed BuildContext field - use context from build()
   final dynamic audioId;
   final MediaItem mediaItem;
   final double iconSize;

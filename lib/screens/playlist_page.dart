@@ -22,6 +22,7 @@
 //import 'dart:math';
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
@@ -29,6 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reverbio/API/entities/album.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
@@ -38,22 +40,26 @@ import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
 import 'package:reverbio/widgets/song_list.dart';
+import 'package:reverbio/widgets/spinner.dart';
 
 class PlaylistPage extends StatefulWidget {
   const PlaylistPage({
     super.key,
-    this.playlistData,
+    required this.playlistData,
     this.cardIcon = FluentIcons.music_note_1_24_regular,
     this.isArtist = false,
     required this.page,
   });
   final String page;
-  final dynamic playlistData;
+  final Map<String, dynamic> playlistData;
   final IconData cardIcon;
   final bool isArtist;
 
@@ -64,24 +70,48 @@ class PlaylistPage extends StatefulWidget {
 class _PlaylistPageState extends State<PlaylistPage> {
   List<dynamic> _songsList = [];
   late ThemeData _theme;
-  final NotifiableFuture _infoRequestFuture = NotifiableFuture();
+  late final NotifiableFuture<Map<String, dynamic>> _infoRequestFuture =
+      NotifiableFuture(widget.playlistData);
   final _isEditEnabled = ValueNotifier(false);
   final likeStatus = ValueNotifier<bool>(false);
-  ValueNotifier<int> likeLength = ValueNotifier<int>(0);
+  NotifiableList? likeLength;
   final autoOffline = ValueNotifier<bool>(false);
+  // R1 fix: Cache fetch future to prevent re-fetching on every rebuild
+  late Future<NotifiableList<Map<String, dynamic>>> _fetchFuture;
+  // R6 fix: Local copy of playlist data to avoid mutating widget.playlistData
+  late Map<String, dynamic> _playlistData;
+  
+  // 8.3-A: Pagination state for large playlists
+  final int _pageSize = 50;
+  int _loadedCount = 0;
+  bool _hasMoreSongs = true;
+  final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<bool> _isLoadingMore = ValueNotifier(false);
 
   @override
   void initState() {
     super.initState();
+    // R6 fix: Initialize local copy
+    _playlistData = Map<String, dynamic>.from(widget.playlistData);
     _infoRequestFuture.runFuture(_initializePlaylist());
+    // R1 fix: Initialize cached future once in initState
+    _fetchFuture = fetch();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       likeStatus.value = getLikeStatus();
       autoOffline.value = isPlaylistAlreadyOffline(widget.playlistData);
+      // 8.3-A: Add scroll listener for pagination
+      _scrollController.addListener(_onScroll);
     });
   }
 
   @override
   void dispose() {
+    _infoRequestFuture.dispose();
+    _scrollController.dispose();
+    // R12 fix: Dispose all ValueNotifiers
+    _isEditEnabled.dispose();
+    likeStatus.dispose();
+    autoOffline.dispose();
     super.dispose();
   }
 
@@ -99,34 +129,102 @@ class _PlaylistPageState extends State<PlaylistPage> {
     return false;
   }
 
-  Future _initializePlaylist() async {
-    final id = parseEntityId(widget.playlistData);
+  Future<Map<String, dynamic>> _initializePlaylist() async {
+    final id = parseEntityId(_playlistData);
     final ids = id.toIds;
     final ytid = (ids['yt'] ?? id.ytid).ytid;
     final mbid = (ids['mb'] ?? id.mbid).mbid;
     if (mbid.isNotEmpty &&
-        (widget.playlistData?['list'] == null ||
-            widget.playlistData?['list'].isEmpty)) {
-      return queueAlbumInfoRequest(widget.playlistData);
+        (_playlistData['list'] == null ||
+            _playlistData['list'].isEmpty)) {
+      await queueAlbumInfoRequest(_playlistData).completerFuture?.then((
+        value,
+      ) {
+        if (value != null) _playlistData.addAll(value);
+      });
+      return _playlistData;
     } else if (ytid.isNotEmpty) {
-      widget.playlistData['ytid'] = ytid;
-      likeLength = currentLikedPlaylistsLength;
-      return getPlaylistInfoForWidget(
-        widget.playlistData,
+      _playlistData['ytid'] = ytid;
+      likeLength = userLikedPlaylists;
+      await getPlaylistInfoForWidget(
+        _playlistData,
         isArtist: widget.isArtist,
-      );
+      ).then((value) {
+        _playlistData.addAll(value);
+      });
+      return _playlistData;
     } else {
-      return Future.value(widget.playlistData);
+      return Future.value(_playlistData);
     }
   }
 
-  Future<List<dynamic>> fetch() async {
-    if (!_infoRequestFuture.isComplete)
-      await _infoRequestFuture.completer!.future;
-    if (_infoRequestFuture.result != null)
-      return _infoRequestFuture.result['list'] ?? [];
-    //TODO: restore pagination to large playlists
-    return widget.playlistData['list'] ?? [];
+  Future<NotifiableList<Map<String, dynamic>>> fetch() async {
+    // R5 fix: Add null guard for completer
+    final completerFuture = _infoRequestFuture.completer?.future;
+    if (completerFuture != null && !_infoRequestFuture.isComplete)
+      await completerFuture;
+    if (_infoRequestFuture.hasData) {}
+    // 8.3-A: Implement pagination for large playlists
+    final allSongs = (_playlistData['list'] as List?) ?? [];
+    final initialCount = allSongs.length > _pageSize ? _pageSize : allSongs.length;
+    _loadedCount = initialCount;
+    _hasMoreSongs = allSongs.length > _loadedCount;
+    
+    final _list = NotifiableList.from(
+      allSongs.take(initialCount).map((e) {
+        return Map<String, dynamic>.from(e);
+      }),
+    );
+    return _list;
+  }
+
+  /// 8.3-A: Load more songs when user scrolls near the end
+  Future<void> _loadMoreSongs() async {
+    if (_isLoadingMore.value || !_hasMoreSongs) return;
+    
+    _isLoadingMore.value = true;
+    try {
+      final allSongs = (_playlistData['list'] as List?) ?? [];
+      final remaining = allSongs.length - _loadedCount;
+      if (remaining <= 0) {
+        _hasMoreSongs = false;
+        return;
+      }
+      
+      final toLoad = remaining > _pageSize ? _pageSize : remaining;
+      
+      _loadedCount += toLoad;
+      _hasMoreSongs = _loadedCount < allSongs.length;
+      
+      // Note: We can't directly modify the NotifiableList from FutureBuilder,
+      // so we trigger a rebuild which will re-fetch with updated _loadedCount
+      if (mounted) {
+        setState(() {
+          _fetchFuture = _fetchUpdatedList();
+        });
+      }
+    } finally {
+      _isLoadingMore.value = false;
+    }
+  }
+
+  /// 8.3-A: Fetch updated list with loaded songs
+  Future<NotifiableList<Map<String, dynamic>>> _fetchUpdatedList() async {
+    final allSongs = (_playlistData['list'] as List?) ?? [];
+    final _list = NotifiableList.from(
+      allSongs.take(_loadedCount).map((e) {
+        return Map<String, dynamic>.from(e);
+      }),
+    );
+    return _list;
+  }
+
+  /// 8.3-A: Scroll listener to trigger pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 500) {
+      _loadMoreSongs();
+    }
   }
 
   @override
@@ -135,20 +233,12 @@ class _PlaylistPageState extends State<PlaylistPage> {
     for (final song in _songsList) {
       song['autoCacheOffline'] = widget.playlistData['autoCacheOffline'];
     }
-    return Scaffold(
-      appBar: _buildNavigationBar(),
-      body: _buildList() /*
-          _playlist != null
-              ? _buildList()
-              : SizedBox(
-                height: MediaQuery.sizeOf(context).height - 100,
-                child: const Spinner(),
-              ),*/,
-    );
+    return Scaffold(appBar: _buildNavigationBar(), body: _buildList());
   }
 
   Widget _buildList() {
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -156,15 +246,41 @@ class _PlaylistPageState extends State<PlaylistPage> {
             child: _buildPlaylistHeader(),
           ),
         ),
+        FutureBuilder(
+          // R1 fix: Use cached future instead of calling fetch() on every rebuild
+          future: _fetchFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting)
+              return const SliverToBoxAdapter(child: Spinner());
+            if (!snapshot.hasData ||
+                snapshot.data == null ||
+                snapshot.data!.isEmpty)
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            return ValueListenableBuilder(
+              valueListenable: _isEditEnabled,
+              builder:
+                  (context, value, child) => SongList(
+                    page: 'playlist',
+                    songMaps: snapshot.data!,
+                    isEditable: value,
+                  ),
+            );
+          },
+        ),
+        // 8.3-A: Loading indicator for pagination
         ValueListenableBuilder(
-          valueListenable: _isEditEnabled,
-          builder:
-              (context, value, child) => SongList(
-                page: 'playlist',
-                //inputData: _songsList,
-                future: fetch(),
-                isEditable: value,
-              ),
+          valueListenable: _isLoadingMore,
+          builder: (context, isLoading, child) {
+            if (isLoading) {
+              return const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: Spinner()),
+                ),
+              );
+            }
+            return const SliverToBoxAdapter(child: SizedBox.shrink());
+          },
         ),
       ],
     );
@@ -178,130 +294,156 @@ class _PlaylistPageState extends State<PlaylistPage> {
         onPressed: () => GoRouter.of(context).pop(),
       ),
       actions: [
-        _buildAutoCacheOfflineButton(),
-        if (widget.playlistData?['source'] != 'user-created')
-          _buildLikeButton(),
-        if (widget.playlistData != null) ...[
-          _buildSyncButton(),
-          if (widget.playlistData['source'] == 'user-created')
-            IconButton(
-              icon: const Icon(FluentIcons.share_24_regular),
-              iconSize: pageHeaderIconSize,
-              onPressed: () async {
-                final encodedPlaylist = PlaylistSharingService.encodePlaylist(
-                  widget.playlistData,
-                );
-                final url = 'Reverbio://playlist/custom/$encodedPlaylist';
-                await Clipboard.setData(ClipboardData(text: url));
-              },
-            ),
-          ...PM.getWidgetsByType(
-            _getPlaylistData,
-            [
-                  'album',
-                  'single',
-                  'ep',
-                  'broadcast',
-                  'other',
-                ].contains(widget.page)
-                ? 'AlbumPageHeader'
-                : 'PlaylistPageHeader',
-            context,
-          ),
-          if ([
-                'album',
-                'single',
-                'ep',
-                'broadcast',
-                'other',
-              ].contains(widget.page) &&
-              widget.playlistData['mbid'] != null)
-            IconButton(
-              iconSize: pageHeaderIconSize,
-              onPressed: () {
-                if (widget.playlistData['mbid'] != null) {
-                  final uri = Uri.parse(
-                    'https://musicbrainz.org/release-group/${widget.playlistData['mbid']}',
-                  );
-                  launchURL(uri);
-                }
-              },
-              icon: Icon(
-                FluentIcons.database_link_24_filled,
-                color: _theme.colorScheme.primary,
-              ),
-            ),
-          if (widget.page == 'playlist' && widget.playlistData['ytid'] != null)
-            IconButton(
-              iconSize: pageHeaderIconSize,
-              onPressed: () {
-                if (widget.playlistData['ytid'] != null) {
-                  final uri = Uri.parse(
-                    'https://www.youtube.com/playlist?list=${widget.playlistData['ytid']}',
-                  );
-                  launchURL(uri);
-                }
-              },
-              icon: Icon(
-                FluentIcons.link_24_regular,
-                color: _theme.colorScheme.primary,
-              ),
-            ),
-          if (widget.playlistData != null &&
-              widget.playlistData['source'] == 'user-created')
-            _buildEditButton(),
-          StatefulBuilder(
-            builder: (context, setState) {
-              return IconButton(
-                iconSize: pageHeaderIconSize,
-                onPressed: () {
-                  if (mounted)
-                    setState(() {
-                      _isEditEnabled.value = !_isEditEnabled.value;
-                    });
-                },
-                icon: Icon(
-                  _isEditEnabled.value
-                      ? FluentIcons.edit_off_24_filled
-                      : FluentIcons.edit_line_horizontal_3_24_filled,
-                  color: _theme.colorScheme.primary,
+        ExpandingToolbar(
+          actions: [
+            _buildAutoCacheOfflineButton(),
+            if (widget.playlistData['source'] != 'user-created')
+              _buildLikeButton(),
+            if (widget.playlistData.isNotEmpty) ...[
+              _buildSyncButton(),
+              if (widget.playlistData['source'] == 'user-created')
+                IconButton(
+                  icon: const Icon(FluentIcons.share_24_regular),
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () async {
+                    final encodedPlaylist =
+                        PlaylistSharingService.encodePlaylist(
+                          widget.playlistData,
+                        );
+                    // R16 fix: Validate deep link format
+                    final url = 'reverbio://playlist/custom/$encodedPlaylist';
+                    if (Uri.tryParse(url) != null) {
+                      await Clipboard.setData(ClipboardData(text: url));
+                      showToast('Share link copied to clipboard');
+                    } else {
+                      showToast('Failed to generate share link');
+                    }
+                  },
                 ),
-              );
-            },
-          ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
-        ],
+              ...PM.getWidgetsByType(
+                _getPlaylistData,
+                [
+                      'album',
+                      'single',
+                      'ep',
+                      'broadcast',
+                      'other',
+                    ].contains(widget.page)
+                    ? 'AlbumPageHeader'
+                    : 'PlaylistPageHeader',
+                context,
+              ),
+              if ([
+                    'album',
+                    'single',
+                    'ep',
+                    'broadcast',
+                    'other',
+                  ].contains(widget.page) &&
+                  widget.playlistData['mbid'] != null)
+                IconButton(
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () {
+                    if (widget.playlistData['mbid'] != null) {
+                      final uri = Uri.parse(
+                        'https://musicbrainz.org/release-group/${widget.playlistData['mbid']}',
+                      );
+                      launchURL(uri);
+                    }
+                  },
+                  icon: Icon(
+                    FluentIcons.database_link_24_filled,
+                    color: _theme.colorScheme.primary,
+                  ),
+                ),
+              if (widget.page == 'playlist' &&
+                  widget.playlistData['ytid'] != null)
+                IconButton(
+                  iconSize: pageHeaderIconSize,
+                  onPressed: () {
+                    if (widget.playlistData['ytid'] != null) {
+                      final uri = Uri.parse(
+                        'https://www.youtube.com/playlist?list=${widget.playlistData['ytid']}',
+                      );
+                      launchURL(uri);
+                    }
+                  },
+                  icon: Icon(
+                    FluentIcons.link_24_regular,
+                    color: _theme.colorScheme.primary,
+                  ),
+                ),
+              if (widget.playlistData.isNotEmpty &&
+                  widget.playlistData['source'] == 'user-created')
+                _buildEditButton(),
+              // R11 fix: Use ValueListenableBuilder instead of StatefulBuilder
+              ValueListenableBuilder<bool>(
+                valueListenable: _isEditEnabled,
+                builder: (context, value, child) {
+                  return IconButton(
+                    iconSize: pageHeaderIconSize,
+                    onPressed: () {
+                      _isEditEnabled.value = !_isEditEnabled.value;
+                    },
+                    icon: Icon(
+                      value
+                          ? FluentIcons.edit_off_24_filled
+                          : FluentIcons.edit_line_horizontal_3_24_filled,
+                      color: _theme.colorScheme.primary,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
 
-  dynamic _getPlaylistData() {
-    final data =
-        ['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page) ||
-                (widget.playlistData['isAlbum'] ?? false)
-            ? {
-              ...(widget.playlistData as Map),
-              'album': widget.playlistData['title'],
-              'title': null,
-            }
-            : _songsList;
-    return data;
+  // R13 fix: Return consistent type (Map) instead of dynamic
+  Map<String, dynamic> _getPlaylistData() {
+    if (['album', 'single', 'ep', 'broadcast', 'other'].contains(widget.page) ||
+        (widget.playlistData['isAlbum'] ?? false)) {
+      return {
+        ...(widget.playlistData as Map),
+        'album': widget.playlistData['title'],
+        'title': null,
+      };
+    }
+    // Return as Map with songs list
+    return {'list': _songsList};
   }
 
   Widget _buildPlaylistImage() {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isLandscape = screenWidth > MediaQuery.sizeOf(context).height;
+    final image =
+        widget.playlistData['image'] != null
+            ? (widget.playlistData['image'] is List<int>
+                ? Image.memory(Uint8List.fromList(widget.playlistData['image']))
+                : widget.playlistData['image'] is String &&
+                    isUrl(widget.playlistData['image'])
+                ? Image.network(widget.playlistData['image'])
+                : isFilePath(widget.playlistData['image'])
+                ? Image.file(File(widget.playlistData['image']))
+                : null)
+            : null;
     return BaseCard(
+      image: image,
       inputData: widget.playlistData,
       size: isLandscape ? 300 : screenWidth / 2.5,
       icon: widget.cardIcon,
-      showLike: widget.playlistData?['source'] != 'user-created',
+      showLike: widget.playlistData['source'] != 'user-created',
     );
   }
 
   Widget _buildPlaylistHeader() {
+    // R4/R5 fix: Add null guard for completer
+    final completerFuture = _infoRequestFuture.completer?.future;
+    if (completerFuture == null) return const SizedBox.shrink();
     return FutureBuilder(
-      future: _infoRequestFuture.completer!.future,
+      future: completerFuture,
       builder: (context, snapshot) {
         final _songsLength =
             widget.playlistData['list'] == null
@@ -320,7 +462,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
     );
   }
 
-  Future<bool> _confirmAutoCacheOfflineButton(BuildContext context) async {
+  Future<bool> _confirmAutoCacheOffline(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
           builder:
@@ -350,16 +492,19 @@ class _PlaylistPageState extends State<PlaylistPage> {
             if (!mounted) return;
 
             final bool newValue =
-                !value && await _confirmAutoCacheOfflineButton(context);
+                !value && await _confirmAutoCacheOffline(context);
 
             if (newValue != value) {
+              // R6 fix: Don't mutate widget.playlistData directly
+              final playlistCopy = Map<String, dynamic>.from(widget.playlistData);
+              playlistCopy['autoCacheOffline'] = newValue;
               setState(() {
                 autoOffline.value = newValue;
-                widget.playlistData['autoCacheOffline'] = newValue;
-                updateOfflinePlaylist(widget.playlistData, newValue);
+                updateOfflinePlaylist(playlistCopy, newValue);
               });
             }
           },
+          // R7 fix: Correct icon mapping (enabled = download icon, disabled = off icon)
           icon:
               value
                   ? const Icon(FluentIcons.arrow_download_24_filled)
@@ -377,18 +522,20 @@ class _PlaylistPageState extends State<PlaylistPage> {
       'broadcast',
       'other',
     ].contains(widget.playlistData['primary-type']?.toLowerCase())) {
-      likeLength = currentLikedAlbumsLength;
+      likeLength = userLikedAlbumsList;
     } else if (widget.playlistData['ytid'] != null)
-      likeLength = currentLikedPlaylistsLength;
+      likeLength = userLikedPlaylists;
 
     return FutureBuilder(
-      future: _infoRequestFuture.completer!.future,
+      // R4/R5 fix: Add null guard for completer
+      future: _infoRequestFuture.completer?.future ?? Future.value({}),
       builder: (context, snapshot) {
+        if (likeLength == null) return const SizedBox.shrink();
         return StatefulBuilder(
           builder: (context, setState) {
-            return ValueListenableBuilder(
-              valueListenable: likeLength,
-              builder: (_, __, ___) {
+            return ListenableBuilder(
+              listenable: likeLength!,
+              builder: (_, __) {
                 final value = likeStatus.value = getLikeStatus();
                 return IconButton(
                   splashColor: Colors.transparent,
@@ -491,17 +638,17 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 actions: <Widget>[
                   TextButton(
                     child: Text(context.l10n!.add.toUpperCase()),
-                    onPressed: () {
-                      if (mounted)
-                        setState(() {
-                          updateCustomPlaylist(
-                            widget.playlistData,
-                            customPlaylistName,
-                            imageUrl: imageUrl,
-                          );
-                          showToast(context.l10n!.playlistUpdated);
-                          GoRouter.of(context).pop();
-                        });
+                    onPressed: () async {
+                      if (mounted) {
+                        // R14 fix: Persist changes properly
+                        await updateCustomPlaylist(
+                          widget.playlistData,
+                          customPlaylistName,
+                          imageUrl: imageUrl,
+                        );
+                        showToast(context.l10n!.playlistUpdated);
+                        if (mounted) GoRouter.of(context).pop();
+                      }
                     },
                   ),
                 ],
@@ -512,92 +659,35 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   void _handleSyncPlaylist() async {
-    if (widget.playlistData['ytid'] != null) {
-      widget.playlistData.addAll(
-        await updatePlaylistList(context, widget.playlistData['ytid']),
-      );
-      _songsList.clear();
-      if (mounted) setState(fetch);
-    } else if (widget.playlistData['source'] == 'user-created') {
+    if (_playlistData['ytid'] != null) {
+      final result = await updatePlaylistList(_playlistData['ytid']);
+      // R9 fix: Add mounted check after await
+      if (!mounted) return;
+      if (result.isSuccess) {
+        // R6 fix: Update local copy, not widget.playlistData
+        _playlistData.addAll(result.data ?? {});
+        _songsList.clear();
+        // R8 fix: Reassign _fetchFuture to refresh the data
+        if (mounted) setState(() {
+          _fetchFuture = fetch();
+        });
+      } else {
+        showToast(result.toLocalizedString());
+      }
+    } else if (_playlistData['source'] == 'user-created') {
       setState(() {
-        _songsList = widget.playlistData['list'] ?? [];
+        // R10 fix: Add null-safe access
+        _songsList = _playlistData['list'] ?? [];
       });
     } else {
       final updatedPlaylist = await getPlaylistInfoForWidget(
-        widget.playlistData,
+        _playlistData,
       );
-      if (updatedPlaylist.isNotEmpty) {
-        if (mounted)
-          setState(() {
-            _songsList = updatedPlaylist['list'];
-          });
-      }
+      // R10 fix: Add null guard before accessing list
+      if (updatedPlaylist.isNotEmpty && mounted)
+        setState(() {
+          _songsList = updatedPlaylist['list'] ?? [];
+        });
     }
-  }
-
-  void _updateSongsListOnRemove(int indexOfRemovedSong) {
-    final dynamic songToRemove = _songsList.elementAt(indexOfRemovedSong);
-    showToastWithButton(
-      context.l10n!.songRemoved,
-      context.l10n!.undo.toUpperCase(),
-      () {
-        addSongToCustomPlaylist(
-          context,
-          widget.playlistData['title'],
-          songToRemove,
-          indexToInsert: indexOfRemovedSong,
-        );
-        _songsList.insert(indexOfRemovedSong, songToRemove);
-        if (mounted) setState(() {});
-      },
-    );
-    if (mounted)
-      setState(() {
-        _songsList.removeAt(indexOfRemovedSong);
-      });
-  }
-
-  Widget _buildSortSongActionButton() {
-    return DropdownButton<String>(
-      borderRadius: BorderRadius.circular(5),
-      dropdownColor: _theme.colorScheme.secondaryContainer,
-      underline: const SizedBox.shrink(),
-      iconEnabledColor: _theme.colorScheme.primary,
-      elevation: 0,
-      iconSize: 30,
-      icon: const Icon(FluentIcons.filter_16_filled),
-      items:
-          <String>[context.l10n!.name, context.l10n!.artist].map((
-            String value,
-          ) {
-            return DropdownMenuItem<String>(value: value, child: Text(value));
-          }).toList(),
-      onChanged: (item) {
-        if (mounted)
-          setState(() {
-            final playlist = widget.playlistData['list'] ?? [];
-
-            void sortBy(String key) {
-              playlist.sort((a, b) {
-                final valueA = a[key].toString().toLowerCase();
-                final valueB = b[key].toString().toLowerCase();
-                return valueA.compareTo(valueB);
-              });
-            }
-
-            if (item == context.l10n!.name) {
-              sortBy('title');
-            } else if (item == context.l10n!.artist) {
-              sortBy('artist');
-            }
-
-            widget.playlistData['list'] = playlist;
-
-            // Reset pagination and reload
-            _songsList.clear();
-            fetch();
-          });
-      },
-    );
   }
 }

@@ -27,18 +27,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/audio_service_mk.dart';
+import 'package:reverbio/services/queue_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
+import 'package:reverbio/services/song_preparation_controller.dart';
+import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
+import 'package:reverbio/utilities/file_tagger.dart';
 import 'package:reverbio/utilities/flutter_bottom_sheet.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
-import 'package:reverbio/utilities/formatter.dart';
 import 'package:reverbio/utilities/mediaitem.dart';
 import 'package:reverbio/utilities/notifiable_future.dart';
 import 'package:reverbio/utilities/url_launcher.dart';
@@ -50,227 +53,341 @@ import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
 class SongBar extends StatefulWidget {
-  SongBar(
-    this.songFuture,
-    this.context, {
+  // A1 fix: Factory constructor to share same NotifiableFuture instance
+  // R211 fix: Accept optional songFuture parameter to allow sharing across rebuilds
+  factory SongBar(
+    Map<String, dynamic> songData, {
+    Color? backgroundColor,
+    bool showMusicDuration = false,
+    VoidCallback? onRemove,
+    BorderRadius borderRadius = BorderRadius.zero,
+    LocalKey? key,
+    NotifiableFuture<Map<String, dynamic>>? songFuture,
+  }) {
+    // R211 fix: Reuse provided songFuture or create new one
+    final future = songFuture ?? NotifiableFuture<Map<String, dynamic>>(songData);
+    return SongBar._(
+      songData: songData,
+      songFuture: future,
+      backgroundColor: backgroundColor,
+      showMusicDuration: showMusicDuration,
+      onRemove: onRemove,
+      borderRadius: borderRadius,
+      key: key,
+    );
+  }
+
+  // Private constructor that receives shared songFuture
+  SongBar._({
+    required this.songData,
+    required this.songFuture,
     this.backgroundColor,
     this.showMusicDuration = false,
     this.onRemove,
     this.borderRadius = BorderRadius.zero,
     super.key,
-  });
-  final BuildContext context;
-  final NotifiableFuture songFuture;
+  }) : controller = SongPreparationController(
+         song: songData,
+         songFuture: songFuture,  // ✅ Same instance!
+       );
+  // R7 fix: Removed context field - use State's context instead
+  final Map<String, dynamic> songData;
+  final NotifiableFuture<Map<String, dynamic>> songFuture;
   final Color? backgroundColor;
   final VoidCallback? onRemove;
   final bool showMusicDuration;
   final BorderRadius borderRadius;
-  final ValueNotifier<bool> _isErrorNotifier = ValueNotifier(false);
-  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
-  final ValueNotifier<bool> _isPreparedNotifier = ValueNotifier(false);
-  final ValueNotifier<MediaItem?> _mediaItemNotifier = ValueNotifier(null);
-  final ValueNotifier<Media?> _mediaNotifier = ValueNotifier(null);
-  final ValueNotifier<Map<String, dynamic>?> songMetadataNotifier =
-      ValueNotifier(null);
-  final ValueNotifier<int> _statusNotifier = ValueNotifier(0);
-  late final ValueNotifier<BorderRadius> _borderRadiusNotifier = ValueNotifier(
-    this.borderRadius,
-  );
-  final _mediaItemStreamController = StreamController<MediaItem>.broadcast();
-  Map<String, dynamic> get song =>
-      songMetadataNotifier.value ?? songFuture.resultOrData ?? {};
-  bool get isError => _isErrorNotifier.value;
-  bool get isLoading => _isLoadingNotifier.value;
-  bool get isPrepared => _isPreparedNotifier.value;
-  Stream<MediaItem> get mediaItemStream => _mediaItemStreamController.stream;
-  MediaItem get mediaItem => _mediaItemNotifier.value ?? mapToMediaItem(song);
-  Media? get media => _mediaNotifier.value;
-  final ValueNotifier<NotifiableFuture<void>?> songPrepareTracker =
-      ValueNotifier(null);
+  // A1 fix: Public controller for direct access by audio service
+  final SongPreparationController controller;
 
   @override
   _SongBarState createState() => _SongBarState();
 
-  Future<void> _prepareSong() async {
-    try {
-      final _song = copyMap(songMetadataNotifier.value)
-        ..addAll(songFuture.resultOrData);
-      songMetadataNotifier.value = _song;
-      _isLoadingNotifier.value = true;
-      _statusNotifier.value = 1;
-      songFuture.copyValuesFrom(getMetadataFuture(isPrepare: true));
-      await songFuture.completerFuture;
-      await getSongUrl(song).then((value) {
-        final _song = copyMap(songMetadataNotifier.value)..addAll(value);
-        songMetadataNotifier.value = _song;
-      });
-      if (song['songUrl'] == null || await checkUrl(song['songUrl']) >= 400) {
-        song['songUrl'] = null;
-        song['isError'] = true;
-        song['error'] = L10n.current.urlError;
-      }
-      await _updateMediaItem();
-      _isPreparedNotifier.value = true;
-      _statusNotifier.value = 0;
-      _statusNotifier.value =
-          song.containsKey('isError')
-              ? ((song['isError'] ?? false) ? 3 : 0)
-              : 0;
-      _isErrorNotifier.value =
-          song.containsKey('isError') ? song['isError'] : false;
-      _isLoadingNotifier.value = false;
-    } catch (e, stackTrace) {
-      _isLoadingNotifier.value = false;
-      _isErrorNotifier.value = true;
-      _statusNotifier.value = 3;
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-    }
-    if (isError) {
-      showToast(L10n.current.errorCouldNotFindAStream);
-    }
-    final _song = copyMap(songMetadataNotifier.value)
-      ..addAll(songFuture.resultOrData);
-    songMetadataNotifier.value = _song;
-  }
+  // A1 fix: Direct property access instead of broken GlobalKey lookup
+  Map<String, dynamic> get song => controller.song;
+  String? get title => songTitle(song);
+  String? get artist => songArtist(song);
+  bool get isError => controller.isError;
+  bool get isLoading => controller.isLoading;
+  bool get isPrepared => controller.isPrepared;
+  MediaItem? get mediaItem => controller.mediaItem;
+  Media? get media => controller.media;
+  Stream<MediaItem>? get mediaItemStream => controller.mediaItemStream;
+  ValueNotifier<Map<String, dynamic>> get songMetadataNotifier =>
+      controller.songMetadataNotifier;
+  ValueNotifier<BorderRadius> get borderRadiusNotifier =>
+      controller.borderRadiusNotifier;
+  ValueNotifier<NotifiableFuture<void>?> get songPrepareTracker =>
+      controller.songPrepareTracker;
 
-  Future<void> getYtSong(String? newYtid) async {
-    if (!isSongValid(song)) return;
-    _isLoadingNotifier.value = true;
-    _statusNotifier.value = 1;
-    final ytSong = await findYTSong(song, newYtid: newYtid);
-    final ytid = ((song['ytid'] ?? song['id']) as String).ytid;
-    if (ytid.isNotEmpty && isYouTubeSongValid(ytSong)) {
-      final _song = copyMap(ytSong)..addAll(songFuture.resultOrData);
-      songMetadataNotifier.value = _song;
-      _isLoadingNotifier.value = false;
-      _statusNotifier.value = 0;
-      final uri = Uri.parse('https://www.youtube.com/watch?v=$ytid');
-      await launchURL(uri);
-    } else {
-      _isLoadingNotifier.value = false;
-      _isErrorNotifier.value = true;
-      _statusNotifier.value = 3;
-    }
-    if (isError) {
-      showToast(L10n.current.errorCouldNotFindAStream);
-    }
-  }
-
-  NotifiableFuture<Map<String, dynamic>> getMetadataFuture({bool isPrepare = false}) {
-    try {
-      parseEntityId(song);
-      if (!isSongValid(song) || (!isMusicbrainzSongValid(song) && isPrepare)) {
-        return queueSongInfoRequest(song);
-      } else {
-        return NotifiableFuture<Map<String, dynamic>>.fromValue(song);
-      }
-    } catch (e, stackTrace) {
-      logger.log(
-        'Error in ${stackTrace.getCurrentMethodName()}:',
-        e,
-        stackTrace,
-      );
-      return NotifiableFuture<Map<String, dynamic>>.fromValue(song);
-    }
-  }
-
-  Future prepareSong() async {
-    songPrepareTracker.value = NotifiableFuture();
-    return songPrepareTracker.value!.runFuture(_prepareSong());
-  }
-
-  void setBorder({BorderRadius borderRadius = BorderRadius.zero}) {
-    _borderRadiusNotifier.value = borderRadius;
-  }
-
-  bool equals(SongBar other) {
-    return checkSong(song, other.song);
-  }
-
-  Future<void> _updateMediaItem() async {
-    song['image'] = (await getValidImage(song))?.toString();
-    _mediaItemNotifier.value = mapToMediaItem(song);
-    if (song['songUrl'] != null && !isError)
-      _mediaNotifier.value = await audioHandler.buildAudioSource(this);
-  }
+  // A1 fix: Direct method calls on controller
+  Future prepareSong() => controller.prepareSong();
+  void setBorder({BorderRadius borderRadius = BorderRadius.zero}) =>
+      controller.setBorder(borderRadius: borderRadius);
+  bool setVisibility(bool show) => controller.setVisibility(show);
+  bool equals(SongBar other) => checkSong(song, other.song);
 }
 
 class _SongBarState extends State<SongBar> {
+  // A1 fix: Use widget's controller directly instead of creating duplicate
+  SongPreparationController get controller => widget.controller;
   late ThemeData _theme;
 
   TapDownDetails? doubleTapDetails;
 
   late final songLikeStatus = ValueNotifier<bool>(
-    isSongAlreadyLiked(widget.song),
+    isSongAlreadyLiked(widget.songData),
   );
   late final songOfflineStatus = ValueNotifier<bool>(
-    isSongAlreadyOffline(widget.song),
+    isSongAlreadyOffline(widget.songData),
   );
   final ValueNotifier<bool> isLikedAnimationPlaying = ValueNotifier(false);
+  Future<Tag?>? _songTagFuture;
 
   static const likeStatusToIconMapper = {
     true: FluentIcons.heart_24_filled,
     false: FluentIcons.heart_24_regular,
   };
 
+  // A1 fix: Direct access to widget's controller
+  Map<String, dynamic> get song => widget.song;
+  bool get isError => widget.isError;
+  bool get isLoading => widget.isLoading;
+  bool get isPrepared => widget.isPrepared;
+  MediaItem? get mediaItem => widget.mediaItem;
+  Media? get media => widget.media;
+  Stream<MediaItem>? get mediaItemStream => widget.mediaItemStream;
+  ValueNotifier<Map<String, dynamic>> get songMetadataNotifier =>
+      widget.songMetadataNotifier;
+  ValueNotifier<BorderRadius> get borderRadiusNotifier =>
+      widget.borderRadiusNotifier;
+  ValueNotifier<NotifiableFuture<void>?> get songPrepareTracker =>
+      widget.songPrepareTracker;
+
+  // A1 fix: Direct method calls on widget's controller
+  Future prepareSong() => widget.prepareSong();
+  void setBorder({BorderRadius borderRadius = BorderRadius.zero}) =>
+      widget.setBorder(borderRadius: borderRadius);
+  bool setVisibility(bool show) => widget.setVisibility(show);
+  bool equals(SongBar other) => checkSong(song, other.song);
+
   @override
   void initState() {
     super.initState();
+    // R176 fix: Only run future if not already loading or complete
+    if (!widget.songFuture.isLoading && !widget.songFuture.isComplete) {
+      widget.songFuture.runFuture(getSongInfo(widget.songData));
+    }
+    _songTagFuture = _fetchSongTag();
     widget.songFuture.addListener(_listener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.songMetadataNotifier.value = copyMap(widget.songFuture.resultOrData);
       if (mounted) {
         setState(() {
           if (widget.songFuture.isComplete) {
-            final _song = copyMap(widget.songMetadataNotifier.value)
-              ..addAll(widget.songFuture.resultOrData);
-            widget.songMetadataNotifier.value = _song;
-            widget._isLoadingNotifier.value = false;
-            widget._statusNotifier.value = 0;
+            final _song = copyMap(widget.controller.songMetadataNotifier.value)
+              ..addAll(widget.songFuture.resultOrData ?? {});
+            widget.controller.songMetadataNotifier.value = _song;
+            widget.controller.isLoadingNotifier.value = false;
+            widget.controller.statusNotifier.value = 0;
           }
         });
       }
     });
   }
 
+  // R86 fix: Dispose old widget's controller when widget is updated
+  @override
+  void didUpdateWidget(SongBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Dispose the old controller to prevent resource leak
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.dispose();
+      oldWidget.songFuture.removeListener(_listener);
+      oldWidget.songFuture.dispose();
+    }
+  }
+
   @override
   void dispose() {
+    // A1 fix: Dispose controller which handles all ValueNotifiers
+    widget.controller.dispose();
+    songLikeStatus.dispose();
+    songOfflineStatus.dispose();
+    isLikedAnimationPlaying.dispose();
     widget.songFuture.removeListener(_listener);
+    widget.songFuture.dispose();
     super.dispose();
   }
 
+  // R259 fix: Only fetch song tag when necessary - avoid unnecessary FFprobe I/O
+  Future<Tag?> _fetchSongTag() {
+    // Skip tag fetch if:
+    // 1. Song is not offline (online YouTube song)
+    // 2. Song already has cached audioTags
+    // 3. Song metadata is already complete
+    if (!isSongAlreadyOffline(widget.song)) {
+      return Future.value();
+    }
+    if (widget.song['audioTags'] != null &&
+        widget.song['audioTags'] is Map &&
+        (widget.song['audioTags'] as Map).isNotEmpty) {
+      return Future.value();
+    }
+    // Only fetch from file for offline songs missing metadata
+    return FileTagger().getTagFromFileOrMetadata(widget.song);
+  }
+
+  void invalidateSongTag() {
+    setState(() {
+      _songTagFuture = _fetchSongTag();
+    });
+  }
+
   void _listener() {
+    // R13 fix: Guard against disposed state
+    if (!mounted) return;
     if (widget.songFuture.isComplete && widget.songFuture.hasResult) {
-      final _song = copyMap(widget.songMetadataNotifier.value)
-        ..addAll(widget.songFuture.resultOrData);
-      widget.songMetadataNotifier.value = _song;
+      final _song = copyMap(widget.controller.songMetadataNotifier.value)
+        ..addAll(widget.songFuture.resultOrData ?? {});
+      widget.controller.songMetadataNotifier.value = _song;
     } else
       widget.songFuture.completerFuture?.then((value) {
         if (mounted)
           setState(() {
             if (widget.songFuture.isComplete && widget.songFuture.hasResult) {
-              final _song = copyMap(widget.songMetadataNotifier.value)
-                ..addAll(widget.songFuture.resultOrData);
-              widget.songMetadataNotifier.value = _song;
+              final _song = copyMap(widget.controller.songMetadataNotifier.value)
+                ..addAll(widget.songFuture.resultOrData ?? {});
+              widget.controller.songMetadataNotifier.value = _song;
             }
-            widget._isLoadingNotifier.value = false;
-            widget._statusNotifier.value = 0;
+            widget.controller.isLoadingNotifier.value = false;
+            widget.controller.statusNotifier.value = 0;
           });
       });
+  }
+
+  // R6 fix: Race condition guard in _prepareSong
+  Future<void> _prepareSong() async {
+    if (widget.controller.isPreparing) return;
+    widget.controller.isPreparing = true;
+    try {
+      final _song = copyMap(widget.controller.songMetadataNotifier.value)
+        ..addAll(widget.songFuture.resultOrData ?? {});
+      widget.controller.songMetadataNotifier.value = _song;
+      widget.controller.isLoadingNotifier.value = true;
+      widget.controller.statusNotifier.value = 1;
+      widget.songFuture.copyValuesFrom(getMetadataFuture(isPrepare: true));
+      await widget.songFuture.completerFuture;
+      await getSongUrl(widget.song).then((value) {
+        final _song = copyMap(widget.controller.songMetadataNotifier.value)
+          ..addAll(value);
+        widget.controller.songMetadataNotifier.value = _song;
+      });
+      // R4 fix: Create new map copy instead of mutating via getter bypass
+      // Also check for empty string to handle cases where songUrl was cleared on failure
+      final songUrl = widget.song['songUrl'] as String?;
+      if (songUrl == null ||
+          songUrl.isEmpty ||
+          await checkUrl(songUrl) >= 400) {
+        final _song =
+            copyMap(widget.controller.songMetadataNotifier.value)
+              ..['songUrl'] = null
+              ..['isError'] = true
+              ..['error'] = L10n.current.urlError;
+        widget.controller.songMetadataNotifier.value = _song;
+      }
+      await _updateMediaItem();
+      widget.controller.isPreparedNotifier.value = true;
+      widget.controller.statusNotifier.value = 0;
+      widget.controller.statusNotifier.value =
+          widget.song.containsKey('isError')
+              ? ((widget.song['isError'] ?? false) ? 3 : 0)
+              : 0;
+      widget.controller.isErrorNotifier.value =
+          widget.song.containsKey('isError') ? widget.song['isError'] : false;
+      widget.controller.isLoadingNotifier.value = false;
+    } catch (e, stackTrace) {
+      widget.controller.isLoadingNotifier.value = false;
+      widget.controller.isErrorNotifier.value = true;
+      widget.controller.statusNotifier.value = 3;
+      logger.log('Error in prepareSong:', e, stackTrace);
+    } finally {
+      widget.controller.isPreparing = false;
+    }
+    if (widget.controller.isErrorNotifier.value) {
+      showToast(L10n.current.errorCouldNotFindAStream);
+    }
+    final _song = copyMap(widget.controller.songMetadataNotifier.value)
+      ..addAll(widget.songFuture.resultOrData ?? {});
+    widget.controller.songMetadataNotifier.value = _song;
+  }
+
+  Future<void> getYtSong(String? newYtid) async {
+    if (!isSongValid(widget.song)) return;
+    widget.controller.isLoadingNotifier.value = true;
+    widget.controller.statusNotifier.value = 1;
+    final ytSong = await findYTSong(widget.song, newYtid: newYtid);
+    final ytid = (widget.song['ytid'] ?? widget.song['id']) as String? ?? '';
+    if (ytid.isNotEmpty && isYouTubeSongValid(ytSong)) {
+      final _song = copyMap(ytSong)
+        ..addAll(widget.songFuture.resultOrData ?? {});
+      widget.controller.songMetadataNotifier.value = _song;
+      widget.controller.isLoadingNotifier.value = false;
+      widget.controller.statusNotifier.value = 0;
+      // R14 fix: Don't auto-launch YouTube - just update song data
+      // User can manually open in YouTube from context menu if desired
+      // final uri = Uri.parse('https://www.youtube.com/watch?v=$ytid');
+      // await launchURL(uri);
+    } else {
+      widget.controller.isLoadingNotifier.value = false;
+      widget.controller.isErrorNotifier.value = true;
+      widget.controller.statusNotifier.value = 3;
+    }
+    if (widget.controller.isErrorNotifier.value) {
+      showToast(L10n.current.errorCouldNotFindAStream);
+    }
+  }
+
+  NotifiableFuture<Map<String, dynamic>> getMetadataFuture({
+    bool isPrepare = false,
+  }) {
+    try {
+      if (!isSongValid(widget.song) ||
+          (!isMusicbrainzSongValid(widget.song) && isPrepare)) {
+        return queueSongInfoRequest(widget.song);
+      } else {
+        return NotifiableFuture.fromValue(widget.song);
+      }
+    } catch (e, stackTrace) {
+      logger.log('Error in getMetadataFuture:', e, stackTrace);
+      return NotifiableFuture.fromValue(widget.song);
+    }
+  }
+
+  Future<void> _updateMediaItem() async {
+    widget.song['image'] = (await getValidImage(widget.song))?.toString();
+    widget.controller.mediaItemNotifier.value = mapToMediaItem(widget.song);
+    widget.controller.addMediaItemToStream(widget.controller.mediaItemNotifier.value!);
+    if (widget.song['songUrl'] != null && !widget.controller.isErrorNotifier.value)
+      widget.controller.mediaNotifier.value = await audioHandler.buildAudioSource(
+        widget.songData,
+      );
   }
 
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
     final primaryColor = _theme.colorScheme.primary;
-    return _buildSongBarOld(context, primaryColor);
+    return ValueListenableBuilder(
+      valueListenable: widget.controller.isVisible,
+      builder:
+          (context, value, child) => Visibility(
+            visible: value,
+            child: _buildSongBar(context, primaryColor),
+          ),
+    );
   }
 
-  Widget _buildSongBarOld(BuildContext context, Color primaryColor) {
+  Widget _buildSongBar(BuildContext context, Color primaryColor) {
     return ListenableBuilder(
       listenable: widget.songFuture,
       builder: (context, child) {
@@ -288,20 +405,62 @@ class _SongBarState extends State<SongBar> {
     return ValueListenableBuilder(
       valueListenable: widget.songMetadataNotifier,
       builder: (context, song, child) {
-        song =
-            widget.songMetadataNotifier.value ?? widget.songFuture.resultOrData;
+        song = widget.songMetadataNotifier.value;
         final isLoading = widget.songFuture.isLoading;
-        final title = song?['mbTitle'] ?? song?['title'] ?? song?['ytTitle'];
-        final artist =
-            combineArtists(song) ??
-            song?['mbArtist'] ??
-            song?['artist'] ??
-            song?['ytArtist'];
+        final title = songTitle(song).nullIfEmpty;
+        final artist = (combineArtists(song) ?? songArtist(song)).nullIfEmpty;
         return Stack(
           children: [
-            Padding(
-              padding: commonBarPadding,
-              //TODO: add left/right sliding action to add song to queue or to offline
+            // 8.2-A: Swipe gestures for queue actions
+            Dismissible(
+              key: Key('song-${widget.songData['id'] ?? widget.songData['title'] ?? UniqueKey().toString()}'),
+              confirmDismiss: (direction) async {
+                if (direction == DismissDirection.endToStart) {
+                  // Swipe left: Add to queue
+                  addSongToQueue(widget.songData);
+                  if (context.mounted) {
+                    showToast(context.l10n!.songAdded);
+                  }
+                } else if (direction == DismissDirection.startToEnd) {
+                  // Swipe right: Make offline
+                  if (isSongAlreadyOffline(widget.songData)) {
+                    unawaited(removeSongFromOffline(widget.songData));
+                    if (context.mounted) {
+                      showToast(context.l10n!.songRemovedFromOffline);
+                    }
+                  } else {
+                    unawaited(makeSongOffline(widget.songData));
+                    if (context.mounted) {
+                      showToast(context.l10n!.songAddedToOffline);
+                    }
+                  }
+                }
+                return true;
+              },
+              background: Container(
+                decoration: BoxDecoration(
+                  color: _theme.colorScheme.secondaryContainer,
+                  borderRadius: widget.controller.borderRadiusNotifier.value,
+                ),
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 16),
+                child: Icon(
+                  FluentIcons.arrow_download_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+              ),
+              secondaryBackground: Container(
+                decoration: BoxDecoration(
+                  color: _theme.colorScheme.secondaryContainer,
+                  borderRadius: widget.controller.borderRadiusNotifier.value,
+                ),
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                child: Icon(
+                  FluentIcons.add_circle_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+              ),
               child: GestureDetector(
                 onDoubleTapDown: (details) => likeItem(details, song),
                 onSecondaryTapDown: (details) {
@@ -309,7 +468,7 @@ class _SongBarState extends State<SongBar> {
                 },
                 onTap: () async {
                   await audioHandler.prepare(
-                    songBar: widget,
+                    song: widget.songData,
                     play: true,
                     skipOnError: true,
                   );
@@ -317,14 +476,14 @@ class _SongBarState extends State<SongBar> {
                 child: Card(
                   color: widget.backgroundColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: widget._borderRadiusNotifier.value,
+                    borderRadius: widget.controller.borderRadiusNotifier.value,
                   ),
                   margin: const EdgeInsets.only(bottom: 3),
                   child: Padding(
                     padding: commonBarContentPadding,
                     child: Row(
                       children: [
-                        _buildAlbumArt(primaryColor, song),
+                        _buildArtwork(song),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -341,10 +500,10 @@ class _SongBarState extends State<SongBar> {
                                           Text(
                                             title ??
                                                 (isLoading
-                                                    ? 'Loading...'
+                                                    ? context.l10n!.loading
                                                     : kDebugMode
-                                                    ? 'unknown ${song?['id']}'
-                                                    : 'unknown'),
+                                                    ? 'unknown ${(song as Map)['id']}'
+                                                    : context.l10n!.unknown),
                                             overflow: TextOverflow.ellipsis,
                                             style: commonBarTitleStyle.copyWith(
                                               color: primaryColor,
@@ -374,7 +533,9 @@ class _SongBarState extends State<SongBar> {
                               MarqueeWidget(
                                 child: Text(
                                   artist ??
-                                      (isLoading ? 'Loading...' : 'unknown'),
+                                      (isLoading
+                                          ? context.l10n!.loading
+                                          : context.l10n!.unknown),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w400,
@@ -389,7 +550,7 @@ class _SongBarState extends State<SongBar> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: ValueListenableBuilder(
-                            valueListenable: widget._statusNotifier,
+                            valueListenable: widget.controller.statusNotifier,
                             builder: (context, value, child) {
                               if (isLoading)
                                 return _buildLoadingSpinner(context);
@@ -445,36 +606,49 @@ class _SongBarState extends State<SongBar> {
     AnimatedHeart.show(context: context, details: details, like: !isLiked);
   }
 
-  Widget _buildAlbumArt(Color primaryColor, dynamic song) {
+  Widget _buildArtwork(dynamic song) {
     const size = 45.0;
-    final isDurationAvailable =
-        widget.showMusicDuration && song['duration'] != null;
-    return Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        BaseCard(
+    return FutureBuilder<Tag?>(
+      future: _songTagFuture,
+      builder: (context, snapshot) {
+        // R11 fix: Remove unreachable else branch - simplify to single BaseCard
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            !snapshot.hasData ||
+            snapshot.data == null ||
+            snapshot.hasError ||
+            snapshot.data!.pictures.isEmpty) {
+          return BaseCard(
+            inputData: song,
+            icon: FluentIcons.music_note_2_24_filled,
+            size: size,
+            paddingValue: 0,
+            loadingWidget: SizedBox.square(
+              dimension: 35,
+              child: Spinner(color: _theme.colorScheme.onSecondary),
+            ),
+            duration: song['duration'],
+            showIconLabel: false,
+          );
+        }
+        // Has valid picture data
+        return BaseCard(
           inputData: song,
+          image: Image.memory(
+            snapshot.data!.pictures.first.bytes,
+            cacheHeight: (size * 1.1).toInt(),
+            cacheWidth: (size * 1.1).toInt(),
+          ),
           icon: FluentIcons.music_note_2_24_filled,
           size: size,
           paddingValue: 0,
-          loadingWidget: const Spinner(),
-          imageOverlayMask: true,
-        ),
-        if (isDurationAvailable)
-          SizedBox(
-            width: size,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '(${formatDuration(song['duration'])})',
-                style: TextStyle(
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+          loadingWidget: SizedBox.square(
+            dimension: 35,
+            child: Spinner(color: _theme.colorScheme.onSecondary),
           ),
-      ],
+          duration: song['duration'],
+          showIconLabel: false,
+        );
+      },
     );
   }
 
@@ -484,15 +658,14 @@ class _SongBarState extends State<SongBar> {
     dynamic song,
   ) async {
     try {
-      //TODO: fix positioning to account for navigation rail on large screen
-      final RenderBox tappedBox = context.findRenderObject() as RenderBox;
-      final RelativeRect position = RelativeRect.fromLTRB(
-        details.globalPosition.dx - (isLargeScreen() ? navigationRailWidth : 0),
-        details.globalPosition.dy,
-        tappedBox.size.width -
-            details.globalPosition.dx -
-            (isLargeScreen() ? navigationRailWidth : 0),
-        tappedBox.size.height - details.globalPosition.dy,
+      // 8.1-C: Calculate position relative to overlay for correct positioning
+      final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+      final position = RelativeRect.fromRect(
+        Rect.fromPoints(
+          details.globalPosition,
+          details.globalPosition,
+        ),
+        Offset.zero & overlay.size,
       );
 
       final value = await showMenu(
@@ -503,7 +676,7 @@ class _SongBarState extends State<SongBar> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       );
       if (value != null) {
-        _popupMenuItemAction(value, song);
+        await _popupMenuItemAction(context, value, song);
       }
     } catch (e, stackTrace) {
       logger.log(
@@ -511,7 +684,10 @@ class _SongBarState extends State<SongBar> {
         e,
         stackTrace,
       );
-      throw ErrorDescription('There was an error');
+      // R7 fix: Show error toast instead of rethrowing as ErrorDescription
+      if (context.mounted) {
+        showToast('Failed to open menu: $e');
+      }
     }
   }
 
@@ -520,7 +696,7 @@ class _SongBarState extends State<SongBar> {
     dynamic song,
   ) {
     try {
-      final isInQueue = isSongInQueue(widget);
+      final isInQueue = isSongInQueue(widget.songData);
       return [
         PopupMenuItem<String>(
           value: 'like',
@@ -667,12 +843,56 @@ class _SongBarState extends State<SongBar> {
                 Text(context.l10n!.openInMusicBrainz),
               ],
             ),
+          )
+        else
+          PopupMenuItem<String>(
+            value: 'get_musicbrainz',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.database_search_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.getMetadata),
+              ],
+            ),
           ),
-        ...PM.getWidgetsByType(_getSongData, 'SongBarDropDown', context).map((
-          e,
-        ) {
-          return e as PopupMenuItem<String>;
-        }),
+        if (isSongAlreadyOffline(song))
+          PopupMenuItem<String>(
+            value: 'tag',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.tag_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.editTags),
+              ],
+            ),
+          ),
+        if (isSongAppOfflineOnly(song) && !isSongInDeviceLibrary(song))
+          PopupMenuItem<String>(
+            value: 'move_to_library',
+            child: Row(
+              children: [
+                Icon(
+                  FluentIcons.folder_arrow_right_24_filled,
+                  color: _theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(context.l10n!.moveToLibrary),
+              ],
+            ),
+          ),
+        if (enablePlugins.value)
+          // R10 fix: Pass function that returns widget.song instead of removed _getSongData
+          ...PM
+              .getWidgetsByType(() => widget.song, 'SongBarDropDown', context)
+              .map((e) {
+                return e as PopupMenuItem<String>;
+              }),
       ];
     } catch (e, stackTrace) {
       logger.log(
@@ -684,27 +904,28 @@ class _SongBarState extends State<SongBar> {
     }
   }
 
-  dynamic _getSongData(dynamic song) {
-    song['album'] = song['album'];
-    song['song'] = song['title'];
-    final data = song;
-    return data;
-  }
+  // R10 fix: Remove no-op transformation - was just self-assignment
+  // This function was a no-op that assigned song['album'] = song['album'] and returned the same object
+  // Callers can use song directly
 
-  void _popupMenuItemAction(String value, dynamic song) {
+  Future<void> _popupMenuItemAction(
+    BuildContext context,
+    String value,
+    dynamic song,
+  ) async {
     switch (value) {
       case 'like':
         songLikeStatus.value = !songLikeStatus.value;
-        updateSongLikeStatus(song, songLikeStatus.value);
+        unawaited(updateSongLikeStatus(song, songLikeStatus.value));
         break;
       case 'remove':
         if (widget.onRemove != null) widget.onRemove!();
         break;
       case 'remove_from_queue':
-        removeSongFromQueue(widget);
+        removeSongFromQueue(widget.songData);
         break;
       case 'add_to_queue':
-        addSongToQueue(widget);
+        addSongToQueue(widget.songData);
         break;
       case 'add_to_playlist':
         showAddToPlaylistDialog(context, song);
@@ -713,33 +934,64 @@ class _SongBarState extends State<SongBar> {
         if (songOfflineStatus.value) {
           unawaited(removeSongFromOffline(song));
         } else {
-          makeSongOffline(song);
+          unawaited(makeSongOffline(song));
         }
         songOfflineStatus.value = !songOfflineStatus.value;
         break;
       case 'get_youtube':
         if (song['ytid'] == null || song['ytid'].isEmpty)
-          widget.getYtSong(null);
+          unawaited(getYtSong(null));
+        // R5 fix: Add missing break to prevent fall-through
+        break;
       case 'youtube_links':
         if (song['ytSongs'] != null && song['ytSongs'].isNotEmpty)
-          showYoutubeLinksBottomSheet(context, widget.getYtSong, song);
+          showYoutubeLinksBottomSheet(context, getYtSong, song);
+        // R5 fix: Add missing break to prevent fall-through
+        break;
       case 'youtube':
         if (song['ytid'] != null && song['ytid'].isNotEmpty) {
           final uri = Uri.parse(
             'https://www.youtube.com/watch?v=${song['ytid']}',
           );
-          launchURL(uri);
+          await launchURL(uri);
         }
         break;
       case 'musicbrainz':
         if (song['rid'] != null && song['rid'].isNotEmpty) {
           final uri = Uri.parse(
-            'https://musicbrainz.org/recording/${song['rid']}',
+            'https://musicbrainz.org/recording/${song['rid'] ?? song['mbid']}',
           );
-          launchURL(uri);
+          await launchURL(uri);
         }
         break;
+      case 'get_musicbrainz':
+        // R15 fix: Use widget.song after _prepareSong to get fresh data
+        await _prepareSong();
+        final uri = Uri.parse(
+          'https://musicbrainz.org/recording/${widget.song['rid'] ?? widget.song['mbid']}',
+        );
+        await launchURL(uri);
+        break;
+      case 'tag':
+        openMetadataForm(context, song);
+        break;  // R5 fix: Prevent fall-through to move_to_library
+      case 'move_to_library':
+        {
+          final count = await moveSongToDeviceLibrary(song);
+          if (count > 0) {
+            userOfflineSongs.removeWhere((e) => checkEntityId(song['id'], e));
+            showToast('${context.l10n!.movedFiles} $count', context: context);
+          } else {
+            showToast(context.l10n!.notMoved, context: context);
+          }
+        }
     }
+  }
+
+  // R7/R9 fix: Use GoRouter navigation consistently instead of Navigator.push
+  void openMetadataForm(BuildContext context, dynamic song) {
+    final songId = song['id'] ?? '';
+    context.go('/editMetadata?song=$songId');
   }
 
   Widget _buildActionButtons(
@@ -751,7 +1003,9 @@ class _SongBarState extends State<SongBar> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: _theme.colorScheme.surface,
       icon: Icon(FluentIcons.more_vertical_24_filled, color: primaryColor),
-      onSelected: (value) => _popupMenuItemAction(value, song),
+      onSelected: (value) async {
+        await _popupMenuItemAction(context, value, song);
+      },
       itemBuilder: (context) => _buildPopupMenuItems(context, song),
     );
   }
@@ -777,38 +1031,31 @@ void showYoutubeLinksBottomSheet(
           itemCount: linkList.length,
           itemBuilder: (context, index) {
             final borderRadius = getItemBorderRadius(index, linkList.length);
-            if (index < linkList.length) {
-              final link = linkList[index];
-              final linkYtid = ((link['ytid'] ?? link['id']) as String).ytid;
-              final songYtid = ((song['ytid'] ?? song['id']) as String).ytid;
-              final selected = songYtid.contains(linkYtid);
-              final openInYoutube = IconButton(
-                onPressed: () {
-                  final uri = Uri.parse(
-                    'https://www.youtube.com/watch?v=$linkYtid',
-                  );
-                  launchURL(uri);
-                },
-                icon: const Icon(FluentIcons.link_24_regular),
-              );
-              return BottomSheetBar(
-                link['ytTitle'],
-                selected ? activatedColor : inactivatedColor,
-                subtitle: link['ytArtist'],
-                borderRadius: borderRadius,
-                actions: [openInYoutube],
-                onTap: () async {
-                  await updateYtLink(linkYtid);
-                  if (context.mounted) setState(() {});
-                },
-              );
-            } else {
-              return BottomSheetBar(
-                'Un-match',
-                inactivatedColor,
-                borderRadius: borderRadius,
-              );
-            }
+            // R12 fix: Remove unreachable else branch - index is always < linkList.length
+            final link = linkList[index];
+            final linkYtid = ((link['ytid'] ?? link['id']) as String).ytid;
+            final songYtid = ((song['ytid'] ?? song['id']) as String).ytid;
+            final selected = songYtid.contains(linkYtid);
+            final openInYoutube = IconButton(
+              onPressed: () {
+                final uri = Uri.parse(
+                  'https://www.youtube.com/watch?v=$linkYtid',
+                );
+                launchURL(uri);
+              },
+              icon: const Icon(FluentIcons.link_24_regular),
+            );
+            return BottomSheetBar(
+              link['ytTitle'],
+              selected ? activatedColor : inactivatedColor,
+              subtitle: link['ytArtist'],
+              borderRadius: borderRadius,
+              actions: [openInYoutube],
+              onTap: () async {
+                await updateYtLink(linkYtid);
+                if (context.mounted) setState(() {});
+              },
+            );
           },
         );
       },
@@ -829,26 +1076,27 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
             maxHeight: MediaQuery.sizeOf(context).height * 0.6,
           ),
           child:
-              userCustomPlaylists.value.isNotEmpty
+              userCustomPlaylists.isNotEmpty
                   ? ListView.builder(
                     shrinkWrap: true,
-                    itemCount: userCustomPlaylists.value.length,
+                    itemCount: userCustomPlaylists.length,
                     itemBuilder: (context, index) {
-                      final playlist = userCustomPlaylists.value[index];
+                      final playlist = userCustomPlaylists[index];
                       return Card(
                         color: Theme.of(context).colorScheme.secondaryContainer,
                         elevation: 0,
                         child: ListTile(
-                          title: Text(playlist['title'] ?? 'unknown'),
+                          title: Text(
+                            playlist['title'] ?? context.l10n!.unknown,
+                          ),
                           onTap: () {
-                            showToast(
-                              addSongToCustomPlaylist(
-                                context,
-                                playlist['title'],
-                                song,
-                              ),
+                            // R8 fix: Use consistent Navigator.of(context).pop()
+                            final result = addSongToCustomPlaylist(
+                              playlist['title'],
+                              song,
                             );
-                            GoRouter.of(context).pop(context);
+                            showToast(result.toLocalizedString());
+                            Navigator.of(context).pop();
                           },
                         ),
                       );
@@ -870,4 +1118,39 @@ void showAddToPlaylistDialog(BuildContext context, dynamic song) {
       );
     },
   );
+}
+
+/// A1 fix: Moved from song.dart to decouple entity from widget layer
+/// R211 fix: Accept optional songFuture to share across rebuilds
+/// R7 fix: Removed context parameter - SongBar no longer stores context
+SongBar initializeSongBar(
+  Map<String, dynamic> song, {
+  BorderRadius? borderRadius,
+  NotifiableFuture<Map<String, dynamic>>? songFuture,
+}) {
+  return SongBar(
+    song,
+    borderRadius: borderRadius ?? BorderRadius.zero,
+    showMusicDuration: true,
+    songFuture: songFuture,
+  );
+}
+
+/// A1 fix: Moved from song.dart to decouple entity from widget layer
+NotifiableFuture<Map<String, dynamic>> initializeSongBarFuture(dynamic song) {
+  try {
+    parseEntityId(song);
+    if (!isSongValid(song)) {
+      return queueSongInfoRequest(song);
+    } else {
+      final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
+        ..runFuture(Future.value(song));
+      return futureTracker;
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    final futureTracker = NotifiableFuture<Map<String, dynamic>>(song)
+      ..runFuture(Future.value(song));
+    return futureTracker;
+  }
 }

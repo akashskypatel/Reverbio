@@ -23,14 +23,21 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:reverbio/API/entities/song.dart';
 import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
@@ -99,71 +106,71 @@ const androidDeviceTypes = {
 };
 
 Map getAudioDeviceCategory(String category, {BuildContext? context}) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   final categoryOrder = <String, dynamic>{
     'Android Auto': {
       'order': 1,
-      'localization': context.l10n!.androidAuto,
-      'icon': ReverbioIcons.android_auto_monochrome,
+      'localization': context.l10n?.androidAuto ?? 'Android Auto',
+      'icon': ReverbioIcons.androidAutoMonochrome,
     },
     'Car Audio': {
       'order': 2,
-      'localization': context.l10n!.carAudio,
+      'localization': context.l10n?.carAudio ?? 'Car Audio',
       'icon': FluentIcons.vehicle_car_24_filled,
     },
     'Bluetooth': {
       'order': 3,
-      'localization': context.l10n!.bluetooth,
+      'localization': context.l10n?.bluetooth ?? 'Bluetooth',
       'icon': FluentIcons.bluetooth_24_filled,
     },
     'AUX': {
       'order': 4,
-      'localization': context.l10n!.aux,
+      'localization': context.l10n?.aux ?? 'AUX',
       'icon': FluentIcons.connector_24_filled,
     },
     'Radio': {
       'order': 5,
-      'localization': context.l10n!.radio,
+      'localization': context.l10n?.radio ?? 'Radio',
       'icon': Icons.radio,
     },
     'Hearing Aid': {
       'order': 6,
-      'localization': context.l10n!.hearingAid,
+      'localization': context.l10n?.hearingAid ?? 'Hearing Aid',
       'icon': Icons.hearing,
     },
     'Wired Headphones': {
       'order': 7,
-      'localization': context.l10n!.wiredHeadphones,
+      'localization': context.l10n?.wiredHeadphones ?? 'Wired Headphones',
       'icon': FluentIcons.headphones_24_filled,
     },
     'USB Audio': {
       'order': 8,
-      'localization': context.l10n!.usbAudio,
+      'localization': context.l10n?.usbAudio ?? 'USB Audio',
       'icon': FluentIcons.speaker_usb_24_filled,
     },
     'Docking Station': {
       'order': 9,
-      'localization': context.l10n!.dockingStation,
+      'localization': context.l10n?.dockingStation ?? 'Docking Station',
       'icon': FluentIcons.dock_24_filled,
     },
     'Phone Speaker': {
       'order': 10,
-      'localization': context.l10n!.phoneSpeaker,
+      'localization': context.l10n?.phoneSpeaker ?? 'Phone Speaker',
       'icon': FluentIcons.speaker_2_24_filled,
     },
     'Phone Earpiece': {
       'order': 11,
-      'localization': context.l10n!.phoneEarpiece,
+      'localization': context.l10n?.phoneEarpiece ?? 'Phone Earpiece',
       'icon': FluentIcons.call_24_filled,
     },
     'HDMI': {
       'order': 12,
-      'localization': context.l10n!.hdmi,
+      'localization': context.l10n?.hdmi ?? 'HDMI',
       'icon': FluentIcons.tv_usb_24_filled,
     },
     'Other': {
       'order': 13,
-      'localization': context.l10n!.other,
+      'localization': context.l10n?.other ?? 'Other',
       'icon': FluentIcons.speaker_box_24_filled,
     },
   };
@@ -194,7 +201,41 @@ List<String> splitArtists(String input) {
       .toList();
 }
 
-Map<String, dynamic> tryParseTitleAndArtist(Video song) {
+Map<String, dynamic> tryParseTitleAndArtist(dynamic song) {
+  final result = <String, dynamic>{};
+  if (song == null) return result;
+  if (!(song is Map)) return result;
+  final title = songTitle(song).isUnknown ? '' : songTitle(song);
+  final artist = songArtist(song).isUnknown ? '' : songArtist(song);
+  if (title.isNotEmpty && artist.isEmpty) {
+    final sdRx = RegExp(r'(^(?:\s*-\s*-*))|((?:\s*\-*)*\-\s*$)');
+    final strings =
+        sanitizeSongTitle(title)
+            .replaceAll(sdRx, '')
+            .collapsed
+            .split(' - ')
+            .map((s) => s.sanitized)
+            .toList()
+          ..removeWhere((e) => e.isEmpty);
+    if (strings.length > 1) {
+      result['artist'] =
+          strings.length > 2 ? strings.take(strings.length - 1) : strings.first;
+      result['title'] = strings.last;
+    } else {
+      result['title'] = title;
+    }
+  } else {
+    result['artist'] = artist;
+    result['title'] = title;
+  }
+  song.removeWhere(
+    (key, value) => ['title', 'artist'].contains(key.toString().toLowerCase()),
+  );
+  result.addAll(Map<String, dynamic>.from(song));
+  return result;
+}
+
+Map<String, dynamic> tryParseVideoTitleAndArtist(Video song) {
   final sdRx = RegExp(r'(^(?:\s*-\s*-*))|((?:\s*\-*)*\-\s*$)');
   //final mdRx = RegExp(r'(-(?:\s*-)+)');
   final musicData = song.musicData;
@@ -252,10 +293,11 @@ Map<String, dynamic> tryParseTitleAndArtist(Video song) {
     ...singleQuotedRegEx.allMatches(song.title.sanitized),
     ...doubleQuotedRegEx.allMatches(song.title.sanitized),
   ];
+  // R3 fix: Changed || to && - both conditions must be true (null check AND non-empty)
   if (strings.length == 1 &&
       quoted.isNotEmpty &&
       quoted.length == 1 &&
-      (quoted[0].namedGroup('value') != null ||
+      (quoted[0].namedGroup('value') != null &&
           quoted[0].namedGroup('value')!.isNotEmpty)) {
     final title = quoted[0].namedGroup('value')!;
     final artist =
@@ -388,7 +430,7 @@ List<Map<String, dynamic>> safeConvert(dynamic input) {
 }
 
 bool isLargeScreen({BuildContext? context}) {
-  context = context ?? NavigationManager().context;
+  context = context ?? NavigationManager().context!;
   return MediaQuery.of(context).size.height <
           MediaQuery.of(context).size.width ||
       MediaQuery.of(context).size.width > 540;
@@ -451,7 +493,10 @@ Future<int> checkUrl(String url) async {
     if (isFilePath(url)) return (doesFileExist(url)) ? 200 : 400;
     final response = await http.head(Uri.parse(url));
     if (response.statusCode == 403 && Uri.parse(url).host == 'youtube.com') {
-      showToast(NavigationManager().context.l10n!.youtubeInaccessible);
+      showToast(
+        NavigationManager().context?.l10n?.youtubeInaccessible ??
+            'YouTube is inaccessible',
+      );
       logger.log('Forbidden error trying to play YouTube Stream', {
         'message': response.body,
         'status': response.statusCode,
@@ -565,12 +610,18 @@ bool isAudio(String path) {
     '.mp2',
     '.mp3',
     '.m4a',
+    '.mp4',
     '.oga',
     '.ogg',
     '.oma',
     '.tta',
     '.wav',
     '.wsaud',
+    '.webm',
+    '.weba',
+    '.mka',
+    '.opus',
+    '.mpga',
   ];
   return audioExtensions.contains(extension(path));
 }
@@ -681,36 +732,53 @@ List<String>? parseImage(dynamic obj) {
   return images.isNotEmpty ? images.toList() : null;
 }
 
-Future<Uri?> getValidImage(dynamic obj) async {
+Future<Uri?> getValidImage(dynamic obj, {bool cache = true}) async {
+  Uri? imageUri;
   try {
     if (obj == null) return null;
     if (obj['validImage'] != null) {
-      if (isFilePath(obj['validImage']))
-        return Uri.file(obj['validImage']);
-      else if (await checkUrl(obj['validImage'].toString()) <= 300)
-        return Uri.parse(obj['validImage']);
-    }
-    final images = parseImage(obj) ?? [];
-    if (images.isEmpty) return null;
-    for (final path in images) {
-      if (isFilePath(path) && doesFileExist(path)) {
-        obj['validImage'] = path;
-        await cacheEntity(obj);
-        return Uri.file(path);
-      } else {
-        final imageUrl = Uri.parse(path);
-        if (await checkUrl(imageUrl.toString()) <= 300) {
-          obj['validImage'] = imageUrl.toString();
-          await cacheEntity(obj);
-          return imageUrl;
+      if (isFilePath(obj['validImage']) &&
+          doesFileExist(obj['validImage']) &&
+          (getMimeTypeFromFile(obj['validImage'])?.contains('image') ?? false))
+        imageUri = Uri.file(obj['validImage']);
+      else if (await checkUrl(obj['validImage'].toString()) <= 300 &&
+          ((await getMimeTypeFromUrl(
+                obj['validImage'].toString(),
+              ))?.contains('image') ??
+              false))
+        imageUri = Uri.parse(obj['validImage']);
+    } else {
+      final images = parseImage(obj) ?? [];
+      if (images.isEmpty)
+        return null;
+      else
+        for (final path in images) {
+          if (isFilePath(path) &&
+              doesFileExist(path) &&
+              (getMimeTypeFromFile(path)?.contains('image') ?? false)) {
+            obj['validImage'] = path;
+            if (cache) await cacheEntity(obj);
+            imageUri = Uri.file(path);
+          } else {
+            final imageUrl = Uri.parse(path);
+            final mimeCheck =
+                (await getMimeTypeFromUrl(
+                  imageUrl.toString(),
+                ))?.contains('image') ??
+                false;
+            if (await checkUrl(imageUrl.toString()) <= 300 && mimeCheck) {
+              obj['validImage'] = imageUrl.toString();
+              if (cache) await cacheEntity(obj);
+              imageUri = imageUrl;
+            }
+          }
         }
-      }
     }
-    return null;
+    //if (imageUri != null) cacheImage(imageUri.toString());
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
   }
-  return null;
+  return imageUri;
 }
 
 int? parseTimeStringToSeconds(String timeString) {
@@ -891,7 +959,7 @@ dynamic _deepCopyValue(dynamic value) {
 }
 
 Future<void> checkInternetConnection() async {
-  final context = NavigationManager().context;
+  final context = NavigationManager().context!;
   try {
     Future<bool> testConnection() async {
       try {
@@ -916,18 +984,18 @@ Future<void> checkInternetConnection() async {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text(context.l10n!.noInternet),
-            content: Text(context.l10n!.noInternetMessage),
+            title: Text(L10n.current.noInternet),
+            content: Text(L10n.current.noInternetMessage),
             actions: [
               TextButton(
-                child: Text(context.l10n!.retry.toUpperCase()),
+                child: Text(L10n.current.retry.toUpperCase()),
                 onPressed: () {
                   unawaited(checkInternetConnection());
                   context.pop();
                 },
               ),
               TextButton(
-                child: Text(context.l10n!.offlineMode.toUpperCase()),
+                child: Text(L10n.current.offlineMode.toUpperCase()),
                 onPressed: () async {
                   await toggleOfflineMode(context, true);
                 },
@@ -937,4 +1005,417 @@ Future<void> checkInternetConnection() async {
         },
       );
   } catch (_) {}
+}
+
+String getFileExtension(String filePath) {
+  return RegExp(r'(\.[^\.]+$)').firstMatch(filePath)?.group(1) ?? '';
+}
+
+String getExtensionFromMime(String? mimeType) {
+  if (mimeType == null) return '.bin';
+
+  final extensions = {
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/bmp': 'bmp',
+    'image/x-icon': 'ico',
+    'audio/mp3': 'mp3',
+    'audio/mpga': 'mp3',
+    'audio/mpeg': 'mp3',
+    'audio/weba': 'mka',
+    'video/weba': 'webm',
+    'audio/webm': 'mka',
+    'video/webm': 'webm',
+  };
+
+  final extension =
+      extensions[mimeType.toLowerCase()] ??
+      extensionFromMime(mimeType) ??
+      'bin';
+
+  return '.$extension';
+}
+
+String? getMimeTypeFromFile(String filePath) {
+  try {
+    final file = File(filePath);
+    final raf = file.openSync();
+
+    try {
+      const bytesToRead = 128;
+      final buffer = List<int>.filled(bytesToRead, 0);
+      final bytesRead = raf.readIntoSync(buffer, 0, bytesToRead);
+
+      final headerBytes =
+          bytesRead < bytesToRead ? buffer.sublist(0, bytesRead) : buffer;
+
+      return lookupMimeType(file.path, headerBytes: headerBytes);
+    } finally {
+      raf.closeSync();
+    }
+  } catch (_) {
+    return null;
+  }
+}
+
+String? getMimeFromBytes(Uint8List bytes) {
+  try {
+    final mime = lookupMimeType('', headerBytes: bytes);
+    return mime;
+  } catch (_) {
+    return null;
+  }
+}
+
+Locale parseLocale(String languageCode) {
+  final parts = languageCode.split('-');
+  if (parts.length > 1) {
+    return Locale.fromSubtags(languageCode: parts[0], scriptCode: parts[1]);
+  }
+  return Locale(languageCode);
+}
+
+Future<String?> getMimeTypeFromUrl(String url) async {
+  try {
+    // Try HEAD request first (most efficient)
+    final headResponse = await http.head(Uri.parse(url));
+
+    if (headResponse.statusCode == 200) {
+      final contentType = headResponse.headers['content-type'];
+      if (contentType != null && contentType.isNotEmpty) {
+        return _cleanContentType(contentType);
+      }
+    }
+
+    // Fallback to GET request if HEAD fails or has no content-type
+    final getResponse = await http.get(Uri.parse(url));
+    if (getResponse.statusCode == 200) {
+      final contentType = getResponse.headers['content-type'];
+      if (contentType != null && contentType.isNotEmpty) {
+        return _cleanContentType(contentType);
+      }
+    }
+
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+String _cleanContentType(String contentType) {
+  return contentType.split(';').first.trim();
+}
+
+String ensureReverbioPath(String filePath) {
+  final normalized = normalize(filePath);
+  final segments = split(normalized);
+
+  if (segments.isNotEmpty && segments.last == 'reverbio') {
+    return normalized;
+  }
+
+  return join(normalized, 'reverbio');
+}
+
+Future<File?> getImageFile({String? path}) async {
+  try {
+    final filePath = path ?? await pickImageFile();
+    if (filePath == null) return null;
+    if (isFilePath(filePath) && doesFileExist(filePath)) {
+      cacheImage(filePath);
+      return File(filePath);
+    } else if (isUrl(filePath) && (await checkUrl(filePath)) < 400) {
+      final file = await getFileFromUrl(filePath);
+      cacheImage(filePath);
+      return file;
+    }
+  } catch (_) {}
+  return null;
+}
+
+Future<String?> pickImageFile() async {
+  final _dir = Directory(offlineDirectory.value!);
+  final _artworkDirPath = join(_dir.path, 'artworks');
+  await Directory(_artworkDirPath).create(recursive: true);
+
+  final file =
+      (await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp'],
+      ))?.files.first;
+  if (file == null || file.path == null) return null;
+  return file.path;
+}
+
+Future<ImageProvider?> getImageProvider({String? path}) async {
+  try {
+    final filePath = path ?? await pickImageFile();
+    if (filePath == null) return null;
+    if (isFilePath(filePath) && doesFileExist(filePath)) {
+      return FileImage(File(filePath));
+    } else if (isUrl(filePath) && (await checkUrl(filePath)) < 400) {
+      return NetworkImage(filePath);
+    }
+  } catch (_) {}
+  return null;
+}
+
+Future<File?> getFileFromUrl(String url) async {
+  try {
+    final bytes = await getImageBytesFromUrl(url);
+    final tempDir =
+        Platform.isWindows
+            ? ensureReverbioPath((await getTemporaryDirectory()).path)
+            : join((await getApplicationSupportDirectory()).path, 'temp');
+    if (bytes != null && bytes.isNotEmpty)
+      return getFileFromBytes(bytes, getFileNameFromUrl(url), tempDir);
+  } catch (_) {}
+  return null;
+}
+
+String getFileNameFromUrl(String url) {
+  final uri = Uri.parse(url);
+  if (uri.host.contains(RegExp('youtube|youtu.be'))) {
+    final fragments = uri.pathSegments;
+    return fragments.last.contains('default')
+        ? fragments[fragments.length - 2]
+        : fragments.last;
+  } else {
+    return uri.pathSegments.last;
+  }
+}
+
+Future<File?> getFileFromBytes(
+  Uint8List data,
+  String fileName,
+  String tempDir,
+) async {
+  try {
+    // Get the temporary directory for storing the file
+    final directory = Directory(tempDir);
+
+    await directory.create(recursive: true);
+
+    String filePath = join(directory.path, fileName);
+    final mime = getMimeFromBytes(data);
+    if (mime != null) {
+      final extension = getExtensionFromMime(mime);
+      filePath = ensureCorrectExtension(filePath, extension: extension);
+
+      // Create a File object
+      final file = File(filePath);
+
+      if (!file.existsSync()) {
+        file.createSync();
+
+        // Write the Uint8List data to the file
+        await file.writeAsBytes(data);
+
+        cacheImage(file.path);
+      }
+
+      return file;
+    }
+  } catch (_) {}
+  return null;
+}
+
+String ensureCorrectExtension(String filePath, {String? extension}) {
+  try {
+    final mime = getMimeTypeFromFile(filePath);
+    extension = extension ?? getExtensionFromMime(mime);
+    final baseName = basenameWithoutExtension(filePath);
+    final folderPath = filePath.replaceAll(basename(filePath), '');
+    final withoutExtension = join(folderPath, baseName);
+    filePath = '$withoutExtension$extension';
+  } catch (_) {}
+  return filePath;
+}
+
+Future<Uint8List?> getImageBytesFromUrl(String imageUrl) async {
+  try {
+    final cached = await getCachedImageBytes(NetworkImage(imageUrl));
+    if (cached != null) return cached;
+
+    final response = await http.get(Uri.parse(imageUrl));
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      return null;
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
+  }
+}
+
+Future<Uint8List?> getCachedImageBytes(ImageProvider imageProvider) async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    final ImageStream stream = imageProvider.resolve(ImageConfiguration.empty);
+    final completer = Completer<Uint8List?>();
+    ImageStreamListener? listener;
+
+    listener = ImageStreamListener(
+      (ImageInfo image, bool synchronousCall) async {
+        if (!completer.isCompleted) {
+          final ByteData? byteData = await image.image.toByteData(
+            format: ImageByteFormat.rawUnmodified,
+          ); // Or .rawRgba
+          if (byteData != null) {
+            completer.complete(byteData.buffer.asUint8List());
+          } else {
+            completer.complete(null);
+          }
+        }
+        if (listener != null) {
+          stream.removeListener(listener);
+        }
+      },
+      onError: (dynamic e, StackTrace? stackTrace) {
+        logger.log(
+          'Error in ${stackTrace?.getCurrentMethodName()}:',
+          e,
+          stackTrace,
+        );
+        if (!completer.isCompleted) {
+          completer.complete(null);
+        }
+        if (listener != null) {
+          stream.removeListener(listener);
+        }
+      },
+    );
+
+    stream.addListener(listener);
+    return completer.future;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return null;
+  }
+}
+
+Future<void> clearTempFiles() async {
+  try {
+    await FilePicker.platform.clearTemporaryFiles().catchError((e) {
+      // Ignore errors from clearTemporaryFiles
+      return false;
+    });
+    try {
+      final tempDir = Directory(
+        ensureReverbioPath((await getTemporaryDirectory()).path),
+      );
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (e, stackTrace) {
+      // Ignore errors if temp directory doesn't exist
+      if (e is! FileSystemException) {
+        logger.log(
+          'Error in ${stackTrace.getCurrentMethodName()}',
+          e,
+          stackTrace,
+        );
+      }
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}', e, stackTrace);
+  }
+}
+
+void cacheImage(String path) async {
+  try {
+    if (isFilePath(path)) {
+      FileImage(File(path)).resolve(ImageConfiguration.empty);
+    } else if (isUrl(path)) {
+      NetworkImage(path).resolve(ImageConfiguration.empty);
+    }
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+  }
+}
+
+Future<bool> hasVideoAccess() async {
+  return (await Permission.videos.status).isGranted;
+}
+
+Future<bool> hasImageAccess() async {
+  return (await Permission.photos.status).isGranted;
+}
+
+Future<bool> hasAudioAccess() async {
+  return (await Permission.audio.status).isGranted;
+}
+
+Future<Map<Permission, PermissionStatus>> requestVideoPermissions() async {
+  return [Permission.videos].request();
+}
+
+Future<Map<Permission, PermissionStatus>> requestImagePermissions() async {
+  return [Permission.photos].request();
+}
+
+Future<Map<Permission, PermissionStatus>> requestAudioPermissions() async {
+  return [Permission.audio].request();
+}
+
+Future<Map<Permission, PermissionStatus>> requestMediaPermissions() async {
+  return [Permission.photos, Permission.audio].request();
+}
+
+/// Checks if the app has media management privileges.
+/// Returns `true` if the app can manage media files.
+Future<bool> hasManageMediaAccess() async {
+  try {
+    final bool result = await permissionChannel.invokeMethod('canManageMedia');
+    return result;
+  } on PlatformException catch (e, stackTrace) {
+    logger.log(
+      "Failed to check media management status: '${e.message}'.",
+      e,
+      stackTrace,
+    );
+    return false;
+  }
+}
+
+/// Opens system settings for the user to grant media management access.
+Future<void> requestManageMedia() async {
+  try {
+    await permissionChannel.invokeMethod('requestManageMedia');
+  } on PlatformException catch (e, stackTrace) {
+    logger.log(
+      "Failed to request media management: '${e.message}'.",
+      e,
+      stackTrace,
+    );
+  }
+}
+
+Future<bool> checkAllPermissions() async {
+  if (Platform.isWindows) return true;
+  bool imageAccess = await hasImageAccess();
+  bool audioAccess = await hasAudioAccess();
+  bool videoAccess = await hasVideoAccess();
+  bool mediaAccess = await hasManageMediaAccess();
+  if (!imageAccess) {
+    final response = await requestImagePermissions();
+    imageAccess = response[Permission.photos]?.isGranted ?? false;
+  }
+  if (!audioAccess) {
+    final response = await requestAudioPermissions();
+    audioAccess = response[Permission.audio]?.isGranted ?? false;
+  }
+  if (!videoAccess) {
+    final response = await requestVideoPermissions();
+    videoAccess = response[Permission.videos]?.isGranted ?? false;
+  }
+  if (!mediaAccess) {
+    await requestManageMedia();
+    mediaAccess = await hasManageMediaAccess();
+  }
+  return imageAccess && audioAccess && videoAccess && mediaAccess;
 }

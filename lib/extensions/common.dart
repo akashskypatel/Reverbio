@@ -19,12 +19,15 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:reverbio/API/reverbio.dart';
+import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
+import 'package:reverbio/utilities/audio_tags.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 
 extension DoubleExtensions on double {
@@ -365,7 +368,7 @@ extension StringToIdsExtension on String {
   ///
   /// Valid format is anything that doesn't match mbid, isrc, dcid, and ucid
   String get ytid {
-    if (this.isEmpty) return '';
+    if (this.isEmpty || this.contains(' ') || this.contains('+')) return '';
     if (this.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
       final ids = Map<String, String>.from(
         Uri.parse('?${parseEntityId(this)}').queryParameters,
@@ -379,6 +382,29 @@ extension StringToIdsExtension on String {
         Uri.parse('?${parseEntityId(this)}').queryParameters,
       );
       return ids['yt'] ?? '';
+    }
+    return '';
+  }
+
+  /// Extract FileName from a string
+  ///
+  /// Valid format is anything that doesn't match mbid, isrc, dcid, ucid, ytid
+  String get flnm {
+    if (this.isEmpty) return '';
+    if (this.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+      final ids = Map<String, String>.from(
+        Uri.parse('?${parseEntityId(this)}').queryParameters,
+      );
+      return ids['fn'] ?? '';
+    } else if (this.mbid.isEmpty &&
+        this.isrc.isEmpty &&
+        this.dcid.isEmpty &&
+        this.ucid.isEmpty &&
+        this.ytid.isEmpty) {
+      final ids = Map<String, String>.from(
+        Uri.parse('?${parseEntityId(this)}').queryParameters,
+      );
+      return ids['fn'] ?? '';
     }
     return '';
   }
@@ -669,5 +695,123 @@ extension MapMinimize on Map<String, dynamic> {
       }
     }
     return this;
+  }
+}
+
+extension StringNullEmptyExtension on String {
+  String? get nullIfEmpty => this.isEmpty ? null : this;
+}
+
+extension ImageCopyWith on Image {
+  Image copyWith({
+    Key? key,
+    Widget Function(BuildContext, Widget, int?, bool)? frameBuilder,
+    Widget Function(BuildContext, Widget, ImageChunkEvent?)? loadingBuilder,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    String? semanticLabel,
+    bool? excludeFromSemantics,
+    double? width,
+    double? height,
+    Color? color,
+    Animation<double>? opacity,
+    BlendMode? colorBlendMode,
+    BoxFit? fit,
+    AlignmentGeometry? alignment,
+    ImageRepeat? repeat,
+    Rect? centerSlice,
+    bool? matchTextDirection,
+    bool? gaplessPlayback,
+    bool? isAntiAlias,
+    FilterQuality? filterQuality,
+  }) {
+    return Image(
+      key: key ?? this.key,
+      image: this.image,
+      frameBuilder: frameBuilder ?? this.frameBuilder,
+      loadingBuilder: loadingBuilder ?? this.loadingBuilder,
+      errorBuilder: errorBuilder ?? this.errorBuilder,
+      semanticLabel: semanticLabel ?? this.semanticLabel,
+      excludeFromSemantics: excludeFromSemantics ?? this.excludeFromSemantics,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      color: color ?? this.color,
+      opacity: opacity ?? this.opacity,
+      colorBlendMode: colorBlendMode ?? this.colorBlendMode,
+      fit: fit ?? this.fit,
+      alignment: alignment ?? this.alignment,
+      repeat: repeat ?? this.repeat,
+      centerSlice: centerSlice ?? this.centerSlice,
+      matchTextDirection: matchTextDirection ?? this.matchTextDirection,
+      gaplessPlayback: gaplessPlayback ?? this.gaplessPlayback,
+      isAntiAlias: isAntiAlias ?? this.isAntiAlias,
+      filterQuality: filterQuality ?? this.filterQuality,
+    );
+  }
+}
+
+extension AudioTagEqualsExtension on Tag {
+  bool equalsWithoutPictures(Tag? other) {
+    if (other == null) return false;
+    return title == other.title &&
+        artist == other.artist &&
+        album == other.album &&
+        albumArtist == other.albumArtist &&
+        year == other.year &&
+        genre == other.genre &&
+        track == other.track &&
+        trackTotal == other.trackTotal &&
+        disc == other.disc &&
+        discTotal == other.discTotal &&
+        lyrics == other.lyrics &&
+        duration == other.duration &&
+        bpm == other.bpm;
+  }
+}
+
+extension StringIsUnknown on String {
+  bool get isUnknown => [
+    'unknown',
+    L10n.current.unknown.toLowerCase(),
+  ].contains(this.toLowerCase());
+}
+
+extension NullableStringIsUnknown on String? {
+  bool get isUnknown => [
+    'unknown',
+    L10n.current.unknown.toLowerCase(),
+  ].contains(this?.toLowerCase());
+}
+
+extension FirstSuccessfulFutureExtension on List<Future> {
+  Future<T> firstSuccessful<T>() {
+    final completer = Completer<T>();
+    int errorCount = 0;
+    final allErrors = <Object>[];
+    if (this.isEmpty) {
+      completer.completeError(Exception('The list of futures was empty.'));
+      return completer.future;
+    }
+    for (final future in this) {
+      future.then(
+        (value) {
+          if (!completer.isCompleted) {
+            completer.complete(value);
+            for (final _future in this) {
+              if (_future != future) _future.ignore();
+            }
+          }
+        },
+        onError: (error) {
+          errorCount++;
+          allErrors.add(error);
+          if (errorCount == this.length && !completer.isCompleted) {
+            completer.completeError(
+              Exception('All futures failed. Errors: $allErrors'),
+            );
+          }
+        },
+      );
+    }
+    return completer.future;
   }
 }

@@ -25,11 +25,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:discogs_api_client/discogs_api_client.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:musicbrainz_api_client/musicbrainz_api_client.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:reverbio/API/entities/album.dart';
 import 'package:reverbio/API/entities/artist.dart';
 import 'package:reverbio/API/entities/song.dart';
@@ -41,9 +39,10 @@ import 'package:reverbio/utilities/utils.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 final px = ProxyManager();
-YoutubeExplode yt = useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
-DiscogsApiClient dc = DiscogsApiClient();// px.discogsClient;
-MusicBrainzApiClient mb = MusicBrainzApiClient();// px.musicbrainzClient;
+YoutubeExplode get yt =>
+    useProxies.value ? px.proxyYoutubeClient : px.localYoutubeClient;
+DiscogsApiClient dc = DiscogsApiClient(); // px.discogsClient;
+MusicBrainzApiClient mb = MusicBrainzApiClient(); // px.musicbrainzClient;
 
 bool youtubePlaylistValidate(String url) {
   final regExp = RegExp(
@@ -63,17 +62,25 @@ String? getCombinedId(dynamic entity) {
   if (entity is String) return entity;
   String? combinedId;
   if (entity is Map) {
-    final ids = Uri.parse('?${entity['id']}').queryParameters;
-    if ((entity['ytid'] != null && entity['ytid'].isNotEmpty) ||
-        (ids['yt'] != null && ids['yt']!.isNotEmpty)) {
+    // R7 fix: Don't return null if entity['id'] is null
+    // Instead, try to extract IDs from the map directly
+    final ids = entity['id'] != null 
+        ? Uri.parse('?${entity['id']}').queryParameters 
+        : <String, String>{};
+    if ((entity['ytid'] != null &&
+            entity['ytid'] is String &&
+            entity['ytid'].isNotEmpty) ||
+        (ids['yt'] != null && ids['yt'] is String && ids['yt']!.isNotEmpty)) {
       final ytid = ((entity['ytid'] ?? ids['yt'] ?? '') as String).replaceAll(
         RegExp('yt=|yt%3d', caseSensitive: false),
         '',
       );
       combinedId = 'yt=$ytid';
     }
-    if ((entity['mbid'] != null && entity['mbid'].isNotEmpty) ||
-        (ids['mb'] != null && ids['mb']!.isNotEmpty)) {
+    if ((entity['mbid'] != null &&
+            entity['mbid'] is String &&
+            entity['mbid'].isNotEmpty) ||
+        (ids['mb'] != null && ids['mb'] is String && ids['mb']!.isNotEmpty)) {
       final mbid = ((entity['mbid'] ?? ids['mb'] ?? '') as String).replaceAll(
         RegExp('mb=|mb%3d', caseSensitive: false),
         '',
@@ -83,8 +90,10 @@ String? getCombinedId(dynamic entity) {
               ? 'mb=$mbid'
               : joinIfNotEmpty([combinedId, 'mb=$mbid'], '&');
     }
-    if ((entity['dcid'] != null && entity['dcid'].isNotEmpty) ||
-        (ids['dc'] != null && ids['dc']!.isNotEmpty)) {
+    if ((entity['dcid'] != null &&
+            entity['dcid'] is String &&
+            entity['dcid'].isNotEmpty) ||
+        (ids['dc'] != null && ids['dc'] is String && ids['dc']!.isNotEmpty)) {
       final dcid = ((entity['dcid'] ?? ids['dc'] ?? '') as String).replaceAll(
         RegExp('dc=|dc%3d', caseSensitive: false),
         '',
@@ -94,8 +103,10 @@ String? getCombinedId(dynamic entity) {
               ? 'dc=$dcid'
               : joinIfNotEmpty([combinedId, 'dc=$dcid'], '&');
     }
-    if ((entity['ucid'] != null && entity['ucid'].isNotEmpty) ||
-        (ids['uc'] != null && ids['uc']!.isNotEmpty)) {
+    if ((entity['ucid'] != null &&
+            entity['ucid'] is String &&
+            entity['ucid'].isNotEmpty) ||
+        (ids['uc'] != null && ids['uc'] is String && ids['uc']!.isNotEmpty)) {
       final ucid = ((entity['ucid'] ?? ids['uc'] ?? '') as String).replaceAll(
         RegExp('uc=|uc%3d', caseSensitive: false),
         '',
@@ -105,8 +116,10 @@ String? getCombinedId(dynamic entity) {
               ? 'uc=$ucid'
               : joinIfNotEmpty([combinedId, 'uc=$ucid'], '&');
     }
-    if ((entity['isrc'] != null && entity['isrc'].isNotEmpty) ||
-        (ids['is'] != null && ids['is']!.isNotEmpty)) {
+    if ((entity['isrc'] != null &&
+            entity['isrc'] is String &&
+            entity['isrc'].isNotEmpty) ||
+        (ids['is'] != null && ids['is'] is String && ids['is']!.isNotEmpty)) {
       final isrc = ((entity['isrc'] ?? ids['is'] ?? '') as String).replaceAll(
         RegExp('is=|is%3d', caseSensitive: false),
         '',
@@ -116,48 +129,68 @@ String? getCombinedId(dynamic entity) {
               ? 'is=$isrc'
               : joinIfNotEmpty([combinedId, 'is=$isrc'], '&');
     }
+    if ((entity['flnm'] != null &&
+            entity['flnm'] is String &&
+            entity['flnm'].isNotEmpty) ||
+        (ids['fn'] != null && ids['fn'] is String && ids['fn']!.isNotEmpty)) {
+      final flnm = ((entity['flnm'] ?? ids['fn'] ?? '') as String).replaceAll(
+        RegExp('fn=|fn%3d', caseSensitive: false),
+        '',
+      );
+      combinedId =
+          combinedId == null || combinedId.isEmpty
+              ? 'fn=$flnm'
+              : joinIfNotEmpty([combinedId, 'fn=$flnm'], '&');
+    }
   }
   return combinedId;
 }
 
 String parseEntityId(dynamic entity) {
-  if (entity == null || entity.isEmpty) return getCombinedId(entity) ?? '';
+  if (entity == null) return '';
+  if (entity is String && entity.isEmpty) return getCombinedId(entity) ?? '';
   dynamic ids;
   String entityId =
       entity is String ? entity : entity['id'] ?? getCombinedId(entity) ?? '';
-  final mbRx = RegExp(
-    r'^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$',
-    caseSensitive: false,
-  );
-  final isRx = RegExp(
-    r'^([A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5})$',
-    caseSensitive: false,
-  );
-  if (entityId.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+  if (entityId.isNotEmpty) {
+    final mbRx = RegExp(
+      r'^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$',
+      caseSensitive: false,
+    );
+    final isRx = RegExp(
+      r'^([A-Z]{2}-?[A-Z0-9]{3}-?\d{2}-?\d{5})$',
+      caseSensitive: false,
+    );
+    if (entityId.contains(RegExp(r'=|(\%3d)', caseSensitive: false))) {
+      ids = Uri.parse('?$entityId').queryParameters;
+      entityId = Uri(
+        host: '',
+        queryParameters: ids,
+      ).toString().replaceAll(RegExp(r'\?|\/'), '');
+    } else if (mbRx.hasMatch(entityId)) {
+      entityId = 'mb=${mbRx.firstMatch(entityId)!.group(1)}';
+    } else if (isRx.hasMatch(entityId)) {
+      entityId = 'is=${isRx.firstMatch(entityId)!.group(1)}';
+    } else if (int.tryParse(entityId) != null) {
+      entityId = 'dc=$entityId';
+    } else if (entityId.startsWith('UC-')) {
+      entityId = 'uc=$entityId';
+    } else if (entityId.isNotEmpty &&
+        !(entityId.contains(' ') || entityId.contains('+'))) {
+      entityId = 'yt=$entityId';
+    } else {
+      entityId = 'fn=$entityId';
+    }
     ids = Uri.parse('?$entityId').queryParameters;
-    entityId = Uri(
-      host: '',
-      queryParameters: ids,
-    ).toString().replaceAll(RegExp(r'\?|\/'), '');
-  } else if (mbRx.hasMatch(entityId)) {
-    entityId = 'mb=${mbRx.firstMatch(entityId)!.group(1)}';
-  } else if (isRx.hasMatch(entityId)) {
-    entityId = 'is=${isRx.firstMatch(entityId)!.group(1)}';
-  } else if (int.tryParse(entityId) != null) {
-    entityId = 'dc=$entityId';
-  } else if (entityId.startsWith('UC-')) {
-    entityId = 'uc=$entityId';
-  } else if (entityId.isNotEmpty) {
-    entityId = 'yt=$entityId';
   }
-  ids = Uri.parse('?$entityId').queryParameters;
   if (entity is Map) {
     entity['id'] = entityId = getCombinedId(entity) ?? entityId;
-    if (ids['yt'] != null && ids['yt'].isNotEmpty) entity['ytid'] = ids['yt'];
-    if (ids['mb'] != null && ids['mb'].isNotEmpty) entity['mbid'] = ids['mb'];
-    if (ids['is'] != null && ids['is'].isNotEmpty) entity['isrc'] = ids['is'];
-    if (ids['dc'] != null && ids['dc'].isNotEmpty) entity['dcid'] = ids['dc'];
-    if (ids['uc'] != null && ids['uc'].isNotEmpty) entity['ucid'] = ids['uc'];
+    if (ids?['yt'] != null && ids?['yt'].isNotEmpty) entity['ytid'] = ids['yt'];
+    if (ids?['mb'] != null && ids?['mb'].isNotEmpty) entity['mbid'] = ids['mb'];
+    if (ids?['is'] != null && ids?['is'].isNotEmpty) entity['isrc'] = ids['is'];
+    if (ids?['dc'] != null && ids?['dc'].isNotEmpty) entity['dcid'] = ids['dc'];
+    if (ids?['uc'] != null && ids?['uc'].isNotEmpty) entity['ucid'] = ids['uc'];
+    if (ids?['fn'] != null && ids?['fn'].isNotEmpty) entity['flnm'] = ids['fn'];
   }
   entityId = getCombinedId(entity is Map ? entity : entityId) ?? entityId;
   return entityId;
@@ -292,7 +325,7 @@ Future<Map<String, Map<String, dynamic>>> getMBSearchSuggestions(
             'id': '${e['id']}',
             'rid': e['id'],
             'duration': (e['length'] ?? 0) ~/ 1000,
-            'mbidType': 'recording',
+            'mbidType': entityName[entity]?['type'] ?? 'recording',
             'releases': e['releases'],
             'score': e['score'],
           },
@@ -328,7 +361,9 @@ Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
   int limit = 10,
 }) async {
   try {
-    final results = await px.localYoutubeClient.search.getQuerySuggestions(query);
+    final results = await px.localYoutubeClient.search.getQuerySuggestions(
+      query,
+    );
     return {
       'youtube': {
         'count': results.length,
@@ -352,27 +387,29 @@ Future<Map<String, Map<String, dynamic>>> getYTSearchSuggestions(
 Future<Map<String, Map<String, dynamic>>> getYTPlaylistSuggestions(
   String query, {
   int offset = 0,
-  List<SearchList> resultList = const [],
+  List<SearchList>? resultList,
 }) async {
+  final actualResultList = resultList ?? [];
   try {
-    final index = resultList.isNotEmpty ? (offset ~/ 20) : 0;
+    final index = actualResultList.isNotEmpty ? (offset ~/ 20) : 0;
     final results =
-        offset != 0 && offset >= (20 * resultList.length)
-            ? await resultList.last
+        offset != 0 && offset >= (20 * actualResultList.length)
+            ? await actualResultList.last
                 .nextPage() //if offset is greater than list length * 20 get next page from last item
-            : resultList.isNotEmpty
-            ? resultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
+            : actualResultList.isNotEmpty
+            ? actualResultList[index] //if offset is negative and list is not empty get either the last item or get one before last (i.e. previous results)
             : await px.localYoutubeClient.search.searchContent(
               query,
               filter: TypeFilters.playlist,
             ); //if result list is empty then make a new search
-    if ((offset == 0 || offset >= (20 * resultList.length)) && results != null)
-      resultList.add(results);
+    if ((offset == 0 || offset >= (20 * actualResultList.length)) &&
+        results != null)
+      actualResultList.add(results);
     return {
       'playlist': {
         'count': results?.length ?? 0,
         'offset': offset,
-        'resultList': resultList,
+        'resultList': actualResultList,
         'data':
             results
                 ?.whereType<SearchPlaylist>()
@@ -478,9 +515,13 @@ Future<Map<String, Map<String, dynamic>>> getAllSearchSuggestions(
   return results;
 }
 
-Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
+Future<List<Map<String, dynamic>>> getSkipSegments(
+  String id, {
+  http.Client? client,
+}) async {
+  final c = client ?? http.Client();
   try {
-    final res = await http.get(
+    final res = await c.get(
       Uri(
         scheme: 'https',
         host: 'sponsor.ajay.app',
@@ -499,6 +540,7 @@ Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
         },
       ),
     );
+    if (res.statusCode != 200) return [];
     if (res.body != 'Not Found') {
       final data = List.from(jsonDecode(res.body));
       final segments =
@@ -527,6 +569,8 @@ Future<List<Map<String, dynamic>>> getSkipSegments(String id) async {
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return [];
+  } finally {
+    if (client == null) c.close();
   }
 }
 
@@ -542,55 +586,72 @@ final clients = {
 };
 
 Future<String> getLiveStreamUrl(String songId) async {
-  final streamInfo = await yt.videos.streamsClient.getHttpLiveStreamUrl(
-    VideoId(songId),
-  );
-  return streamInfo;
+  try {
+    final streamInfo = await yt.videos.streamsClient.getHttpLiveStreamUrl(
+      VideoId(songId),
+    );
+    return streamInfo;
+  } catch (e, stackTrace) {
+    logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
+    return '';
+  }
 }
 
-Future<Map<String, dynamic>> getIPGeolocation() async {
+Future<Map<String, dynamic>> getIPGeolocation({http.Client? client}) async {
+  final c = client ?? http.Client();
   try {
-    final uri = Uri.http('ip-api.com', 'json');
-    final response = await http.get(uri);
+    // R11 fix: Use HTTPS instead of plain HTTP for geolocation
+    final uri = Uri.https(
+      'ip-api.com',
+      '/json',
+    );
+    final response = await c.get(uri);
     return Map<String, dynamic>.from(jsonDecode(response.body));
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
     return {};
+  } finally {
+    if (client == null) c.close();
   }
 }
 
-bool checkEntityId(String id, String otherId) {
-  if (id.isEmpty || otherId.isEmpty) return false;
-  id = parseEntityId(id);
-  otherId = parseEntityId(otherId);
+bool checkEntityId(dynamic entity, dynamic other, {String? id, String? otherId}) {
+  // If caller already parsed IDs, use them directly (avoid redundant parseEntityId calls)
+  final entityId = id ?? (entity is String ? entity : (entity is Map ? parseEntityId(entity) : ''));
+  final otherEntityId = otherId ?? (other is String ? other : (other is Map ? parseEntityId(other) : ''));
+  
+  if (entity == other) return true;
+  if (entityId.isEmpty || otherEntityId.isEmpty) return false;
+  
+  final parsedId = parseEntityId(entityId);
+  final parsedOtherId = parseEntityId(otherEntityId);
+  
   var result = false;
-  if ((otherId.contains('=') || otherId.contains('&')) &&
-      !(id.contains('=') || id.contains('&'))) {
-    final ids = otherId.split('&');
-    result = ids.any((i) => i.contains(id));
+  // Case 1: id is simple, otherId is composite - split otherId and check if any component contains id
+  if (!(parsedId.contains('=') || parsedId.contains('&')) &&
+      (parsedOtherId.contains('=') || parsedOtherId.contains('&'))) {
+    final ids = parsedOtherId.split('&');
+    result = ids.any((i) => i.contains(parsedId));
     if (result) return result;
   }
-  if (!(otherId.contains('=') || otherId.contains('&')) &&
-      (id.contains('=') || id.contains('&'))) {
-    final ids = id.split('&');
-    result = ids.any((i) => i.contains(otherId));
+  // Case 2: id is composite, otherId is simple - split id and check if any component contains otherId
+  if ((parsedId.contains('=') || parsedId.contains('&')) &&
+      !(parsedOtherId.contains('=') || parsedOtherId.contains('&'))) {
+    final ids = parsedId.split('&');
+    result = ids.any((i) => i.contains(parsedOtherId));
     if (result) return result;
   }
-  if (id.contains('=') ||
-      id.contains('&') && (otherId.contains('=') || otherId.contains('&'))) {
-    final ids = id.split('&');
-    final otherIds = otherId.split('&');
+  // Case 3: Both id and otherId are composite - check if any components match
+  if ((parsedId.contains('=') || parsedId.contains('&')) &&
+      (parsedOtherId.contains('=') || parsedOtherId.contains('&'))) {
+    final ids = parsedId.split('&');
+    final otherIds = parsedOtherId.split('&');
     result = ids.any((i) => otherIds.any((e) => i == e));
     if (result) return result;
   }
-  result = id == otherId;
+  // Case 4: Both id and otherId are simple - direct comparison
+  result = parsedId == parsedOtherId;
   return result;
-}
-
-Future<void> clearFilePickerTempFiles() async {
-  try {
-    await FilePicker.platform.clearTemporaryFiles();
-  } catch (_) {}
 }
 
 String incrementFileName(String input) {
@@ -619,7 +680,7 @@ Future<File> copyFileToDir(
 
     final ext = extension(path);
     String fileName = basenameWithoutExtension(path);
-    File targetFile = File('$dir/$fileName$ext');
+    File targetFile = File(join(dir, '$fileName$ext'));
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       if (!await targetFile.exists()) {
@@ -627,7 +688,7 @@ Future<File> copyFileToDir(
       }
       // Increment filename and update target path
       fileName = incrementFileName(fileName);
-      targetFile = File('$dir/$fileName$ext');
+      targetFile = File(join(dir, '$fileName$ext'));
     }
   } catch (e, stackTrace) {
     logger.log('Error in ${stackTrace.getCurrentMethodName()}:', e, stackTrace);
@@ -635,34 +696,29 @@ Future<File> copyFileToDir(
   return File(path);
 }
 
-Future<String?> pickImageFile({int maxAttempts = 100}) async {
-  final _dir = await getApplicationSupportDirectory();
-  final _artworkDirPath = '${_dir.path}/artworks';
-  await Directory(_artworkDirPath).create(recursive: true);
-
-  final file =
-      (await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp'],
-      ))?.files.first;
-  if (file == null || file.path == null) return null;
-
-  final copy = await copyFileToDir(file.path!, _artworkDirPath);
-
-  return copy.path;
-}
-
 Future<void> cacheEntity(dynamic entity) async {
   if (entity['primary-type'] == null) return;
-  if (['song', 'recording'].contains(entity['primary-type']))
-    return addSongToCache(entity);
+  if ([
+    'song',
+    'recording',
+  ].contains(entity['primary-type']?.toString().toLowerCase()))
+    return addSongToCache(Map<String, dynamic>.from(entity));
   if ([
     'album',
     'single',
     'ep',
     'broadcast',
     'other',
-  ].contains(entity['primary-type']))
-    return addAlbumToCache(entity);
-  if (entity['primary-type'] == 'artist') return addArtistToCache(entity);
+  ].contains(entity['primary-type']?.toString().toLowerCase()))
+    return addAlbumToCache(Map<String, dynamic>.from(entity));
+  if (entity['primary-type']?.toString().toLowerCase() == 'playlist')
+    return addSongToCache(Map<String, dynamic>.from(entity));
+  if (entity['primary-type']?.toString().toLowerCase() == 'artist')
+    return addArtistToCache(Map<String, dynamic>.from(entity));
+  // Log warning for unknown types
+  logger.log(
+    'Unknown entity type: ${entity['primary-type']?.toString().toLowerCase()}',
+    null,
+    null,
+  );
 }

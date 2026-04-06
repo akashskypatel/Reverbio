@@ -65,6 +65,8 @@ Complete or verify all features on Song list component functions.
 - [ ] Song can be liked, added to playlist, added to queue, and added to offline successfully.
 - [ ] Song can be disliked, removed from playlist, removed from queue, and removed from offline successfully.
 - [ ] Double tapping a song likes/dislikes a song.
+- [ ] Click on search icon to confirm search box opens
+- [ ] Confirm typing in search bar filters the list
 
 ## Android Auto (Android Only)
 
@@ -210,6 +212,10 @@ Complete or verify all features on Settings Page.
 - [ ] Confirm Licenses works.
 - [ ] Confirm Copy Log works.
 - [ ] Confirm About works.
+- [ ] Confirm additional directories sheet opens
+- [ ] Confirm moving offline files to device library works
+- [ ] Confirm Tagging offline songs (in supported formats) works
+- [ ] (Desktop only) Confirm changing default app directory works
 
 ## Offline Mode
 
@@ -247,3 +253,23 @@ Complete or verify all features for Plugins
   - [ ] Artist header
   - [ ] Album header
   - [ ] Playlist header
+
+## Additional Music Directories
+
+Complete or verify all features for adding additional music directories
+
+- [ ] Add and remove additional Directories
+- [ ] (Android only) Confirm media permissions are requested when adding
+- [ ] Sync additional directories
+- [ ] (Android only) Confirm media permissions are requested when syncing
+
+## Metadata Tagging
+
+Complete or verify all features for tagging offline music files with metadata
+
+- [ ] Clicking on "Edit Metadata tags" on an offline song opens metadata editing window
+- [ ] Existing metadata tags are shown in appropriate fields
+- [ ] Add or edit metadata tags
+- [ ] Get metadata information from Musicbrainz works
+- [ ] Adding and removing images works
+- [ ] Saving tags works (for files inn supported formats)

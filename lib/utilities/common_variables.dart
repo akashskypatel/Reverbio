@@ -81,7 +81,10 @@ final replacementCharacters = {
 
 final symbolsRegex = RegExp('[~!¡#%^*=?¿؟]', caseSensitive: false);
 
-final allSymbolsRegex = RegExp(r'''[`@$&(){}\[\]<>,./\\|+-:";'~!¡#%^*=?¿؟]''', caseSensitive: false);
+final allSymbolsRegex = RegExp(
+  r'''[`@$&(){}\[\]<>,./\\|+-:";'~!¡#%^*=?¿؟]''',
+  caseSensitive: false,
+);
 
 final separatorRegex = RegExp('-,', caseSensitive: false);
 

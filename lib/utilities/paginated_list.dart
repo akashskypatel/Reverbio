@@ -74,13 +74,14 @@ class PaginatedList<T> with ChangeNotifier {
   final Set<int> _selectedIndices = {};
   final List<List<int>> _pageHistory = [];
   int _currentPageIndex = -1;
+  bool _disposed = false;
 
   // Async loading state
   Future<void>? _initializationFuture;
   bool _isLoading = true;
   Object? _loadingError;
 
-  Future<List<dynamic>> updateItems(Future<List<T>> itemsFuture) async {
+  Future<List<T>> updateItems(Future<List<T>> itemsFuture) async {
     await _loadAsyncItems(itemsFuture);
     return getCurrentPage();
   }
@@ -90,25 +91,27 @@ class PaginatedList<T> with ChangeNotifier {
     try {
       _isLoading = true;
       _loadingError = null;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
 
       final items = await itemsFuture;
+      _allItems.clear();
       _allItems.addAll(items);
-      _initialize();
-      _loadFirstPage();
       _isLoading = false;
       reset();
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     } catch (error) {
       _isLoading = false;
       _loadingError = error;
-      reset();
-      notifyListeners();
+      _selectedIndices.clear();
+      _pageHistory.clear();
+      _currentPageIndex = -1;
+      if (!_disposed) notifyListeners();
       rethrow;
     }
   }
 
   void _initialize() {
+    _selectedIndices.clear();
     final indices = List.generate(_allItems.length, (index) => index)
       ..shuffle(_random);
     _selectedIndices.addAll(indices);
@@ -169,12 +172,13 @@ class PaginatedList<T> with ChangeNotifier {
     if (_isLoading) throw StateError('Cannot paginate while loading');
     if (_currentPageIndex <= 0) return [];
 
+    // Add back the indices of the page being left (not the page being navigated to)
+    final leavingPageIndices = _pageHistory[_currentPageIndex];
+    _selectedIndices.addAll(leavingPageIndices);
     _currentPageIndex--;
-    final previousPageIndices = _pageHistory[_currentPageIndex];
-    _selectedIndices.addAll(previousPageIndices);
 
     notifyListeners();
-    return previousPageIndices.map((index) => _allItems[index]).toList();
+    return _pageHistory[_currentPageIndex].map((index) => _allItems[index]).toList();
   }
 
   // Get the previous page
@@ -219,11 +223,11 @@ class PaginatedList<T> with ChangeNotifier {
     }
 
     if (targetIndex > _currentPageIndex) {
-      while (_currentPageIndex < targetIndex) {
+      while (_currentPageIndex < targetIndex && hasNextPage) {
         getNextPage();
       }
     } else if (targetIndex < _currentPageIndex) {
-      while (_currentPageIndex > targetIndex) {
+      while (_currentPageIndex > targetIndex && hasPreviousPage) {
         getPreviousPage();
       }
     }
@@ -255,13 +259,7 @@ class PaginatedList<T> with ChangeNotifier {
       // Load new items from provided future
       await _loadAsyncItems(newItemsFuture);
     } else {
-      // Re-initialize with current items
-      _selectedIndices.clear();
-      _pageHistory.clear();
-      _currentPageIndex = -1;
-      _initialize();
-      _loadFirstPage();
-      notifyListeners();
+      reset();
     }
   }
 
@@ -272,14 +270,16 @@ class PaginatedList<T> with ChangeNotifier {
   int get totalPages =>
       _isLoading
           ? 0
-          : _pageHistory.length + (_selectedIndices.length / _pageSize).ceil();
+          : (_currentPageIndex + 1) + (_selectedIndices.length / _pageSize).ceil();
   int get pagesViewed => _isLoading ? 0 : _pageHistory.length;
   int get totalItems => _isLoading ? 0 : _allItems.length;
   int get remainingItems => _isLoading ? 0 : _selectedIndices.length;
 
   double get progress {
     if (_isLoading || _allItems.isEmpty) return 0;
-    final totalSelected = _pageHistory.fold<int>(
+    // Only count pages up to and including the current page
+    final viewedPages = _pageHistory.take(_currentPageIndex + 1);
+    final totalSelected = viewedPages.fold<int>(
       0,
       (sum, page) => sum + page.length,
     );
@@ -290,19 +290,27 @@ class PaginatedList<T> with ChangeNotifier {
       _isLoading
           ? []
           : _selectedIndices.map((index) => _allItems[index]).toList();
-  List<T> get viewedItems =>
-      _isLoading
-          ? []
-          : _pageHistory
-              .expand((page) => page)
-              .map((index) => _allItems[index])
-              .toList();
+  List<T> get viewedItems {
+    if (_isLoading) return [];
+    // Only include items from pages up to and including the current page
+    final viewedPages = _pageHistory.take(_currentPageIndex + 1);
+    return viewedPages
+        .expand((page) => page)
+        .map((index) => _allItems[index])
+        .toList();
+  }
 
   // Async loading properties
   Future<void>? get initializationFuture => _initializationFuture;
   bool get isLoading => _isLoading;
   bool get hasError => _loadingError != null;
   Object? get error => _loadingError;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   @override
   String toString() {

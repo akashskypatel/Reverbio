@@ -23,8 +23,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:reverbio/extensions/common.dart';
-import 'package:reverbio/main.dart';
-import 'package:reverbio/widgets/spinner.dart';
+import 'package:reverbio/extensions/l10n.dart';
 
 enum FutureTrackerState { idle, loading, success, error, cancelled }
 
@@ -91,6 +90,7 @@ class NotifiableFuture<T> with ChangeNotifier {
   Completer<T>? _completer;
   bool _isLoading = false;
   bool _isCancelled = false;
+  bool _disposed = false;
   T? _result;
 
   T? get data => _initialData;
@@ -102,12 +102,13 @@ class NotifiableFuture<T> with ChangeNotifier {
   bool get hasError => _error != null;
   bool get hasData => _initialData != null;
   bool get hasResult => _result != null;
-  Completer<T>? get completer => _completer;
+  Completer<T?>? get completer => _completer;
   Future<T?>? get completerFuture => completer?.future;
   T? get result => _result;
   T? get resultOrData => _result ?? _initialData;
-  
+
   void copyValuesFrom(NotifiableFuture<T> other) {
+    if (_disposed) return;
     _error = other._error;
     _isCancelled = other._isCancelled;
     _isLoading = other._isLoading;
@@ -120,7 +121,7 @@ class NotifiableFuture<T> with ChangeNotifier {
       _completer ??= Completer<T>();
       other._completer!.future.then(
         (value) {
-          if (!_isCancelled) {
+          if (!_isCancelled && !_disposed) {
             _result = value;
             _isLoading = false;
             if (!(_completer?.isCompleted ?? true)) {
@@ -130,6 +131,7 @@ class NotifiableFuture<T> with ChangeNotifier {
           }
         },
         onError: (err, st) {
+          if (_disposed) return;
           _error = err;
           _stackTrace = st;
           _isLoading = false;
@@ -144,17 +146,27 @@ class NotifiableFuture<T> with ChangeNotifier {
   }
 
   void setData(T? newData) {
-    if (newData != null) _initialData = newData;
+    if (_disposed) return;
+    if (newData == null) return;
+    _initialData = newData;
     notifyListeners();
   }
 
   void setResult(T? newData) {
-    if (newData != null) _result = newData;
+    if (_disposed) return;
+    if (newData == null) return;
+    _result = newData;
     notifyListeners();
   }
 
   void _runFutureValue(T? value) {
-    _completer = Completer<T>()..complete(value);
+    if (_disposed) return;
+    _completer = Completer<T>();
+    if (value != null) {
+      _completer!.complete(value);
+    } else {
+      _completer!.completeError(CancelledException('Value is null'));
+    }
     _isLoading = false;
     _isCancelled = false;
     _result = value;
@@ -162,10 +174,16 @@ class NotifiableFuture<T> with ChangeNotifier {
   }
 
   Future<T?> runFuture(Future<T> future, {bool forceRefresh = false}) async {
+    if (_disposed) throw StateError('NotifiableFuture is disposed');
     // If already loading and not forcing refresh, return current future
     if (_isLoading && !forceRefresh && _completer != null) {
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       return _completer!.future;
+    }
+
+    // Complete old completer with error before replacing (R4 fix)
+    if (forceRefresh && _completer != null && !_completer!.isCompleted) {
+      _completer!.completeError(CancelledException('Force refresh'));
     }
 
     // Reset state for new future (but preserve existing data unless forceRefresh)
@@ -174,7 +192,7 @@ class NotifiableFuture<T> with ChangeNotifier {
     _isCancelled = false;
     _completer = Completer<T>();
 
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     try {
       _result = await future;
@@ -184,41 +202,42 @@ class NotifiableFuture<T> with ChangeNotifier {
       }
 
       _isLoading = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       return _result;
     } catch (error, stackTrace) {
       _error = error;
       _stackTrace = stackTrace;
       _isLoading = false;
-
+      debugPrint(
+        'Error in ${stackTrace.getCurrentMethodName()}: $_error',
+      );
       if (_completer != null && !_completer!.isCompleted) {
         _completer!.completeError(error, stackTrace);
       }
-
-      notifyListeners();
+      if (!_disposed) notifyListeners();
       rethrow;
     }
   }
 
   Future<T?> runFutureIfNotComplete(Future<T> future) async {
-    if (isComplete && hasData) {
-      return _initialData as T;
+    if (isComplete && hasResult) {
+      return _result as T;
     }
     return runFuture(future);
   }
 
   void cancel() {
     if (_isLoading && _completer != null && !_completer!.isCompleted) {
-      _completer!.complete();
+      _completer!.completeError(CancelledException());
       _isCancelled = true;
       _isLoading = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
   void reset({bool clearData = false}) {
     _resetState(clearData: clearData);
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   void updateData(T newData) {
@@ -226,7 +245,7 @@ class NotifiableFuture<T> with ChangeNotifier {
     _error = null;
     _stackTrace = null;
     _isCancelled = false;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   void _resetState({bool clearData = false}) {
@@ -239,7 +258,6 @@ class NotifiableFuture<T> with ChangeNotifier {
     if (clearData) {
       _initialData = null;
     }
-    notifyListeners();
   }
 
   FutureTrackerState get state {
@@ -252,33 +270,36 @@ class NotifiableFuture<T> with ChangeNotifier {
 
   // Helper method for easy widget building
   Widget build({
-    required Widget Function()? loading,
     required Widget Function(T? data) data,
-    required Widget Function(dynamic error, StackTrace? stackTrace) error,
+    Widget Function()? loading,
+    Widget Function(dynamic error, StackTrace? stackTrace)? error,
     Widget Function()? idle,
     Widget Function()? cancelled,
   }) {
-    switch (state) {
-      case FutureTrackerState.loading:
-        return loading?.call() ?? const Spinner();
-      case FutureTrackerState.success:
-        return data(_result);
-      case FutureTrackerState.error:
-        logger.log(
-          'Error in ${stackTrace?.getCurrentMethodName()}:',
-          _error,
-          stackTrace,
-        );
-        return error(_error, _stackTrace);
-      case FutureTrackerState.cancelled:
-        return cancelled?.call() ?? const Text('Operation cancelled');
-      case FutureTrackerState.idle:
-        return idle?.call() ?? const SizedBox.shrink();
-    }
+    return ListenableBuilder(
+      listenable: this,
+      builder: (context, child) {
+        switch (state) {
+          case FutureTrackerState.loading:
+            return loading?.call() ?? const CircularProgressIndicator.adaptive();
+          case FutureTrackerState.success:
+            return data(_result);
+          case FutureTrackerState.error:
+            debugPrint('Error: $_error');
+            return error?.call(_error, _stackTrace) ??
+                Text(L10n.current.runtimeError);
+          case FutureTrackerState.cancelled:
+            return cancelled?.call() ?? Text(L10n.current.cancelled);
+          case FutureTrackerState.idle:
+            return idle?.call() ?? const SizedBox.shrink();
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _completer = null;
     _initialData = null;
     _result = null;

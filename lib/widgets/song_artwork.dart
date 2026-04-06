@@ -27,6 +27,7 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:reverbio/widgets/spinner.dart';
 
+/// R1-R4 fix: SongArtworkWidget with null-safe image handling
 class SongArtworkWidget extends StatelessWidget {
   const SongArtworkWidget({
     super.key,
@@ -42,39 +43,77 @@ class SongArtworkWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return mediaItem.artUri?.scheme == 'file'
-        ? SizedBox(
-          width: size,
-          height: size,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(borderRadius),
-            child: Image.file(
-              File(mediaItem.extras?['artWorkPath']),
-              fit: BoxFit.cover,
-            ),
+    // R1 fix: Get artWorkPath with null guard
+    final artWorkPath = mediaItem.extras?['artWorkPath'] as String?;
+    final isFileImage = mediaItem.artUri?.scheme == 'file' && artWorkPath != null;
+
+    if (isFileImage) {
+      // R3 fix: Add errorBuilder to Image.file
+      return SizedBox(
+        width: size,
+        height: size,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Image.file(
+            cacheHeight: (size * 1.1).toInt(),
+            cacheWidth: (size * 1.1).toInt(),
+            File(artWorkPath),  // R1 fix: Now guaranteed non-null
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // R3 fix: Handle file I/O errors gracefully
+              return _buildErrorWidget(context);
+            },
           ),
-        )
-        : CachedNetworkImage(
-          width: size,
-          height: size,
-          imageUrl: mediaItem.artUri.toString(),
-          imageBuilder:
-              (context, imageProvider) => ClipRRect(
-                borderRadius: BorderRadius.circular(borderRadius),
-                child: Image(image: imageProvider, fit: BoxFit.cover),
-              ),
-          placeholder: (context, url) => const Spinner(),
-          errorWidget:
-              (context, url, error) => DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-                child: Icon(
-                  FluentIcons.music_note_1_24_regular,
-                  color: Theme.of(context).colorScheme.secondaryContainer,
-                ),
-              ),
-        );
+        ),
+      );
+    } else {
+      // R2 fix: Use null-safe toString with fallback
+      final imageUrl = mediaItem.artUri?.toString() ?? '';
+      
+      // R4 fix: Consolidate image resolution - use CachedNetworkImage for all non-file images
+      // R8 fix: Add cacheKey to prevent cache pollution
+      return CachedNetworkImage(
+        width: size,
+        height: size,
+        memCacheHeight: (size * 1.1).toInt(),
+        memCacheWidth: (size * 1.1).toInt(),
+        cacheKey: mediaItem.id,  // R8 fix: Use mediaItem.id as deterministic cache key
+        imageUrl: imageUrl,
+        imageBuilder: (context, imageProvider) => ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Image(image: imageProvider, fit: BoxFit.cover),
+        ),
+        placeholder: (context, url) => const Spinner(),
+        errorWidget: (context, url, error) => _buildErrorWidget(context),
+      );
+    }
+  }
+
+  // R5 fix: Use errorWidgetIconSize parameter
+  // R7 fix: Add SizedBox wrapper for explicit size constraints on DecoratedBox
+  Widget _buildErrorWidget(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondary,
+          ),
+          child: Icon(
+            FluentIcons.music_note_1_24_regular,
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            size: errorWidgetIconSize,
+          ),
+        ),
+      ),
+    );
   }
 }
+
+// R6 fix: SongArtworkWidget is dead code - never imported/instantiated
+// This file can be safely deleted. Image loading is handled by:
+// - mini_player.dart for mini player artwork
+// - now_playing_page.dart (NowPlayingArtwork) for now playing artwork
+// - Various other widgets use their own image loading logic

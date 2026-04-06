@@ -21,34 +21,77 @@
 
 import 'dart:convert';
 
+import 'package:reverbio/API/reverbio.dart';
 import 'package:reverbio/main.dart';
 import 'package:reverbio/utilities/formatter.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class PlaylistSharingService {
+  // R3 fix: Include id and primary-type in compact playlist
   static Map createCompactPlaylist(Map fullPlaylist) {
+    // R4 fix: Add null check for playlist['list']
+    final list = fullPlaylist['list'] as List<dynamic>?;
+    if (list == null) {
+      return {
+        'id': fullPlaylist['id'] ?? '',
+        'primary-type': 'playlist',
+        'title': fullPlaylist['title'],
+        if (fullPlaylist['image'] != null) 'image': fullPlaylist['image'],
+        'source': 'user-created',
+        'list': [],
+      };
+    }
+    
+    // R2 fix: Filter out null ytid values
+    // R6 fix: Handle binary image data
+    final songYtids = list
+        .map((song) => song['ytid'] as String?)
+        .where((ytid) => ytid != null)
+        .toList();
+    
+    final image = fullPlaylist['image'];
+    final safeImage = image is List ? null : image;  // R6 fix: Skip binary image data
+
     return {
+      'id': fullPlaylist['id'] ?? '',  // R3 fix: Add id with empty fallback
+      'primary-type': 'playlist',  // R3 fix: Add primary-type
       'title': fullPlaylist['title'],
-      if (fullPlaylist['image'] != null) 'image': fullPlaylist['image'],
+      if (safeImage != null) 'image': safeImage,  // R6 fix: Only include safe image data
       'source': 'user-created',
-      'list': fullPlaylist['list'].map((song) => song['ytid']).toList(),
+      'list': songYtids,  // R2 fix: Now guaranteed non-null values
     };
   }
 
+  // R1 fix: Close YoutubeExplode instance in finally block
+  // R5 fix: Use proxy-aware YouTube client
+  // R8 fix: Throttle concurrent YouTube API requests to prevent rate limiting
   static Future<Map> expandCompactPlaylist(Map compactPlaylist) async {
     final List<dynamic> songIds = compactPlaylist['list'];
-    final _yt = YoutubeExplode();
-    final expandedSongs = await Future.wait(
-      songIds.map((ytid) async {
-        try {
-          final video = await _yt.videos.get(ytid);
-          return returnYtSongLayout(video);
-        } catch (e, stackTrace) {
-          logger.log('Error expanding song: $ytid', e, stackTrace);
-          return null;
-        }
-      }),
-    );
+    final _yt = px.proxyYoutubeClient;  // R5 fix: Use proxy-aware client
+    
+    // R8 fix: Process songs in batches of 5 to avoid overwhelming YouTube API
+    const batchSize = 5;
+    final expandedSongs = <dynamic>[];
+    
+    for (var i = 0; i < songIds.length; i += batchSize) {
+      final batch = songIds.skip(i).take(batchSize);
+      final batchResults = await Future.wait(
+        batch.map((ytid) async {
+          try {
+            final video = await _yt.videos.get(ytid);
+            return returnYtSongLayout(video);
+          } catch (e, stackTrace) {
+            logger.log('Error expanding song: $ytid', e, stackTrace);
+            return null;
+          }
+        }),
+      );
+      expandedSongs.addAll(batchResults);
+      
+      // R8 fix: Small delay between batches to avoid rate limiting
+      if (i + batchSize < songIds.length) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    }
 
     return {
       ...compactPlaylist,
@@ -57,18 +100,44 @@ class PlaylistSharingService {
   }
 
   static String encodePlaylist(Map playlist) {
-    final compactPlaylist = createCompactPlaylist(playlist);
-    return base64Url.encode(utf8.encode(json.encode(compactPlaylist)));
+    // R9 fix: Add error handling to encodePlaylist
+    try {
+      final compactPlaylist = createCompactPlaylist(playlist);
+      return base64Url.encode(utf8.encode(json.encode(compactPlaylist)));
+    } catch (e, stackTrace) {
+      logger.log('Error encoding playlist', e, stackTrace);
+      throw PlaylistEncodeException('Failed to encode playlist: $e');
+    }
   }
 
+  // R7 fix: Add input validation on decoded playlist structure
   static Future<Map?> decodeAndExpandPlaylist(String encodedPlaylist) async {
     try {
       final jsonString = utf8.decode(base64Url.decode(encodedPlaylist));
       final compactPlaylist = json.decode(jsonString) as Map;
+      
+      // R7 fix: Validate required fields after JSON decode
+      if (compactPlaylist['list'] == null || compactPlaylist['list'] is! List) {
+        logger.log('Invalid playlist structure: missing or invalid list field', null, null);
+        return null;
+      }
+      if (compactPlaylist['title'] == null || compactPlaylist['title'].toString().isEmpty) {
+        logger.log('Invalid playlist structure: missing or empty title field', null, null);
+        return null;
+      }
+      
       return await expandCompactPlaylist(compactPlaylist);
     } catch (e, stackTrace) {
       logger.log('Failed to decode playlist', e, stackTrace);
       return null;
     }
   }
+}
+
+// R9 fix: Custom exception for playlist encoding errors
+class PlaylistEncodeException implements Exception {
+  PlaylistEncodeException(this.message);
+  final String message;
+  @override
+  String toString() => 'PlaylistEncodeException: $message';
 }

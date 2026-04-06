@@ -120,3 +120,5 @@ for lang in $languages; do
     jq . "$tmp_file" > "$arb_file"
     rm "$tmp_file"
 done
+
+flutter build windows --debug

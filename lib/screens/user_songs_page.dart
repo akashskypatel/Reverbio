@@ -19,24 +19,29 @@
  *     please visit: https://github.com/akashskypatel/Reverbio
  */
 
+import 'dart:io';
+
 import 'package:audio_service/audio_service.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reverbio/API/entities/artist.dart';
+import 'package:reverbio/API/entities/entities.dart';
 import 'package:reverbio/API/entities/playlist.dart';
 import 'package:reverbio/API/entities/song.dart';
+import 'package:reverbio/extensions/common.dart';
 import 'package:reverbio/extensions/l10n.dart';
 import 'package:reverbio/main.dart';
-import 'package:reverbio/services/audio_service_mk.dart';
-import 'package:reverbio/services/router_service.dart';
+import 'package:reverbio/services/queue_manager.dart';
 import 'package:reverbio/services/settings_manager.dart';
 import 'package:reverbio/utilities/common_variables.dart';
 import 'package:reverbio/utilities/flutter_toast.dart';
+import 'package:reverbio/utilities/notifiable_list.dart';
+import 'package:reverbio/utilities/utils.dart';
 import 'package:reverbio/widgets/base_card.dart';
 import 'package:reverbio/widgets/confirmation_dialog.dart';
+import 'package:reverbio/widgets/expanding_toolbar.dart';
 import 'package:reverbio/widgets/marque.dart';
 import 'package:reverbio/widgets/mini_player.dart';
 import 'package:reverbio/widgets/playlist_header.dart';
@@ -53,24 +58,24 @@ class UserSongsPage extends StatefulWidget {
 }
 
 class _UserSongsPageState extends State<UserSongsPage> {
+  //with TickerProviderStateMixin {
   late ThemeData _theme;
   final _isEditEnabled = ValueNotifier(false);
-  late final ValueNotifier<int> _lengthNotifier;
   late final String _title;
-  late final IconData _icon;
+  late NotifiableList<Map<String, dynamic>> notifiableSongsList = getSongsList(widget.page);
+  Future? _syncFuture;
+
   @override
   void initState() {
     super.initState();
     _title = getTitle(widget.page);
-    _icon = getIcon(widget.page);
-    _lengthNotifier = getLength(widget.page);
-    //_lengthNotifier.addListener(_listener);
   }
 
   @override
   void dispose() {
+    _syncFuture?.ignore();
+    notifiableSongsList.completer.future.ignore();
     super.dispose();
-    //_lengthNotifier.removeListener(_listener);
   }
 
   @override
@@ -78,40 +83,60 @@ class _UserSongsPageState extends State<UserSongsPage> {
     _theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_title), //offlineMode.value ? Text(title) : null,
+        title: Text(_title),
         actions: [
-          if (_title == context.l10n!.queue)
-            Row(children: [_buildQueueActionsList()]),
-          StatefulBuilder(
-            builder: (context, setState) {
-              return IconButton(
-                iconSize: pageHeaderIconSize,
-                onPressed: () {
-                  if (mounted)
-                    setState(() {
-                      _isEditEnabled.value = !_isEditEnabled.value;
-                    });
+          ExpandingToolbar(
+            actions: [
+              _buildSyncButton(),
+              if (_title == context.l10n!.queue)
+                Row(children: [_buildQueueActionsList()]),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return IconButton(
+                    iconSize: pageHeaderIconSize,
+                    onPressed: () {
+                      if (mounted)
+                        setState(() {
+                          _isEditEnabled.value = !_isEditEnabled.value;
+                        });
+                    },
+                    icon: Icon(
+                      _isEditEnabled.value
+                          ? FluentIcons.edit_off_24_filled
+                          : FluentIcons.edit_line_horizontal_3_24_filled,
+                      color: _theme.colorScheme.primary,
+                    ),
+                  );
                 },
-                icon: Icon(
-                  _isEditEnabled.value
-                      ? FluentIcons.edit_off_24_filled
-                      : FluentIcons.edit_line_horizontal_3_24_filled,
-                  color: _theme.colorScheme.primary,
-                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: CustomScrollView(
+        shrinkWrap: true,
+        slivers: [
+          ValueListenableBuilder(
+            valueListenable: _isEditEnabled,
+            builder: (context, value, child) {
+              return SongList(
+                page: widget.page,
+                title: getTitle(widget.page),
+                isEditable: value,
+                songMaps: notifiableSongsList,
               );
             },
           ),
-          if (kDebugMode) const SizedBox(width: 24, height: 24),
         ],
       ),
-      body: _buildCustomScrollView(_title, _icon, getSongsList(widget.page)),
     );
   }
 
   Widget _buildQueueActionsList() {
-    return ValueListenableBuilder(
-      valueListenable: activeQueueLength,
-      builder: (context, value, __) {
+    return ListenableBuilder(
+      listenable: audioHandler.queueSongMaps,
+      builder: (context, __) {
+        final value = audioHandler.queueSongMaps.length;
         return Row(
           children: [
             ValueListenableBuilder<AudioServiceRepeatMode>(
@@ -143,7 +168,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       iconSize: pageHeaderIconSize,
                       onPressed: () {
                         final _isSingleSongPlaying =
-                            audioHandler.queueSongBars.length == 1;
+                            audioHandler.queueSongMaps.length == 1;
                         repeatNotifier.value =
                             _isSingleSongPlaying
                                 ? AudioServiceRepeatMode.one
@@ -228,10 +253,12 @@ class _UserSongsPageState extends State<UserSongsPage> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TextField(
                         onChanged: filterPlaylists,
-                        decoration: const InputDecoration(
-                          hintText: 'Search playlists...',
-                          prefixIcon: Icon(FluentIcons.search_24_filled),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                        decoration: InputDecoration(
+                          hintText: context.l10n!.searchPlaylists,
+                          prefixIcon: const Icon(FluentIcons.search_24_filled),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                          ),
                           isDense: true,
                         ),
                       ),
@@ -243,7 +270,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         valueListenable: listLengthNotifier,
                         builder: (context, value, __) {
                           return filteredPlaylists.isEmpty
-                              ? const Center(child: Text('No playlists found'))
+                              ? Center(child: Text(context.l10n!.noPlaylists))
                               : ListView.builder(
                                 itemCount: filteredPlaylists.length,
                                 itemBuilder: (context, index) {
@@ -254,13 +281,11 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                     ),
                                     child: FilledButton(
                                       onPressed: () {
-                                        showToast(
-                                          addSongsToPlaylist(
-                                            context,
-                                            filteredPlaylists[index],
-                                            activeQueue['list'],
-                                          ),
+                                        final result = addSongsToPlaylist(
+                                          filteredPlaylists[index],
+                                          activeQueue['list'],
                                         );
+                                        showToast(result.toLocalizedString());
                                         Navigator.pop(
                                           context,
                                           filteredPlaylists[index],
@@ -296,7 +321,7 @@ class _UserSongsPageState extends State<UserSongsPage> {
     builder: (savecontext) {
       var customPlaylistName = '';
       String? imageUrl;
-
+      File? imageFile;
       return StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
@@ -340,19 +365,10 @@ class _UserSongsPageState extends State<UserSongsPage> {
                         ),
                         IconButton(
                           onPressed: () async {
-                            final path =
-                                (await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: [
-                                    'jpeg',
-                                    'jpg',
-                                    'png',
-                                    'gif',
-                                    'webp',
-                                    'bmp',
-                                  ],
-                                ))?.paths.first;
-                            imageUrl = path;
+                            imageUrl =
+                                await pickImageFile();
+                            if (imageUrl != null && isFilePath(imageUrl!))
+                              imageFile = await getImageFile(path: imageUrl);
                             if (imageUrl != null)
                               imagePathController.text = imageUrl!;
                           },
@@ -387,27 +403,31 @@ class _UserSongsPageState extends State<UserSongsPage> {
                                     savecontext,
                                   ).pop(confirmcontext),
                               onSubmit: () {
-                                showToast(
-                                  createCustomPlaylist(
-                                    customPlaylistName,
-                                    image: imageUrl,
-                                    context,
-                                    songList: activeQueue['list'],
-                                  ),
+                                final result = createCustomPlaylist(
+                                  customPlaylistName,
+                                  image:
+                                      imageFile != null
+                                          ? imageFile!
+                                              .readAsBytesSync()
+                                              .toList()
+                                          : imageUrl,
+                                  songList: activeQueue['list'],
                                 );
+                                showToast(result.toLocalizedString());
                                 GoRouter.of(context).pop(context);
                               },
                             ),
                       );
                     else {
-                      showToast(
-                        createCustomPlaylist(
-                          customPlaylistName,
-                          image: imageUrl,
-                          context,
-                          songList: activeQueue['list'],
-                        ),
+                      final result = createCustomPlaylist(
+                        customPlaylistName,
+                        image:
+                            imageFile != null
+                                ? imageFile!.readAsBytesSync().toList()
+                                : imageUrl,
+                        songList: activeQueue['list'],
                       );
+                      showToast(result.toLocalizedString());
                       GoRouter.of(context).pop(context);
                     }
                   } else {
@@ -422,68 +442,38 @@ class _UserSongsPageState extends State<UserSongsPage> {
     },
   );
 
-  Widget _buildCustomScrollView(
-    String title,
-    IconData icon,
-    Future<List<dynamic>> songsListFuture,
-  ) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: buildPlaylistHeader(title, icon, _lengthNotifier),
-          ),
-        ),
-        FutureBuilder(
-          future: songsListFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting)
-              return SliverToBoxAdapter(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(context.l10n!.checkBackLater),
-                    const SizedBox(height: 10),
-                    const Spinner(),
-                  ],
-                ),
-              );
-            if (snapshot.hasError)
-              return SliverToBoxAdapter(
-                child: Icon(
-                  FluentIcons.error_circle_24_filled,
-                  color: _theme.colorScheme.primary,
-                ),
-              );
-            final _songList = snapshot.data ?? [];
-            return ValueListenableBuilder(
-              valueListenable: _isEditEnabled,
-              builder:
-                  (context, value, child) => SongList(
-                    page: widget.page,
-                    title: getTitle(widget.page),
-                    isEditable: value,
-                    inputData: _songList,
-                  ),
-            );
-          },
-        ),
+  Widget _loadingSongListWidget() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(context.l10n!.checkBackLater),
+        const SizedBox(height: 10),
+        const Spinner(),
+      ],
+    );
+  }
+
+  Widget _errorSongListWidget() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(context.l10n!.checkBackLater),
+        const SizedBox(height: 10),
+        const Spinner(),
       ],
     );
   }
 
   String getTitle(String page) {
-    final context = NavigationManager().context;
     return {
-          'liked': context.l10n!.likedSongs,
-          'offline': context.l10n!.offlineSongs,
-          'recents': context.l10n!.recentlyPlayed,
-          'queue': context.l10n!.queue,
+          'liked': L10n.current.likedSongs,
+          'offline': L10n.current.offlineSongs,
+          'recents': L10n.current.recentlyPlayed,
+          'queue': L10n.current.queue,
         }[page] ??
-        context.l10n!.playlist;
+        L10n.current.playlist;
   }
 
   IconData getIcon(String page) {
@@ -496,111 +486,167 @@ class _UserSongsPageState extends State<UserSongsPage> {
         FluentIcons.heart_24_regular;
   }
 
-  Future<List> getSongsList(String page) {
-    return {
-          'liked': Future.value(userLikedSongsList),
-          'offline': getUserOfflineSongs(),
-          'recents': Future.value(userRecentlyPlayed),
-          'queue': Future.value(activeQueue['list'] as List),
-        }[page] ??
-        Future.value(activeQueue['list'] as List);
+  Future<Iterable<Map<String, dynamic>>> _getArtists() async {
+    return notifiableSongsList.completer.future.then((value) async {
+      final songs = value.map((e) => e).toList();
+      return getArtistsFromSongs(songs);
+    });
   }
 
-  ValueNotifier<int> getLength(String page) {
-    return {
-          'liked': currentLikedSongsLength,
-          'offline': currentOfflineSongsLength,
-          'recents': currentRecentlyPlayedLength,
-          'queue': activeQueueLength,
-        }[page] ??
-        currentLikedSongsLength;
+  Future<Iterable<Map<String, dynamic>>> _getOfflineSongs() async {
+    return Future.microtask(() async {
+      if (!context.mounted) return <Map<String, dynamic>>[];
+      final offline = userOfflineSongs.map((e) {
+        final cached = getCachedSong(e);
+        final song =
+            isSongValid(cached)
+                ? cached!
+                : <String, dynamic>{'id': e, 'title': null, 'artist': null};
+        return song;
+      });
+      if (!context.mounted) return <Map<String, dynamic>>[];
+      final device = userDeviceSongs.map((e) => e);
+      return [...offline, ...device];
+    });
   }
 
-  Widget buildPlaylistHeader(
-    String title,
-    IconData icon,
-    ValueNotifier<int> length,
-  ) {
-    return PlaylistHeader(
-      _buildPlaylistImage(title, icon, length),
-      title,
-      length.value,
-      customWidget: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ValueListenableBuilder(
-            valueListenable: audioHandler.songValueNotifier,
-            builder: (context, value, _) {
-              final song = value?.song;
-              return Column(
+  Future<Iterable<Map<String, dynamic>>> _getUserLikedSongs() async {
+    return Future.microtask(() async {
+      if (!context.mounted) return <Map<String, dynamic>>[];
+      return userLikedSongsList.map((e) => e);
+    });
+  }
+
+  Future<Iterable<Map<String, dynamic>>> _getUserRecentSongs() async {
+    return Future.microtask(() async {
+      if (!context.mounted) return <Map<String, dynamic>>[];
+      return userRecentlyPlayed.map((e) => e);
+    });
+  }
+
+  NotifiableList<Map<String, dynamic>> getSongsList(String page) {
+    switch (page) {
+      case 'liked':
+        return NotifiableList.fromAsync(_getUserLikedSongs());
+      case 'offline':
+        return NotifiableList.fromAsync(_getOfflineSongs());
+      case 'recents':
+        return NotifiableList.fromAsync(_getUserRecentSongs());
+      case 'queue':
+      default:
+        return audioHandler.queueSongMaps;
+    }
+  }
+
+  Widget buildPlaylistHeader(String title, IconData icon) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: ListenableBuilder(
+          listenable: notifiableSongsList,
+          builder: (context, child) {
+            return PlaylistHeader(
+              _buildPlaylistImage(title, icon, notifiableSongsList.length),
+              title,
+              notifiableSongsList.length,
+              customWidget: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (value != null)
-                    Text(
-                      song?['mbTitle'] ??
-                          song?['title'] ??
-                          song?['ytTitle'] ??
-                          'unknown',
-                      style: TextStyle(
-                        color: _theme.colorScheme.primary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  if (value != null)
-                    Text(
-                      song?['mbArtist'] ??
-                          song?['artist'] ??
-                          song?['ytArtist'] ??
-                          'unknown',
-                      style: TextStyle(
-                        color: _theme.colorScheme.secondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
+                  ValueListenableBuilder(
+                    valueListenable: audioHandler.songValueNotifier,
+                    builder: (context, value, _) {
+                      final song = value;
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (value != null)
+                            Text(
+                              songTitle(song).nullIfEmpty ??
+                                  context.l10n!.unknown,
+                              style: TextStyle(
+                                color: _theme.colorScheme.primary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          if (value != null)
+                            Text(
+                              songArtist(song).nullIfEmpty ??
+                                  context.l10n!.unknown,
+                              style: TextStyle(
+                                color: _theme.colorScheme.secondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder(
+                    valueListenable: audioHandler.positionDataNotifier,
+                    builder:
+                        (context, value, _) =>
+                            value.duration != Duration.zero
+                                ? PositionSlider(
+                                  positionDataNotifier:
+                                      audioHandler.positionDataNotifier,
+                                )
+                                : const SizedBox.shrink(),
+                  ),
                 ],
-              );
-            },
-          ),
-          ValueListenableBuilder(
-            valueListenable: audioHandler.positionDataNotifier,
-            builder:
-                (context, value, _) =>
-                    value.duration != Duration.zero
-                        ? PositionSlider(
-                          positionDataNotifier:
-                              audioHandler.positionDataNotifier,
-                        )
-                        : const SizedBox.shrink(),
-          ),
-        ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  void _listener() {
-    if (mounted) setState(() {});
+  Widget _buildSyncButton() {
+    final isSyncLoading = ValueNotifier(false);
+    return ValueListenableBuilder(
+      valueListenable: isSyncLoading,
+      builder:
+          (context, value, child) => IconButton(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            icon:
+                value
+                    ? const SizedBox.square(dimension: 20, child: Spinner())
+                    : const Icon(FluentIcons.arrow_sync_24_filled),
+            iconSize: pageHeaderIconSize,
+            onPressed: () async {
+              if (widget.page == 'offline') {
+                notifiableSongsList.clear();
+                isSyncLoading.value = true;
+                final futures =
+                    <Future>[]
+                      ..add(getExistingOfflineSongs())
+                      ..add(getUserDeviceSongs());
+                await Future.wait(futures);
+                if (context.mounted) {
+                  _syncFuture = _getOfflineSongs();
+                  final _songBars = await _syncFuture;
+                  notifiableSongsList
+                    ..clear()
+                    ..addAll(_songBars);
+                  isSyncLoading.value = false;
+                }
+              }
+            },
+          ),
+    );
   }
 
-  Widget _buildPlaylistImage(
-    String title,
-    IconData icon,
-    ValueNotifier<int> length,
-  ) {
+  Widget _buildPlaylistImage(String title, IconData icon, int length) {
     final size = MediaQuery.of(context).size.width > 480 ? 200.0 : 100.0;
-    length.addListener(_listener);
-    return ValueListenableBuilder(
-      valueListenable: length,
-      builder: (context, value, child) {
-        return BaseCard(
-          inputData: {'title': '$title\n${length.value} Songs'},
-          size: size,
-          icon: icon,
-        );
-      },
+    return BaseCard(
+      inputData: {'title': '$title\n$length ${context.l10n!.songs}'},
+      size: size,
+      icon: icon,
     );
   }
 }
